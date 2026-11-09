@@ -596,6 +596,11 @@ function condText(x,after){
 /* ================= SHARED DATA (Supabase: accounts, forums, messages) ================= */
 cleanSlate();
 const SB_URL='https://ojsphhzgzbxmnfcbitqb.supabase.co',SB_KEY='sb_publishable_SWO9WhiSkoVhflY5CmY08A_hlqCEJSi';
+const BUILD='1794262788';
+/* A tab left open on an older build must not save over newer data: if the site has been updated, reload before anything else is saved. */
+let staleBuild=false;
+async function checkBuild(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
+  if(v&&BUILD.indexOf('%')<0&&v!==BUILD&&+v>+BUILD){staleBuild=true;const a=document.activeElement;if(!(a&&(a.tagName==='TEXTAREA'||a.tagName==='INPUT')&&a.value))location.reload()}}catch(e){}}
 const SITE_URL='https://imblessedustressed-del.github.io/Contenders-/';
 let bouts=[],cards={},botF={},SB=null,ME=null,MYEMAIL='',dbState='loading',managers={},topics=[],ims=[],posts=[],postsTopic=null,recovering=false,syncTimer=null,loadedGym=false;
 async function initDB(){
@@ -614,6 +619,7 @@ async function initDB(){
   if(ME)afterLogin();
   updateTop();refresh();
   setInterval(()=>{if(document.visibilityState==='visible')loadPublic()},45000);
+  checkBuild();setInterval(checkBuild,60000);document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')checkBuild()});
   setInterval(()=>{if(ME&&document.visibilityState==='visible')loadIms()},20000);
   document.addEventListener('visibilitychange',()=>{if(ME&&document.visibilityState==='visible')loadIms()});
 }
@@ -639,6 +645,7 @@ async function loadPosts(tid){
   if(!error&&postsTopic===tid){posts=data.map(p=>({id:p.id,by:p.author,at:Date.parse(p.created_at),text:p.body}));refresh()}
 }
 async function afterLogin(){
+  await checkBuild();if(staleBuild)return;
   await loadPublic();loadIms();
   try{
     const{data}=await SB.from('gym_state').select('data').eq('user_id',ME).maybeSingle();
@@ -655,7 +662,7 @@ function publicCard(){
   return{fighters:ROSTER().map(k=>pubF(state[k],k,true)),retired:(state.retired||[]).filter(f=>f.rec).slice(0,40).map((f,i)=>pubF(f,'r'+i,false)),
     titlesWon:(state.log||[]).filter(l=>l.belt).length};
 }
-async function pushGym(){if(!SB||!ME)return;const{reports,...rest}=state;const now=new Date().toISOString();
+async function pushGym(){if(!SB||!ME)return;if(staleBuild){checkBuild();return}const{reports,...rest}=state;const now=new Date().toISOString();
   try{await SB.from('gym_state').upsert({user_id:ME,data:rest,updated_at:now})}catch(e){}
   try{const c=publicCard();await SB.from('gym_public').upsert({user_id:ME,data:c,updated_at:now});cards[ME]=c}catch(e){}}
 const gymOf=id=>!id?'A retired gym':(managers[id]&&managers[id].gym)||'A manager';
