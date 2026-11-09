@@ -190,7 +190,8 @@ if(!state||!(Array.isArray(state.roster)||state.A))state={roster:[],retired:[],d
 const ROSTER=()=>{if(!Array.isArray(state.roster))state.roster=['A','B'].filter(k=>state[k]&&state[k].name&&!/^Open Slot/.test(state[k].name));return state.roster.filter(k=>state[k])};
 const FTR=id=>ROSTER().includes(id)?state[id]:null;
 const divOf=F=>(F&&F.div)||state.div||'Middle';
-function corners(){const r=ROSTER();if(!r.includes(state.red))state.red=r[0];if(!r.includes(state.blue)||state.blue===state.red)state.blue=r.find(k=>k!==state.red);return[state.red,state.blue]}
+const getF=k=>(k&&k.startsWith('bot:'))?botF[k]:FTR(k);
+function corners(){const r=ROSTER();if(!r.includes(state.red))state.red=r[0];if(!getF(state.blue)||state.blue===state.red)state.blue=r.find(k=>k!==state.red)||Object.keys(botF)[0];return[state.red,state.blue]}
 function cleanSlate(){
   if(state.practiceCleared)return;
   const wipe=F=>{if(!F)return;F.rec=[0,0,0,0];F.hist=[];F.rating=0;F.status=0;F.streak=0;F.ip=0;F.aploss=0};
@@ -207,7 +208,7 @@ const save=()=>{if(typeof syncGym==='function')syncGym();try{localStorage.setIte
 cleanSlate();
 const SB_URL='https://ojsphhzgzbxmnfcbitqb.supabase.co',SB_KEY='sb_publishable_SWO9WhiSkoVhflY5CmY08A_hlqCEJSi';
 const SITE_URL='https://imblessedustressed-del.github.io/Contenders-/';
-let cards={},SB=null,ME=null,MYEMAIL='',dbState='loading',managers={},topics=[],ims=[],posts=[],postsTopic=null,recovering=false,syncTimer=null,loadedGym=false;
+let cards={},botF={},SB=null,ME=null,MYEMAIL='',dbState='loading',managers={},topics=[],ims=[],posts=[],postsTopic=null,recovering=false,syncTimer=null,loadedGym=false;
 async function initDB(){
   try{if(window.supabase&&supabase.createClient)SB=supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:true,detectSessionInUrl:true}})}catch(e){}
   if(!SB){dbState='off';refresh();return}
@@ -229,9 +230,11 @@ async function initDB(){
 }
 async function loadPublic(){
   try{
-    const[p,t,gc]=await Promise.all([SB.from('profiles').select('id,gym,description,location,created_at'),SB.from('topics').select('*').order('last_at',{ascending:false}).limit(500),SB.from('gym_public').select('user_id,data,updated_at')]);
+    const[p,t,gc]=await Promise.all([SB.from('profiles').select('id,gym,description,location,is_bot,created_at'),SB.from('topics').select('*').order('last_at',{ascending:false}).limit(500),SB.from('gym_public').select('user_id,data,updated_at')]);
     if(p.error||t.error)throw p.error||t.error;
-    managers={};p.data.forEach(r=>managers[r.id]={gym:r.gym,desc:r.description,loc:r.location||'',at:Date.parse(r.created_at)});
+    managers={};p.data.forEach(r=>managers[r.id]={gym:r.gym,desc:r.description,loc:r.location||'',bot:!!r.is_bot,at:Date.parse(r.created_at)});
+    const bids=p.data.filter(r=>r.is_bot).map(r=>r.id);
+    if(bids.length){const bs=await SB.from('gym_state').select('user_id,data').in('user_id',bids);if(!bs.error){botF={};bs.data.forEach(r=>{const d=r.data||{};(d.roster||[]).forEach(k=>{if(d[k])botF['bot:'+r.user_id+':'+k]={...d[k],gymName:managers[r.user_id].gym}})})}}
     cards={};if(gc&&!gc.error)gc.data.forEach(r=>cards[r.user_id]=r.data||{});
     topics=t.data.map(r=>({id:String(r.id),forum:r.forum,title:r.title,by:r.author,at:Date.parse(r.created_at),last:Date.parse(r.last_at),count:r.post_count}));
     dbState='on';refresh();
@@ -554,7 +557,7 @@ const ICON={
  d:`<svg class="icon" viewBox="0 0 44 30"><rect x="11" y="4" width="22" height="22" rx="11" fill="#ddd" stroke="#888"/><text x="22" y="20" text-anchor="middle" font-family="Verdana" font-weight="bold" font-size="12" fill="#555">D</text></svg>`};
 function nextSat(){const d=new Date();d.setDate(d.getDate()+((6-d.getDay()+7)%7||7));return d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'})}
 const BUILDS={'very light':.96,light:.98,normal:1,heavy:1.02,'very heavy':1.04};
-function natWeight(F){const h=HT(F);return Math.round(0.0349*h*h*(BUILDS[F.build||'normal']||1)+((F.str||12)-12)*1.5)}
+function natWeight(F){const h=HT(F);return Math.round((160+9.2*(h-68))*(BUILDS[F.build||'normal']||1)+((F.str||12)-12)*1.5-((F.agl||12)-12)*1.0)}
 function freeLoss(F){return natWeight(F)*0.0025*((F.cnd||10)+2)}
 function minWeight(F){return Math.round(natWeight(F)-freeLoss(F))}
 /* WeBL: R = division limit / (weight - free loss); starting endurance x R^2 when he has to sweat */
@@ -628,11 +631,12 @@ function planEditHTML(side){if(!FTR(side))return planFormHTML('');return planFor
 /* ---------- Fights ---------- */
 function fightHTML(){
   const opt=(arr,v)=>arr.map(([val,lab])=>`<option value="${val}"${val===v?' selected':''}>${lab}</option>`).join('');
-  const R0=ROSTER();if(R0.length<2)return`<h1>Practice Fights</h1><p>You need at least two active fighters for a practice fight. <a data-go="create">Create a fighter</a>.</p>`;
-  const[rc,bc]=corners(),fsel=(id,v)=>`<select id="${id}">${R0.map(k=>`<option value="${k}"${k===v?' selected':''}>${esc(state[k].name)} ${recStr(state[k])} - ${esc(divOf(state[k]))}</option>`).join('')}</select>`;
+  const R0=ROSTER(),BK=Object.keys(botF);if(!R0.length||(R0.length<2&&!BK.length))return`<h1>Practice Fights</h1><p>You need an active fighter for a practice fight. <a data-go="create">Create a fighter</a>.</p>`;
+  const[rc,bc]=corners(),o=(k,F,v)=>`<option value="${k}"${k===v?' selected':''}>${esc(F.name)} ${recStr(F)} - ${esc(divOf(F))}</option>`;
+  const fsel=(id,v,bots)=>`<select id="${id}"><optgroup label="Your gym">${R0.map(k=>o(k,state[k],v)).join('')}</optgroup>${bots&&BK.length?[...new Set(BK.map(k=>botF[k].gymName))].map(g=>`<optgroup label="${esc(g)} (bot gym)">${BK.filter(k=>botF[k].gymName===g).sort((a,b)=>DIVS.findIndex(d=>d[0]===divOf(botF[b]))-DIVS.findIndex(d=>d[0]===divOf(botF[a]))).map(k=>o(k,botF[k],v)).join('')}</optgroup>`).join(''):''}</select>`;
   let h=`<h1>Practice Fights</h1>
-  <table class="grid"><tr><td class="red">Red corner</td><td>${fsel('redSel',rc)}</td></tr>
-  <tr><td class="navy">Blue corner</td><td>${fsel('blueSel',bc)}</td></tr>
+  <table class="grid"><tr><td class="red">Red corner</td><td>${fsel('redSel',rc,false)}</td></tr>
+  <tr><td class="navy">Blue corner</td><td>${fsel('blueSel',bc,true)}</td></tr>
   <tr><td>Weight Division</td><td><select id="div">${opt(DIVS.map(([d,l])=>[d,`${d} (${l<1000?l:'unlimited'})`]),state.div)}</select></td></tr>
   <tr><td>Bout</td><td><select id="bout">${opt([['10','10-round Contenders bout'],['12|WBC','WBC title, 12 rounds'],['12|WBA','WBA title, 12 rounds'],['12|WBO','WBO title, 12 rounds']],state.bout)}</select></td></tr></table>
   <p><button id="go">Start the Fight</button> <span class="cr small" id="err"></span></p>
@@ -643,7 +647,7 @@ function fightHTML(){
   else h+=`<p style="margin-top:16px"><button id="go2">Rematch</button> <button data-go="simbot">Run it 100 times in Simbot</button></p>`;
   return h;
 }
-function planErr(){for(const s of corners()){const F=state[s];if(parsePlan(F.plan).errors.length)return`${F.name}'s fight plan has lines the parser didn't recognize. Fix them on his page.`}return''}
+function planErr(){for(const s of corners()){const F=getF(s);if(!F)return'Pick two fighters.';if(parsePlan(F.plan).errors.length)return`${F.name}'s fight plan has lines the parser didn't recognize. Fix them on his page.`}return''}
 function weightOf(div){const l=(DIVS.find(d=>d[0]===div)||[0,160])[1];return l>=1000?225:l}
 function reportHTML(f,b,upto){
   const S=f.S,W=weightOf(b.div);
@@ -689,7 +693,7 @@ function startFight(){
   const bad=planErr();if(bad){$('#err').textContent=bad;return}
   const[rs,belt]=state.bout.split('|');
   const d=new Date();
-  const[RC,BC]=corners();if(!RC||!BC||RC===BC){$('#err').textContent='Pick two different fighters.';return}const FA=state[RC],FB=state[BC];
+  const[RC,BC]=corners();if(!RC||!BC||RC===BC){$('#err').textContent='Pick two different fighters.';return}const FA=getF(RC),FB=getF(BC);
   bout={rounds:+rs,belt:belt||null,div:state.div,done:false,gym:myGym(),ids:[RC,BC],recs:[FA.rec.slice(),FB.rec.slice()],
     date:d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'}).replace(/,/g,'').replace(/(\d+) (\d{4})$/,'$1, $2')};
   const prepF=F=>{const c=JSON.parse(JSON.stringify(F));const wi=weighIn(F,state.div);c.fightW=wi.fight;c.endMul=wi.endMul;if(c.train)c[c.train]+=1;const pf=primeF(c);c.primeMul=pf;c.k=12+(((FA.rating||0)+(FB.rating||0))/2)/3;return c};
@@ -700,7 +704,7 @@ function finish(){
   if(bout.done)return;bout.done=true;
   return; /* practice fights never touch records */
   // eslint-disable-next-line no-unreachable
-  const r=fight.result,S=bout.ids,id='f'+Date.now();if(!S.every(k=>state[k]))return;
+  const r=fight.result,S=bout.ids,id='f'+Date.now();if(!S.every(k=>FTR(k)))return;
   const date=new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
   const score=fight.totals.map(t=>t.join('-')).join(', ');
   const how=r.decision?r.type.toLowerCase():`${r.type} in round ${r.round} (${fmt(r.t)})`;
@@ -758,7 +762,7 @@ function topicHTML(tid){
 function msgsHTML(){
   if(dbState!=='on')return`<h1>Messages</h1>${needDB()}`;
   if(!ME)return`<h1>Messages</h1>${needLogin('send and read messages')}`;
-  const others=Object.keys(managers).filter(id=>id!==ME);
+  const others=Object.keys(managers).filter(id=>id!==ME&&!managers[id].bot);
   const sel=window._dmTo||'';
   return`<h1>Messages</h1>
   <p class="small mute">Messages are private between you and the other manager.</p>
@@ -775,17 +779,17 @@ async function markRead(){
 }
 function simbotHTML(){
   return`<h1>Simbot</h1><p>Simbot runs the current matchup many times so you can see how a fight plan holds up before fight night.</p>
-  ${ROSTER().length<2?'<p>You need at least two active fighters.</p>':`<p><b class="red">${esc(state[corners()[0]].name)}</b> vs <b class="navy">${esc(state[corners()[1]].name)}</b>, ${esc(state.div)}weight, ${state.bout.split('|')[0]} rounds. <a data-go="fight">Change the matchup</a></p>`}
+  ${!getF(corners()[0])||!getF(corners()[1])?'<p>You need an active fighter and an opponent.</p>':`<p><b class="red">${esc(getF(corners()[0]).name)}</b> vs <b class="navy">${esc(getF(corners()[1]).name)}</b>, ${esc(state.div)}weight, ${state.bout.split('|')[0]} rounds. <a data-go="fight">Change the matchup</a></p>`}
   <p><select id="simN"><option>100</option><option>500</option><option>1000</option></select> <button id="runSim">Run Simbot</button></p><div id="simOut"></div>`;
 }
 function runSimbot(n){
   const bad=planErr();if(bad){$('#simOut').innerHTML=`<p class="cr">${bad}</p>`;return}
   const rs=+state.bout.split('|')[0],c={w0:0,k0:0,w1:0,k1:0,d:0};let rounds=0;
-  const[RC,BC]=corners();if(!RC||!BC)return;for(let i=0;i<n;i++){const f=simulate(state[RC],state[BC],rs),r=f.result;if(r.w===null)c.d++;else{c['w'+r.w]++;if(!r.decision)c['k'+r.w]++}rounds+=f.rounds.length}
+  const[RC,BC]=corners();if(!RC||!BC)return;const prep=F=>{const c=JSON.parse(JSON.stringify(F));const wi=weighIn(F,state.div);c.fightW=wi.fight;c.endMul=wi.endMul;return c};const PA=prep(getF(RC)),PB=prep(getF(BC));for(let i=0;i<n;i++){const f=simulate(PA,PB,rs),r=f.result;if(r.w===null)c.d++;else{c['w'+r.w]++;if(!r.decision)c['k'+r.w]++}rounds+=f.rounds.length}
   const p=x=>(100*x/n).toFixed(1)+'%';
   $('#simOut').innerHTML=`<table class="grid"><tr><th></th><th>Wins</th><th>By stoppage</th><th>By decision</th></tr>
-  <tr><td class="red">${esc(state[RC].name)}</td><td class="n">${p(c.w0)}</td><td class="n">${p(c.k0)}</td><td class="n">${p(c.w0-c.k0)}</td></tr>
-  <tr><td class="navy">${esc(state[BC].name)}</td><td class="n">${p(c.w1)}</td><td class="n">${p(c.k1)}</td><td class="n">${p(c.w1-c.k1)}</td></tr>
+  <tr><td class="red">${esc(getF(RC).name)}</td><td class="n">${p(c.w0)}</td><td class="n">${p(c.k0)}</td><td class="n">${p(c.w0-c.k0)}</td></tr>
+  <tr><td class="navy">${esc(getF(BC).name)}</td><td class="n">${p(c.w1)}</td><td class="n">${p(c.k1)}</td><td class="n">${p(c.w1-c.k1)}</td></tr>
   <tr><td>Draws</td><td class="n">${p(c.d)}</td><td colspan="2">Average length: ${(rounds/n).toFixed(1)} rounds</td></tr></table>`;
 }
 /* ---------- Hall of Records ---------- */
@@ -806,8 +810,8 @@ function gymPubHTML(uid){
   const m=managers[uid];if(!m)return`<h1>Gym not found</h1><p>${needDB()}<a data-go="grank">Back to Gym Rankings</a></p>`;
   const c=cards[uid]||{fighters:[],retired:[]},g=gymStats(uid),fl=(f,i,act)=>{const r=f.rec||[0,0,0,0];
     return`<p class="fl">${act?`<a data-go="opub:${uid}:${encN(f.id)}">${esc(f.name)}</a>`:esc(f.name)}${(f.titles||[]).length?' <span style="color:#e8a400">&#9733;</span>':''} - ${esc(f.div)}weight - ${r[0]} wins (${r[3]} by knock out), ${r[1]} losses, and ${r[2]} draws. Rating ${f.rating}. Status ${f.status}.${(f.titles||[]).length?` <b class="r">Winner of ${(f.titles||[]).length} world title${f.titles.length>1?'s':''}!!</b>`:''} Career earnings $0.</p>`};
-  return`<h1 class="pubname">${esc(m.gym)}</h1>
-  <p>${esc(m.gym)} trains fighters${m.loc?` in ${esc(m.loc)}`:''}. Managing since ${m.at?dt(m.at).slice(0,10):'recently'}.${uid!==ME?` <a data-dm="${esc(uid)}">Send a message</a>`:''}</p>
+  return`<h1 class="pubname">${esc(m.gym)}${m.bot?' <span class="small mute">(bot gym)</span>':''}</h1>${m.bot?'<p class="small mute">A computer-run gym that fills out the rankings. Spar with its fighters in Practice Fights.</p>':''}
+  <p>${esc(m.gym)} trains fighters${m.loc?` in ${esc(m.loc)}`:''}. Managing since ${m.at?dt(m.at).slice(0,10):'recently'}.${uid!==ME&&!m.bot?` <a data-dm="${esc(uid)}">Send a message</a>`:''}</p>
   ${m.desc?`<div class="note" style="white-space:pre-wrap">${esc(m.desc)}</div>`:''}
   <table class="plain" style="margin-top:12px"><tr><th>Region</th><th>Earnings</th><th>Record</th><th>Titles</th></tr>
   <tr><td><b>Contenders</b></td><td>$0</td><td>${g.rec[0]}-${g.rec[1]}-${g.rec[2]}</td><td class="cr">${g.titles}</td></tr></table>
@@ -839,7 +843,7 @@ function grankHTML(){
   const rows=ids.map(id=>({id,...gymStats(id)})).sort((a,b)=>b.titles-a.titles||b.diff-a.diff||b.pct-a.pct||gymOf(a.id).localeCompare(gymOf(b.id)));
   return`<h1 class="center">Gym Rankings for Contenders</h1>${needDB()}
   <table class="grid granks"><tr><th>Rank</th><th>Manager</th><th>Location</th><th>Titles</th><th>Record</th><th>+/-</th><th>Win %</th><th>Earnings</th><th>Fighters</th></tr>
-  ${rows.map((r,i)=>`<tr><td class="n">${i+1}</td><td><a data-go="gympub:${r.id}">${esc(gymOf(r.id))}</a>${r.id===ME?' <span class="small mute">(you)</span>':''}</td><td>${esc(managers[r.id].loc||'')}</td><td class="n">${r.titles}</td><td class="n">${r.rec[0]}-${r.rec[1]}-${r.rec[2]}</td><td class="n">${r.diff}</td><td class="n">${r.pct}%</td><td class="n">$0</td><td class="n">${r.active}</td></tr>`).join('')}</table>
+  ${rows.map((r,i)=>`<tr><td class="n">${i+1}</td><td><a data-go="gympub:${r.id}">${esc(gymOf(r.id))}</a>${managers[r.id].bot?' <span class="small mute">(bot gym)</span>':''}${r.id===ME?' <span class="small mute">(you)</span>':''}</td><td>${esc(managers[r.id].loc||'')}</td><td class="n">${r.titles}</td><td class="n">${r.rec[0]}-${r.rec[1]}-${r.rec[2]}</td><td class="n">${r.diff}</td><td class="n">${r.pct}%</td><td class="n">$0</td><td class="n">${r.active}</td></tr>`).join('')}</table>
   <p class="small mute">Gyms are ranked by titles, then wins minus losses. A gym's numbers update when its manager is logged in. Earnings start counting when league fights begin.</p>`;
 }
 function resultsHTML(){
@@ -870,10 +874,10 @@ const HELP_BODY={
   <p>There are no regions. Everyone fights in one Contenders ranking, with WBC, WBA and WBO world titles in every division.</p>`,
  fighter:()=>`<p>Every fighter starts with exactly <b>${POOL} points</b> spread across:</p>
   <table class="grid small"><tr><th>Ability</th><th>What it does</th></tr>
-  <tr><td>Strength (STR)</td><td>Drives all damage. Fades as he tires.</td></tr>
+  <tr><td>Strength (STR)</td><td>Drives all damage. Fades as he tires. Each point adds about a pound and a half of muscle.</td></tr>
   <tr><td>KO Punch Bonus (KP)</td><td>Counts triple toward stunning damage. Each point needs 3 Strength: 1 KP at 3 STR, 2 KP at 6, 3 KP at 9, and so on. Doesn't fade.</td></tr>
   <tr><td>Speed (SPD)</td><td>Lands punches. Fades as he tires.</td></tr>
-  <tr><td>Agility (AGL)</td><td>Avoids punches. Fades as he tires.</td></tr>
+  <tr><td>Agility (AGL)</td><td>Avoids punches. Fades as he tires. Each point makes him about a pound lighter.</td></tr>
   <tr><td>Chin (CHN)</td><td>How much he can take before stuns, knockdowns and KOs. Doesn't fade.</td></tr>
   <tr><td>Conditioning (CND)</td><td>Endurance (10 times CND), fatigue and recovery.</td></tr>
   <tr><td>Height (HGT)</td><td>5 feet plus one inch per point. The taller man gets half the difference added to his SPD and AGL.</td></tr>

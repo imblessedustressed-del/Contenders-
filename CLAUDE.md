@@ -16,6 +16,8 @@ Contenders is a text-based boxing strategy game modeled on the old Web Boxing Le
 - `gym_public(user_id, data jsonb)`. Each gym's public card (fighter names, records, rating/status, titles, recent fight results; never stats or plan text). Readable by anyone, written by the owner when his gym saves. Powers Gym Rankings and public gym pages.
 - `profiles.location` is the gym's location shown in Gym Rankings.
 - `retire_gym()` RPC deletes the caller's account.
+- **Bot gyms:** four computer-run gyms (profiles.is_bot = true, ids 00000000-0000-0000-0000-0000000000b0..b3, no password so nobody can log in as them). Their gym_state is readable by everyone so players can spar with them in Practice Fights. Generator: `bots/gen.py`. Weight formula: (160 + 9.2*(height_in - 68)) * build + 1.5*(STR-12) - 1.0*(AGL-12).
+- Known balance issue (owner aware): in the current engine SPD/AGL builds dominate STR/CHN builds; waiting on the real energy point table before changing the engine.
 
 ## Rules for maintenance
 - The owner approves anything that changes gameplay, rules, the simulator, the schedule, titles, or a manager's fighters or records.
