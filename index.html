@@ -596,7 +596,7 @@ function condText(x,after){
 /* ================= SHARED DATA (Supabase: accounts, forums, messages) ================= */
 cleanSlate();
 const SB_URL='https://ojsphhzgzbxmnfcbitqb.supabase.co',SB_KEY='sb_publishable_SWO9WhiSkoVhflY5CmY08A_hlqCEJSi';
-const BUILD='1794263869';
+const BUILD='1794264410';
 /* A tab left open on an older build must not save over newer data: if the site has been updated, reload before anything else is saved. */
 let staleBuild=false;
 async function checkBuild(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
@@ -656,9 +656,9 @@ async function afterLogin(){
 }
 function syncGym(){if(!SB||!ME||!loadedGym)return;clearTimeout(syncTimer);syncTimer=setTimeout(pushGym,1500)}
 function publicCard(){
-  const pubF=(F,id,active)=>({id,name:F.name,nick:F.nick||'',home:F.home||'',div:divOf(F),hgt:F.hgt,w:natWeight(F),mw:minWeight(F),rec:F.rec,rating:F.rating||0,status:F.status||0,streak:F.streak||0,active,
+  const pubF=(F,id,active)=>({id,name:F.name,nick:F.nick||'',home:F.home||'',div:divOf(F),hgt:F.hgt,w:natWeight(F),mw:minWeight(F),earn:F.earn||0,rec:F.rec,rating:F.rating||0,status:F.status||0,streak:F.streak||0,active,
     plan:F.planName||'Basic',train:F.train||'str',titles:Object.entries(state.champs||{}).flatMap(([d,b])=>Object.entries(b).filter(([,n])=>n===F.name).map(([bl])=>d+' '+bl)),
-    hist:(F.hist||[]).slice(0,25).map(h=>({opp:h.opp,oh:h.oh,div:h.div,belt:h.belt,date:h.date,week:h.week,res:h.res,score:h.score,icon:h.icon,plan:h.plan}))});
+    hist:(F.hist||[]).slice(0,25).map(h=>({opp:h.opp,oh:h.oh,div:h.div,belt:h.belt,date:h.date,week:h.week,res:h.res,score:h.score,icon:h.icon,plan:h.plan,ogym:h.ogym,bout:h.bout,earned:h.earned||0}))});
   return{fighters:ROSTER().map(k=>pubF(state[k],k,true)),retired:(state.retired||[]).filter(f=>f.rec).slice(0,40).map((f,i)=>pubF(f,'r'+i,false)),
     titlesWon:(state.log||[]).filter(l=>l.belt).length};
 }
@@ -757,6 +757,17 @@ function weightNote(n,div,w,mw,fights){
   if(mw>lim)return`${n} is <b>over</b> the ${esc(div)}weight limit and has to sweat down to make ${lim} pounds.`;
   if(below&&w<=below)return`${n} is <b>underweight</b> for ${esc(div)}weight. He could make the ${below} pound limit one division down.`;
   return`${n} makes the ${esc(div)}weight limit of ${lim} pounds.`}
+/* Purses (owner-approved scale, Nov 2026). The fight's pot is set by the higher-rated man:
+   pot = $2,000 x 1.35^rating, x4 for a title fight. Even ratings split 50/50, otherwise the higher-rated fighter
+   (the draw) takes 60%; a defending champion takes 65%. A debut 0 vs 0 fight pays $1,000 each. */
+const money=n=>'$'+Math.round(n||0).toLocaleString('en-US');
+function boutPurses(rRed,rBlue,belt,champSide){const top=Math.max(rRed||0,rBlue||0);let pot=2000*Math.pow(1.35,top);if(belt)pot*=4;
+  let sh=.5;if(belt&&champSide!=null)sh=champSide===0?.65:.35;else if((rRed||0)!==(rBlue||0))sh=(rRed||0)>(rBlue||0)?.6:.4;
+  return[Math.round(pot*sh/10)*10,Math.round(pot*(1-sh)/10)*10]}
+function champSideOf(b){if(!b.belt)return null;const c=(currentChamps()[b.div]||{})[b.belt];if(!c)return null;return c.uid===b.red_user&&c.fid===b.red_fid?0:c.uid===b.blue_user&&c.fid===b.blue_fid?1:null}
+const ratingOf=(uid,fid)=>{const f=((cards[uid]||{}).fighters||[]).find(x=>x.id===fid);return f?f.rating||0:0};
+/* purse for one corner: the recorded purse once fought, an estimate from current ratings before */
+function pursePart(b,red){if(b.summary&&b.summary.purse)return b.summary.purse[red?0:1];const p=boutPurses(ratingOf(b.red_user,b.red_fid),ratingOf(b.blue_user,b.blue_fid),b.belt,champSideOf(b));return p[red?0:1]}
 function titleFights(){return bouts.filter(b=>b.status==='done'&&b.belt&&b.summary).slice(0,9).map(b=>{const w=b.summary.w,ru=[b.red_user,b.red_fid],bu=[b.blue_user,b.blue_fid],W=w===1?bu:ru,L=w===1?ru:bu;
   return{id:b.id,div:b.div,belt:b.belt,draw:w==null,winner:fName(...W),wu:W[0],wf:W[1],wgym:gymOf(W[0]),loser:fName(...L),lu:L[0],lf:L[1],lgym:gymOf(L[0]),how:b.summary.how}})}
 function homeHTML(){
@@ -840,12 +851,12 @@ function boutRes(b,red){const m=b.summary||{};const how=m.how||'';if(m.w==null)r
 /* apply finished bouts to my fighters' records once (records, rating/status, training points, history) */
 function applyLeague(){if(!ME)return;state.applied=state.applied||{};let ch=false;
   myDone().forEach(({b,k,x})=>{if(state.applied[b.id])return;const F=FTR(k);state.applied[b.id]=1;ch=true;if(!F||!b.summary)return;
-    applyResult(F,x.red?0:1,{...b.summary,belt:b.belt,oppRating:b.summary.ratings?b.summary.ratings[x.red?1:0]:undefined,ip:b.summary.ip?b.summary.ip[x.red?0:1]:undefined},{id:'L'+b.id,bout:b.id,oid:null,oh:x.o.hgt!=null?ht(60+x.o.hgt):'',opp:x.o.name,ogym:x.gym,div:b.div,belt:b.belt,date:x.date.replace(/^\w+, /,''),week:state.week});
+    applyResult(F,x.red?0:1,{...b.summary,purse:b.summary.purse?b.summary.purse[x.red?0:1]:0,belt:b.belt,oppRating:b.summary.ratings?b.summary.ratings[x.red?1:0]:undefined,ip:b.summary.ip?b.summary.ip[x.red?0:1]:undefined},{id:'L'+b.id,bout:b.id,oid:null,oh:x.o.hgt!=null?ht(60+x.o.hgt):'',opp:x.o.name,ogym:x.gym,div:b.div,belt:b.belt,date:x.date.replace(/^\w+, /,''),week:state.week});
     if(b.summary.w!=null&&b.belt){state.champs[b.div]=state.champs[b.div]||{};if((b.summary.w===0)===x.red)state.champs[b.div][b.belt]=F.name;else if(state.champs[b.div][b.belt]===F.name)delete state.champs[b.div][b.belt]}});
   if(ch)save()}
 const STAR=champ=>`<span class="star" style="color:${champ?'#e8a400':'#3b6fd8'}">&#9733;</span>`;
 function boutLine(x){if(!x)return'';const o=x.o,r=o.rec;
-  return`${x.b.belt?`<b>${esc(x.b.belt)} title fight</b> vs `:''}the ${o.hgt!=null?ht(60+o.hgt)+',':''} <a data-go="opub:${x.ou}:${encN(x.of)}">${esc(o.name)}</a>${STAR(o.champ)} (${r[0]}-${r[1]}-${r[2]} ${o.rating}/${o.status}) from the <a data-go="gympub:${x.ou}">${esc(x.gym)}</a> gym${x.b.purse?` for $${Number(x.b.purse).toLocaleString('en-US')}`:''} on <b>${esc(x.date)}</b>.`}
+  return`${x.b.belt?`<b>${esc(x.b.belt)} title fight</b> vs `:''}the ${o.hgt!=null?ht(60+o.hgt)+',':''} <a data-go="opub:${x.ou}:${encN(x.of)}">${esc(o.name)}</a>${STAR(o.champ)} (${r[0]}-${r[1]}-${r[2]} ${o.rating}/${o.status}) from the <a data-go="gympub:${x.ou}">${esc(x.gym)}</a> gym for ${money(pursePart(x.b,x.red))} on <b>${esc(x.date)}</b>.`}
 const planStamp=n=>{state.planAt=state.planAt||{};state.planAt[n]=Date.now()};
 const planUpdated=n=>{const t=state.planAt&&state.planAt[n];return t?` updated ${new Date(t).toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'})}`:''};
 function fighterLine(side){
@@ -1023,7 +1034,7 @@ function recordHTML(side){
   let titles=0;for(const d in state.champs)for(const b in state.champs[d])if(state.champs[d][b]===F.name)titles++;
   const rows=[['Strength',F.str,'Knockout Punch',F.kp],['Speed',F.spd,'Agility',F.agl],['Chin',F.chn,'Conditioning',F.cnd],
     ['Cut Resistance',['','Low','Normal','High'][F.cut],'Winning Streak',F.streak||''],['Rating',F.rating||0,'Status',F.status||0],
-    ['Rank',frankOf(side),'Total Earnings','$0'],['Injury Points',F.ip||0,'AP Loss',F.aploss||0]];
+    ['Rank',frankOf(side),'Total Earnings',money(F.earn)],['Injury Points',F.ip||0,'AP Loss',F.aploss||0]];
   const pf=primeF(F),prime=pf>=.999?'He is in his prime.':pf>.9?'He is close to his best.':pf>.8?'He is a step off his best.':'He is well past his best.';
   const tr={str:'strength',spd:'speed',agl:'agility',chn:'chin',cnd:'conditioning',kp:'knockout punch'};
   return`<p><a data-go="pub:${side}" class="b red">${n}</a> ${recStr(F)}</p>
@@ -1072,10 +1083,10 @@ function pubHTML(side){
   <p>${weightNote(n,divOf(F),natWeight(F),minWeight(F),F.rec[0]+F.rec[1]+F.rec[2])}</p>
   <hr><h2>${n}'s Record</h2>
   <p>${n}'s record is ${F.rec[0]}-${F.rec[1]}-${F.rec[2]} (${F.rec[3]}/${F.rec[1]})${recTitles(ME,side)}<br>
-  His current <a data-go="help">rating</a> is ${F.rating||0} and his <a data-go="help">status</a> is ${F.status||0}.<br>His career earnings are $0.</p>
+  His current <a data-go="help">rating</a> is ${F.rating||0} and his <a data-go="help">status</a> is ${F.status||0}.<br>His career earnings are ${money(F.earn)}.</p>
   <p>Select any icon for a detailed account of a fight.</p>
   ${F.hist&&F.hist.length?`<p>${n} ${TRAIN_FLAVOR[F.train||'str']}.</p>`:''}
-  ${F.hist&&F.hist.length?`<table class="hist">${F.hist.map(h=>`<tr><td>${h.bout?`<a data-go="lreport:${h.bout}">${resultIcon(h)}</a>`:state.reports[h.id]?`<a data-go="report:${h.id}">${resultIcon(h)}</a>`:resultIcon(h)}</td><td>vs ${h.oid&&FTR(h.oid)?`<a data-go="pub:${h.oid}">${esc(h.opp)}</a>`:esc(h.opp)}${h.ogym?` (${esc(h.ogym)})`:h.oid?` (${esc(myGym())})`:''} - ${h.oh?esc(h.oh)+' - ':''}${esc(h.div)}weight ${h.belt?esc(h.belt)+' title ':''}bout on ${esc(h.date)}, week ${h.week}: ${esc(h.res)}. Earned $0. Score: ${esc(h.score)} ${h.bout?`<a data-go="lreport:${h.bout}">highlights</a>`:state.reports[h.id]?`<a data-go="report:${h.id}">highlights</a>`:''}${h.plan?`. Fight Plan: ${esc(h.plan)}`:''}</td></tr>`).join('')}</table>`:'<p class="mute">No fights yet.</p>'}
+  ${F.hist&&F.hist.length?`<table class="hist">${F.hist.map(h=>`<tr><td>${h.bout?`<a data-go="lreport:${h.bout}">${resultIcon(h)}</a>`:state.reports[h.id]?`<a data-go="report:${h.id}">${resultIcon(h)}</a>`:resultIcon(h)}</td><td>vs ${h.oid&&FTR(h.oid)?`<a data-go="pub:${h.oid}">${esc(h.opp)}</a>`:esc(h.opp)}${h.ogym?` (${esc(h.ogym)})`:h.oid?` (${esc(myGym())})`:''} - ${h.oh?esc(h.oh)+' - ':''}${esc(h.div)}weight ${h.belt?esc(h.belt)+' title ':''}bout on ${esc(h.date)}, week ${h.week}: ${esc(h.res)}. Earned ${money(h.earned)}. Score: ${esc(h.score)} ${h.bout?`<a data-go="lreport:${h.bout}">highlights</a>`:state.reports[h.id]?`<a data-go="report:${h.id}">highlights</a>`:''}${h.plan?`. Fight Plan: ${esc(h.plan)}`:''}</td></tr>`).join('')}</table>`:'<p class="mute">No fights yet.</p>'}
   <p class="small"><a data-go="rec:${side}">Manager's page for ${n}</a></p>`;
 }
 function frankOf(side){if(ME&&cards[ME]){const i=rankedIn(divOf(state[side])).findIndex(x=>x.uid===ME&&x.f.id===side);if(i>=0)return i+1}const sc=s=>{const r=state[s].rec;return(r[0]+.5*r[2])/Math.max(1,r[0]+r[1]+r[2])+r[0]*.001};const d=divOf(state[side]);const peers=ROSTER().filter(k=>divOf(state[k])===d).sort((a,b)=>sc(b)-sc(a));return peers.indexOf(side)+1}
@@ -1185,7 +1196,8 @@ function applyResult(F,i,r,m){
   ratingStatus(F,r.w==null?'draw':r.w===i?'win':'loss',r);
   F.ip=(F.ip||0)+(r.ip!=null?r.ip:(r.w!=null&&r.w!==i&&r.type==='KO'?25:0));
   if((F.ip||0)>=500){F.ip-=500;F.aploss=(F.aploss||0)+1;const k3=pick(['str','spd','agl','chn','cnd']);F[k3]=Math.max(1,F[k3]-1)}
-  F.hist=F.hist||[];F.hist.unshift({...m,plan:F.planName||'Basic',res,score:r.score,icon});F.hist=F.hist.slice(0,40);
+  F.earn=(F.earn||0)+(r.purse||0);
+  F.hist=F.hist||[];F.hist.unshift({...m,plan:F.planName||'Basic',res,score:r.score,icon,earned:r.purse||0});F.hist=F.hist.slice(0,40);
 }
 function finish(){
   if(bout.done)return;bout.done=true;
@@ -1295,16 +1307,16 @@ function frankHTML(arg){
 }
 function gymStats(uid){const c=cards[uid]||{fighters:[],retired:[]},all=[...(c.fighters||[]),...(c.retired||[])];
   const r=[0,0,0,0];all.forEach(f=>(f.rec||[]).forEach((v,i)=>r[i]+=v));const titles=all.reduce((a,f)=>a+(f.titles||[]).length,0);
-  const n=r[0]+r[1]+r[2];return{rec:r,titles,diff:r[0]-r[1],pct:n?Math.round(100*(r[0]+.5*r[2])/n):0,active:(c.fighters||[]).length}}
+  const n=r[0]+r[1]+r[2];return{earn:all.reduce((a,f)=>a+(f.earn||0),0),rec:r,titles,diff:r[0]-r[1],pct:n?Math.round(100*(r[0]+.5*r[2])/n):0,active:(c.fighters||[]).length}}
 function gymPubHTML(uid){
   const m=managers[uid];if(!m)return`<h1>Gym not found</h1><p>${needDB()}<a data-go="grank">Back to Gym Rankings</a></p>`;
   const c=cards[uid]||{fighters:[],retired:[]},g=gymStats(uid),fl=(f,i,act)=>{const r=f.rec||[0,0,0,0];
-    return`<p class="fl">${act?`<a data-go="opub:${uid}:${encN(f.id)}">${esc(f.name)}</a>`:esc(f.name)}${(f.titles||[]).length?' <span style="color:#e8a400">&#9733;</span>':''} - ${esc(f.div)}weight - ${r[0]} wins (${r[3]} by knock out), ${r[1]} losses, and ${r[2]} draws. Rating ${f.rating}. Status ${f.status}.${(f.titles||[]).length?` <b class="r">Winner of ${(f.titles||[]).length} world title${f.titles.length>1?'s':''}!!</b>`:''} Career earnings $0.</p>`};
+    return`<p class="fl">${act?`<a data-go="opub:${uid}:${encN(f.id)}">${esc(f.name)}</a>`:esc(f.name)}${(f.titles||[]).length?' <span style="color:#e8a400">&#9733;</span>':''} - ${esc(f.div)}weight - ${r[0]} wins (${r[3]} by knock out), ${r[1]} losses, and ${r[2]} draws. Rating ${f.rating}. Status ${f.status}.${(f.titles||[]).length?` <b class="r">Winner of ${(f.titles||[]).length} world title${f.titles.length>1?'s':''}!!</b>`:''} Career earnings ${money(f.earn)}.</p>`};
   return`<h1 class="pubname">${esc(m.gym)}${m.bot?' <span class="small mute">(bot gym)</span>':''}</h1>${m.bot?'<p class="small mute">A computer-run gym that fills out the rankings. Spar with its fighters in Practice Fights.</p>':''}
   <p>${esc(m.gym)} trains fighters${m.loc?` in ${esc(m.loc)}`:''}. Managing since ${m.at?dt(m.at).slice(0,10):'recently'}.${uid!==ME&&!m.bot?` <a data-dm="${esc(uid)}">Send a message</a>`:''}</p>
   ${m.desc?`<div class="note" style="white-space:pre-wrap">${esc(m.desc)}</div>`:''}
   <table class="plain" style="margin-top:12px"><tr><th>Region</th><th>Earnings</th><th>Record</th><th>Titles</th></tr>
-  <tr><td><b>Contenders</b></td><td>$0</td><td>${g.rec[0]}-${g.rec[1]}-${g.rec[2]}</td><td class="cr">${g.titles}</td></tr></table>
+  <tr><td><b>Contenders</b></td><td>${money(g.earn)}</td><td>${g.rec[0]}-${g.rec[1]}-${g.rec[2]}</td><td class="cr">${g.titles}</td></tr></table>
   <h2>Fighters Managed by ${esc(m.gym)}</h2>${(c.fighters||[]).length?c.fighters.map((f,i)=>fl(f,i,true)).join(''):'<p class="mute">No active fighters.</p>'}
   <p>&#9758; <a data-go="gymret:${uid}">${esc(m.gym)}'s Retired Fighters</a>${(c.retired||[]).length?` (${c.retired.length})`:''}</p>
   <p><a data-go="grank">Back to Gym Rankings</a></p>`;
@@ -1312,7 +1324,7 @@ function gymPubHTML(uid){
 function gymRetHTML(uid){
   const m=managers[uid];if(!m)return`<h1>Gym not found</h1><p>${needDB()}<a data-go="grank">Back to Gym Rankings</a></p>`;
   const R=(cards[uid]||{}).retired||[];
-  return`<h1>${esc(m.gym)}'s Retired Fighters</h1>${R.length?R.map(f=>{const r=f.rec||[0,0,0,0];return`<p class="fl">${esc(f.name)}${(f.titles||[]).length?' <span style="color:#e8a400">&#9733;</span>':''} - ${esc(f.div)}weight - ${r[0]} wins (${r[3]} by knock out), ${r[1]} losses, and ${r[2]} draws. Rating ${f.rating}. Status ${f.status}.${(f.titles||[]).length?` <b class="r">Winner of ${f.titles.length} world title${f.titles.length>1?'s':''}!!</b>`:''} Career earnings $0.</p>`}).join(''):'<p class="mute">This gym has no retired fighters.</p>'}
+  return`<h1>${esc(m.gym)}'s Retired Fighters</h1>${R.length?R.map(f=>{const r=f.rec||[0,0,0,0];return`<p class="fl">${esc(f.name)}${(f.titles||[]).length?' <span style="color:#e8a400">&#9733;</span>':''} - ${esc(f.div)}weight - ${r[0]} wins (${r[3]} by knock out), ${r[1]} losses, and ${r[2]} draws. Rating ${f.rating}. Status ${f.status}.${(f.titles||[]).length?` <b class="r">Winner of ${f.titles.length} world title${f.titles.length>1?'s':''}!!</b>`:''} Career earnings ${money(f.earn)}.</p>`}).join(''):'<p class="mute">This gym has no retired fighters.</p>'}
   <p><a data-go="gympub:${uid}">Back to ${esc(m.gym)}</a></p>`;
 }
 function oFighterHTML(arg){
@@ -1323,7 +1335,7 @@ function oFighterHTML(arg){
   return`<h1 class="pubname">${n}</h1>
   <p>${n} stands ${ht(60+f.hgt)} (${cm(60+f.hgt)} centimeters) tall. He fights for the <a data-go="gympub:${uid}">${esc(m.gym)}</a> gym${f.home?` out of ${esc(f.home)}`:''} in the ${esc(f.div)}weight division (Contenders).</p>
   <p>${boutFor(uid,fid)?`${n}'s next bout: ${boutLine(boutFor(uid,fid))}`:`${n} has no bouts scheduled.`}</p><p>${(()=>{const bf=botF['bot:'+uid+':'+fid],r=f.rec||[0,0,0];return weightNote(n,f.div,f.w,f.mw!=null?f.mw:(bf?minWeight(bf):f.w),r[0]+r[1]+r[2])})()}</p>
-  <hr><h2>${n}'s Record</h2><p>${n}'s record is ${r[0]}-${r[1]}-${r[2]} (${r[3]}/${r[1]})${recTitles(uid,fid)}<br>His current rating is ${f.rating} and his status is ${f.status}.<br>His career earnings are $0.</p>
+  <hr><h2>${n}'s Record</h2><p>${n}'s record is ${r[0]}-${r[1]}-${r[2]} (${r[3]}/${r[1]})${recTitles(uid,fid)}<br>His current rating is ${f.rating} and his status is ${f.status}.<br>His career earnings are ${money(f.earn)}.</p>
   ${(f.hist||[]).length?`<p>${n} ${TR[f.train]||TR.str}.</p><table class="hist">${f.hist.map(h=>`<tr><td>${resultIcon(h)}</td><td>vs ${esc(h.opp)} - ${h.oh?esc(h.oh)+' - ':''}${esc(h.div)}weight ${h.belt?esc(h.belt)+' title ':''}bout on ${esc(h.date)}, week ${h.week}: ${esc(h.res)}. Score: ${esc(h.score)}${h.plan?`. Fight Plan: ${esc(h.plan)}`:''}</td></tr>`).join('')}</table>`:'<p class="mute">No fights yet.</p>'}
   <p class="small"><a data-go="gympub:${uid}">Back to ${esc(m.gym)}</a></p>`;
 }
@@ -1333,8 +1345,8 @@ function grankHTML(){
   const rows=ids.map(id=>({id,...gymStats(id)})).sort((a,b)=>b.titles-a.titles||b.diff-a.diff||b.pct-a.pct||gymOf(a.id).localeCompare(gymOf(b.id)));
   return`<h1 class="center">Gym Rankings for Contenders</h1>${needDB()}
   <table class="grid granks"><tr><th>Rank</th><th>Manager</th><th>Location</th><th>Titles</th><th>Record</th><th>+/-</th><th>Win %</th><th>Earnings</th><th>Fighters</th></tr>
-  ${rows.map((r,i)=>`<tr><td class="n">${i+1}</td><td><a data-go="gympub:${r.id}">${esc(gymOf(r.id))}</a>${managers[r.id].bot?' <span class="small mute">(bot gym)</span>':''}${r.id===ME?' <span class="small mute">(you)</span>':''}</td><td>${esc(managers[r.id].loc||'')}</td><td class="n">${r.titles}</td><td class="n">${r.rec[0]}-${r.rec[1]}-${r.rec[2]}</td><td class="n">${r.diff}</td><td class="n">${r.pct}%</td><td class="n">$0</td><td class="n">${r.active}</td></tr>`).join('')}</table>
-  <p class="small mute">Gyms are ranked by titles, then wins minus losses. A gym's numbers update when its manager is logged in. Earnings start counting when league fights begin.</p>`;
+  ${rows.map((r,i)=>`<tr><td class="n">${i+1}</td><td><a data-go="gympub:${r.id}">${esc(gymOf(r.id))}</a>${managers[r.id].bot?' <span class="small mute">(bot gym)</span>':''}${r.id===ME?' <span class="small mute">(you)</span>':''}</td><td>${esc(managers[r.id].loc||'')}</td><td class="n">${r.titles}</td><td class="n">${r.rec[0]}-${r.rec[1]}-${r.rec[2]}</td><td class="n">${r.diff}</td><td class="n">${r.pct}%</td><td class="n">${money(r.earn)}</td><td class="n">${r.active}</td></tr>`).join('')}</table>
+  <p class="small mute">Gyms are ranked by titles, then wins minus losses. A gym's numbers update when its manager is logged in. </p>`;
 }
 function leagueFights(){
   const out=[];ROSTER().forEach(k=>{const F=state[k];(F.hist||[]).forEach(h=>{if(!h.practice)out.push({k,F,h})})});
@@ -1344,13 +1356,13 @@ function resultIcon(h){if(h.icon==='l'&&/KO|TKO|stoppage|DQ/i.test(h.res||''))re
 function resultsHTML(){
   const L=myDone();
   return`<h1>Recent Results for ${esc(myGym())}</h1><p>Select any icon for a detailed account of a fight.</p>
-  ${L.length?`<table class="hist">${L.slice(0,50).map(({b,k,F,x})=>`<tr><td><a data-go="lreport:${b.id}">${boutIcon(b,x.red)}</a></td><td>${FTR(k)?`<a data-go="pub:${k}">${esc(F.name)}</a>`:esc(F?F.name:'A retired fighter')} vs <a data-go="opub:${x.ou}:${encN(x.of)}">${esc(x.o.name)}</a> (<a data-go="gympub:${x.ou}">${esc(x.gym)}</a>) Contenders ${esc(b.div)}weight ${b.belt?esc(b.belt)+' title ':''}bout on ${esc(x.date)}: ${esc(boutRes(b,x.red))}. (${esc((b.summary||{}).score||'')}) $${Number(b.purse||0).toLocaleString('en-US')}</td></tr>`).join('')}</table>`:
+  ${L.length?`<table class="hist">${L.slice(0,50).map(({b,k,F,x})=>`<tr><td><a data-go="lreport:${b.id}">${boutIcon(b,x.red)}</a></td><td>${FTR(k)?`<a data-go="pub:${k}">${esc(F.name)}</a>`:esc(F?F.name:'A retired fighter')} vs <a data-go="opub:${x.ou}:${encN(x.of)}">${esc(x.o.name)}</a> (<a data-go="gympub:${x.ou}">${esc(x.gym)}</a>) Contenders ${esc(b.div)}weight ${b.belt?esc(b.belt)+' title ':''}bout on ${esc(x.date)}: ${esc(boutRes(b,x.red))}. (${esc((b.summary||{}).score||'')}) ${money(pursePart(b,x.red))}</td></tr>`).join('')}</table>`:
   '<p class="mute">No league results yet. Practice fight reports stay on the Practice Fights page and never show here.</p>'}`;
 }
 function fightCardsHTML(){
   const C=[];if(ME)bouts.forEach(b=>[[b.red_user,b.red_fid],[b.blue_user,b.blue_fid]].forEach(([u,f])=>{if(u===ME&&(FTR(f)||b.status==='done'))C.push({b,k:f,F:FTR(f),x:boutInfo(b,u,f)})}));
   return`<h1>Recent Fight Cards for ${esc(myGym())}</h1><p>Select the <b>?</b> on a fought bout to read its report.</p>
-  ${C.length?`<table class="hist">${C.slice(0,50).map(({b,k,F,x})=>`<tr><td>${b.status==='done'?`<a data-go="lreport:${b.id}">${ICON.q}</a>`:ICON.q}</td><td>${F?`<a data-go="pub:${k}">${esc(F.name)}</a>`:'A retired fighter'} vs <a data-go="opub:${x.ou}:${encN(x.of)}">${esc(x.o.name)}</a> (<a data-go="gympub:${x.ou}">${esc(x.gym)}</a>) Contenders ${esc(b.div)}weight ${b.belt?esc(b.belt)+' title ':''}bout on ${esc(x.date)}.${b.purse?` Purse $${Number(b.purse).toLocaleString('en-US')}.`:''}${F?` Fight Plan: ${esc((b.status==='done'&&((F.hist||[]).find(h=>h.bout===b.id)||{}).plan)||F.planName||'Basic')}`:''}</td></tr>`).join('')}</table>`:
+  ${C.length?`<table class="hist">${C.slice(0,50).map(({b,k,F,x})=>`<tr><td>${b.status==='done'?`<a data-go="lreport:${b.id}">${ICON.q}</a>`:ICON.q}</td><td>${F?`<a data-go="pub:${k}">${esc(F.name)}</a>`:'A retired fighter'} vs <a data-go="opub:${x.ou}:${encN(x.of)}">${esc(x.o.name)}</a> (<a data-go="gympub:${x.ou}">${esc(x.gym)}</a>) Contenders ${esc(b.div)}weight ${b.belt?esc(b.belt)+' title ':''}bout on ${esc(x.date)}. Purse ${money(pursePart(b,x.red))}.${F?` Fight Plan: ${esc((b.status==='done'&&((F.hist||[]).find(h=>h.bout===b.id)||{}).plan)||F.planName||'Basic')}`:''}</td></tr>`).join('')}</table>`:
   `<p class="mute">None of your fighters have bouts scheduled yet.</p>`}`;
 }
 function schedHTML(){return`<h1>Fight Schedule</h1><p>Every division has its own fight night each week:</p>${SCHED_TABLE()}<p>No bouts have been scheduled yet. Weekly matchmaking switches on as managers sign up. Until then, use <a data-go="fight">Practice Fights</a> and <a data-go="simbot">Simbot</a>. See <a data-go="help:schedule">The Fight Schedule</a> for how it works.</p>`}
