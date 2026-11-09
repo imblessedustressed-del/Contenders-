@@ -19,7 +19,7 @@ Contenders is a text-based boxing strategy game modeled on the old Web Boxing Le
 
 ## Rules for maintenance
 - The owner approves anything that changes gameplay, rules, the simulator, the schedule, titles, or a manager's fighters or records.
-- Without asking, Claude may remove posts or messages that break the Acceptable Use Policy, edit a message to clean it up, remove a disruptive manager, and fix clear bugs. Report what was done to the owner.
+- The scheduled commissioner check is REPORT-ONLY: it reads and reports, and never changes code, the database or settings. Bug fixes are made only after the owner approves them.
 - Never copy WeBL's text or graphics. Match its layout and mechanics in original wording.
 - League fights are **not** scheduled yet. Do not start weekly fights without the owner's approval.
 
