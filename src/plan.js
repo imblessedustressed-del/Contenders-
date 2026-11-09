@@ -30,6 +30,7 @@ function parseStatement(toks){
     const k=peek();if(!k)throw new Error('missing tactic');
     if(k.t==='id'){
       if(k.v==='towel'){next();return{towel:true}}
+      if(k.v==='stop'){next();return{stop:true}}
       if(['taunt','sneer','say','gloat','tko'].includes(k.v)){next();const s=expect('str');return{msg:k.v,text:s.v}}
       throw new Error(`unknown command "${k.v}"`);
     }
@@ -84,7 +85,7 @@ function parsePlan(src){
   lines.forEach((raw,li)=>{
     const ln=raw.replace(/#.*$/,'');
     if(!ln.trim())return;
-    const starts=/^\s*(\d+\s*\)|if\b|\d+[hbcoHBCO]?\s*\/)/i.test(ln);
+    const starts=/^\s*(\d+\s*\)|if\b|stop\b|towel\b|say\b|taunt\b|sneer\b|gloat\b|tko\b|\d+[hbcoHBCO]?\s*\/)/i.test(ln);
     if(starts&&buf.trim()&&!/\b(and|or|not|then|if)\s*$/i.test(buf.trim())&&!/[+\-*(<>=]\s*$/.test(buf.trim()))flush();
     if(!buf.trim())bufLine=li+1;
     ln.split(';').forEach((part,k,arr)=>{buf+=' '+part;if(k<arr.length-1)flush()});
@@ -104,6 +105,7 @@ function choosePlan(parsed,ctx){
   for(const s of list){
     let ok=true;if(s.cond){try{ok=!!s.cond(ctx)}catch(e){ok=false}}
     if(!ok)continue;
+    if(s.action.stop)break;
     if(s.action.towel)towel=true;else if(s.action.msg)msgs[s.action.msg]=s.action.text;else tactic=s.action;
   }
   return{tactic:tactic||{agg:6,pow:6,def:8,tgt:'Opp',style:'none',dirty:false},towel,msgs};
