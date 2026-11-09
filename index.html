@@ -596,7 +596,7 @@ function condText(x,after){
 /* ================= SHARED DATA (Supabase: accounts, forums, messages) ================= */
 cleanSlate();
 const SB_URL='https://ojsphhzgzbxmnfcbitqb.supabase.co',SB_KEY='sb_publishable_SWO9WhiSkoVhflY5CmY08A_hlqCEJSi';
-const BUILD='1794266574';
+const BUILD='1794267563';
 /* A tab left open on an older build must not save over newer data: if the site has been updated, reload before anything else is saved. */
 let staleBuild=false;
 async function checkBuild(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
@@ -953,7 +953,7 @@ function fighterLine(side){
   Weight: ${natWeight(F)}/${minWeight(F)} pounds<br>
   Next Bout: ${nb?boutLine(nb):`none scheduled${nightOf(divOf(F))?` (${esc(divOf(F))}weights fight ${nightOf(divOf(F))}s)`:''}`}<br>
   Fight Plan: <a data-go="pf:edit:${encN(F.planName||'Basic')}">${esc(F.planName||'Basic')}</a>${planUpdated(F.planName||'Basic')} <a data-go="train:${side}">Training:</a> ${esc(tr)}<br>
-  Options: <a data-go="forum:press">Talk Trash</a> | <a data-go="cdiv:${side}">Change Weight Division</a> | <a data-go="desc">Change Description</a> | <a data-retire="${side}">Retire</a>${(()=>{const t=[reignLine(ME,side),champLine(ME,side)].filter(Boolean).join(', ');return t?`<br><b class="r">${esc(cap(t))}</b>${belts.length?` <span class="small">(holds the ${belts.map(esc).join(' and ')} title${belts.length>1?'s':''})</span>`:''}`:belts.length?`<br><b>Champion: ${belts.map(esc).join(', ')}</b>`:''})()}
+  Options: <a data-go="forum:press">Talk Trash</a> | <a data-go="cdiv:${side}">Change Weight Division</a> | <a data-go="desc">Change Description</a> | ${state[side]&&state[side].retireAfter?`<span class="cr">Retiring after his next fight</span> (<a data-unretire-after="${side}">cancel</a>)`:`<a data-retire="${side}">Retire</a>`}${(()=>{const t=[reignLine(ME,side),champLine(ME,side)].filter(Boolean).join(', ');return t?`<br><b class="r">${esc(cap(t))}</b>${belts.length?` <span class="small">(holds the ${belts.map(esc).join(' and ')} title${belts.length>1?'s':''})</span>`:''}`:belts.length?`<br><b>Champion: ${belts.map(esc).join(', ')}</b>`:''})()}
   ${wi.endMul<1?`<br><span class="cr small">May be fighting at a disadvantage due to weight.</span>`:''}</p>`;
 }
 function cdivHTML(side){
@@ -1141,7 +1141,7 @@ function recordHTML(side){
   <li>Beginners might want to get into the ring with a <a data-go="simbot">sparring partner</a>.</li>
   <li>Go to <a data-go="fight">practice fights</a>.</li></ul>
   <p>${n} may also do any of the following:</p>
-  <ul><li><a data-go="forum:press">issue a press release</a>.</li><li><a data-retire="${side}">retire</a>.</li></ul>
+  <ul><li><a data-go="forum:press">issue a press release</a>.</li><li>${state[side]&&state[side].retireAfter?`<span class="cr">He retires right after his next fight.</span> <a data-unretire-after="${side}">Cancel his retirement</a>.`:`<a data-retire="${side}">retire</a>.`}</li></ul>
   <hr><p><b>${n}'s Record</b></p>
   <p>${n}'s record is ${F.rec[0]}-${F.rec[1]}-${F.rec[2]} (${F.rec[3]}/${F.rec[1]})${recTitles(ME,side)}</p>
   <p class="small">Select <i>highlights</i> for a detailed account of a fight.</p>
@@ -1372,7 +1372,7 @@ function runSimbot(n){
 function champsHTML(){
   return`<h1>Champions</h1><table class="grid"><tr><th>Division</th>${BELTS.map(b=>`<th>${b}</th>`).join('')}</tr>
   ${(()=>{const m=currentChamps();return DIVS.map(([d])=>`<tr><td>${d}weight</td>${BELTS.map(b=>{const c=m[d]&&m[d][b];return`<td>${c?`<a data-go="opub:${c.uid}:${encN(c.fid)}">${esc(fName(c.uid,c.fid))}</a><br><span class="small">${esc(gymOf(c.uid))}</span>${champRetired(c)?`<br><span class="small cr">${RETIRED_CHAMP_NOTE}</span>`:''}`:'<span class="mute">vacant</span>'}</td>`}).join('')}</tr>`).join('')})()}</table>
-  <p class="small mute">Win a WBC, WBA or WBO title fight to fill a belt. A champion who retires keeps his belt only until the next scheduling run; if he hasn't been brought back by then, the belt is vacated, he loses his win streak, and a fight for the vacant title is scheduled. Retiring a fighter who has a bout booked also costs him his win streak.</p>`;
+  <p class="small mute">Win a WBC, WBA or WBO title fight to fill a belt. A champion who retires keeps his belt only until the next scheduling run; if he hasn't been brought back by then, the belt is vacated, he loses his win streak, and a fight for the vacant title is scheduled. A fighter with a bout scheduled is under contract: he can't retire until that fight is over.</p>`;
 }
 const BELT_ICON=`<svg class="belt" viewBox="0 0 58 30"><rect x="1" y="11" width="56" height="9" rx="2" fill="#7a1a1a" stroke="#3d0b0b"/><ellipse cx="29" cy="15.5" rx="15" ry="13" fill="#e8b923" stroke="#8a6200" stroke-width="1.5"/><ellipse cx="29" cy="15.5" rx="10" ry="8.5" fill="#f6d65c" stroke="#a87800"/><path d="M23 13 l3 -4 l3 3 l3 -3 l3 4 v4 h-12z" fill="#b8860b"/><rect x="5" y="13" width="6" height="5" rx="1" fill="#e8b923"/><rect x="47" y="13" width="6" height="5" rx="1" fill="#e8b923"/></svg>`;
 /* League week = number of fight dates already run */
@@ -1428,7 +1428,7 @@ function retFighterHTML(arg){
   <p class="cr"><b>Retired.</b> ${n} fought for the <a data-go="${mine?'gym':'gympub:'+uid}">${esc(gym)}</a> gym${f.home?` out of ${esc(f.home)}`:''} in the ${esc(f.div||'')}weight division (Contenders)${hg!=null?` and stands ${ht(60+hg)} (${cm(60+hg)} centimeters) tall`:''}.</p>
   ${mine?(own&&own.str?`<p>&#9758; <a data-activate="${idx}"><b>Unretire ${n}</b></a> and put him back on your active roster with his full record.</p>`:'<p class="small mute">This fighter was retired before full records were kept, so he can\'t be brought back.</p>'):''}
   ${(()=>{const m=currentChamps(),held=[];for(const d in m)for(const bl in m[d])if(m[d][bl].uid===uid&&m[d][bl].fid===(own?own.fid:null))held.push(d+'weight '+bl);return held.length?`<p class="note cr"><b>Retired champion.</b> ${n} still holds the ${esc(held.join(' and '))} title. If he isn't unretired before the next scheduling run, the belt is vacated, he loses his win streak (no ducking in Contenders), and a fight for the vacant title is scheduled.</p>`:''})()}
-  ${f.ducked?`<p class="small cr">${n} retired instead of facing a scheduled fight or defending his title, so his win streak was taken away.</p>`:''}
+  ${f.ducked?`<p class="small cr">${n} retired as champion and didn't come back to defend, so he forfeited his belt and his win streak.</p>`:''}
   <hr><h2>${n}'s Record</h2>
   <p>${n}'s final record is ${r[0]}-${r[1]}-${r[2]} (${r[3]}/${r[1]})${tw?` <b class="r">Winner of ${tw} world title${tw>1?'s':''}!!</b>`:''}<br>
   His final rating was ${f.rating||0} and his status was ${f.status||0}.<br>His career earnings are ${money(f.earn)}.<br>${fanLine(f)}</p>
@@ -1602,7 +1602,7 @@ function fundingHTML(){return`<h1>Contenders Funding</h1><p>Contenders is free t
 
 /* ---------- events ---------- */
 document.addEventListener('click',async e=>{
-  const t=e.target.closest('[data-go],[data-v],[data-dm],[data-retire],[data-activate],button');if(!t)return;
+  const t=e.target.closest('[data-go],[data-v],[data-dm],[data-retire],[data-unretire-after],[data-activate],button');if(!t)return;
   if(t.dataset.v){nav(t.dataset.v);return}
   if(t.dataset.go){nav(t.dataset.go);return}
   if(t.dataset.dm){window._dmTo=t.dataset.dm;nav('msgs');return}
@@ -1619,9 +1619,11 @@ document.addEventListener('click',async e=>{
     ensurePlans();if(state.plans[D.planName]==null)state.plans[D.planName]=D.plan;
     state.roster.push(slot);state[slot]={...JSON.parse(JSON.stringify(D)),div:divOf(D),rec:[0,0,0,0],hist:[],locked:true,rating:0,status:0,train:'str',train2:'cnd',streak:0,ip:0};state.draft=null;save();nav('rec:'+slot)}
   else if(t.dataset.retire){const s0=t.dataset.retire,old=FTR(s0);if(!old)return;
-    if(!window.confirm(myBout(s0)?`${old.name} has a bout scheduled. Retiring him now counts as ducking the fight: he loses his win streak. Retire him anyway?`:`Retire ${old.name}? He'll move to your retired fighters, and you can bring him back later.`))return;
+    if(myBout(s0)){if(!window.confirm(`${old.name} is under contract for his scheduled bout, so he has to fight it. He'll retire right after that fight. Set him to retire after his next fight?`))return;old.retireAfter=true;save();render();return}
+    if(!window.confirm(`Retire ${old.name}? He'll move to your retired fighters, and you can bring him back later.`))return;
     state.retired=state.retired||[];state.retired.unshift(JSON.parse(JSON.stringify({...old,div:divOf(old),fid:s0})));
     state.roster=ROSTER().filter(k=>k!==s0);delete state[s0];save();nav('retired')}
+  else if(t.dataset.unretireAfter){const F=FTR(t.dataset.unretireAfter);if(F){F.retireAfter=false;save();render()}}
   else if(t.dataset.activate){const i=+t.dataset.activate,f=state.retired[i];if(!f)return;
     if(!f.str){return alertBox("This fighter was retired before full records were kept, so he can't be brought back.")}
     if(!window.confirm(`Bring ${f.name} out of retirement?`))return;

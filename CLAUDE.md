@@ -33,7 +33,7 @@ Contenders is a text-based boxing strategy game modeled on the old Web Boxing Le
 
 ## Retired champions and ducking (owner-approved Nov 9, 2026)
 - A champion who retires keeps his belt until the next fight-scheduling run. **First step of every scheduling run:** `select * from public.vacate_retired_champs();` (commissioner only). For each champion not on his gym's active roster it records a row in `vacancies(div, belt, bout_id, ...)` (the site treats that title-winning bout as no longer holding the belt), removes the belt from his gym's `champs`, and resets his win streak (`ducked: true`). Then schedule a fight for each vacant title it returned (top contenders in that division).
-- No ducking: retiring a fighter who has a bout scheduled (`bouts.status <> 'done'`) resets his win streak to 0 (`gym_state_protect`). The commissioner then cancels or forfeits that bout.
+- Contracts (owner, Nov 9, 2026): once a bout is scheduled it will be fought. A fighter with a scheduled bout (`bouts.status <> 'done'`) can't leave the roster: `gym_state_protect` puts him back and sets `retireAfter: true`. The manager can cancel that flag. **After running each bout, the commissioner moves any fighter with `retireAfter: true` to his gym's `retired` list (add `fid`, `div`; remove from roster).** (The earlier 'ducking costs the streak' rule was replaced by this.)
 
 ## Rules for maintenance
 - **Transparency rule (owner, Nov 9, 2026):** every owner-approved change to the simulator, rules or any major gameplay change is posted to Contenders News (forum `announce`, topic and post with author NULL, shown as "The Commissioner") the moment it goes live. Say it was approved by the owner, and that the owner has no access to anyone's plans, gyms or fighters.
