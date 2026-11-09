@@ -646,7 +646,10 @@ const dt=ms=>{const d=new Date(ms),p=n=>String(n).padStart(2,'0');return`${d.get
 const bodyHTML=t=>esc(t).replace(/\n/g,'<br>');
 let view='home',fight=null,shown=0,bout=null;
 
-function nav(v){view=v;$('#side').classList.remove('open');render();window.scrollTo(0,0)}
+function show(v){view=v;$('#side').classList.remove('open');render();window.scrollTo(0,0)}
+const hashView=()=>{const h=decodeURIComponent(location.hash.slice(1));return h&&!h.includes('=')?h:'home'};
+function nav(v){if(hashView()===v&&location.hash){show(v);return}location.hash=encodeURIComponent(v).replace(/%3A/g,':')}
+window.addEventListener('hashchange',()=>{if(location.hash.includes('='))return;show(hashView())});
 $('#menuBtn').onclick=()=>$('#side').classList.toggle('open');
 function refresh(){
   const a=document.activeElement;
@@ -1289,7 +1292,7 @@ document.addEventListener('change',e=>{
 });
 const _render=render;
 render=function(){_render();if(view==='msgs')markRead()};
-nav('home');
+show(hashView());
 initDB();
 </script>
 </body>
