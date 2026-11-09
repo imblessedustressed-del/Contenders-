@@ -70,6 +70,7 @@ table.champ{margin:0 auto}table.champ td.pw{text-align:center;vertical-align:mid
 svg.pow{width:46px;height:38px;display:block;margin:0 auto}
 h1.pubname{font:bold 34px 'Times New Roman',serif;color:#555}
 p.fl{margin:0 0 18px 30px;line-height:1.5}
+table.granks tr:nth-child(odd) td{background:#e4eef0}
 .note{border:1px dashed #aaa;padding:6px 10px;background:#f6f6f6;font-size:14px;max-width:640px}
 @media(max-width:720px){
  #wrap{display:block}
@@ -199,7 +200,7 @@ const save=()=>{if(typeof syncGym==='function')syncGym();try{localStorage.setIte
 /* ================= SHARED DATA (Supabase: accounts, forums, messages) ================= */
 const SB_URL='https://ojsphhzgzbxmnfcbitqb.supabase.co',SB_KEY='sb_publishable_SWO9WhiSkoVhflY5CmY08A_hlqCEJSi';
 const SITE_URL='https://imblessedustressed-del.github.io/Contenders-/';
-let SB=null,ME=null,MYEMAIL='',dbState='loading',managers={},topics=[],ims=[],posts=[],postsTopic=null,recovering=false,syncTimer=null,loadedGym=false;
+let cards={},SB=null,ME=null,MYEMAIL='',dbState='loading',managers={},topics=[],ims=[],posts=[],postsTopic=null,recovering=false,syncTimer=null,loadedGym=false;
 async function initDB(){
   try{if(window.supabase&&supabase.createClient)SB=supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:true,detectSessionInUrl:true}})}catch(e){}
   if(!SB){dbState='off';refresh();return}
@@ -221,9 +222,10 @@ async function initDB(){
 }
 async function loadPublic(){
   try{
-    const[p,t]=await Promise.all([SB.from('profiles').select('id,gym,description,created_at'),SB.from('topics').select('*').order('last_at',{ascending:false}).limit(500)]);
+    const[p,t,gc]=await Promise.all([SB.from('profiles').select('id,gym,description,location,created_at'),SB.from('topics').select('*').order('last_at',{ascending:false}).limit(500),SB.from('gym_public').select('user_id,data,updated_at')]);
     if(p.error||t.error)throw p.error||t.error;
-    managers={};p.data.forEach(r=>managers[r.id]={gym:r.gym,desc:r.description,at:Date.parse(r.created_at)});
+    managers={};p.data.forEach(r=>managers[r.id]={gym:r.gym,desc:r.description,loc:r.location||'',at:Date.parse(r.created_at)});
+    cards={};if(gc&&!gc.error)gc.data.forEach(r=>cards[r.user_id]=r.data||{});
     topics=t.data.map(r=>({id:String(r.id),forum:r.forum,title:r.title,by:r.author,at:Date.parse(r.created_at),last:Date.parse(r.last_at),count:r.post_count}));
     dbState='on';refresh();
   }catch(e){if(dbState!=='on'){dbState='slow';refresh()}}
@@ -244,10 +246,19 @@ async function afterLogin(){
     if(data&&data.data&&(Array.isArray(data.data.roster)||data.data.A)){const rep=state.reports;state=Object.assign({},data.data);state.reports=rep||{};try{localStorage.setItem('contenders_v6',JSON.stringify(state))}catch(e){}}
     else await pushGym();
   }catch(e){}
-  loadedGym=true;render();
+  loadedGym=true;pushGym();render();
 }
 function syncGym(){if(!SB||!ME||!loadedGym)return;clearTimeout(syncTimer);syncTimer=setTimeout(pushGym,1500)}
-async function pushGym(){if(!SB||!ME)return;const{reports,...rest}=state;try{await SB.from('gym_state').upsert({user_id:ME,data:rest,updated_at:new Date().toISOString()})}catch(e){}}
+function publicCard(){
+  const pubF=(F,id,active)=>({id,name:F.name,nick:F.nick||'',home:F.home||'',div:divOf(F),hgt:F.hgt,w:natWeight(F),rec:F.rec,rating:F.rating||0,status:F.status||0,active,
+    plan:F.planName||'Basic',train:F.train||'str',titles:Object.entries(state.champs||{}).flatMap(([d,b])=>Object.entries(b).filter(([,n])=>n===F.name).map(([bl])=>d+' '+bl)),
+    hist:(F.hist||[]).slice(0,25).map(h=>({opp:h.opp,oh:h.oh,div:h.div,belt:h.belt,date:h.date,week:h.week,res:h.res,score:h.score,icon:h.icon,plan:h.plan}))});
+  return{fighters:ROSTER().map(k=>pubF(state[k],k,true)),retired:(state.retired||[]).filter(f=>f.rec).slice(0,40).map((f,i)=>pubF(f,'r'+i,false)),
+    titlesWon:(state.log||[]).filter(l=>l.belt).length};
+}
+async function pushGym(){if(!SB||!ME)return;const{reports,...rest}=state;const now=new Date().toISOString();
+  try{await SB.from('gym_state').upsert({user_id:ME,data:rest,updated_at:now})}catch(e){}
+  try{const c=publicCard();await SB.from('gym_public').upsert({user_id:ME,data:c,updated_at:now});cards[ME]=c}catch(e){}}
 const gymOf=id=>!id?'A retired gym':(managers[id]&&managers[id].gym)||'A manager';
 const myGym=()=>(ME&&managers[ME]&&managers[ME].gym)||state.gymName||'Your Gym';
 function updateMsgLink(){const n=ims.filter(m=>m.to===ME&&!m.read).length;const l=$('#msgLink');if(!l)return;l.classList.toggle('lit',n>0);l.innerHTML=n?`Messages <span class="badge">${n}</span>`:'Messages';document.title=(n?`(${n}) `:'')+'Contenders - The Contenders Boxing League'}
@@ -284,8 +295,8 @@ $('#menuBtn').onclick=()=>$('#side').classList.toggle('open');
 function refresh(){
   const a=document.activeElement;
   if(a&&(a.tagName==='TEXTAREA'||a.tagName==='INPUT')&&a.value)return;
-  const live=['forums','msgs','grank','register','changegym','login','logout','home','desc','changepw'];
-  if(live.includes(view)||view.startsWith('forum:')||view.startsWith('topic:'))render();
+  const live=['forums','msgs','grank','gympub','opub','register','changegym','login','logout','home','desc','changepw'];
+  if(live.includes(view.split(':')[0])||view.startsWith('forum:')||view.startsWith('topic:'))render();
 }
 function render(){
   const base=view.split(':')[0],arg=view.slice(base.length+1);
@@ -296,7 +307,7 @@ function render(){
     login:loginHTML,logout:logoutHTML,forgot:forgotHTML,newpass:newPassHTML,changepw:changePwHTML,forums:forumsHTML,forum:()=>forumHTML(arg),topic:()=>topicHTML(arg),newtopic:()=>newTopicHTML(arg),msgs:msgsHTML,
     simbot:simbotHTML,champs:champsHTML,frank:frankHTML,grank:grankHTML,results:resultsHTML,fcards:resultsHTML,sched:schedHTML,
     discarded:()=>`<h1>Discarded Fighters</h1><p>No fighters have been discarded.</p>`,search:searchHTML,help:()=>helpHTML(arg),newbie:newbieHTML,funding:fundingHTML,retiregym:retireGymHTML,
-    edit:()=>planEditHTML(arg),plan:()=>planEditHTML(arg),pf:()=>planFormHTML(arg),rec:()=>recordHTML(arg),pub:()=>pubHTML(arg),train:()=>trainHTML(arg),report:()=>savedReportHTML(arg)};
+    edit:()=>planEditHTML(arg),plan:()=>planEditHTML(arg),pf:()=>planFormHTML(arg),rec:()=>recordHTML(arg),gympub:()=>gymPubHTML(arg),opub:()=>oFighterHTML(arg),pub:()=>pubHTML(arg),train:()=>trainHTML(arg),report:()=>savedReportHTML(arg)};
   $('#view').innerHTML=`<div id="flash" class="note cr" style="display:none;margin-bottom:10px"></div>`+(P[base]||homeHTML)();
 }
 
@@ -398,7 +409,7 @@ function fighterLine(side){
 function gymHTML(){
   const tot=[0,0,0,0];ROSTER().forEach(s=>state[s].rec.forEach((v,i)=>tot[i]+=v));
   let titles=0;for(const d in state.champs)titles+=Object.keys(state.champs[d]).length;
-  return`<h1>${esc(myGym())}</h1>
+  return`<h1>${esc(myGym())}</h1>${ME?`<p class="small"><a data-go="gympub:${ME}">See your gym the way other managers see it</a></p>`:''}
   <p><a data-go="forum:announce">Contenders News</a> · Week ${state.week}</p>
   <table class="plain"><tr><th>Region</th><th>Record</th><th>Titles</th></tr>
   <tr><td><b>Contenders</b></td><td>${tot[0]}-${tot[1]}-${tot[2]}</td><td class="cr">${titles}</td></tr></table>
@@ -493,7 +504,7 @@ function shortHTML(){
   ${ROSTER().map(s=>{const F=state[s];return`<tr><td><a data-go="rec:${s}">${esc(F.name)}</a></td><td>${recStr(F)}</td>${STATS.map(([k])=>`<td class="n">${F[k]}</td>`).join('')}<td>${Math.floor(HT(F)/12)}'${HT(F)%12}"</td></tr>`}).join('')}</table>`;
 }
 function changeGymHTML(){return`<h1>Change Gym</h1>${needLogin('name your gym')}${ME?gymForm():''}`}
-function descHTML(){if(!ME)return`<h1>Description</h1>${needLogin('describe your gym')}`;return`<h1>Description</h1><p>Tell other managers about your gym. Plain text only.</p><textarea id="descIn" data-keep rows="6">${esc((ME&&managers[ME]&&managers[ME].desc)||state.gymDesc||'')}</textarea><p><button id="saveDesc">Save Description</button></p>`}
+function descHTML(){if(!ME)return`<h1>Description</h1>${needLogin('describe your gym')}`;return`<h1>Description</h1><p>Where is your gym? <input id="locIn" data-keep maxlength="60" style="width:240px" placeholder="City, State or Country" value="${esc((managers[ME]&&managers[ME].loc)||'')}"></p><p>Tell other managers about your gym. Plain text only.</p><textarea id="descIn" data-keep rows="6">${esc((ME&&managers[ME]&&managers[ME].desc)||state.gymDesc||'')}</textarea><p><button id="saveDesc">Save Description</button></p>`}
 /* ---------- Fighter editor ---------- */
 function cornerHTML(side){
   const F=state.draft||(state.draft=newDraft()),left=POOL-used(F);
@@ -778,10 +789,42 @@ function frankHTML(){
   return`<h1>Fighter Rankings</h1><h2>${esc(state.div)}weight (Contenders)</h2><table class="grid"><tr><th>Rank</th><th>Fighter</th><th>Record</th><th>Gym</th></tr>
   ${rows.map((r,i)=>`<tr><td class="n">#${i+1}</td><td><a data-go="pub:${r.s}">${esc(r.F.name)}</a></td><td>${recStr(r.F)}</td><td>${esc(myGym())}</td></tr>`).join('')}</table>`;
 }
+function gymStats(uid){const c=cards[uid]||{fighters:[],retired:[]},all=[...(c.fighters||[]),...(c.retired||[])];
+  const r=[0,0,0,0];all.forEach(f=>(f.rec||[]).forEach((v,i)=>r[i]+=v));const titles=all.reduce((a,f)=>a+(f.titles||[]).length,0);
+  const n=r[0]+r[1]+r[2];return{rec:r,titles,diff:r[0]-r[1],pct:n?Math.round(100*(r[0]+.5*r[2])/n):0,active:(c.fighters||[]).length}}
+function gymPubHTML(uid){
+  const m=managers[uid];if(!m)return`<h1>Gym not found</h1><p>${needDB()}<a data-go="grank">Back to Gym Rankings</a></p>`;
+  const c=cards[uid]||{fighters:[],retired:[]},g=gymStats(uid),fl=(f,i,act)=>{const r=f.rec||[0,0,0,0];
+    return`<p class="fl">${act?`<a data-go="opub:${uid}:${encN(f.id)}">${esc(f.name)}</a>`:esc(f.name)}${(f.titles||[]).length?' <span style="color:#e8a400">&#9733;</span>':''} - ${esc(f.div)}weight - ${r[0]} wins (${r[3]} by knock out), ${r[1]} losses, and ${r[2]} draws. Rating ${f.rating}. Status ${f.status}.${(f.titles||[]).length?` <b class="r">Winner of ${(f.titles||[]).length} world title${f.titles.length>1?'s':''}!!</b>`:''} Career earnings $0.</p>`};
+  return`<h1 class="pubname">${esc(m.gym)}</h1>
+  <p>${esc(m.gym)} trains fighters${m.loc?` in ${esc(m.loc)}`:''}. Managing since ${m.at?dt(m.at).slice(0,10):'recently'}.${uid!==ME?` <a data-dm="${esc(uid)}">Send a message</a>`:''}</p>
+  ${m.desc?`<div class="note" style="white-space:pre-wrap">${esc(m.desc)}</div>`:''}
+  <table class="plain" style="margin-top:12px"><tr><th>Region</th><th>Earnings</th><th>Record</th><th>Titles</th></tr>
+  <tr><td><b>Contenders</b></td><td>$0</td><td>${g.rec[0]}-${g.rec[1]}-${g.rec[2]}</td><td class="cr">${g.titles}</td></tr></table>
+  <h2>Fighters Managed by ${esc(m.gym)}</h2>${(c.fighters||[]).length?c.fighters.map((f,i)=>fl(f,i,true)).join(''):'<p class="mute">No active fighters.</p>'}
+  ${(c.retired||[]).length?`<h2>Retired Fighters</h2>${c.retired.map((f,i)=>fl(f,i,false)).join('')}`:''}
+  <p><a data-go="grank">Back to Gym Rankings</a></p>`;
+}
+function oFighterHTML(arg){
+  const i=arg.indexOf(':'),uid=arg.slice(0,i),fid=decN(arg.slice(i+1)),m=managers[uid],f=((cards[uid]||{}).fighters||[]).find(x=>x.id===fid);
+  if(uid===ME&&FTR(fid))return pubHTML(fid);
+  if(!m||!f)return`<p>That fighter isn't on an active roster. <a data-go="grank">Gym Rankings</a></p>`;
+  const n=esc(f.name),r=f.rec||[0,0,0,0],TR={str:'has been lifting weights every chance he gets (STR)',kp:'has been pounding the heavy bag until it splits (KP)',spd:'has been working the speed bag every morning (SPD)',agl:'has been skipping rope for hours at a time (AGL)',chn:'has been taking shots in sparring to toughen up (CHN)',cnd:'has been running miles before sunrise (CND)'};
+  return`<h1 class="pubname">${n}</h1>
+  <p>${n} stands ${ht(60+f.hgt)} (${cm(60+f.hgt)} centimeters) tall. He fights for the <a data-go="gympub:${uid}">${esc(m.gym)}</a> gym${f.home?` out of ${esc(f.home)}`:''} in the ${esc(f.div)}weight division (Contenders).</p>
+  <p>${n} has no bouts scheduled.</p><p>${n} is rumored to weigh about ${f.w} pounds (${Math.round(f.w*.4536)} kilograms).</p>
+  <hr><h2>${n}'s Record</h2><p>${n}'s record is ${r[0]}-${r[1]}-${r[2]} (${r[3]}/${r[1]})${(f.titles||[]).length?` with ${f.titles.length} world title${f.titles.length>1?'s':''}!`:'.'}<br>His current rating is ${f.rating} and his status is ${f.status}.<br>His career earnings are $0.</p>
+  ${(f.hist||[]).length?`<p>${n} ${TR[f.train]||TR.str}.</p><table class="hist">${f.hist.map(h=>`<tr><td>${ICON[h.icon]||''}</td><td>vs ${esc(h.opp)} - ${h.oh?esc(h.oh)+' - ':''}${esc(h.div)}weight ${h.belt?esc(h.belt)+' title ':''}bout on ${esc(h.date)}, week ${h.week}: ${esc(h.res)}. Score: ${esc(h.score)}${h.plan?`. Fight Plan: ${esc(h.plan)}`:''}</td></tr>`).join('')}</table>`:'<p class="mute">No fights yet.</p>'}
+  <p class="small"><a data-go="gympub:${uid}">Back to ${esc(m.gym)}</a></p>`;
+}
 function grankHTML(){
   const ids=Object.keys(managers);
-  return`<h1>Gym Rankings</h1>${needDB()}${ids.length?`<table class="grid"><tr><th>Gym</th><th>Since</th><th>Description</th><th></th></tr>${ids.map(id=>`<tr><td><b>${esc(gymOf(id))}</b></td><td>${managers[id].at?dt(managers[id].at).slice(0,10):''}</td><td>${esc(managers[id].desc||'')}</td><td>${id!==ME?`<a data-dm="${esc(id)}">message</a>`:'(you)'}</td></tr>`).join('')}</table>
-  <p class="small mute">Gym records and power ratings will rank here once fighters are shared between managers.</p>`:'<p class="mute">No gyms registered yet.</p>'}`;
+  if(!ids.length)return`<h1>Gym Rankings</h1>${needDB()}<p class="mute">No gyms registered yet.</p>`;
+  const rows=ids.map(id=>({id,...gymStats(id)})).sort((a,b)=>b.titles-a.titles||b.diff-a.diff||b.pct-a.pct||gymOf(a.id).localeCompare(gymOf(b.id)));
+  return`<h1 class="center">Gym Rankings for Contenders</h1>${needDB()}
+  <table class="grid granks"><tr><th>Rank</th><th>Manager</th><th>Location</th><th>Titles</th><th>Record</th><th>+/-</th><th>Win %</th><th>Earnings</th><th>Fighters</th></tr>
+  ${rows.map((r,i)=>`<tr><td class="n">${i+1}</td><td><a data-go="gympub:${r.id}">${esc(gymOf(r.id))}</a>${r.id===ME?' <span class="small mute">(you)</span>':''}</td><td>${esc(managers[r.id].loc||'')}</td><td class="n">${r.titles}</td><td class="n">${r.rec[0]}-${r.rec[1]}-${r.rec[2]}</td><td class="n">${r.diff}</td><td class="n">${r.pct}%</td><td class="n">$0</td><td class="n">${r.active}</td></tr>`).join('')}</table>
+  <p class="small mute">Gyms are ranked by titles, then wins minus losses. A gym's numbers update when its manager is logged in. Earnings start counting when league fights begin.</p>`;
 }
 function resultsHTML(){
   return`<h1>Fight Results</h1>${state.log.length?`<table class="grid">${state.log.map(l=>`<tr><td>${esc(l.date)}</td><td>${esc(l.text)} ${l.id&&state.reports[l.id]?`<a data-go="report:${l.id}">highlights</a>`:''}</td></tr>`).join('')}</table>`:'<p class="mute">No fights yet.</p>'}`;
@@ -954,8 +997,8 @@ document.addEventListener('click',async e=>{
   else if(t.id==='cleanPlans'){ensurePlans();if(state.plans['Basic']==null)state.plans['Basic']='6/6/8';ROSTER().forEach(s=>usePlan(s,'Basic'));save();alertBox('All fight plans have been cleaned.')}
   else if(t.id==='saveGym'){const v=$('#gymIn').value.trim().slice(0,40);if(v.length<2)return alertBox('Gym names need at least 2 characters.');
     if(await safeWrite(()=>SB.from('profiles').update({gym:v}).eq('id',ME))){managers[ME]=Object.assign(managers[ME]||{},{gym:v});state.gymName=v;save();updateTop();alertBox('Gym name saved.')}}
-  else if(t.id==='saveDesc'){const v=$('#descIn').value.slice(0,1000);
-    if(await safeWrite(()=>SB.from('profiles').update({description:v}).eq('id',ME))){managers[ME]=Object.assign(managers[ME]||{},{desc:v});alertBox('Description saved.')}}
+  else if(t.id==='saveDesc'){const v=$('#descIn').value.slice(0,1000),loc=$('#locIn').value.trim().slice(0,60);
+    if(await safeWrite(()=>SB.from('profiles').update({description:v,location:loc}).eq('id',ME))){managers[ME]=Object.assign(managers[ME]||{},{desc:v,loc});alertBox('Description saved.')}}
   else if(t.id==='doRetireGym'){if($('#retireName').value.trim()!==myGym())return alertBox('The gym name does not match.');
     t.disabled=true;if(await safeWrite(()=>SB.rpc('retire_gym'))){await SB.auth.signOut().catch(()=>{});try{localStorage.removeItem('contenders_v6')}catch(e){}ME=null;alert0()}else t.disabled=false}
   else if(t.id==='doLogout'){await SB.auth.signOut();ME=null;ims=[];updateTop();nav('home')}

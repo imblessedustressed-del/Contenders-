@@ -13,6 +13,8 @@ Contenders is a text-based boxing strategy game modeled on the old Web Boxing Le
 - `gym_state(user_id, data jsonb)`. Each manager's saved fighters, records and plans. Private to the owner.
 - `topics(forum, title, author → profiles, last_at, post_count)` and `posts(topic_id, author, body)`. Readable by anyone; members insert their own. A post trigger bumps `last_at` and `post_count`. Authors are set to null when a gym retires.
 - `messages(sender, recipient, body, read)`. Only the sender and recipient can see a message. The `mark_messages_read()` RPC marks your inbox read.
+- `gym_public(user_id, data jsonb)`. Each gym's public card (fighter names, records, rating/status, titles, recent fight results; never stats or plan text). Readable by anyone, written by the owner when his gym saves. Powers Gym Rankings and public gym pages.
+- `profiles.location` is the gym's location shown in Gym Rankings.
 - `retire_gym()` RPC deletes the caller's account.
 
 ## Rules for maintenance
