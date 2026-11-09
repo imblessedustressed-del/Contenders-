@@ -292,7 +292,7 @@ function render(){
     login:loginHTML,logout:logoutHTML,forgot:forgotHTML,newpass:newPassHTML,changepw:changePwHTML,forums:forumsHTML,forum:()=>forumHTML(arg),topic:()=>topicHTML(arg),newtopic:()=>newTopicHTML(arg),msgs:msgsHTML,
     simbot:simbotHTML,champs:champsHTML,frank:frankHTML,grank:grankHTML,results:resultsHTML,fcards:resultsHTML,sched:schedHTML,
     discarded:()=>`<h1>Discarded Fighters</h1><p>No fighters have been discarded.</p>`,search:searchHTML,help:()=>helpHTML(arg),newbie:newbieHTML,funding:fundingHTML,retiregym:retireGymHTML,
-    edit:()=>planEditHTML(arg),plan:()=>planEditHTML(arg),rec:()=>recordHTML(arg),pub:()=>pubHTML(arg),train:()=>trainHTML(arg),report:()=>savedReportHTML(arg)};
+    edit:()=>planEditHTML(arg),plan:()=>planEditHTML(arg),pf:()=>planFormHTML(arg),rec:()=>recordHTML(arg),pub:()=>pubHTML(arg),train:()=>trainHTML(arg),report:()=>savedReportHTML(arg)};
   $('#view').innerHTML=`<div id="flash" class="note cr" style="display:none;margin-bottom:10px"></div>`+(P[base]||homeHTML)();
 }
 
@@ -388,7 +388,7 @@ function fighterLine(side){
   return`<p class="fl"><a data-go="rec:${side}" class="${cc(side)}">${esc(F.name)}</a>${belts.length?' <span style="color:#e8a400">&#9733;</span>':''} Rank #${frankOf(side)} <b>Contenders</b> (${F.rec[0]}-${F.rec[1]}-${F.rec[2]}) ${F.rating||0}(${F.status||0}) <a data-go="pub:${side}">Bio</a><br>
   Weight: ${natWeight(F)}/${minWeight(F)} pounds<br>
   Next Bout: none scheduled${nightOf(state.div)?` (${esc(state.div)}weights fight ${nightOf(state.div)}s)`:''}<br>
-  Fight Plan: <a data-go="plan:${side}">${esc(F.planName||'Basic')}</a><br>
+  Fight Plan: <a data-go="pf:edit:${encN(F.planName||'Basic')}">${esc(F.planName||'Basic')}</a><br>
   Options: <a data-go="forum:press">Talk Trash</a> | <a data-go="desc">Change Description</a> | <a data-retire="${side}">Retire</a>${belts.length?`<br><b>Champion: ${belts.map(esc).join(', ')}</b>`:''}
   ${wi.endMul<1?`<br><span class="cr small">May be fighting at a disadvantage due to weight.</span>`:''}</p>`;
 }
@@ -413,16 +413,78 @@ function retiredHTML(){
   ${f.str?`Weight: ${natWeight(f)}/${minWeight(f)} pounds · Activate: <a data-activate="${i}" data-slot="A">red corner</a> | <a data-activate="${i}" data-slot="B">blue corner</a>`:'<span class="small mute">Retired before full records were kept.</span>'}</p>`).join('')}`).join('')}
   <p><a data-go="gym">Back to your active fighters</a></p>`;
 }
-function plansHTML(){
-  return`<h1>Fight Plans</h1>${['A','B'].map(s=>{const F=state[s];return`<h2 class="${cc(s)}">${esc(F.name)}</h2><pre class="plan">${esc(F.plan)}</pre><p><a data-go="edit:${s}">Edit plan</a></p>`}).join('')}`;
+/* ===== Fight plan library (WeBL style) ===== */
+function ensurePlans(){
+  if(state.plans&&typeof state.plans==='object')return;
+  state.plans={};
+  ['A','B'].forEach(k=>{const F=state[k];if(F&&F.plan)state.plans[F.planName||'Basic']=F.plan});
+  if(!state.plans['Basic'])state.plans['Basic']='6/6/8';
+  for(const n in PRESETS)if(!state.plans[n])state.plans[n]=PRESETS[n][1];
 }
+const planNames=()=>{ensurePlans();return Object.keys(state.plans).sort((a,b)=>a.localeCompare(b,undefined,{sensitivity:'base'}))};
+function syncPlan(name){['A','B'].forEach(k=>{if(state[k]&&state[k].planName===name)state[k].plan=state.plans[name]})}
+function usePlan(side,name){ensurePlans();if(state.plans[name]==null)return;state[side].planName=name;state[side].plan=state.plans[name];save()}
+const encN=n=>encodeURIComponent(n),decN=n=>{try{return decodeURIComponent(n)}catch(e){return n}};
+function planErrBox(text){const p=parsePlan(text);return p.errors.length?`<div class="note cr">${p.errors.map(e=>`# Line ${e.line}: <tt>${esc(e.text)}</tt> (${esc(e.msg)})`).join('<br>')}</div>`:`<p class="small mute">Plan OK: ${p.stmts.length} instruction${p.stmts.length===1?'':'s'}.</p>`}
+function plansHTML(){
+  const names=planNames(),sel=window._plSel&&state.plans[window._plSel]!=null?window._plSel:names[0];
+  const used=n=>['A','B'].filter(k=>state[k].planName===n).map(k=>state[k].name);
+  return`<h1>Fight Plans</h1>
+  <form id="planChooser"><table class="plain">
+  <tr><td>Choose one of:</td><td><select id="plMode"><option value="create">Create (easy)</option><option value="adv">Create (advanced)</option><option value="edit">Edit</option><option value="copy">Copy</option><option value="rename">Rename</option><option value="delete">Delete</option></select></td></tr>
+  <tr><td>Fight Plan</td><td><select id="plName" style="min-width:280px">${names.map(n=>`<option${n===sel?' selected':''}>${esc(n)}</option>`).join('')}</select></td></tr>
+  </table><p><button type="submit">Submit Form</button> <button type="reset">Reset Form</button></p></form>
+  <p class="small mute">The Fight Plan box is used by Edit, Copy, Rename and Delete. Creating a plan starts a new one.</p>
+  <h2>Your plans</h2><table class="grid small"><tr><th>Plan</th><th>Used by</th></tr>${names.map(n=>`<tr><td><a data-go="pf:edit:${encN(n)}">${esc(n)}</a></td><td>${used(n).map(esc).join(', ')||'<span class="mute">-</span>'}</td></tr>`).join('')}</table>`;
+}
+const EASY_STYLES=[['none','None'],['inside','Inside'],['counter','Counter-punching'],['clinch','Clinching'],['feint','Feinting'],['ring','Ring'],['ropes','Ropes'],['outside','Outside'],['allout','All out']];
+const EASY_TGT=[['','Opportunistic'],['H','Head'],['B','Body'],['C','Cuts']];
+function easyRows(){if(!window._easy)window._easy=Array.from({length:12},()=>({agg:6,pow:6,def:8,tgt:'',style:'none',dirty:false}));return window._easy}
+function easyText(){
+  const rows=easyRows(),fmt=r=>`${r.agg}${r.tgt}/${r.pow}${r.dirty?'!':''}/${r.def}${r.style!=='none'?` (${r.style})`:''}`;
+  let out=[],prev=null;rows.forEach((r,i)=>{const f=fmt(r);if(f!==prev){out.push(`${i+1}) ${f}`);prev=f}});return out.join('\n');
+}
+function planFormHTML(arg){
+  const[mode,...rest]=(arg||'').split(':'),name=decN(rest.join(':'));ensurePlans();
+  const back=`<p class="small"><a data-go="plans">Back to Fight Plans</a></p>`;
+  if(mode==='create'){
+    const rows=easyRows(),opt=(arr,v)=>arr.map(([k,l])=>`<option value="${k}"${String(k)===String(v)?' selected':''}>${l}</option>`).join(''),nums=Array.from({length:21},(_,i)=>[i,i]);
+    return`<h1>Create a Fight Plan (easy)</h1>
+    <table class="plain"><tr><td>Plan name:</td><td><input id="pfName" data-keep maxlength="40" style="width:280px" value="${esc(window._easyName||'')}"></td></tr></table>
+    <p class="small">Set each round. Energy points (AGG + POW + DEF) can't total more than 20, and anything left over is rest. "Copy down" fills every later round from that one.</p>
+    <table class="grid small" id="easyTbl"><tr><th>Rnd</th><th>AGG</th><th>POW</th><th>DEF</th><th>Total</th><th>Target</th><th>Style</th><th>Dirty</th><th></th></tr>
+    ${rows.map((r,i)=>{const t=r.agg+r.pow+r.def;return`<tr><td class="n">${i+1}</td>${['agg','pow','def'].map(k=>`<td><select data-ez="${i}" data-k="${k}">${opt(nums,r[k])}</select></td>`).join('')}
+      <td class="n${t>20?' cr':''}">${t}</td><td><select data-ez="${i}" data-k="tgt">${opt(EASY_TGT,r.tgt)}</select></td><td><select data-ez="${i}" data-k="style">${opt(EASY_STYLES,r.style)}</select></td>
+      <td><input type="checkbox" data-ez="${i}" data-k="dirty"${r.dirty?' checked':''}></td><td>${i<11?`<button data-ezcopy="${i}">Copy down</button>`:''}</td></tr>`}).join('')}</table>
+    <p class="small">Your plan in text form (you can fine-tune it later with Edit):</p><pre class="plan">${esc(easyText())}</pre>
+    <p><button id="pfSaveEasy">Submit Form</button></p>${back}`;
+  }
+  if(mode==='adv'||mode==='edit'){
+    const isEdit=mode==='edit',text=isEdit?(state.plans[name]??''):(window._advText||'6/6/8');
+    if(isEdit&&state.plans[name]==null)return`<h1>Edit Fight Plan</h1><p>That plan no longer exists.</p>${back}`;
+    return`<h1>${isEdit?`Edit Fight Plan: ${esc(name)}`:'Create a Fight Plan (advanced)'}</h1>
+    ${isEdit?'':`<table class="plain"><tr><td>Plan name:</td><td><input id="pfName" data-keep maxlength="40" style="width:280px"></td></tr></table>`}
+    <p>Enter your fight plan below. <a data-go="help:plans">Instructions</a> are available online.</p>
+    <p class="small">A "#" flags lines the parser didn't recognize. Old WeBL plans can be pasted in as they are.</p>
+    <textarea id="pfText" class="planbox" data-keep rows="16" spellcheck="false">${esc(text)}</textarea>
+    <div id="pfCheck">${planErrBox(text)}</div>
+    <p><button id="${isEdit?'pfSaveEdit':'pfSaveAdv'}" data-name="${esc(name)}">Submit Form</button> <button id="pfCheckBtn">Check Plan</button></p>${back}`;
+  }
+  if(state.plans[name]==null)return`<h1>Fight Plans</h1><p>That plan no longer exists.</p>${back}`;
+  if(mode==='copy')return`<h1>Copy Fight Plan</h1><p>Copy <b>${esc(name)}</b> to a new plan named:</p><p><input id="pfName" data-keep maxlength="40" style="width:280px" value="${esc(name)} 2"> <button id="pfDoCopy" data-name="${esc(name)}">Submit Form</button></p>${back}`;
+  if(mode==='rename')return`<h1>Rename Fight Plan</h1><p>Rename <b>${esc(name)}</b> to:</p><p><input id="pfName" data-keep maxlength="40" style="width:280px" value="${esc(name)}"> <button id="pfDoRename" data-name="${esc(name)}">Submit Form</button></p>${back}`;
+  if(mode==='delete'){const u=['A','B'].filter(k=>state[k].planName===name);
+    return`<h1>Delete Fight Plan</h1>${u.length?`<p class="cr">${u.map(k=>esc(state[k].name)).join(' and ')} ${u.length>1?'are':'is'} using this plan. Give ${u.length>1?'them':'him'} a different plan first.</p>`:`<p>Delete <b>${esc(name)}</b>? This can't be undone.</p><p><button id="pfDoDelete" data-name="${esc(name)}">Delete Plan</button></p>`}${back}`}
+  return back;
+}
+function planName_ok(n,except){n=(n||'').trim();if(!n)return'Give the plan a name.';if(n.length>40)return'Plan names can be up to 40 characters.';if(n!==except&&state.plans[n]!=null)return'You already have a plan with that name.';return''}
 function newDraft(){return{name:'',nick:'',home:'',build:'normal',str:12,kp:3,spd:12,agl:12,chn:11,cnd:12,hgt:6,cut:2,plan:'6/6/8',planName:'Basic'}}
 function createHTML(){
   if(!state.draft)state.draft=newDraft();
   return cornerHTML('D');
 }
 function cardsHTML(){return`<h1>Your Fight Cards</h1><p>None of your fighters have bouts scheduled.</p>`}
-function cleanHTML(){return`<h1>Clean Fight Plans</h1><p>Replace both fighters' plans with the plain plan <tt>6/6/8</tt>.</p><p><button id="cleanPlans">Clean Fight Plans</button></p>`}
+function cleanHTML(){return`<h1>Clean Fight Plans</h1><p>Put both fighters on the <b>Basic</b> plan (<tt>6/6/8</tt>). Your saved plans are kept.</p><p><button id="cleanPlans">Clean Fight Plans</button></p>`}
 function shortHTML(){
   return`<h1>Short Gym</h1><table class="grid"><tr><th>Fighter</th><th>Record</th><th>Str</th><th>KP</th><th>Spd</th><th>Agl</th><th>Chn</th><th>Cnd</th><th>Hgt</th></tr>
   ${['A','B'].map(s=>{const F=state[s];return`<tr><td><a data-go="rec:${s}">${esc(F.name)}</a></td><td>${recStr(F)}</td>${STATS.map(([k])=>`<td class="n">${F[k]}</td>`).join('')}<td>${Math.floor(HT(F)/12)}'${HT(F)%12}"</td></tr>`}).join('')}</table>`;
@@ -500,7 +562,10 @@ function recordHTML(side){
   <p>${n} has no bouts scheduled.${nightOf(state.div)?` ${esc(state.div)}weights fight on <b>${nightOf(state.div)}s</b>.`:''}</p>
   <p>${n} is training <b>${tr[F.train||'str']}</b>${(F.status||0)>=2?` with <b>${tr[F.train2||'cnd']}</b> as his secondary program`:''}, but you can instruct him to <a data-go="train:${side}">train for something else</a>.</p>
   <p>${n} is currently using the <b>${esc(F.planName||'Basic')}</b> fight plan. He may</p>
-  <ul><li><a data-go="plan:${side}">edit</a> your ${esc(F.planName||'Basic')} plan, or paste in a different one.</li>
+  <ul><li>choose a different fight plan: <select data-useplan="${side}">${planNames().map(p=>`<option${p===F.planName?' selected':''}>${esc(p)}</option>`).join('')}</select></li>
+  <li><a data-go="pf:create">create a new fight plan</a></li>
+  <li>or <a data-go="pf:edit:${encN(F.planName||'Basic')}">edit</a> your ${esc(F.planName||'Basic')} plan.</li>
+  <li>Experts can use the <a data-go="pf:adv">advanced fight plan form</a>.</li>
   <li>Beginners might want to get into the ring with a <a data-go="simbot">sparring partner</a>.</li>
   <li>Go to <a data-go="fight">practice fights</a>.</li></ul>
   <p>${n} may also do any of the following:</p>
@@ -540,17 +605,7 @@ function pubHTML(side){
   <p class="small"><a data-go="rec:${side}">Manager's page for ${n}</a></p>`;
 }
 function frankOf(side){const sc=s=>{const r=state[s].rec;return(r[0]+.5*r[2])/Math.max(1,r[0]+r[1]+r[2])+r[0]*.001};return sc(side)>=sc(side==='A'?'B':'A')?1:2}
-function planEditHTML(side){
-  if(side!=='A'&&side!=='B')side='A';
-  const F=state[side],p=parsePlan(F.plan);
-  return`<h1>Fight Plan for ${esc(F.name)}</h1>
-  <table class="grid" data-side="${side}"><tr><td>Plan name:</td><td><input data-f="planName" maxlength="40" value="${esc(F.planName||'Basic')}" style="width:260px"></td></tr></table>
-  <p>Enter your fight plan below. <a data-go="help">Instructions</a> are available online.</p>
-  <p class="small">Note that a "#" is used to flag lines the parser didn't recognize. Old WeBL plans can be pasted in as they are.</p>
-  <textarea class="planbox" data-side="${side}" data-f="plan" rows="16" spellcheck="false">${esc(F.plan)}</textarea>
-  ${p.errors.length?`<div class="note cr">${p.errors.map(e=>`# Line ${e.line}: <tt>${esc(e.text)}</tt> (${esc(e.msg)})`).join('<br>')}</div>`:`<p class="small mute">Plan OK: ${p.stmts.length} instruction${p.stmts.length===1?'':'s'}.</p>`}
-  <p><button data-checkplan="${side}">Submit Form</button> <button data-go="rec:${side}">Back to ${esc(lastName(F.name))}</button></p>`;
-}
+function planEditHTML(side){if(side!=='A'&&side!=='B')side='A';return planFormHTML('edit:'+encN(state[side].planName||'Basic'))}
 /* ---------- Fights ---------- */
 function fightHTML(){
   const opt=(arr,v)=>arr.map(([val,lab])=>`<option value="${val}"${val===v?' selected':''}>${lab}</option>`).join('');
@@ -861,13 +916,14 @@ document.addEventListener('click',async e=>{
   if(t.dataset.s){const F=FS(side),k=t.dataset.s,d=+t.dataset.d,nv=F[k]+d;if(nv<MINS[k]||nv>(k==='hgt'?24:MAX))return;
     if(k==='kp'&&nv>Math.floor(F.str/3))return alertBox(`He needs ${nv*3} Strength for ${nv} KO Punch Bonus.`);
     if(k==='str'&&F.kp>Math.floor(nv/3))return alertBox(`Lower his KO Punch Bonus first. ${F.kp} KP needs ${F.kp*3} Strength.`);F[k]=nv;save();render()}
-  else if(t.dataset.pre){const[st,pl]=PRESETS[t.dataset.pre];Object.assign(FS(side),st,{plan:pl,planName:t.dataset.pre});save();render()}
+  else if(t.dataset.pre){const[st,pl]=PRESETS[t.dataset.pre];ensurePlans();if(state.plans[t.dataset.pre]==null)state.plans[t.dataset.pre]=pl;Object.assign(FS(side),st,{plan:state.plans[t.dataset.pre],planName:t.dataset.pre});save();render()}
   else if(t.dataset.copy){const F=state[side],i=+t.dataset.copy;for(let j=i+1;j<F.plan.length;j++)F.plan[j]={...F.plan[i]};save();render()}
   else if(t.dataset.rand){const F=FS(side);const ks=['str','spd','agl','chn','cnd'];ks.forEach(k=>F[k]=5);F.kp=0;F.cut=1+Math.floor(rand()*3);F.hgt=3+Math.floor(rand()*10);let left=POOL-used(F);
     while(left>0){const k=rand()<.08?'kp':pick(ks);if(k==='kp'&&F.kp>=Math.floor(F.str/3))continue;if(F[k]<22){F[k]++;left--}}save();render()}
   else if(t.dataset.reset){const s=t.dataset.reset,keep={rec:state[s].rec,hist:state[s].hist};state[s]=Object.assign(JSON.parse(JSON.stringify(DEFAULTS[s])),keep);save();render()}
   else if(t.id==='createF'){const D=state.draft;if(!D.name.trim())return $('#cerr').textContent='Give him a name.';if(used(D)!==POOL)return $('#cerr').textContent=`He must total exactly ${POOL} points.`;if(D.kp>Math.floor(D.str/3))return $('#cerr').textContent='KO Punch Bonus needs 3 Strength per point.';
     const slot=$('#slot').value,old=state[slot];state.retired=state.retired||[];if(!/^Open Slot/.test(old.name))state.retired.unshift(JSON.parse(JSON.stringify(old)));
+    ensurePlans();if(state.plans[D.planName]==null)state.plans[D.planName]=D.plan;
     state[slot]={...JSON.parse(JSON.stringify(D)),rec:[0,0,0,0],hist:[],locked:true,rating:0,status:0,train:'str',train2:'cnd',streak:0,ip:0};state.draft=null;save();nav('rec:'+slot)}
   else if(t.dataset.retire){const s0=t.dataset.retire,old=state[s0];if(/^Open Slot/.test(old.name))return;
     if(!window.confirm(`Retire ${old.name}? He'll move to your retired fighters, and you can bring him back later.`))return;
@@ -877,11 +933,22 @@ document.addEventListener('click',async e=>{
     if(!f.str){return alertBox("This fighter was retired before full records were kept, so he can't be brought back.")}
     const cur=state[slot];if(!window.confirm(`Bring ${f.name} back into the ${slot==='A'?'red':'blue'} corner?${/^Open Slot/.test(cur.name)?'':` ${cur.name} will retire.`}`))return;
     state.retired.splice(i,1);if(!/^Open Slot/.test(cur.name))state.retired.unshift(JSON.parse(JSON.stringify(cur)));state[slot]=f;save();nav('rec:'+slot)}
+  else if(t.dataset.ezcopy){const r=easyRows(),i=+t.dataset.ezcopy;for(let j=i+1;j<12;j++)r[j]={...r[i]};render()}
+  else if(t.id==='pfCheckBtn'){$('#pfCheck').innerHTML=planErrBox($('#pfText').value)}
+  else if(t.id==='pfSaveEasy'){const n=$('#pfName').value.trim(),er=planName_ok(n);if(er)return alertBox(er);if(easyRows().some(r=>r.agg+r.pow+r.def>20))return alertBox('A round uses more than 20 energy points.');
+    state.plans[n]=easyText();window._easy=null;window._easyName='';window._plSel=n;save();alertBox(`Plan "${n}" saved.`);nav('plans')}
+  else if(t.id==='pfSaveAdv'){const n=$('#pfName').value.trim(),er=planName_ok(n),tx=$('#pfText').value;if(er)return alertBox(er);if(parsePlan(tx).errors.length){$('#pfCheck').innerHTML=planErrBox(tx);return alertBox('Fix the lines marked with # first.')}
+    state.plans[n]=tx;window._advText='';window._plSel=n;save();nav('plans')}
+  else if(t.id==='pfSaveEdit'){const n=t.dataset.name,tx=$('#pfText').value;if(parsePlan(tx).errors.length){$('#pfCheck').innerHTML=planErrBox(tx);return alertBox('Fix the lines marked with # first.')}
+    state.plans[n]=tx;syncPlan(n);save();$('#pfCheck').innerHTML=planErrBox(tx);alertBox(`Plan "${n}" saved.`)}
+  else if(t.id==='pfDoCopy'){const o=t.dataset.name,n=$('#pfName').value.trim(),er=planName_ok(n);if(er)return alertBox(er);state.plans[n]=state.plans[o];window._plSel=n;save();nav('plans')}
+  else if(t.id==='pfDoRename'){const o=t.dataset.name,n=$('#pfName').value.trim(),er=planName_ok(n,o);if(er)return alertBox(er);if(n!==o){state.plans[n]=state.plans[o];delete state.plans[o];['A','B'].forEach(k=>{if(state[k].planName===o)state[k].planName=n})}window._plSel=n;save();nav('plans')}
+  else if(t.id==='pfDoDelete'){const n=t.dataset.name;delete state.plans[n];window._plSel=null;save();nav('plans')}
   else if(t.dataset.checkplan){const ta=document.querySelector('textarea.planbox');if(ta){state[t.dataset.checkplan].plan=ta.value;save()}render()}
   else if(t.id==='go'||t.id==='go2')startFight();
   else if(t.id==='next'){shown++;if(shown>=fight.rounds.length)finish();render();const r=document.querySelectorAll('.rnd');r[r.length-1].scrollIntoView({behavior:'smooth'})}
   else if(t.id==='skip'){shown=fight.rounds.length;finish();render()}
-  else if(t.id==='cleanPlans'){['A','B'].forEach(s=>{state[s].plan='6/6/8'});save();alertBox('Both fight plans have been cleaned.')}
+  else if(t.id==='cleanPlans'){ensurePlans();if(state.plans['Basic']==null)state.plans['Basic']='6/6/8';['A','B'].forEach(s=>usePlan(s,'Basic'));save();alertBox('Both fight plans have been cleaned.')}
   else if(t.id==='saveGym'){const v=$('#gymIn').value.trim().slice(0,40);if(v.length<2)return alertBox('Gym names need at least 2 characters.');
     if(await safeWrite(()=>SB.from('profiles').update({gym:v}).eq('id',ME))){managers[ME]=Object.assign(managers[ME]||{},{gym:v});state.gymName=v;save();updateTop();alertBox('Gym name saved.')}}
   else if(t.id==='saveDesc'){const v=$('#descIn').value.slice(0,1000);
@@ -903,7 +970,9 @@ document.addEventListener('click',async e=>{
   else if(t.id==='doSearch')doSearch($('#q').value);
 });
 document.addEventListener('submit',async e=>{
-  const f=e.target;e.preventDefault();if(!SB)return alertBox("The Contenders server can't be reached right now.");
+  const f=e.target;e.preventDefault();
+  if(f.id==='planChooser'){const m=$('#plMode').value,n=$('#plName').value;window._plSel=n;nav(m==='create'||m==='adv'?'pf:'+m:`pf:${m}:${encN(n)}`);return}
+  if(!SB)return alertBox("The Contenders server can't be reached right now.");
   const btn=f.querySelector('button');if(btn)btn.disabled=true;
   try{
   if(f.id==='regForm'){const gym=$('#rGym').value.trim(),email=$('#rEmail').value.trim(),p1=$('#rPass').value,p2=$('#rPass2').value;
@@ -928,6 +997,9 @@ document.addEventListener('change',e=>{
   const el=e.target;
   if(el.id==='div'){state.div=el.value;save();return}
   if(el.id==='bout'){state.bout=el.value;save();return}
+  if(el.dataset.useplan){usePlan(el.dataset.useplan,el.value);alertBox(`${state[el.dataset.useplan].name} will now use the ${el.value} plan.`);return}
+  if(el.dataset.ez){const r=easyRows()[+el.dataset.ez],k=el.dataset.k;r[k]=k==='dirty'?el.checked:(k==='tgt'||k==='style')?el.value:+el.value;render();return}
+  if(el.id==='pfName'&&view==='pf:create'){window._easyName=el.value;return}
   if(el.dataset.train){state[el.dataset.train].train=el.value;save();return}
   if(el.dataset.train2){state[el.dataset.train2].train2=el.value;save();return}
   if(el.id==='trWho'){nav('train:'+el.value);return}
