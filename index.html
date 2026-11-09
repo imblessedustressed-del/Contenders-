@@ -677,7 +677,7 @@ $('#menuBtn').onclick=()=>$('#side').classList.toggle('open');
 function refresh(){
   const a=document.activeElement;
   if(a&&(a.tagName==='TEXTAREA'||a.tagName==='INPUT')&&a.value)return;
-  const live=['forums','msgs','grank','gympub','opub','register','changegym','login','logout','home','desc','changepw'];
+  const live=['forums','msgs','grank','gympub','gymret','opub','register','changegym','login','logout','home','desc','changepw'];
   if(live.includes(view.split(':')[0])||view.startsWith('forum:')||view.startsWith('topic:'))render();
 }
 function render(){
@@ -689,7 +689,7 @@ function render(){
     login:loginHTML,logout:logoutHTML,forgot:forgotHTML,newpass:newPassHTML,changepw:changePwHTML,forums:forumsHTML,forum:()=>forumHTML(arg),topic:()=>topicHTML(arg),newtopic:()=>newTopicHTML(arg),msgs:msgsHTML,
     simbot:simbotHTML,champs:champsHTML,frank:frankHTML,grank:grankHTML,results:resultsHTML,fcards:resultsHTML,sched:schedHTML,
     discarded:()=>`<h1>Discarded Fighters</h1><p>No fighters have been discarded.</p>`,search:searchHTML,help:()=>helpHTML(arg),newbie:newbieHTML,funding:fundingHTML,retiregym:retireGymHTML,
-    edit:()=>planEditHTML(arg),plan:()=>planEditHTML(arg),pf:()=>planFormHTML(arg),rec:()=>recordHTML(arg),gympub:()=>gymPubHTML(arg),opub:()=>oFighterHTML(arg),pub:()=>pubHTML(arg),train:()=>trainHTML(arg),report:()=>savedReportHTML(arg)};
+    edit:()=>planEditHTML(arg),plan:()=>planEditHTML(arg),pf:()=>planFormHTML(arg),rec:()=>recordHTML(arg),gympub:()=>gymPubHTML(arg),gymret:()=>gymRetHTML(arg),opub:()=>oFighterHTML(arg),pub:()=>pubHTML(arg),train:()=>trainHTML(arg),report:()=>savedReportHTML(arg)};
   $('#view').innerHTML=`<div id="flash" class="note cr" style="display:none;margin-bottom:10px"></div>`+(P[base]||homeHTML)();
 }
 
@@ -1187,8 +1187,14 @@ function gymPubHTML(uid){
   <table class="plain" style="margin-top:12px"><tr><th>Region</th><th>Earnings</th><th>Record</th><th>Titles</th></tr>
   <tr><td><b>Contenders</b></td><td>$0</td><td>${g.rec[0]}-${g.rec[1]}-${g.rec[2]}</td><td class="cr">${g.titles}</td></tr></table>
   <h2>Fighters Managed by ${esc(m.gym)}</h2>${(c.fighters||[]).length?c.fighters.map((f,i)=>fl(f,i,true)).join(''):'<p class="mute">No active fighters.</p>'}
-  ${(c.retired||[]).length?`<h2>Retired Fighters</h2>${c.retired.map((f,i)=>fl(f,i,false)).join('')}`:''}
+  <p>&#9758; <a data-go="gymret:${uid}">${esc(m.gym)}'s Retired Fighters</a>${(c.retired||[]).length?` (${c.retired.length})`:''}</p>
   <p><a data-go="grank">Back to Gym Rankings</a></p>`;
+}
+function gymRetHTML(uid){
+  const m=managers[uid];if(!m)return`<h1>Gym not found</h1><p>${needDB()}<a data-go="grank">Back to Gym Rankings</a></p>`;
+  const R=(cards[uid]||{}).retired||[];
+  return`<h1>${esc(m.gym)}'s Retired Fighters</h1>${R.length?R.map(f=>{const r=f.rec||[0,0,0,0];return`<p class="fl">${esc(f.name)}${(f.titles||[]).length?' <span style="color:#e8a400">&#9733;</span>':''} - ${esc(f.div)}weight - ${r[0]} wins (${r[3]} by knock out), ${r[1]} losses, and ${r[2]} draws. Rating ${f.rating}. Status ${f.status}.${(f.titles||[]).length?` <b class="r">Winner of ${f.titles.length} world title${f.titles.length>1?'s':''}!!</b>`:''} Career earnings $0.</p>`}).join(''):'<p class="mute">This gym has no retired fighters.</p>'}
+  <p><a data-go="gympub:${uid}">Back to ${esc(m.gym)}</a></p>`;
 }
 function oFighterHTML(arg){
   const i=arg.indexOf(':'),uid=arg.slice(0,i),fid=decN(arg.slice(i+1)),m=managers[uid],f=((cards[uid]||{}).fighters||[]).find(x=>x.id===fid);
