@@ -15,6 +15,9 @@ a:hover{color:#b22}
 .box{border:2px ridge #9a9a9a;background:#d4d4d4;margin:0 4px 14px;text-align:center;font:13px/1.45 Verdana,Tahoma,sans-serif}
 .box .hd{background:#ededed;font-weight:bold;color:#444;padding:1px 0;border-bottom:1px solid #b5b5b5}
 .box a{display:block;color:#3b3b6e}
+.box a.lit{background:#fff3b0;color:#b00000;font-weight:bold;text-decoration:none;animation:glow 1.6s ease-in-out infinite}
+@keyframes glow{50%{background:#ffd34d}}
+.badge{display:inline-block;min-width:16px;padding:0 5px;border-radius:9px;background:#c00;color:#fff;font-size:11px;line-height:16px;vertical-align:1px}
 .box a.cur{color:#8b1a1a;font-weight:bold;text-decoration:none}
 .box.fund{background:#dcdcdc}
 #main{flex:1;min-width:0;padding:10px 26px 50px}
@@ -576,7 +579,9 @@ async function initDB(){
   await loadPublic();clearTimeout(timer);
   if(ME)afterLogin();
   updateTop();refresh();
-  setInterval(()=>{if(document.visibilityState==='visible'){loadPublic().then(()=>{if(ME)loadIms()})}},45000);
+  setInterval(()=>{if(document.visibilityState==='visible')loadPublic()},45000);
+  setInterval(()=>{if(ME&&document.visibilityState==='visible')loadIms()},20000);
+  document.addEventListener('visibilitychange',()=>{if(ME&&document.visibilityState==='visible')loadIms()});
 }
 async function loadPublic(){
   try{
@@ -609,7 +614,7 @@ function syncGym(){if(!SB||!ME||!loadedGym)return;clearTimeout(syncTimer);syncTi
 async function pushGym(){if(!SB||!ME)return;const{reports,...rest}=state;try{await SB.from('gym_state').upsert({user_id:ME,data:rest,updated_at:new Date().toISOString()})}catch(e){}}
 const gymOf=id=>(managers[id]&&managers[id].gym)||'A manager';
 const myGym=()=>(ME&&managers[ME]&&managers[ME].gym)||state.gymName||'Your Gym';
-function updateMsgLink(){const n=ims.filter(m=>m.to===ME&&!m.read).length;const l=$('#msgLink');if(l)l.textContent=n?`Messages (${n} new)`:'Messages'}
+function updateMsgLink(){const n=ims.filter(m=>m.to===ME&&!m.read).length;const l=$('#msgLink');if(!l)return;l.classList.toggle('lit',n>0);l.innerHTML=n?`Messages <span class="badge">${n}</span>`:'Messages';document.title=(n?`(${n}) `:'')+'Contenders - The Contenders Boxing League'}
 function updateTop(){const el=$('#who');if(!el)return;el.innerHTML=ME?`Logged in as <b>${esc(myGym())}</b> | <a data-go="logout">Logout</a>`:`<a data-go="login">Login</a> | <a data-go="register">Sign Up (Free!)</a>`}
 function needDB(){
   if(dbState==='loading')return`<p class="mute">Connecting to the Contenders server...</p>`;
