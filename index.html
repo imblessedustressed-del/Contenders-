@@ -121,7 +121,10 @@ const STYLE_NAMES=[['None','None'],['Inside','Inside'],['Counter','Counter-punch
 const TARGETS=[['Opp','Opportunistic'],['Head','Head'],['Body','Body'],['Cut','Go after the cut']];
 const mkPlan=(agg,pow,def,tgt,style)=>`${agg}${{Head:'H',Body:'B',Cut:'C'}[tgt]||''}/${pow}/${def}${style&&style!=='None'?` (${style.toLowerCase()})`:''}`;
 const JUDGES=[{name:'Alvarez',pw:2.6,act:.03},{name:'Whitfield',pw:1.9,act:.12},{name:'Moreau',pw:2.2,act:.07}];
-const DIVS=[['Fly',112],['Bantam',118],['Feather',126],['Light',135],['Welter',147],['Middle',160],['Light Heavy',175],['Cruiser',200],['Heavy',1000]];
+const DIVS=[['Fly',112],['Bantam',118],['Feather',126],['Light',135],['Welter',147],['Super Welter',154],['Middle',160],['Super Middle',168],['Light Heavy',175],['Cruiser',200],['Heavy',1000]];
+const FIGHT_NIGHT={'Light':'Wednesday','Welter':'Wednesday','Super Welter':'Wednesday','Super Middle':'Thursday','Middle':'Thursday','Cruiser':'Friday','Light Heavy':'Friday','Heavy':'Saturday'};
+const nightOf=div=>FIGHT_NIGHT[div]||null;
+const SCHED_TABLE=()=>`<table class="grid"><tr><th>Fight night</th><th>Divisions</th></tr>${['Wednesday','Thursday','Friday','Saturday'].map(n=>`<tr><td><b>${n}</b></td><td>${DIVS.filter(d=>FIGHT_NIGHT[d[0]]===n).map(d=>d[0]+'weight').join(', ')}${n==='Saturday'?' (alone)':''}</td></tr>`).join('')}<tr><td><i>To be announced</i></td><td>${DIVS.filter(d=>!FIGHT_NIGHT[d[0]]).map(d=>d[0]+'weight').join(', ')}</td></tr></table>`;
 const BELTS=['WBC','WBA','WBO'];
 const FORUMS=[
  ['announce','Announcements','News from the Contenders commissioner and staff.'],
@@ -841,7 +844,7 @@ function recordHTML(side){
   <tr><td>Weight</td><td colspan="3">${w} pounds (${Math.round(w*.4536)} kilograms)</td></tr>
   <tr><td>Minimum Weight</td><td colspan="3">${Math.round(w*.96)} pounds (${Math.round(w*.96*.4536)} kilograms)</td></tr></table>
   <p>${n} fights in the <a data-go="frank">${esc(state.div)}weight</a> division out of ${esc(F.home||'parts unknown')} for the ${esc(myGym())} gym. ${prime}</p>
-  <p>${n} has no bouts scheduled.</p>
+  <p>${n} has no bouts scheduled.${nightOf(state.div)?` ${esc(state.div)}weights fight on <b>${nightOf(state.div)}s</b>.`:''}</p>
   <p>${n} is training <b>${tr[F.train||'str']}</b>${(F.status||0)>=2?` with <b>${tr[F.train2||'cnd']}</b> as his secondary program`:''}, but you can instruct him to <a data-go="train:${side}">train for something else</a>.</p>
   <p>${n} is currently using the <b>${esc(F.planName||'Basic')}</b> fight plan. He may</p>
   <ul><li><a data-go="plan:${side}">edit</a> your ${esc(F.planName||'Basic')} plan, or paste in a different one.</li>
@@ -1071,7 +1074,7 @@ function grankHTML(){
 function resultsHTML(){
   return`<h1>Fight Results</h1>${state.log.length?`<table class="grid">${state.log.map(l=>`<tr><td>${esc(l.date)}</td><td>${esc(l.text)} ${l.id&&state.reports[l.id]?`<a data-go="report:${l.id}">highlights</a>`:''}</td></tr>`).join('')}</table>`:'<p class="mute">No fights yet.</p>'}`;
 }
-function schedHTML(){return`<h1>Fight Schedule</h1><p>League fights run every <b>Saturday</b>. Next fight night: <b>${nextSat()}</b>.</p><p>No bouts have been scheduled yet. Weekly matchmaking switches on as managers sign up. Until then, use <a data-go="fight">Practice Fights</a> and <a data-go="simbot">Simbot</a>. See <a data-go="help:schedule">The Fight Schedule</a> for how it works.</p>`}
+function schedHTML(){return`<h1>Fight Schedule</h1><p>Every division has its own fight night each week:</p>${SCHED_TABLE()}<p>No bouts have been scheduled yet. Weekly matchmaking switches on as managers sign up. Until then, use <a data-go="fight">Practice Fights</a> and <a data-go="simbot">Simbot</a>. See <a data-go="help:schedule">The Fight Schedule</a> for how it works.</p>`}
 function searchHTML(){return`<h1>Search Contenders</h1><p><input id="q" data-keep placeholder="Fighter, gym or topic" style="width:260px"> <button id="doSearch">Search</button></p><div id="sres"></div>`}
 function doSearch(q){
   q=q.trim().toLowerCase();if(!q){$('#sres').innerHTML='';return}
@@ -1092,7 +1095,7 @@ function helpHTML(arg){
 }
 const HELP_BODY={
  start:()=>`<p>Contenders is a boxing strategy game. You're the manager: you build fighters, train them, write their fight plans, and watch every bout play out round by round. You never throw a punch yourself. Your decisions win or lose the fight.</p>
-  <ol><li><a data-go="register">Sign up</a> and name your gym.</li><li><a data-go="create">Create a fighter</a> by spending his 70 points.</li><li>Write his <a data-go="help:plans">fight plan</a>.</li><li>Test it with <a data-go="simbot">Simbot</a> or a <a data-go="fight">practice fight</a>.</li><li>Fight on <a data-go="help:schedule">Saturday</a>, read the report, adjust, repeat.</li></ol>
+  <ol><li><a data-go="register">Sign up</a> and name your gym.</li><li><a data-go="create">Create a fighter</a> by spending his 70 points.</li><li>Write his <a data-go="help:plans">fight plan</a>.</li><li>Test it with <a data-go="simbot">Simbot</a> or a <a data-go="fight">practice fight</a>.</li><li>Fight on his division's <a data-go="help:schedule">fight night</a>, read the report, adjust, repeat.</li></ol>
   <p>There are no regions. Everyone fights in one Contenders ranking, with WBC, WBA and WBO world titles in every division.</p>`,
  fighter:()=>`<p>Every fighter starts with exactly <b>${POOL} points</b> spread across:</p>
   <table class="grid small"><tr><th>Ability</th><th>What it does</th></tr>
@@ -1141,14 +1144,15 @@ if endurance_percent < 50 then 1/1/10</pre>`,
   <li><b>Injury points:</b> a knockout loss adds 25. Every 500 costs him an ability point (AP Loss).</li></ul>
   <p>Set training from the fighter's page: "train for something else."</p>`,
  schedule:()=>`<ul>
-  <li><b>Fights happen every Saturday.</b> Each week your fighters are matched against fighters from other gyms around their ranking. You don't book fights yourself.</li>
-  <li>Get your fight plans and training in <b>before Saturday</b>. Whatever is saved when the fights run is what your fighter uses.</li>
+  <li><b>Each division fights on its own night every week:</b></li></ul>${SCHED_TABLE()}<ul>
+  <li>Each week your fighters are matched against fighters from other gyms around their ranking. You don't book fights yourself.</li>
+  <li>Get your fight plans and training in <b>before your division's fight night</b>. Whatever is saved when the fights run is what your fighter uses.</li>
   <li>You don't need to be online. Results, fight reports and new rankings are posted after the fights run.</li>
   <li>A fighter's page shows his next opponent once he's been matched, so you can scout him and write a plan for that matchup.</li>
   <li>Between Saturdays, use <a data-go="fight">Practice Fights</a> and <a data-go="simbot">Simbot</a> as much as you like. They don't count on your record.</li></ul>
-  <p class="note">Weekly Saturday fights are being switched on as managers sign up. Until then, practice fights and Simbot are open to everyone.</p>`,
+  <p class="note">Weekly fight nights are being switched on as managers sign up. Until then, practice fights and Simbot are open to everyone.</p>`,
  titles:()=>`<ul><li>Every division has three world titles: the <b>WBC</b>, the <b>WBA</b> and the <b>WBO</b>.</li>
-  <li>Divisions: Fly 112, Bantam 118, Feather 126, Light 135, Welter 147, Middle 160, Light Heavy 175, Cruiser 200, Heavy (no limit).</li>
+  <li>Divisions: ${DIVS.map(d=>d[0]+(d[1]<1000?' '+d[1]:' (no limit)')).join(', ')}.</li>
   <li>Fighters are ranked inside their division. The top contenders get title shots, and the latest title fights show on the home page.</li>
   <li>See the <a data-go="champs">Champions</a>, <a data-go="frank">Fighter Rankings</a> and <a data-go="grank">Gym Rankings</a>.</li></ul>`,
  community:()=>`<ul><li><a data-go="forums">Forums</a>: everyone can read them, and members can post and reply. Keep posts in the right board.</li>
@@ -1181,8 +1185,8 @@ if score < 0 and round >= 8 then 8/7/5</pre>
   <p>Run <a data-go="simbot">Simbot</a> 100 times against your other fighter to see how the plan holds up, then read a full <a data-go="fight">practice fight</a> report to see why.</p>
   <h2>4. Training</h2>
   <p>On the fighter's page, pick what he trains. Wins raise his status and add ability points. From his third win on he's on the fast track and gets two points per win.</p>
-  <h2>5. Fight night is Saturday</h2>
-  <p>Have your plan saved before <b>Saturday</b>. Fights run on their own, then check his record for the result and <i>highlights</i> for the full report. See <a data-go="help:schedule">The Fight Schedule</a>.</p>
+  <h2>5. Fight night</h2>
+  <p>Each division has its own weekly fight night. Heavyweights fight alone on Saturday, and the rest spread over Wednesday, Thursday and Friday. Have your plan saved before his night. Fights run on their own, then check his record for the result and <i>highlights</i> for the full report. See <a data-go="help:schedule">The Fight Schedule</a>.</p>
   <h2>6. Scout and talk</h2>
   <p>Click any fighter's name to see his public record and past fight reports. That's how you learn an opponent's habits. Ask questions in the <a data-go="forum:help">Help forum</a>, and say hi in the <a data-go="forum:lounge">Lounge</a>.</p>`;
 }
