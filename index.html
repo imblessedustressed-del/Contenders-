@@ -689,7 +689,7 @@ $('#menuBtn').onclick=()=>$('#side').classList.toggle('open');
 function refresh(){
   const a=document.activeElement;
   if(a&&(a.tagName==='TEXTAREA'||a.tagName==='INPUT')&&a.value)return;
-  const live=['frank','gym','rec','pub','fcards','forums','msgs','grank','gympub','gymret','opub','register','changegym','login','logout','home','desc','changepw'];
+  const live=['champs','frank','gym','rec','pub','fcards','forums','msgs','grank','gympub','gymret','opub','register','changegym','login','logout','home','desc','changepw'];
   if(live.includes(view.split(':')[0])||view.startsWith('forum:')||view.startsWith('topic:'))render();
 }
 function render(){
@@ -725,7 +725,12 @@ function bannerSVG(){
   ${glove(40,false)}${glove(660,true)}
   </svg>`;
 }
-function titleFights(){return state.log.filter(l=>l.belt).slice(0,9)}
+/* League titles come from finished title bouts: the last winner of each belt holds it (a draw keeps the champion). */
+function fName(uid,fid){const c=cards[uid]||{};const f=[...(c.fighters||[])].find(x=>x.id===fid);return f?f.name:((botF['bot:'+uid+':'+fid]||{}).name||'A retired fighter')}
+function currentChamps(){const m={};bouts.filter(b=>b.status==='done'&&b.belt&&b.summary&&b.summary.w!=null).sort((a,b)=>a.fight_date.localeCompare(b.fight_date)||a.id-b.id).forEach(b=>{const w=b.summary.w===0;(m[b.div]=m[b.div]||{})[b.belt]={uid:w?b.red_user:b.blue_user,fid:w?b.red_fid:b.blue_fid}});return m}
+function beltsOf(uid,fid){const m=currentChamps(),out=[];for(const d in m)for(const bl in m[d])if(m[d][bl].uid===uid&&m[d][bl].fid===fid)out.push(d+' '+bl);return out}
+function titleFights(){return bouts.filter(b=>b.status==='done'&&b.belt&&b.summary).slice(0,9).map(b=>{const w=b.summary.w,ru=[b.red_user,b.red_fid],bu=[b.blue_user,b.blue_fid],W=w===1?bu:ru,L=w===1?ru:bu;
+  return{id:b.id,div:b.div,belt:b.belt,draw:w==null,winner:fName(...W),wu:W[0],wf:W[1],wgym:gymOf(W[0]),loser:fName(...L),lu:L[0],lf:L[1],lgym:gymOf(L[0]),how:b.summary.how}})}
 function homeHTML(){
   const tf=titleFights();
   return`<div class="home">${bannerSVG()}
@@ -733,9 +738,9 @@ function homeHTML(){
   <p class="small center">Three world titles in every division: the <b>WBC</b>, the <b>WBA</b> and the <b>WBO</b>. Check out the <a data-go="champs">reigning champs</a> and make your own mark.</p>
   <p class="cta"><a data-go="register">Sign Up to Play (Free!)</a> or <a data-go="gym">Enter Your Gym</a><br><a data-go="fight">Try it Out</a></p>
   <h2 class="center">Latest Contenders World Championship Action</h2>
-  ${tf.length?`<table class="grid champ">${tf.map(l=>`<tr><td rowspan="2" class="pw">${POW}<a data-go="champs">${esc(l.div)}</a><br><span class="small">${esc(l.belt)}</span></td><td>${l.wid!=null?`<a data-go="rec:${l.wid}">${esc(l.winner)}</a>`:esc(l.winner)} (${esc(l.gym||myGym())})</td></tr>
-  <tr><td>vs ${esc(l.loser)} (${esc(l.gym||myGym())})${l.id&&state.reports[l.id]?` <a data-go="report:${l.id}" class="small">highlights</a>`:''}</td></tr>`).join('')}</table>`:
-  `<p class="center mute">No world title fights yet. Win a WBC, WBA or WBO title fight in <a data-go="fight">Practice Fights</a> and it shows up here.</p>`}
+  ${tf.length?`<table class="grid champ">${tf.map(l=>`<tr><td rowspan="2" class="pw">${POW}<a data-go="champs">${esc(l.div)}</a><br><span class="small">${esc(l.belt)}</span></td><td><a data-go="opub:${l.wu}:${encN(l.wf)}">${esc(l.winner)}</a> (<a data-go="gympub:${l.wu}">${esc(l.wgym)}</a>)${l.draw?' drew':''}</td></tr>
+  <tr><td>vs <a data-go="opub:${l.lu}:${encN(l.lf)}">${esc(l.loser)}</a> (<a data-go="gympub:${l.lu}">${esc(l.lgym)}</a>), ${esc(l.how)} <a data-go="lreport:${l.id}" class="small">highlights</a></td></tr>`).join('')}</table>`:
+  `<p class="center mute">No world title fights yet.</p>`}
   </div>`;
 }
 function registerHTML(){
@@ -807,7 +812,7 @@ function boutRes(b,red){const m=b.summary||{};const how=m.how||'';if(m.w==null)r
 function applyLeague(){if(!ME)return;state.applied=state.applied||{};let ch=false;
   myDone().forEach(({b,k,x})=>{if(state.applied[b.id])return;const F=FTR(k);state.applied[b.id]=1;ch=true;if(!F||!b.summary)return;
     applyResult(F,x.red?0:1,b.summary,{id:'L'+b.id,bout:b.id,oid:null,oh:x.o.hgt!=null?ht(60+x.o.hgt):'',opp:x.o.name,ogym:x.gym,div:b.div,belt:b.belt,date:x.date.replace(/^\w+, /,''),week:state.week});
-    if(b.summary.w!=null&&b.belt&&(b.summary.w===0)===x.red){state.champs[b.div]=state.champs[b.div]||{};state.champs[b.div][b.belt]=F.name}});
+    if(b.summary.w!=null&&b.belt){state.champs[b.div]=state.champs[b.div]||{};if((b.summary.w===0)===x.red)state.champs[b.div][b.belt]=F.name;else if(state.champs[b.div][b.belt]===F.name)delete state.champs[b.div][b.belt]}});
   if(ch)save()}
 const STAR=champ=>`<span class="star" style="color:${champ?'#e8a400':'#3b6fd8'}">&#9733;</span>`;
 function boutLine(x){if(!x)return'';const o=x.o,r=o.rec;
@@ -1221,14 +1226,14 @@ function runSimbot(n){
 /* ---------- Hall of Records ---------- */
 function champsHTML(){
   return`<h1>Champions</h1><table class="grid"><tr><th>Division</th>${BELTS.map(b=>`<th>${b}</th>`).join('')}</tr>
-  ${DIVS.map(([d])=>`<tr><td>${d}weight</td>${BELTS.map(b=>`<td>${state.champs[d]&&state.champs[d][b]?esc(state.champs[d][b]):'<span class="mute">vacant</span>'}</td>`).join('')}</tr>`).join('')}</table>
+  ${(()=>{const m=currentChamps();return DIVS.map(([d])=>`<tr><td>${d}weight</td>${BELTS.map(b=>{const c=m[d]&&m[d][b];return`<td>${c?`<a data-go="opub:${c.uid}:${encN(c.fid)}">${esc(fName(c.uid,c.fid))}</a><br><span class="small">${esc(gymOf(c.uid))}</span>`:'<span class="mute">vacant</span>'}</td>`}).join('')}</tr>`).join('')})()}</table>
   <p class="small mute">Win a WBC, WBA or WBO title fight to fill a belt.</p>`;
 }
 const BELT_ICON=`<svg class="belt" viewBox="0 0 58 30"><rect x="1" y="11" width="56" height="9" rx="2" fill="#7a1a1a" stroke="#3d0b0b"/><ellipse cx="29" cy="15.5" rx="15" ry="13" fill="#e8b923" stroke="#8a6200" stroke-width="1.5"/><ellipse cx="29" cy="15.5" rx="10" ry="8.5" fill="#f6d65c" stroke="#a87800"/><path d="M23 13 l3 -4 l3 3 l3 -3 l3 4 v4 h-12z" fill="#b8860b"/><rect x="5" y="13" width="6" height="5" rx="1" fill="#e8b923"/><rect x="47" y="13" width="6" height="5" rx="1" fill="#e8b923"/></svg>`;
 /* League week = number of fight dates already run */
 const leagueWeek=()=>new Set(bouts.filter(b=>b.status==='done').map(b=>b.fight_date)).size;
 function allFighters(){const out=[];for(const uid in cards){const m=managers[uid];if(!m)continue;((cards[uid]||{}).fighters||[]).forEach(f=>out.push({uid,f,m}))}return out}
-function rankedIn(div){return allFighters().filter(x=>x.f.div===div).map(x=>{const r=x.f.rec||[0,0,0,0];return{...x,r,t:(x.f.titles||[]).length,dif:r[0]-r[1],pct:(r[0]+.5*r[2])/Math.max(1,r[0]+r[1]+r[2])}})
+function rankedIn(div){return allFighters().filter(x=>x.f.div===div).map(x=>{const r=x.f.rec||[0,0,0,0];return{...x,r,t:beltsOf(x.uid,x.f.id).length,dif:r[0]-r[1],pct:(r[0]+.5*r[2])/Math.max(1,r[0]+r[1]+r[2])}})
     .sort((a,b)=>b.t-a.t||(b.f.rating||0)-(a.f.rating||0)||(b.f.status||0)-(a.f.status||0)||b.dif-a.dif||b.pct-a.pct||b.r[3]-a.r[3]||a.f.name.localeCompare(b.f.name))}
 function frankHTML(arg){
   let div=decN(arg||'');if(!DIVS.some(d=>d[0]===div)){const mine=ME?((cards[ME]||{}).fighters||[])[0]:null;div=(mine&&mine.div)||(ROSTER()[0]&&divOf(state[ROSTER()[0]]))||'Heavy'}
