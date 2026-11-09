@@ -191,6 +191,12 @@ const ROSTER=()=>{if(!Array.isArray(state.roster))state.roster=['A','B'].filter(
 const FTR=id=>ROSTER().includes(id)?state[id]:null;
 const divOf=F=>(F&&F.div)||state.div||'Middle';
 function corners(){const r=ROSTER();if(!r.includes(state.red))state.red=r[0];if(!r.includes(state.blue)||state.blue===state.red)state.blue=r.find(k=>k!==state.red);return[state.red,state.blue]}
+function cleanSlate(){
+  if(state.practiceCleared)return;
+  const wipe=F=>{if(!F)return;F.rec=[0,0,0,0];F.hist=[];F.rating=0;F.status=0;F.streak=0;F.ip=0;F.aploss=0};
+  ROSTER().forEach(k=>wipe(state[k]));(state.retired||[]).forEach(wipe);
+  state.champs={};state.log=[];state.reports={};state.week=1;state.practiceCleared=true;
+}
 const save=()=>{if(typeof syncGym==='function')syncGym();try{localStorage.setItem('contenders_v6',JSON.stringify(state))}catch(e){
   const ids=Object.keys(state.reports);ids.slice(0,Math.max(1,ids.length-5)).forEach(k=>delete state.reports[k]);
   try{localStorage.setItem('contenders_v6',JSON.stringify(state))}catch(e2){}}};
@@ -573,6 +579,7 @@ function condText(x,after){
 
 
 /* ================= SHARED DATA (Supabase: accounts, forums, messages) ================= */
+cleanSlate();
 const SB_URL='https://ojsphhzgzbxmnfcbitqb.supabase.co',SB_KEY='sb_publishable_SWO9WhiSkoVhflY5CmY08A_hlqCEJSi';
 const SITE_URL='https://imblessedustressed-del.github.io/Contenders-/';
 let cards={},SB=null,ME=null,MYEMAIL='',dbState='loading',managers={},topics=[],ims=[],posts=[],postsTopic=null,recovering=false,syncTimer=null,loadedGym=false;
@@ -618,7 +625,7 @@ async function afterLogin(){
   await loadPublic();loadIms();
   try{
     const{data}=await SB.from('gym_state').select('data').eq('user_id',ME).maybeSingle();
-    if(data&&data.data&&(Array.isArray(data.data.roster)||data.data.A)){const rep=state.reports;state=Object.assign({},data.data);state.reports=rep||{};try{localStorage.setItem('contenders_v6',JSON.stringify(state))}catch(e){}}
+    if(data&&data.data&&(Array.isArray(data.data.roster)||data.data.A)){const rep=state.reports;state=Object.assign({},data.data);state.reports=rep||{};if(!state.practiceCleared){cleanSlate();await pushGym()}try{localStorage.setItem('contenders_v6',JSON.stringify(state))}catch(e){}}
     else await pushGym();
   }catch(e){}
   loadedGym=true;pushGym();render();
@@ -1003,11 +1010,12 @@ function fightHTML(){
   <tr><td class="navy">Blue corner</td><td>${fsel('blueSel',bc)}</td></tr>
   <tr><td>Weight Division</td><td><select id="div">${opt(DIVS.map(([d,l])=>[d,`${d} (${l<1000?l:'unlimited'})`]),state.div)}</select></td></tr>
   <tr><td>Bout</td><td><select id="bout">${opt([['10','10-round Contenders bout'],['12|WBC','WBC title, 12 rounds'],['12|WBA','WBA title, 12 rounds'],['12|WBO','WBO title, 12 rounds']],state.bout)}</select></td></tr></table>
-  <p><button id="go">Start the Fight</button> <span class="cr small" id="err"></span></p>`;
+  <p><button id="go">Start the Fight</button> <span class="cr small" id="err"></span></p>
+  <p class="small mute">Practice fights are for testing only. They never count on a fighter's record, rating, status or titles.</p>`;
   if(!fight)return h;
   h+=`<hr><div class="rep">${reportHTML(fight,bout,shown)}</div>`;
   if(shown<fight.rounds.length)h+=`<p style="margin-top:14px"><button id="next">Next Round</button> <button id="skip">Skip to the End</button></p>`;
-  else h+=`<p style="margin-top:16px"><button id="go2">Rematch</button> <button data-go="rec:${state.red}">Red corner's record</button> <button data-go="rec:${state.blue}">Blue corner's record</button></p>`;
+  else h+=`<p style="margin-top:16px"><button id="go2">Rematch</button> <button data-go="simbot">Run it 100 times in Simbot</button></p>`;
   return h;
 }
 function planErr(){for(const s of corners()){const F=state[s];if(parsePlan(F.plan).errors.length)return`${F.name}'s fight plan has lines the parser didn't recognize. Fix them on his page.`}return''}
@@ -1065,6 +1073,8 @@ function startFight(){
 }
 function finish(){
   if(bout.done)return;bout.done=true;
+  return; /* practice fights never touch records */
+  // eslint-disable-next-line no-unreachable
   const r=fight.result,S=bout.ids,id='f'+Date.now();if(!S.every(k=>state[k]))return;
   const date=new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
   const score=fight.totals.map(t=>t.join('-')).join(', ');
@@ -1279,7 +1289,7 @@ if endurance_percent < 50 then 1/1/10</pre>`,
   <li>Get your fight plans and training in <b>before your division's fight night</b>. Whatever is saved when the fights run is what your fighter uses.</li>
   <li>You don't need to be online. Results, fight reports and new rankings are posted after the fights run.</li>
   <li>A fighter's page shows his next opponent once he's been matched, so you can scout him and write a plan for that matchup.</li>
-  <li>Between Saturdays, use <a data-go="fight">Practice Fights</a> and <a data-go="simbot">Simbot</a> as much as you like. They don't count on your record.</li></ul>
+  <li>Between fight nights, use <a data-go="fight">Practice Fights</a> and <a data-go="simbot">Simbot</a> as much as you like. They never count on your record.</li></ul>
   <p class="note">Weekly fight nights are being switched on as managers sign up. Until then, practice fights and Simbot are open to everyone.</p>`,
  titles:()=>`<ul><li>Every division has three world titles: the <b>WBC</b>, the <b>WBA</b> and the <b>WBO</b>.</li>
   <li>Divisions: ${DIVS.map(d=>d[0]+(d[1]<1000?' '+d[1]:' (no limit)')).join(', ')}.</li>
