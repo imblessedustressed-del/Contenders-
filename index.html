@@ -168,9 +168,9 @@ if opponent = exhausted then 8H/7/5`]
 };
 const DEFAULTS={
   A:{name:'Marcus Reyes',nick:'The Hammer',home:'Tulsa, Oklahoma',build:'normal',str:15,kp:4,spd:10,agl:9,chn:11,cnd:11,hgt:8,cut:2,
-     plan:`# Reyes: walk him down and look for the big shot\n6/6/8\nif hisstuns > 0 then 7H/9/4\nif endurance_percent < 50 then 5/5/10 (clinch)\n10) if score < 0 then 8H/8/4`,rec:[0,0,0,0],hist:[],locked:true,rating:0,status:0,train:'str',streak:0,ip:0,planName:'Hammer Time'},
+     plan:`# Reyes: walk him down and look for the big shot\n6/6/8\nif hisstuns > 0 then 7H/9/4\nif endurance_percent < 50 then 5/5/10 (clinch)\n10) if score < 0 then 8H/8/4`,rec:[0,0,0,0],hist:[],locked:true,rating:0,status:0,train:'str',train2:'cnd',streak:0,ip:0,planName:'Hammer Time'},
   B:{name:'Danny Okafor',nick:'Silk',home:'Houston, Texas',build:'light',str:10,kp:2,spd:14,agl:14,chn:9,cnd:10,hgt:10,cut:1,
-     plan:`1) 5/4/11 (counter)\n2) if score < 1 then 6/5/9 (counter)\n3) 5/4/11 (counter)\nif endurance_percent < 100 - (round - 1) * 4 then 5/4/11 (counter)\nif score < 2 and endurance_percent > 100 - (round - 1) * 4 then 6/5/9 (counter)\nif score < 0 and round <= 7 then 8/4/8 (counter)\n6) if round = 6 then 1/1/9 (clinch)`,rec:[0,0,0,0],hist:[],locked:true,rating:0,status:0,train:'spd',streak:0,ip:0,planName:'Silk Counter'}
+     plan:`1) 5/4/11 (counter)\n2) if score < 1 then 6/5/9 (counter)\n3) 5/4/11 (counter)\nif endurance_percent < 100 - (round - 1) * 4 then 5/4/11 (counter)\nif score < 2 and endurance_percent > 100 - (round - 1) * 4 then 6/5/9 (counter)\nif score < 0 and round <= 7 then 8/4/8 (counter)\n6) if round = 6 then 1/1/9 (clinch)`,rec:[0,0,0,0],hist:[],locked:true,rating:0,status:0,train:'spd',train2:'agl',streak:0,ip:0,planName:'Silk Counter'}
 };
 let state;
 try{state=JSON.parse(localStorage.getItem('contenders_v6'))}catch(e){}
@@ -617,7 +617,7 @@ function render(){
     login:loginHTML,logout:logoutHTML,forums:forumsHTML,forum:()=>forumHTML(arg),topic:()=>topicHTML(arg),newtopic:()=>newTopicHTML(arg),msgs:msgsHTML,
     simbot:simbotHTML,champs:champsHTML,frank:frankHTML,grank:grankHTML,results:resultsHTML,fcards:resultsHTML,sched:schedHTML,
     discarded:()=>`<h1>Discarded Fighters</h1><p>No fighters have been discarded.</p>`,search:searchHTML,help:helpHTML,newbie:newbieHTML,funding:fundingHTML,
-    edit:()=>planEditHTML(arg),plan:()=>planEditHTML(arg),rec:()=>recordHTML(arg),report:()=>savedReportHTML(arg)};
+    edit:()=>planEditHTML(arg),plan:()=>planEditHTML(arg),rec:()=>recordHTML(arg),train:()=>trainHTML(arg),report:()=>savedReportHTML(arg)};
   $('#view').innerHTML=`<div id="flash" class="note cr" style="display:none;margin-bottom:10px"></div>`+(P[base]||homeHTML)();
 }
 
@@ -756,6 +756,7 @@ const ICON={
  d:`<svg class="icon" viewBox="0 0 44 30"><rect x="11" y="4" width="22" height="22" rx="11" fill="#ddd" stroke="#888"/><text x="22" y="20" text-anchor="middle" font-family="Verdana" font-weight="bold" font-size="12" fill="#555">D</text></svg>`};
 function nextSat(){const d=new Date();d.setDate(d.getDate()+((6-d.getDay()+7)%7||7));return d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'})}
 function weightLbs(F){const lim=weightOf(state.div);if(lim<1000)return lim;return Math.round((150+HT(F)*1.4)*({'very light':.9,light:.95,normal:1,heavy:1.06,'very heavy':1.12}[F.build||'normal']))}
+const PROGS=[['str','weight lifting (STR)'],['kp','heavy bag (KP)'],['spd','speed bag (SPD)'],['agl','jump rope (AGL)'],['chn','sparring (CHN)'],['cnd','roadwork (CND)']];
 const primeF=F=>1-Math.min(.3,.015*Math.abs((F.rating||0)-(F.status||0)));
 function recordHTML(side){
   if(side!=='A'&&side!=='B')side='A';
@@ -774,8 +775,7 @@ function recordHTML(side){
   <tr><td>Minimum Weight</td><td colspan="3">${Math.round(w*.96)} pounds (${Math.round(w*.96*.4536)} kilograms)</td></tr></table>
   <p>${n} fights in the <a data-go="frank">${esc(state.div)}weight</a> division out of ${esc(F.home||'parts unknown')} for the ${esc(myGym())} gym. ${prime}</p>
   <p>${n}'s next opponent is the ${ht(HT(O)).replace(' 0 inches','')}, <a data-go="rec:${side==='A'?'B':'A'}">${esc(O.name)}</a> ${recStr(O)} from the ${esc(myGym())} gym for $0 on <b>${nextSat()}</b>.</p>
-  <p>${n} is training <b>${tr[F.train||'str']}</b>, but you can instruct him to train for something else:
-   <select data-train="${side}">${Object.entries(tr).map(([k,v])=>`<option value="${k}"${k===(F.train||'str')?' selected':''}>${v}</option>`).join('')}</select></p>
+  <p>${n} is training <b>${tr[F.train||'str']}</b>${(F.status||0)>=2?` with <b>${tr[F.train2||'cnd']}</b> as his secondary program`:''}, but you can instruct him to <a data-go="train:${side}">train for something else</a>.</p>
   <p>${n} is currently using the <b>${esc(F.planName||'Basic')}</b> fight plan. He may</p>
   <ul><li><a data-go="plan:${side}">edit</a> your ${esc(F.planName||'Basic')} plan, or paste in a different one.</li>
   <li>Beginners might want to get into the ring with a <a data-go="simbot">sparring partner</a>.</li>
@@ -786,6 +786,16 @@ function recordHTML(side){
   <p>${n}'s record is ${F.rec[0]}-${F.rec[1]}-${F.rec[2]} (${F.rec[3]}/${F.rec[1]})${titles?` with ${titles} world title${titles>1?'s':''}!`:'.'}</p>
   <p class="small">Select <i>highlights</i> for a detailed account of a fight.</p>
   ${F.hist&&F.hist.length?`<table class="hist">${F.hist.map(h=>`<tr><td>${ICON[h.icon]}</td><td>vs <b>${esc(h.opp)}</b> - ${esc(h.div)}weight ${h.belt?esc(h.belt)+' title ':''}bout on ${esc(h.date)}, week ${h.week}: ${esc(h.res)}. Score: ${esc(h.score)} ${state.reports[h.id]?`<a data-go="report:${h.id}">highlights</a>`:''}</td></tr>`).join('')}</table>`:'<p class="mute">No fights yet.</p>'}`;
+}
+function trainHTML(side){
+  if(side!=='A'&&side!=='B')side='A';
+  const F=state[side],opt=v=>PROGS.map(([k,l])=>`<option value="${k}"${k===v?' selected':''}>${l}</option>`).join('');
+  return`<h1>Training</h1>
+  <table class="plain"><tr><td>Fighter's Name</td><td><select id="trWho">${['A','B'].map(s=>`<option value="${s}"${s===side?' selected':''}>${esc(state[s].name)}</option>`).join('')}</select></td></tr>
+  <tr><td>Primary Training Program</td><td><select data-train="${side}">${opt(F.train||'str')}</select></td></tr>
+  <tr><td>Secondary Training Program (fast track)</td><td><select data-train2="${side}">${opt(F.train2||'cnd')}</select></td></tr></table>
+  <p><button data-go="rec:${side}">Submit Form</button></p>
+  <div class="note"><b>How training works:</b> his primary program gives him +1 in that ability for each fight. When he wins, his status goes up 1 and he keeps an ability point in his primary program. From his third win on he's on the <b>fast track</b> and also gets a point in his secondary program, so every win is worth two points. Status tops out at 28.</div>`;
 }
 function frankOf(side){const sc=s=>{const r=state[s].rec;return(r[0]+.5*r[2])/Math.max(1,r[0]+r[1]+r[2])+r[0]*.001};return sc(side)>=sc(side==='A'?'B':'A')?1:2}
 function planEditHTML(side){
@@ -880,7 +890,7 @@ function finish(){
     else{F.rec[1]++;icon='l';res=`lost by ${how}`}
     F.rating=Math.min(28,(F.rating||0)+1);
     if(r.w===i){F.streak=(F.streak||0)+1;if((F.status||0)<28){F.status=(F.status||0)+1;const k=F.train||'str';F[k]=Math.min(MAX,F[k]+1);
-      if(F.status>=6&&F.status%2===0){const k2=pick(['str','spd','agl','cnd']);F[k2]=Math.min(MAX,F[k2]+1)}}}
+      if(F.status>=3){const k2=F.train2||'cnd';F[k2]=Math.min(MAX,F[k2]+1)}}}
     else F.streak=0;
     if(r.w!==null&&r.w!==i&&r.type==='KO'){F.ip=(F.ip||0)+25}
     if((F.ip||0)>=500){F.ip-=500;F.aploss=(F.aploss||0)+1;const k3=pick(['str','spd','agl','chn','cnd']);F[k3]=Math.max(1,F[k3]-1)}
@@ -1059,7 +1069,7 @@ document.addEventListener('click',async e=>{
   else if(t.dataset.reset){const s=t.dataset.reset,keep={rec:state[s].rec,hist:state[s].hist};state[s]=Object.assign(JSON.parse(JSON.stringify(DEFAULTS[s])),keep);save();render()}
   else if(t.id==='createF'){const D=state.draft;if(!D.name.trim())return $('#cerr').textContent='Give him a name.';if(used(D)!==POOL)return $('#cerr').textContent=`He must total exactly ${POOL} points.`;
     const slot=$('#slot').value,old=state[slot];state.retired=state.retired||[];state.retired.unshift({name:old.name,rec:old.rec,rating:old.rating,status:old.status});
-    state[slot]={...JSON.parse(JSON.stringify(D)),rec:[0,0,0,0],hist:[],locked:true,rating:0,status:0,train:'str',streak:0,ip:0};state.draft=null;save();nav('rec:'+slot)}
+    state[slot]={...JSON.parse(JSON.stringify(D)),rec:[0,0,0,0],hist:[],locked:true,rating:0,status:0,train:'str',train2:'cnd',streak:0,ip:0};state.draft=null;save();nav('rec:'+slot)}
   else if(t.dataset.retire){const s0=t.dataset.retire;state.retired=state.retired||[];const old=state[s0];state.retired.unshift({name:old.name,rec:old.rec,rating:old.rating,status:old.status});
     state[s0]=Object.assign(JSON.parse(JSON.stringify(DEFAULTS[s0])),{name:'Open Slot '+(s0==='A'?'Red':'Blue')});save();alertBox(old.name+' has retired. Create a new fighter for this corner.');nav('create')}
   else if(t.dataset.checkplan){const ta=document.querySelector('textarea.planbox');if(ta){state[t.dataset.checkplan].plan=ta.value;save()}render()}
@@ -1090,6 +1100,8 @@ document.addEventListener('change',e=>{
   if(el.id==='div'){state.div=el.value;save();return}
   if(el.id==='bout'){state.bout=el.value;save();return}
   if(el.dataset.train){state[el.dataset.train].train=el.value;save();return}
+  if(el.dataset.train2){state[el.dataset.train2].train2=el.value;save();return}
+  if(el.id==='trWho'){nav('train:'+el.value);return}
   const tb=el.closest('[data-side]');if(!tb)return;const F=tb.dataset.side==='D'?state.draft:state[tb.dataset.side];
   if(el.dataset.f==='plan'){F.plan=el.value;save();render();return}
   if(el.dataset.st){const k=el.dataset.st;F[k]=clamp(parseInt(el.value)||0,MINS[k],k==='hgt'?24:MAX);save();render();return}
