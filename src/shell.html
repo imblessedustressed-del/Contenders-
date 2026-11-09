@@ -108,7 +108,7 @@ svg.belt{width:46px;height:24px;display:block}
   <div class="box"><div class="hd">Main</div><a data-v="home">Home</a><a data-v="register">Register</a><a data-v="aup">Acceptable Use Policy</a></div>
   <div class="box"><div class="hd">Your Gym</div><a data-v="gym">Active Fighters</a><a data-v="plans">Fight Plans</a><a data-v="fight">Practice Fights</a><a data-v="create">Create a Fighter</a><a data-v="cards">Your Fight Cards</a><a data-v="retired">Retired Fighters</a><a data-v="clean">Clean Fight Plans</a><a data-v="short">Short Gym</a><a data-v="changegym">Change Gym</a><a data-v="desc">Description</a><a data-v="login">Login</a><a data-v="logout">Logout</a></div>
   <div class="box"><div class="hd">Community</div><a data-v="forums">Contenders Forums</a><a data-v="msgs" id="msgLink">Messages</a><a data-v="forum:press">Press Releases</a><a data-v="simbot">Simbot</a></div>
-  <div class="box"><div class="hd">Hall of Records</div><a data-v="champs">Champions</a><a data-v="frank">Fighter Rankings</a><a data-v="grank">Gym Rankings</a><a data-v="results">Fight Results</a><a data-v="fcards">Fight Cards</a><a data-v="sched">Fight Schedule</a><a data-v="discarded">Discarded Fighters</a><a data-v="search">Search Contenders</a></div>
+  <div class="box"><div class="hd">Hall of Records</div><a data-v="champs">Champions</a><a data-v="frank">Fighter Rankings</a><a data-v="grank">Gym Rankings</a><a data-v="ppv">Pay-Per-View</a><a data-v="results">Fight Results</a><a data-v="fcards">Fight Cards</a><a data-v="sched">Fight Schedule</a><a data-v="discarded">Discarded Fighters</a><a data-v="search">Search Contenders</a></div>
   <div class="box"><div class="hd">Contenders Help &amp; Tools</div><a data-v="help">Help Pages</a><a data-v="newbie">Newbie Files</a></div>
   <div class="box"><div class="hd">Other Stuff</div><a data-v="forgot">Forgotten Password</a><a data-v="changepw">Change Email/Passwd.</a></div>
   <div class="box fund"><a data-v="funding">Contenders Funding</a></div>
@@ -274,7 +274,7 @@ async function afterLogin(){
 }
 function syncGym(){if(!SB||!ME||!loadedGym)return;clearTimeout(syncTimer);syncTimer=setTimeout(pushGym,1500)}
 function publicCard(){
-  const pubF=(F,id,active)=>({id,name:F.name,nick:F.nick||'',home:F.home||'',div:divOf(F),hgt:F.hgt,w:natWeight(F),mw:minWeight(F),earn:F.earn||0,rec:F.rec,rating:F.rating||0,status:F.status||0,streak:F.streak||0,active,
+  const pubF=(F,id,active)=>({id,name:F.name,nick:F.nick||'',home:F.home||'',div:divOf(F),hgt:F.hgt,w:natWeight(F),mw:minWeight(F),earn:F.earn||0,fans:F.fans||0,ppv:F.ppv||0,rec:F.rec,rating:F.rating||0,status:F.status||0,streak:F.streak||0,active,
     plan:F.planName||'Basic',train:F.train||'str',titles:Object.entries(state.champs||{}).flatMap(([d,b])=>Object.entries(b).filter(([,n])=>n===F.name).map(([bl])=>d+' '+bl)),
     hist:(F.hist||[]).slice(0,25).map(h=>({opp:h.opp,oh:h.oh,div:h.div,belt:h.belt,date:h.date,week:h.week,res:h.res,score:h.score,icon:h.icon,plan:h.plan,ogym:h.ogym,bout:h.bout,earned:h.earned||0}))});
   return{fighters:ROSTER().map(k=>pubF(state[k],k,true)),retired:(state.retired||[]).filter(f=>f.rec).slice(0,40).map((f,i)=>pubF(f,'r'+i,false)),
@@ -331,7 +331,7 @@ function render(){
     login:loginHTML,logout:logoutHTML,forgot:forgotHTML,newpass:newPassHTML,changepw:changePwHTML,forums:forumsHTML,forum:()=>forumHTML(arg),topic:()=>topicHTML(arg),newtopic:()=>newTopicHTML(arg),msgs:msgsHTML,
     simbot:simbotHTML,champs:champsHTML,frank:()=>frankHTML(arg),grank:grankHTML,results:resultsHTML,fcards:fightCardsHTML,sched:schedHTML,
     discarded:()=>`<h1>Discarded Fighters</h1><p>No fighters have been discarded.</p>`,search:searchHTML,help:()=>helpHTML(arg),newbie:newbieHTML,funding:fundingHTML,retiregym:retireGymHTML,
-    edit:()=>planEditHTML(arg),plan:()=>planEditHTML(arg),pf:()=>planFormHTML(arg),rec:()=>recordHTML(arg),gympub:()=>gymPubHTML(arg),gymret:()=>gymRetHTML(arg),opub:()=>oFighterHTML(arg),cdiv:()=>cdivHTML(arg),pub:()=>pubHTML(arg),train:()=>trainHTML(arg),report:()=>savedReportHTML(arg),lreport:()=>leagueReportHTML(arg)};
+    edit:()=>planEditHTML(arg),plan:()=>planEditHTML(arg),pf:()=>planFormHTML(arg),rec:()=>recordHTML(arg),gympub:()=>gymPubHTML(arg),gymret:()=>gymRetHTML(arg),opub:()=>oFighterHTML(arg),cdiv:()=>cdivHTML(arg),pub:()=>pubHTML(arg),train:()=>trainHTML(arg),report:()=>savedReportHTML(arg),lreport:()=>leagueReportHTML(arg),ppv:ppvHTML};
   $('#view').innerHTML=`<div id="flash" class="note cr" style="display:none;margin-bottom:10px"></div>`+(P[base]||homeHTML)();
 }
 
@@ -412,6 +412,53 @@ function pickVenue(tier){const L=VENUES[tier]||VENUES.club,v=L[Math.floor(Math.r
 function attendanceFor(v,maxR,belt,star){const f=Math.min(1,.4+.02*(maxR||0)+(belt?.2:0)+.15*Math.max(0,(star||1)-1)+(Math.random()-.5)*.1);return Math.round(v.cap*Math.max(.25,f)/10)*10}
 const venueAt=b=>b&&b.venue?` at ${esc(b.venue.name)}, ${esc(b.venue.city)}`:'';
 const crowdText=(v,att)=>v&&att?(att>=v.cap?`a sellout crowd of ${att.toLocaleString('en-US')}`:`${att.toLocaleString('en-US')} (capacity ${v.cap.toLocaleString('en-US')})`):'';
+/* ===== TV and pay-per-view (owner-approved, Nov 2026) =====
+   Broadcast: title fights and superfights headline pay-per-view; top-10 contender fights (rating 3+) are televised,
+   and on a night with a PPV they are the PPV undercard; everyone else is streamed.
+   Fans: wins, KOs, knockdowns, title wins and big stages build a following; losses and getting stopped cost fans.
+   Draw = both fighters' fans + 3 x both ratings. TV viewers = 300,000 + 10,000 x draw. PPV buys = 300 x draw^1.5,
+   x1.2 unified, x1.5 undisputed. Money: PPV at $79.99 a buy, the fighters' share is 25% of the gross, split like the
+   purse; a televised fight pays the fighters $0.10 per viewer, split the same way. */
+const PPV_PRICE=79.99;
+function broadcastTier(belt,star,contender){return(belt||star>=2)?'ppv':contender?'tv':'stream'}
+const REGIONS=[['North America',.55],['UK & Ireland',.15],['Latin America',.12],['Europe',.08],['Asia-Pacific',.06],['Rest of world',.04]];
+function homeRegion(h){h=(h||'').toLowerCase();if(!h)return null;
+  if(/england|scotland|wales|ireland|united kingdom|\buk\b|london|belfast|glasgow|dublin/.test(h))return'UK & Ireland';
+  if(/mexico|puerto rico|argentina|brazil|colombia|venezuela|cuba|dominican|panama|nicaragua|chile|peru/.test(h))return'Latin America';
+  if(/germany|france|spain|italy|russia|ukraine|poland|sweden|norway|denmark|netherlands|belgium|hungary|kazakhstan|armenia/.test(h))return'Europe';
+  if(/japan|philippines|australia|china|korea|thailand|indonesia|new zealand|india/.test(h))return'Asia-Pacific';
+  if(/ghana|nigeria|south africa|kenya|egypt|morocco/.test(h))return'Rest of world';return'North America'}
+function regionSplit(total,homes){const w={};REGIONS.forEach(([r,v])=>w[r]=v);homes.forEach(h=>{const r=homeRegion(h);if(r)w[r]+=.1});
+  const sum=Object.values(w).reduce((a,b)=>a+b,0);const out={};REGIONS.forEach(([r])=>out[r]=Math.round(total*w[r]/sum/1000)*1000);return out}
+const fansOf=(uid,fid)=>{const f=((cards[uid]||{}).fighters||[]).find(x=>x.id===fid);return f?f.fans||0:0};
+/* how a finished fight changes each fighter's following */
+function fightFans(f,belt,tier){const r=f.result,d=[0,0];
+  for(let i=0;i<2;i++){const won=r.w===i,lost=r.w!=null&&r.w!==i;let x=won?10:lost?-5:2;
+    if(!r.decision&&won)x+=10;if(!r.decision&&lost)x-=10;
+    f.rounds.forEach(R=>{if(R.st){x+=3*(R.st[i].kd||0)+(R.st[i].stun||0)}});
+    if(belt){x+=5;if(won)x+=20}
+    if(tier==='ppv')x+=10;else if(tier==='tv'||tier==='undercard')x+=5;
+    if(r.decision&&/split|majority|draw/i.test(r.type))x+=5;
+    d[i]=x}
+  return d}
+/* ratings and broadcast money for a finished fight */
+function broadcastResult(tier,fans,ratings,homes,held,purse){const draw=(fans[0]||0)+(fans[1]||0)+3*((ratings[0]||0)+(ratings[1]||0)),luck=.9+.2*Math.random();
+  const tot=Math.max(1,(purse[0]||0)+(purse[1]||0)),sh=[(purse[0]||0)/tot,(purse[1]||0)/tot];
+  if(tier==='ppv'){const um=held>=3?1.5:held>=2?1.2:1;const buys=Math.round(300*Math.pow(draw,1.5)*um*luck/1000)*1000;const pool=buys*PPV_PRICE*.25;
+    return{tier,buys,regions:regionSplit(buys,homes),pay:sh.map(x=>Math.round(pool*x/10)*10)}}
+  if(tier==='tv'||tier==='undercard'){const viewers=Math.round((300000+10000*draw)*luck/10000)*10000;const pool=viewers*.10;return{tier,viewers,pay:sh.map(x=>Math.round(pool*x/10)*10)}}
+  return{tier:'stream',pay:[0,0]}}
+const fanLine=F=>`Fan following: <b>${F.fans||0}</b>.${F.ppv?` His fights have sold <b>${(F.ppv).toLocaleString('en-US')}</b> pay-per-views.`:''}`;
+const big=n=>n>=1e6?(n/1e6).toFixed(n>=1e7?0:1)+' million':n.toLocaleString('en-US');
+function tvOf(b){const t=b&&b.venue&&b.venue.tv;if(!t)return null;
+  if(t==='tv'&&bouts.some(x=>x!==b&&x.fight_date===b.fight_date&&x.venue&&x.venue.tv==='ppv'))return'undercard';return t}
+const TV_TXT={ppv:'on <b>pay-per-view</b>',undercard:'on the <b>pay-per-view undercard</b>',tv:'<b>televised</b>',stream:'streamed online'};
+const tvAt=b=>{const t=(b.summary&&b.summary.tv&&b.summary.tv.tier)||tvOf(b);return t?`, ${TV_TXT[t]}`:''};
+function tvResult(b){const t=b.summary&&b.summary.tv;if(!t)return'';if(t.tier==='ppv')return`PPV ${big(t.buys)} buys`;if(t.viewers)return`${t.tier==='undercard'?'PPV undercard, ':'TV '}${big(t.viewers)} viewers`;return''}
+function ppvHTML(){const L=bouts.filter(b=>b.status==='done'&&b.summary&&b.summary.tv&&b.summary.tv.tier==='ppv').sort((a,b)=>b.summary.tv.buys-a.summary.tv.buys);
+  return`<h1>Pay-Per-View</h1><p>The biggest pay-per-view events in Contenders history, by buys worldwide.</p>
+  ${L.length?`<table class="wranks"><tr><th>#</th><th>Main event</th><th>Venue</th><th>Date</th><th>Buys</th></tr>${L.slice(0,50).map((b,i)=>`<tr><td>${i+1}.</td><td><a data-go="opub:${b.red_user}:${encN(b.red_fid)}">${esc(fName(b.red_user,b.red_fid))}</a> vs <a data-go="opub:${b.blue_user}:${encN(b.blue_fid)}">${esc(fName(b.blue_user,b.blue_fid))}</a>${b.belt?` <span class="small">(${esc(b.div)}weight ${esc(b.belt)} title)</span>`:''} <a data-go="lreport:${b.id}" class="small">report</a></td><td>${b.venue?esc(b.venue.name):''}</td><td>${esc(b.fight_date)}</td><td class="n">${b.summary.tv.buys.toLocaleString('en-US')}</td></tr>`).join('')}</table>`:'<p class="mute">No pay-per-view events yet.</p>'}
+  <p class="small mute">A pay-per-view costs $${PPV_PRICE}. The fighters split 25% of the gross the same way they split the purse.</p>`}
 function titleFights(){return bouts.filter(b=>b.status==='done'&&b.belt&&b.summary).slice(0,9).map(b=>{const w=b.summary.w,ru=[b.red_user,b.red_fid],bu=[b.blue_user,b.blue_fid],W=w===1?bu:ru,L=w===1?ru:bu;
   return{id:b.id,div:b.div,belt:b.belt,draw:w==null,winner:fName(...W),wu:W[0],wf:W[1],wgym:gymOf(W[0]),loser:fName(...L),lu:L[0],lf:L[1],lgym:gymOf(L[0]),how:b.summary.how}})}
 function homeHTML(){
@@ -495,12 +542,12 @@ function boutRes(b,red){const m=b.summary||{};const how=m.how||'';if(m.w==null)r
 /* apply finished bouts to my fighters' records once (records, rating/status, training points, history) */
 function applyLeague(){if(!ME)return;state.applied=state.applied||{};let ch=false;
   myDone().forEach(({b,k,x})=>{if(state.applied[b.id])return;const F=FTR(k);state.applied[b.id]=1;ch=true;if(!F||!b.summary)return;
-    applyResult(F,x.red?0:1,{...b.summary,purse:b.summary.purse?b.summary.purse[x.red?0:1]:0,belt:b.belt,oppRating:b.summary.ratings?b.summary.ratings[x.red?1:0]:undefined,ip:b.summary.ip?b.summary.ip[x.red?0:1]:undefined},{id:'L'+b.id,bout:b.id,oid:null,oh:x.o.hgt!=null?ht(60+x.o.hgt):'',opp:x.o.name,ogym:x.gym,div:b.div,belt:b.belt,date:x.date.replace(/^\w+, /,''),week:state.week});
+    applyResult(F,x.red?0:1,{...b.summary,purse:(b.summary.purse?b.summary.purse[x.red?0:1]:0)+(b.summary.tv&&b.summary.tv.pay?b.summary.tv.pay[x.red?0:1]:0),fans:b.summary.fans?b.summary.fans[x.red?0:1]:0,buys:b.summary.tv&&b.summary.tv.tier==='ppv'?b.summary.tv.buys:0,belt:b.belt,oppRating:b.summary.ratings?b.summary.ratings[x.red?1:0]:undefined,ip:b.summary.ip?b.summary.ip[x.red?0:1]:undefined},{id:'L'+b.id,bout:b.id,oid:null,oh:x.o.hgt!=null?ht(60+x.o.hgt):'',opp:x.o.name,ogym:x.gym,div:b.div,belt:b.belt,date:x.date.replace(/^\w+, /,''),week:state.week});
     if(b.summary.w!=null&&b.belt){state.champs[b.div]=state.champs[b.div]||{};if((b.summary.w===0)===x.red)state.champs[b.div][b.belt]=F.name;else if(state.champs[b.div][b.belt]===F.name)delete state.champs[b.div][b.belt]}});
   if(ch)save()}
 const STAR=champ=>`<span class="star" style="color:${champ?'#e8a400':'#3b6fd8'}">&#9733;</span>`;
 function boutLine(x){if(!x)return'';const o=x.o,r=o.rec;
-  return`${x.b.belt?`<b>${esc(x.b.belt)} title fight</b> vs `:''}the ${o.hgt!=null?ht(60+o.hgt)+',':''} <a data-go="opub:${x.ou}:${encN(x.of)}">${esc(o.name)}</a>${STAR(o.champ)} (${r[0]}-${r[1]}-${r[2]} ${o.rating}/${o.status}) from the <a data-go="gympub:${x.ou}">${esc(x.gym)}</a> gym for ${money(pursePart(x.b,x.red))}${x.b.status!=='done'&&boutStar(x.b)>=2?' (<b>superfight</b>)':''} on <b>${esc(x.date)}</b>${venueAt(x.b)}.`}
+  return`${x.b.belt?`<b>${esc(x.b.belt)} title fight</b> vs `:''}the ${o.hgt!=null?ht(60+o.hgt)+',':''} <a data-go="opub:${x.ou}:${encN(x.of)}">${esc(o.name)}</a>${STAR(o.champ)} (${r[0]}-${r[1]}-${r[2]} ${o.rating}/${o.status}) from the <a data-go="gympub:${x.ou}">${esc(x.gym)}</a> gym for ${money(pursePart(x.b,x.red))}${x.b.status!=='done'&&boutStar(x.b)>=2?' (<b>superfight</b>)':''} on <b>${esc(x.date)}</b>${venueAt(x.b)}${tvAt(x.b)}.`}
 const planStamp=n=>{state.planAt=state.planAt||{};state.planAt[n]=Date.now()};
 const planUpdated=n=>{const t=state.planAt&&state.planAt[n];return t?` updated ${new Date(t).toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'})}`:''};
 function fighterLine(side){
@@ -678,7 +725,7 @@ function recordHTML(side){
   let titles=0;for(const d in state.champs)for(const b in state.champs[d])if(state.champs[d][b]===F.name)titles++;
   const rows=[['Strength',F.str,'Knockout Punch',F.kp],['Speed',F.spd,'Agility',F.agl],['Chin',F.chn,'Conditioning',F.cnd],
     ['Cut Resistance',['','Low','Normal','High'][F.cut],'Winning Streak',F.streak||''],['Rating',F.rating||0,'Status',F.status||0],
-    ['Rank',frankOf(side),'Total Earnings',money(F.earn)],['Injury Points',F.ip||0,'AP Loss',F.aploss||0]];
+    ['Rank',frankOf(side),'Total Earnings',money(F.earn)],['Fan Following',F.fans||0,'PPV Buys',(F.ppv||0).toLocaleString('en-US')],['Injury Points',F.ip||0,'AP Loss',F.aploss||0]];
   const pf=primeF(F),prime=pf>=.999?'He is in his prime.':pf>.9?'He is close to his best.':pf>.8?'He is a step off his best.':'He is well past his best.';
   const tr={str:'strength',spd:'speed',agl:'agility',chn:'chin',cnd:'conditioning',kp:'knockout punch'};
   return`<p><a data-go="pub:${side}" class="b red">${n}</a> ${recStr(F)}</p>
@@ -727,7 +774,7 @@ function pubHTML(side){
   <p>${weightNote(n,divOf(F),natWeight(F),minWeight(F),F.rec[0]+F.rec[1]+F.rec[2])}</p>
   <hr><h2>${n}'s Record</h2>
   <p>${n}'s record is ${F.rec[0]}-${F.rec[1]}-${F.rec[2]} (${F.rec[3]}/${F.rec[1]})${recTitles(ME,side)}<br>
-  His current <a data-go="help">rating</a> is ${F.rating||0} and his <a data-go="help">status</a> is ${F.status||0}.<br>His career earnings are ${money(F.earn)}.</p>
+  His current <a data-go="help">rating</a> is ${F.rating||0} and his <a data-go="help">status</a> is ${F.status||0}.<br>His career earnings are ${money(F.earn)}.<br>${fanLine(F)}</p>
   <p>Select any icon for a detailed account of a fight.</p>
   ${F.hist&&F.hist.length?`<p>${n} ${TRAIN_FLAVOR[F.train||'str']}.</p>`:''}
   ${F.hist&&F.hist.length?`<table class="hist">${F.hist.map(h=>`<tr><td>${h.bout?`<a data-go="lreport:${h.bout}">${resultIcon(h)}</a>`:state.reports[h.id]?`<a data-go="report:${h.id}">${resultIcon(h)}</a>`:resultIcon(h)}</td><td>vs ${h.oid&&FTR(h.oid)?`<a data-go="pub:${h.oid}">${esc(h.opp)}</a>`:esc(h.opp)}${h.ogym?` (${esc(h.ogym)})`:h.oid?` (${esc(myGym())})`:''} - ${h.oh?esc(h.oh)+' - ':''}${esc(h.div)}weight ${h.belt?esc(h.belt)+' title ':''}bout on ${esc(h.date)}, week ${h.week}: ${esc(h.res)}. Earned ${money(h.earned)}. Score: ${esc(h.score)} ${h.bout?`<a data-go="lreport:${h.bout}">highlights</a>`:state.reports[h.id]?`<a data-go="report:${h.id}">highlights</a>`:''}${h.plan?`. Fight Plan: ${esc(h.plan)}`:''}</td></tr>`).join('')}</table>`:'<p class="mute">No fights yet.</p>'}
@@ -759,7 +806,7 @@ function weightOf(div){const l=(DIVS.find(d=>d[0]===div)||[0,160])[1];return l>=
 function reportHTML(f,b,upto){
   const S=f.S,W=weightOf(b.div);
   const intro=S.map((x,i)=>`<p>In this corner, standing ${ht(HT(x.F))} (${cm(HT(x.F))} centimeters) tall weighing in at ${W} pounds (${Math.round(W*.4536)} kilograms) with a record of ${b.recs[i][0]} wins, ${b.recs[i][2]} draws, and ${b.recs[i][1]} losses fighting for ${esc((b.gyms&&b.gyms[i])||b.gym)} out of ${esc(x.F.home||'parts unknown')} is <b>${esc(x.F.name)}</b>!!</p><div class="gap"></div>`).join('');
-  let h=`<h1 class="date">${esc(b.date)}</h1>${b.venue?`<p>Live from <b>${esc(b.venue.name)}</b> in ${esc(b.venue.city)}${b.att?`. Attendance: ${crowdText(b.venue,b.att)}`:''}.</p><div class="gap"></div>`:''}${intro}<p>This bout is scheduled for ${b.rounds} rounds.${b.belt?` It is for the <b>${esc(b.belt)} ${esc(b.div)}weight Championship of the World</b>.`:''}</p>`;
+  let h=`<h1 class="date">${esc(b.date)}</h1>${b.venue?`<p>${b.tv&&b.tv.tier==='ppv'?'Live on pay-per-view from':b.tv&&b.tv.tier==='undercard'?'On the pay-per-view undercard, live from':b.tv&&b.tv.tier==='tv'?'Live on TV from':'Live from'} <b>${esc(b.venue.name)}</b> in ${esc(b.venue.city)}${b.att?`. Attendance: ${crowdText(b.venue,b.att)}`:''}.${b.tv&&b.tv.buys?` Pay-per-view buys: <b>${b.tv.buys.toLocaleString('en-US')}</b> worldwide (${Object.entries(b.tv.regions||{}).filter(([,v])=>v).map(([r,v])=>`${esc(r)} ${v.toLocaleString('en-US')}`).join(', ')}).`:b.tv&&b.tv.viewers?` Viewers: <b>${b.tv.viewers.toLocaleString('en-US')}</b>.`:''}</p><div class="gap"></div>`:''}${intro}<p>This bout is scheduled for ${b.rounds} rounds.${b.belt?` It is for the <b>${esc(b.belt)} ${esc(b.div)}weight Championship of the World</b>.`:''}</p>`;
   const end=f.result,last=f.rounds.length;
   f.rounds.slice(0,upto).forEach((R,ri)=>{
     h+=`<div class="rnd">ROUND ${R.n}</div>${R.mgr?`<div class="mgr">${R.mgr.filter((m,i)=>!b.mine||b.mine[i]).join('<br>')}</div>`:''}${(R.say||[]).map((t,i)=>t?`<p>${S[i].n} says, "${esc(t)}"</p>`:'').join('')}<p>${(R.plans||[]).join('<br>')}</p>${(R.pre||[]).join('')}<div class="gap"></div>`;
@@ -800,7 +847,7 @@ function leagueReportHTML(id){
   const r=lrep[id];
   if(!r){if(SB&&r!==null){lrep[id]=null;SB.from('bouts').select('*').eq('id',id).maybeSingle().then(({data})=>{lrep[id]=data||false;if(view==='lreport:'+id)render()})}return'<p>Loading fight report...</p>'}
   if(!r.result)return`<p>That fight hasn't been fought yet. <a data-go="fcards">Back to Fight Cards</a></p>`;
-  const b={...r.result.b,mine:[r.red_user===ME,r.blue_user===ME],venue:r.venue,att:r.summary&&r.summary.att};
+  const b={...r.result.b,mine:[r.red_user===ME,r.blue_user===ME],venue:r.venue,att:r.summary&&r.summary.att,tv:r.summary&&r.summary.tv};
   return`<div class="rep">${reportHTML(r.result.f,b,r.result.f.rounds.length)}</div><p class="small"><a data-go="results">Recent Results</a> | <a data-go="fcards">Recent Fight Cards</a></p>`;
 }
 function savedReportHTML(id){const r=state.reports[id];if(!r)return`<p>That fight report is no longer saved.</p>`;return`<div class="rep">${reportHTML(r.f,r.b,r.f.rounds.length)}</div>`}
@@ -840,7 +887,7 @@ function applyResult(F,i,r,m){
   ratingStatus(F,r.w==null?'draw':r.w===i?'win':'loss',r);
   F.ip=(F.ip||0)+(r.ip!=null?r.ip:(r.w!=null&&r.w!==i&&r.type==='KO'?25:0));
   if((F.ip||0)>=500){F.ip-=500;F.aploss=(F.aploss||0)+1;const k3=pick(['str','spd','agl','chn','cnd']);F[k3]=Math.max(1,F[k3]-1)}
-  F.earn=(F.earn||0)+(r.purse||0);
+  F.earn=(F.earn||0)+(r.purse||0);F.fans=Math.max(0,(F.fans||0)+(r.fans||0));F.ppv=(F.ppv||0)+(r.buys||0);
   F.hist=F.hist||[];F.hist.unshift({...m,plan:F.planName||'Basic',res,score:r.score,icon,earned:r.purse||0});F.hist=F.hist.slice(0,40);
 }
 function finish(){
@@ -979,7 +1026,7 @@ function oFighterHTML(arg){
   return`<h1 class="pubname">${n}</h1>
   <p>${n} stands ${ht(60+f.hgt)} (${cm(60+f.hgt)} centimeters) tall. He fights for the <a data-go="gympub:${uid}">${esc(m.gym)}</a> gym${f.home?` out of ${esc(f.home)}`:''} in the ${esc(f.div)}weight division (Contenders).</p>
   <p>${boutFor(uid,fid)?`${n}'s next bout: ${boutLine(boutFor(uid,fid))}`:`${n} has no bouts scheduled.`}</p><p>${(()=>{const bf=botF['bot:'+uid+':'+fid],r=f.rec||[0,0,0];return weightNote(n,f.div,f.w,f.mw!=null?f.mw:(bf?minWeight(bf):f.w),r[0]+r[1]+r[2])})()}</p>
-  <hr><h2>${n}'s Record</h2><p>${n}'s record is ${r[0]}-${r[1]}-${r[2]} (${r[3]}/${r[1]})${recTitles(uid,fid)}<br>His current rating is ${f.rating} and his status is ${f.status}.<br>His career earnings are ${money(f.earn)}.</p>
+  <hr><h2>${n}'s Record</h2><p>${n}'s record is ${r[0]}-${r[1]}-${r[2]} (${r[3]}/${r[1]})${recTitles(uid,fid)}<br>His current rating is ${f.rating} and his status is ${f.status}.<br>His career earnings are ${money(f.earn)}.<br>${fanLine(f)}</p>
   ${(f.hist||[]).length?`<p>${n} ${TR[f.train]||TR.str}.</p><table class="hist">${f.hist.map(h=>`<tr><td>${resultIcon(h)}</td><td>vs ${esc(h.opp)} - ${h.oh?esc(h.oh)+' - ':''}${esc(h.div)}weight ${h.belt?esc(h.belt)+' title ':''}bout on ${esc(h.date)}, week ${h.week}: ${esc(h.res)}. Score: ${esc(h.score)}${h.plan?`. Fight Plan: ${esc(h.plan)}`:''}</td></tr>`).join('')}</table>`:'<p class="mute">No fights yet.</p>'}
   <p class="small"><a data-go="gympub:${uid}">Back to ${esc(m.gym)}</a></p>`;
 }
@@ -1000,13 +1047,13 @@ function resultIcon(h){if(h.icon==='l'&&/KO|TKO|stoppage|DQ/i.test(h.res||''))re
 function resultsHTML(){
   const L=myDone();
   return`<h1>Recent Results for ${esc(myGym())}</h1><p>Select any icon for a detailed account of a fight.</p>
-  ${L.length?`<table class="hist">${L.slice(0,50).map(({b,k,F,x})=>`<tr><td><a data-go="lreport:${b.id}">${boutIcon(b,x.red)}</a></td><td>${FTR(k)?`<a data-go="pub:${k}">${esc(F.name)}</a>`:esc(F?F.name:'A retired fighter')} vs <a data-go="opub:${x.ou}:${encN(x.of)}">${esc(x.o.name)}</a> (<a data-go="gympub:${x.ou}">${esc(x.gym)}</a>) Contenders ${esc(b.div)}weight ${b.belt?esc(b.belt)+' title ':''}bout on ${esc(x.date)}: ${esc(boutRes(b,x.red))}. (${esc((b.summary||{}).score||'')}) ${money(pursePart(b,x.red))}${b.venue&&b.summary&&b.summary.att?` <span class="small mute">${esc(b.venue.name)}, attendance ${b.summary.att.toLocaleString('en-US')}</span>`:''}</td></tr>`).join('')}</table>`:
+  ${L.length?`<table class="hist">${L.slice(0,50).map(({b,k,F,x})=>`<tr><td><a data-go="lreport:${b.id}">${boutIcon(b,x.red)}</a></td><td>${FTR(k)?`<a data-go="pub:${k}">${esc(F.name)}</a>`:esc(F?F.name:'A retired fighter')} vs <a data-go="opub:${x.ou}:${encN(x.of)}">${esc(x.o.name)}</a> (<a data-go="gympub:${x.ou}">${esc(x.gym)}</a>) Contenders ${esc(b.div)}weight ${b.belt?esc(b.belt)+' title ':''}bout on ${esc(x.date)}: ${esc(boutRes(b,x.red))}. (${esc((b.summary||{}).score||'')}) ${money(pursePart(b,x.red)+((b.summary&&b.summary.tv&&b.summary.tv.pay)?b.summary.tv.pay[x.red?0:1]:0))}${b.venue&&b.summary&&b.summary.att?` <span class="small mute">${esc(b.venue.name)}, attendance ${b.summary.att.toLocaleString('en-US')}${tvResult(b)?', '+tvResult(b):''}</span>`:''}</td></tr>`).join('')}</table>`:
   '<p class="mute">No league results yet. Practice fight reports stay on the Practice Fights page and never show here.</p>'}`;
 }
 function fightCardsHTML(){
   const C=[];if(ME)bouts.forEach(b=>[[b.red_user,b.red_fid],[b.blue_user,b.blue_fid]].forEach(([u,f])=>{if(u===ME&&(FTR(f)||b.status==='done'))C.push({b,k:f,F:FTR(f),x:boutInfo(b,u,f)})}));
   return`<h1>Recent Fight Cards for ${esc(myGym())}</h1><p>Select the <b>?</b> on a fought bout to read its report.</p>
-  ${C.length?`<table class="hist">${C.slice(0,50).map(({b,k,F,x})=>`<tr><td>${b.status==='done'?`<a data-go="lreport:${b.id}">${ICON.q}</a>`:ICON.q}</td><td>${F?`<a data-go="pub:${k}">${esc(F.name)}</a>`:'A retired fighter'} vs <a data-go="opub:${x.ou}:${encN(x.of)}">${esc(x.o.name)}</a> (<a data-go="gympub:${x.ou}">${esc(x.gym)}</a>) Contenders ${esc(b.div)}weight ${b.belt?esc(b.belt)+' title ':''}bout on ${esc(x.date)}${venueAt(b)}. Purse ${money(pursePart(b,x.red))}.${F?` Fight Plan: ${esc((b.status==='done'&&((F.hist||[]).find(h=>h.bout===b.id)||{}).plan)||F.planName||'Basic')}`:''}</td></tr>`).join('')}</table>`:
+  ${C.length?`<table class="hist">${C.slice(0,50).map(({b,k,F,x})=>`<tr><td>${b.status==='done'?`<a data-go="lreport:${b.id}">${ICON.q}</a>`:ICON.q}</td><td>${F?`<a data-go="pub:${k}">${esc(F.name)}</a>`:'A retired fighter'} vs <a data-go="opub:${x.ou}:${encN(x.of)}">${esc(x.o.name)}</a> (<a data-go="gympub:${x.ou}">${esc(x.gym)}</a>) Contenders ${esc(b.div)}weight ${b.belt?esc(b.belt)+' title ':''}bout on ${esc(x.date)}${venueAt(b)}${tvAt(b)}. Purse ${money(pursePart(b,x.red))}${b.summary&&b.summary.tv&&b.summary.tv.pay&&b.summary.tv.pay[x.red?0:1]?` + ${b.summary.tv.tier==='ppv'?'PPV':'TV'} ${money(b.summary.tv.pay[x.red?0:1])}`:''}.${F?` Fight Plan: ${esc((b.status==='done'&&((F.hist||[]).find(h=>h.bout===b.id)||{}).plan)||F.planName||'Basic')}`:''}</td></tr>`).join('')}</table>`:
   `<p class="mute">None of your fighters have bouts scheduled yet.</p>`}`;
 }
 function schedHTML(){return`<h1>Fight Schedule</h1><p>Every division has its own fight night each week:</p>${SCHED_TABLE()}<p>No bouts have been scheduled yet. Weekly matchmaking switches on as managers sign up. Until then, use <a data-go="fight">Practice Fights</a> and <a data-go="simbot">Simbot</a>. See <a data-go="help:schedule">The Fight Schedule</a> for how it works.</p>`}
