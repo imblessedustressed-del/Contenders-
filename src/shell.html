@@ -315,7 +315,7 @@ function render(){
   const P={home:homeHTML,register:registerHTML,aup:aupHTML,gym:gymHTML,plans:plansHTML,fight:fightHTML,create:createHTML,cards:cardsHTML,
     retired:retiredHTML,clean:cleanHTML,short:shortHTML,changegym:changeGymHTML,desc:descHTML,
     login:loginHTML,logout:logoutHTML,forgot:forgotHTML,newpass:newPassHTML,changepw:changePwHTML,forums:forumsHTML,forum:()=>forumHTML(arg),topic:()=>topicHTML(arg),newtopic:()=>newTopicHTML(arg),msgs:msgsHTML,
-    simbot:simbotHTML,champs:champsHTML,frank:frankHTML,grank:grankHTML,results:resultsHTML,fcards:resultsHTML,sched:schedHTML,
+    simbot:simbotHTML,champs:champsHTML,frank:frankHTML,grank:grankHTML,results:resultsHTML,fcards:fightCardsHTML,sched:schedHTML,
     discarded:()=>`<h1>Discarded Fighters</h1><p>No fighters have been discarded.</p>`,search:searchHTML,help:()=>helpHTML(arg),newbie:newbieHTML,funding:fundingHTML,retiregym:retireGymHTML,
     edit:()=>planEditHTML(arg),plan:()=>planEditHTML(arg),pf:()=>planFormHTML(arg),rec:()=>recordHTML(arg),gympub:()=>gymPubHTML(arg),gymret:()=>gymRetHTML(arg),opub:()=>oFighterHTML(arg),pub:()=>pubHTML(arg),train:()=>trainHTML(arg),report:()=>savedReportHTML(arg)};
   $('#view').innerHTML=`<div id="flash" class="note cr" style="display:none;margin-bottom:10px"></div>`+(P[base]||homeHTML)();
@@ -507,7 +507,7 @@ function createHTML(){
   if(!state.draft)state.draft=newDraft();
   return cornerHTML('D');
 }
-function cardsHTML(){return`<h1>Your Fight Cards</h1><p>None of your fighters have bouts scheduled.</p>`}
+function cardsHTML(){return fightCardsHTML()}
 function cleanHTML(){return`<h1>Clean Fight Plans</h1><p>Put all your fighters on the <b>Basic</b> plan (<tt>6/6/8</tt>). Your saved plans are kept.</p><p><button id="cleanPlans">Clean Fight Plans</button></p>`}
 function shortHTML(){
   return`<h1>Short Gym</h1><table class="grid"><tr><th>Fighter</th><th>Record</th><th>Str</th><th>KP</th><th>Spd</th><th>Agl</th><th>Chn</th><th>Cnd</th><th>Hgt</th></tr>
@@ -551,6 +551,8 @@ function cornerHTML(side){
 }
 /* ---------- Record page ---------- */
 const ICON={
+ med:`<svg class="icon" viewBox="0 0 44 30"><rect x="6" y="8" width="32" height="20" rx="4" fill="#c9302c" stroke="#7a1512"/><rect x="16" y="3" width="12" height="7" rx="2" fill="none" stroke="#7a1512" stroke-width="2"/><rect x="19.5" y="12" width="5" height="13" fill="#fff"/><rect x="15.5" y="16" width="13" height="5" fill="#fff"/></svg>`,
+ q:`<svg class="icon" viewBox="0 0 44 30"><rect x="11" y="3" width="22" height="24" rx="3" fill="#eee" stroke="#888"/><text x="22" y="22" text-anchor="middle" font-family="Georgia" font-weight="bold" font-size="18" fill="#2e3a9e">?</text></svg>`,
  ko:`<svg class="icon" viewBox="0 0 44 30"><polygon points="22,1 26,9 35,4 31,12 42,13 32,18 38,27 27,22 22,29 18,22 7,27 12,18 2,13 13,12 9,4 18,9" fill="#f2c94c" stroke="#8a6d00"/><circle cx="22" cy="15" r="8" fill="#5cb85c"/><text x="22" y="19" text-anchor="middle" font-family="Verdana" font-weight="bold" font-size="9" fill="#fff">KO</text></svg>`,
  w:`<svg class="icon" viewBox="0 0 44 30"><circle cx="22" cy="15" r="11" fill="#5b8bd6" stroke="#2b4f8f"/><text x="22" y="19.5" text-anchor="middle" font-family="Verdana" font-weight="bold" font-size="12" fill="#fff">W</text></svg>`,
  l:`<svg class="icon" viewBox="0 0 44 30"><rect x="11" y="4" width="22" height="22" rx="3" fill="#bbb" stroke="#777"/><text x="22" y="20" text-anchor="middle" font-family="Verdana" font-weight="bold" font-size="12" fill="#555">L</text></svg>`,
@@ -846,8 +848,22 @@ function grankHTML(){
   ${rows.map((r,i)=>`<tr><td class="n">${i+1}</td><td><a data-go="gympub:${r.id}">${esc(gymOf(r.id))}</a>${managers[r.id].bot?' <span class="small mute">(bot gym)</span>':''}${r.id===ME?' <span class="small mute">(you)</span>':''}</td><td>${esc(managers[r.id].loc||'')}</td><td class="n">${r.titles}</td><td class="n">${r.rec[0]}-${r.rec[1]}-${r.rec[2]}</td><td class="n">${r.diff}</td><td class="n">${r.pct}%</td><td class="n">$0</td><td class="n">${r.active}</td></tr>`).join('')}</table>
   <p class="small mute">Gyms are ranked by titles, then wins minus losses. A gym's numbers update when its manager is logged in. Earnings start counting when league fights begin.</p>`;
 }
+function leagueFights(){
+  const out=[];ROSTER().forEach(k=>{const F=state[k];(F.hist||[]).forEach(h=>{if(!h.practice)out.push({k,F,h})})});
+  return out.sort((a,b)=>(b.h.week||0)-(a.h.week||0)||String(b.h.id).localeCompare(String(a.h.id)));
+}
+function resultIcon(h){if(h.icon==='l'&&/KO|TKO|stoppage|DQ/i.test(h.res||''))return ICON.med;return ICON[h.icon]||ICON.q}
 function resultsHTML(){
-  return`<h1>Fight Results</h1>${state.log.length?`<table class="grid">${state.log.map(l=>`<tr><td>${esc(l.date)}</td><td>${esc(l.text)} ${l.id&&state.reports[l.id]?`<a data-go="report:${l.id}">highlights</a>`:''}</td></tr>`).join('')}</table>`:'<p class="mute">No fights yet.</p>'}`;
+  const L=leagueFights();
+  return`<h1>Recent Results for ${esc(myGym())}</h1><p>Select any icon for a detailed account of a fight.</p>
+  ${L.length?`<table class="hist">${L.slice(0,50).map(({k,F,h})=>`<tr><td>${state.reports[h.id]?`<a data-go="report:${h.id}">${resultIcon(h)}</a>`:resultIcon(h)}</td><td><a data-go="pub:${k}">${esc(F.name)}</a> vs ${h.oid&&FTR(h.oid)?`<a data-go="pub:${h.oid}">${esc(h.opp)}</a>`:esc(h.opp)}${h.ogym?` (${esc(h.ogym)})`:''} Contenders ${esc(h.div)}weight ${h.belt?esc(h.belt)+' title ':''}bout on ${esc(h.date)}: ${esc(h.res)}. (${esc(h.score)}) $0</td></tr>`).join('')}</table>`:
+  '<p class="mute">No league results yet. League fights haven\'t started. Practice fight reports stay on the Practice Fights page and never show here.</p>'}`;
+}
+function fightCardsHTML(){
+  const C=ROSTER().filter(k=>state[k].next).map(k=>({k,F:state[k],n:state[k].next}));
+  return`<h1>Recent Fight Cards for ${esc(myGym())}</h1><p>These are your fighters' upcoming bouts. Results show once the fights run.</p>
+  ${C.length?`<table class="hist">${C.map(({k,F,n})=>`<tr><td>${ICON.q}</td><td><a data-go="pub:${k}">${esc(F.name)}</a> vs ${esc(n.opp)}${n.ogym?` (${esc(n.ogym)})`:''} Contenders ${esc(divOf(F))}weight ${n.belt?esc(n.belt)+' title ':''}bout on ${esc(n.date)}. Fight Plan: ${esc(F.planName||'Basic')}</td></tr>`).join('')}</table>`:
+  `<p class="mute">None of your fighters have bouts scheduled yet.</p>`}`;
 }
 function schedHTML(){return`<h1>Fight Schedule</h1><p>Every division has its own fight night each week:</p>${SCHED_TABLE()}<p>No bouts have been scheduled yet. Weekly matchmaking switches on as managers sign up. Until then, use <a data-go="fight">Practice Fights</a> and <a data-go="simbot">Simbot</a>. See <a data-go="help:schedule">The Fight Schedule</a> for how it works.</p>`}
 function searchHTML(){return`<h1>Search Contenders</h1><p><input id="q" data-keep placeholder="Fighter, gym or topic" style="width:260px"> <button id="doSearch">Search</button></p><div id="sres"></div>`}
