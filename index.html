@@ -596,7 +596,7 @@ function condText(x,after){
 /* ================= SHARED DATA (Supabase: accounts, forums, messages) ================= */
 cleanSlate();
 const SB_URL='https://ojsphhzgzbxmnfcbitqb.supabase.co',SB_KEY='sb_publishable_SWO9WhiSkoVhflY5CmY08A_hlqCEJSi';
-const BUILD='1794264629';
+const BUILD='1794264719';
 /* A tab left open on an older build must not save over newer data: if the site has been updated, reload before anything else is saved. */
 let staleBuild=false;
 async function checkBuild(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
@@ -625,7 +625,7 @@ async function initDB(){
 }
 async function loadPublic(){
   try{
-    const[p,t,gc,bt]=await Promise.all([SB.from('profiles').select('id,gym,description,location,is_bot,created_at'),SB.from('topics').select('*').order('last_at',{ascending:false}).limit(500),SB.from('gym_public').select('user_id,data,updated_at'),SB.from('bouts').select('id,fight_date,div,red_user,red_fid,blue_user,blue_fid,belt,purse,status,summary').in('status',['scheduled','done']).order('fight_date',{ascending:false}).limit(300)]);
+    const[p,t,gc,bt]=await Promise.all([SB.from('profiles').select('id,gym,description,location,is_bot,created_at'),SB.from('topics').select('*').order('last_at',{ascending:false}).limit(500),SB.from('gym_public').select('user_id,data,updated_at'),SB.from('bouts').select('id,fight_date,div,red_user,red_fid,blue_user,blue_fid,belt,purse,status,summary,venue').in('status',['scheduled','done']).order('fight_date',{ascending:false}).limit(300)]);
     if(p.error||t.error)throw p.error||t.error;
     managers={};p.data.forEach(r=>managers[r.id]={gym:r.gym,desc:r.description,loc:r.location||'',bot:!!r.is_bot,at:Date.parse(r.created_at)});
     const bids=p.data.filter(r=>r.is_bot).map(r=>r.id);
@@ -780,6 +780,20 @@ const ratingOf=(uid,fid)=>{const f=((cards[uid]||{}).fighters||[]).find(x=>x.id=
 /* purse for one corner: the recorded purse once fought, an estimate from current ratings before */
 function pursePart(b,red){if(b.summary&&b.summary.purse)return b.summary.purse[red?0:1];const p=boutPurses(ratingOf(b.red_user,b.red_fid),ratingOf(b.blue_user,b.blue_fid),b.belt,champSideOf(b),boutStar(b));return p[red?0:1]}
 const boutStar=b=>Math.max(starPower(b.red_user,b.red_fid),starPower(b.blue_user,b.blue_fid));
+/* Venues (owner-approved, Nov 2026), real-boxing style. Capacities are approximate boxing setups.
+   Superfights (star power 2x+) go to stadiums; title fights and top-10 contenders (rating 3+) to the big historic arenas; everyone else to club venues. */
+const VENUES={
+  stadium:[['Wembley Stadium','London, England',90000],['AT&T Stadium','Arlington, Texas',80000],['Allegiant Stadium','Las Vegas, Nevada',65000],['Yankee Stadium','The Bronx, New York',50000]],
+  arena:[['Madison Square Garden','New York, New York',20000],['MGM Grand Garden Arena','Las Vegas, Nevada',16800],['T-Mobile Arena','Las Vegas, Nevada',20000],['Caesars Palace','Las Vegas, Nevada',15000],
+    ['Barclays Center','Brooklyn, New York',19000],['The O2 Arena','London, England',20000],['Mandalay Bay Events Center','Las Vegas, Nevada',12000],['Crypto.com Arena','Los Angeles, California',18000]],
+  club:[['The Theater at Madison Square Garden','New York, New York',5600],['Hard Rock Live','Hollywood, Florida',6500],['Turning Stone Resort Casino','Verona, New York',4800],['Foxwoods Resort Casino','Mashantucket, Connecticut',4000],
+    ['Fantasy Springs Resort Casino','Indio, California',3000],['York Hall','London, England',1200],['Sam\'s Town Live','Las Vegas, Nevada',1100],['Sycuan Casino','El Cajon, California',1200]]};
+function venueTier(div,rRed,rBlue,belt,star,topTen){return star>=2?'stadium':(belt||topTen)?'arena':'club'}
+function pickVenue(tier){const L=VENUES[tier]||VENUES.club,v=L[Math.floor(Math.random()*L.length)];return{name:v[0],city:v[1],cap:v[2],tier}}
+/* crowd: 40% base, +2% per rating point of the bigger name, +20% for a title, +15% per extra star power, a little luck; capped at a sellout */
+function attendanceFor(v,maxR,belt,star){const f=Math.min(1,.4+.02*(maxR||0)+(belt?.2:0)+.15*Math.max(0,(star||1)-1)+(Math.random()-.5)*.1);return Math.round(v.cap*Math.max(.25,f)/10)*10}
+const venueAt=b=>b&&b.venue?` at ${esc(b.venue.name)}, ${esc(b.venue.city)}`:'';
+const crowdText=(v,att)=>v&&att?(att>=v.cap?`a sellout crowd of ${att.toLocaleString('en-US')}`:`${att.toLocaleString('en-US')} (capacity ${v.cap.toLocaleString('en-US')})`):'';
 function titleFights(){return bouts.filter(b=>b.status==='done'&&b.belt&&b.summary).slice(0,9).map(b=>{const w=b.summary.w,ru=[b.red_user,b.red_fid],bu=[b.blue_user,b.blue_fid],W=w===1?bu:ru,L=w===1?ru:bu;
   return{id:b.id,div:b.div,belt:b.belt,draw:w==null,winner:fName(...W),wu:W[0],wf:W[1],wgym:gymOf(W[0]),loser:fName(...L),lu:L[0],lf:L[1],lgym:gymOf(L[0]),how:b.summary.how}})}
 function homeHTML(){
@@ -868,7 +882,7 @@ function applyLeague(){if(!ME)return;state.applied=state.applied||{};let ch=fals
   if(ch)save()}
 const STAR=champ=>`<span class="star" style="color:${champ?'#e8a400':'#3b6fd8'}">&#9733;</span>`;
 function boutLine(x){if(!x)return'';const o=x.o,r=o.rec;
-  return`${x.b.belt?`<b>${esc(x.b.belt)} title fight</b> vs `:''}the ${o.hgt!=null?ht(60+o.hgt)+',':''} <a data-go="opub:${x.ou}:${encN(x.of)}">${esc(o.name)}</a>${STAR(o.champ)} (${r[0]}-${r[1]}-${r[2]} ${o.rating}/${o.status}) from the <a data-go="gympub:${x.ou}">${esc(x.gym)}</a> gym for ${money(pursePart(x.b,x.red))}${x.b.status!=='done'&&boutStar(x.b)>=2?' (<b>superfight</b>)':''} on <b>${esc(x.date)}</b>.`}
+  return`${x.b.belt?`<b>${esc(x.b.belt)} title fight</b> vs `:''}the ${o.hgt!=null?ht(60+o.hgt)+',':''} <a data-go="opub:${x.ou}:${encN(x.of)}">${esc(o.name)}</a>${STAR(o.champ)} (${r[0]}-${r[1]}-${r[2]} ${o.rating}/${o.status}) from the <a data-go="gympub:${x.ou}">${esc(x.gym)}</a> gym for ${money(pursePart(x.b,x.red))}${x.b.status!=='done'&&boutStar(x.b)>=2?' (<b>superfight</b>)':''} on <b>${esc(x.date)}</b>${venueAt(x.b)}.`}
 const planStamp=n=>{state.planAt=state.planAt||{};state.planAt[n]=Date.now()};
 const planUpdated=n=>{const t=state.planAt&&state.planAt[n];return t?` updated ${new Date(t).toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'})}`:''};
 function fighterLine(side){
@@ -1127,7 +1141,7 @@ function weightOf(div){const l=(DIVS.find(d=>d[0]===div)||[0,160])[1];return l>=
 function reportHTML(f,b,upto){
   const S=f.S,W=weightOf(b.div);
   const intro=S.map((x,i)=>`<p>In this corner, standing ${ht(HT(x.F))} (${cm(HT(x.F))} centimeters) tall weighing in at ${W} pounds (${Math.round(W*.4536)} kilograms) with a record of ${b.recs[i][0]} wins, ${b.recs[i][2]} draws, and ${b.recs[i][1]} losses fighting for ${esc((b.gyms&&b.gyms[i])||b.gym)} out of ${esc(x.F.home||'parts unknown')} is <b>${esc(x.F.name)}</b>!!</p><div class="gap"></div>`).join('');
-  let h=`<h1 class="date">${esc(b.date)}</h1>${intro}<p>This bout is scheduled for ${b.rounds} rounds.${b.belt?` It is for the <b>${esc(b.belt)} ${esc(b.div)}weight Championship of the World</b>.`:''}</p>`;
+  let h=`<h1 class="date">${esc(b.date)}</h1>${b.venue?`<p>Live from <b>${esc(b.venue.name)}</b> in ${esc(b.venue.city)}${b.att?`. Attendance: ${crowdText(b.venue,b.att)}`:''}.</p><div class="gap"></div>`:''}${intro}<p>This bout is scheduled for ${b.rounds} rounds.${b.belt?` It is for the <b>${esc(b.belt)} ${esc(b.div)}weight Championship of the World</b>.`:''}</p>`;
   const end=f.result,last=f.rounds.length;
   f.rounds.slice(0,upto).forEach((R,ri)=>{
     h+=`<div class="rnd">ROUND ${R.n}</div>${R.mgr?`<div class="mgr">${R.mgr.filter((m,i)=>!b.mine||b.mine[i]).join('<br>')}</div>`:''}${(R.say||[]).map((t,i)=>t?`<p>${S[i].n} says, "${esc(t)}"</p>`:'').join('')}<p>${(R.plans||[]).join('<br>')}</p>${(R.pre||[]).join('')}<div class="gap"></div>`;
@@ -1168,7 +1182,7 @@ function leagueReportHTML(id){
   const r=lrep[id];
   if(!r){if(SB&&r!==null){lrep[id]=null;SB.from('bouts').select('*').eq('id',id).maybeSingle().then(({data})=>{lrep[id]=data||false;if(view==='lreport:'+id)render()})}return'<p>Loading fight report...</p>'}
   if(!r.result)return`<p>That fight hasn't been fought yet. <a data-go="fcards">Back to Fight Cards</a></p>`;
-  const b={...r.result.b,mine:[r.red_user===ME,r.blue_user===ME]};
+  const b={...r.result.b,mine:[r.red_user===ME,r.blue_user===ME],venue:r.venue,att:r.summary&&r.summary.att};
   return`<div class="rep">${reportHTML(r.result.f,b,r.result.f.rounds.length)}</div><p class="small"><a data-go="results">Recent Results</a> | <a data-go="fcards">Recent Fight Cards</a></p>`;
 }
 function savedReportHTML(id){const r=state.reports[id];if(!r)return`<p>That fight report is no longer saved.</p>`;return`<div class="rep">${reportHTML(r.f,r.b,r.f.rounds.length)}</div>`}
@@ -1368,13 +1382,13 @@ function resultIcon(h){if(h.icon==='l'&&/KO|TKO|stoppage|DQ/i.test(h.res||''))re
 function resultsHTML(){
   const L=myDone();
   return`<h1>Recent Results for ${esc(myGym())}</h1><p>Select any icon for a detailed account of a fight.</p>
-  ${L.length?`<table class="hist">${L.slice(0,50).map(({b,k,F,x})=>`<tr><td><a data-go="lreport:${b.id}">${boutIcon(b,x.red)}</a></td><td>${FTR(k)?`<a data-go="pub:${k}">${esc(F.name)}</a>`:esc(F?F.name:'A retired fighter')} vs <a data-go="opub:${x.ou}:${encN(x.of)}">${esc(x.o.name)}</a> (<a data-go="gympub:${x.ou}">${esc(x.gym)}</a>) Contenders ${esc(b.div)}weight ${b.belt?esc(b.belt)+' title ':''}bout on ${esc(x.date)}: ${esc(boutRes(b,x.red))}. (${esc((b.summary||{}).score||'')}) ${money(pursePart(b,x.red))}</td></tr>`).join('')}</table>`:
+  ${L.length?`<table class="hist">${L.slice(0,50).map(({b,k,F,x})=>`<tr><td><a data-go="lreport:${b.id}">${boutIcon(b,x.red)}</a></td><td>${FTR(k)?`<a data-go="pub:${k}">${esc(F.name)}</a>`:esc(F?F.name:'A retired fighter')} vs <a data-go="opub:${x.ou}:${encN(x.of)}">${esc(x.o.name)}</a> (<a data-go="gympub:${x.ou}">${esc(x.gym)}</a>) Contenders ${esc(b.div)}weight ${b.belt?esc(b.belt)+' title ':''}bout on ${esc(x.date)}: ${esc(boutRes(b,x.red))}. (${esc((b.summary||{}).score||'')}) ${money(pursePart(b,x.red))}${b.venue&&b.summary&&b.summary.att?` <span class="small mute">${esc(b.venue.name)}, attendance ${b.summary.att.toLocaleString('en-US')}</span>`:''}</td></tr>`).join('')}</table>`:
   '<p class="mute">No league results yet. Practice fight reports stay on the Practice Fights page and never show here.</p>'}`;
 }
 function fightCardsHTML(){
   const C=[];if(ME)bouts.forEach(b=>[[b.red_user,b.red_fid],[b.blue_user,b.blue_fid]].forEach(([u,f])=>{if(u===ME&&(FTR(f)||b.status==='done'))C.push({b,k:f,F:FTR(f),x:boutInfo(b,u,f)})}));
   return`<h1>Recent Fight Cards for ${esc(myGym())}</h1><p>Select the <b>?</b> on a fought bout to read its report.</p>
-  ${C.length?`<table class="hist">${C.slice(0,50).map(({b,k,F,x})=>`<tr><td>${b.status==='done'?`<a data-go="lreport:${b.id}">${ICON.q}</a>`:ICON.q}</td><td>${F?`<a data-go="pub:${k}">${esc(F.name)}</a>`:'A retired fighter'} vs <a data-go="opub:${x.ou}:${encN(x.of)}">${esc(x.o.name)}</a> (<a data-go="gympub:${x.ou}">${esc(x.gym)}</a>) Contenders ${esc(b.div)}weight ${b.belt?esc(b.belt)+' title ':''}bout on ${esc(x.date)}. Purse ${money(pursePart(b,x.red))}.${F?` Fight Plan: ${esc((b.status==='done'&&((F.hist||[]).find(h=>h.bout===b.id)||{}).plan)||F.planName||'Basic')}`:''}</td></tr>`).join('')}</table>`:
+  ${C.length?`<table class="hist">${C.slice(0,50).map(({b,k,F,x})=>`<tr><td>${b.status==='done'?`<a data-go="lreport:${b.id}">${ICON.q}</a>`:ICON.q}</td><td>${F?`<a data-go="pub:${k}">${esc(F.name)}</a>`:'A retired fighter'} vs <a data-go="opub:${x.ou}:${encN(x.of)}">${esc(x.o.name)}</a> (<a data-go="gympub:${x.ou}">${esc(x.gym)}</a>) Contenders ${esc(b.div)}weight ${b.belt?esc(b.belt)+' title ':''}bout on ${esc(x.date)}${venueAt(b)}. Purse ${money(pursePart(b,x.red))}.${F?` Fight Plan: ${esc((b.status==='done'&&((F.hist||[]).find(h=>h.bout===b.id)||{}).plan)||F.planName||'Basic')}`:''}</td></tr>`).join('')}</table>`:
   `<p class="mute">None of your fighters have bouts scheduled yet.</p>`}`;
 }
 function schedHTML(){return`<h1>Fight Schedule</h1><p>Every division has its own fight night each week:</p>${SCHED_TABLE()}<p>No bouts have been scheduled yet. Weekly matchmaking switches on as managers sign up. Until then, use <a data-go="fight">Practice Fights</a> and <a data-go="simbot">Simbot</a>. See <a data-go="help:schedule">The Fight Schedule</a> for how it works.</p>`}
