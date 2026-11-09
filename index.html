@@ -58,14 +58,20 @@ button.pm{width:22px;padding:0;height:22px}
 .planbox{font:14px 'Courier New',monospace;width:100%;max-width:720px}
 pre.plan{font:14px 'Courier New',monospace;background:#f6f6f6;border:1px inset #bbb;padding:8px;white-space:pre-wrap;max-width:720px}
 .mgr{font-size:15px;margin:4px 0 10px}
+.home .banner{display:block;width:100%;max-width:640px;margin:0 auto}
+.center{text-align:center}
+.tag{text-align:center;font-size:18px;color:#555;word-spacing:2px}.tag b{margin:0 14px;white-space:nowrap}
+.cta{text-align:center;font-size:19px;font-weight:bold;line-height:1.7}
+table.champ{margin:0 auto}table.champ td.pw{text-align:center;vertical-align:middle;min-width:90px}
+svg.pow{width:46px;height:38px;display:block;margin:0 auto}
 .note{border:1px dashed #aaa;padding:6px 10px;background:#f6f6f6;font-size:14px;max-width:640px}
 @media(max-width:720px){
  #wrap{display:block}
  #side{width:auto;min-height:0;border-right:0;border-bottom:3px ridge #bdbdbd;padding:6px 8px}
  #logo{width:70px;margin:0 auto 4px}
- #menuBtn{display:block;width:100%;margin-bottom:6px}
- #boxes{display:none;grid-template-columns:1fr 1fr;gap:0 6px}
- #side.open #boxes{display:grid;align-items:start}
+ #boxes{display:grid;grid-template-columns:1fr 1fr;gap:0 6px;align-items:start}
+ .box{font-size:12px}
+ .tag b{display:block;margin:2px 0}
  .box{margin:0 0 8px}
  #main{padding:8px 10px 40px}
  #mast .t1{font-size:26px}
@@ -615,15 +621,37 @@ function render(){
 }
 
 /* ---------- Main ---------- */
+const POW=`<svg class="pow" viewBox="0 0 60 50"><polygon points="30,2 35,14 48,6 43,19 58,20 45,28 54,40 39,35 34,48 28,36 16,46 18,32 3,34 14,24 4,12 19,15 22,2" fill="#f4c430" stroke="#a33" stroke-width="2"/><text x="30" y="30" text-anchor="middle" font-family="Impact,Arial Black,sans-serif" font-size="13" fill="#c22" transform="rotate(-12 30 28)">BAM!</text></svg>`;
+const FLAGS=[['#b22','#fff','#226'],['#d22','#fff','#d22'],['#063','#fff','#c22'],['#000','#d00','#fc0'],['#039','#fff','#039'],['#c00','#fff','#00a'],['#fc0','#06c','#fc0'],['#090','#fff','#f60'],['#d00','#fff','#d00'],['#00a','#fd0','#00a'],['#c00','#fd0','#c00'],['#fff','#d00','#fff'],['#06c','#fff','#c00'],['#f80','#fff','#090']];
+function bannerSVG(){
+  const flag=(x,y,c)=>`<g transform="translate(${x},${y})"><rect width="30" height="7" fill="${c[0]}"/><rect y="7" width="30" height="6" fill="${c[1]}"/><rect y="13" width="30" height="7" fill="${c[2]}"/><rect width="30" height="20" fill="none" stroke="#555" stroke-width=".6"/></g>`;
+  let f='';for(let i=0;i<14;i++){f+=flag(105+i*35,48,FLAGS[i]);f+=flag(105+i*35,192,FLAGS[(i+5)%14])}
+  const glove=(x,flip)=>`<g transform="translate(${x},0) scale(${flip?-1:1},1)"><path d="M0 70c-18 2-28 16-27 36 1 17 7 30 7 42 0 10 5 16 15 16h44c10 0 15-6 15-15v-24c11 0 18-7 18-19 0-13-10-20-20-18-3-13-13-23-29-23z" fill="url(#gl)" stroke="#1a0304" stroke-width="3"/><rect x="-14" y="164" width="66" height="16" rx="3" fill="#e6e6e6" stroke="#1a0304" stroke-width="3"/></g>`;
+  return`<svg class="banner" viewBox="0 0 700 260" role="img" aria-label="Contenders">
+  <defs><linearGradient id="gl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b82a31"/><stop offset="1" stop-color="#5e0f13"/></linearGradient>
+  <linearGradient id="bl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4a7cf0"/><stop offset="1" stop-color="#1b3fb5"/></linearGradient></defs>
+  <polygon points="350,4 520,130 350,256 180,130" fill="#d9d9d9" stroke="#aaa"/>
+  <rect x="40" y="60" width="18" height="150" rx="4" fill="#ccc" stroke="#888"/><rect x="642" y="60" width="18" height="150" rx="4" fill="#ccc" stroke="#888"/>
+  ${[80,110,140,170].map(y=>`<line x1="58" y1="${y}" x2="642" y2="${y}" stroke="#bbb" stroke-width="5"/>`).join('')}
+  <rect x="100" y="44" width="500" height="172" fill="#cfcfcf" stroke="#666" stroke-width="2"/>
+  ${f}
+  <rect x="110" y="72" width="480" height="116" fill="#bdbdbd" stroke="#555"/>
+  <text x="350" y="152" text-anchor="middle" font-family="'Arial Black',Impact,sans-serif" font-weight="900" font-size="64" fill="url(#bl)" stroke="#0d1f66" stroke-width="2.5" letter-spacing="1">CONTENDERS</text>
+  ${glove(40,false)}${glove(660,true)}
+  </svg>`;
+}
+function titleFights(){return state.log.filter(l=>l.belt).slice(0,9)}
 function homeHTML(){
-  return`<h1>Welcome to Contenders</h1>
-  <p>Contenders is a boxing strategy game. You create fighters, spend their attribute points, write their fight plans and send them into the ring. Every bout is simulated round by round with three judges at ringside, and every fight report is saved so you can scout the competition.</p>
-  <p>There are no regions. Every fighter goes into one Contenders ranking, and each weight division has three world titles: the <b>WBC</b>, the <b>WBA</b> and the <b>WBO</b>.</p>
-  <ul><li><a data-go="register">Register</a> your gym, then <a data-go="create">create a fighter</a>.</li>
-  <li>Get into the ring with <a data-go="fight">practice fights</a> or test a matchup 100 times with <a data-go="simbot">Simbot</a>.</li>
-  <li>Talk it over in the <a data-go="forums">Contenders Forums</a>, or <a data-go="msgs">send a message</a> to another manager.</li>
-  <li>New here? Read the <a data-go="newbie">Newbie Files</a>.</li></ul>
-  <p class="note">Test build: your fighters, records and fight reports are saved in this browser. Forums and messages are shared with everyone on this page.</p>`;
+  const tf=titleFights();
+  return`<div class="home">${bannerSVG()}
+  <p class="tag"><b>Build your fighter.</b> <b>Take him to the top.</b> <b>Outthink managers from everywhere.</b></p>
+  <p class="small center">Three world titles in every division: the <b>WBC</b>, the <b>WBA</b> and the <b>WBO</b>. Check out the <a data-go="champs">reigning champs</a> and make your own mark.</p>
+  <p class="cta"><a data-go="register">Sign Up to Play (Free!)</a> or <a data-go="gym">Enter Your Gym</a><br><a data-go="fight">Try it Out</a></p>
+  <h2 class="center">Latest Contenders World Championship Action</h2>
+  ${tf.length?`<table class="grid champ">${tf.map(l=>`<tr><td rowspan="2" class="pw">${POW}<a data-go="champs">${esc(l.div)}</a><br><span class="small">${esc(l.belt)}</span></td><td>${l.wid!=null?`<a data-go="rec:${l.wid}">${esc(l.winner)}</a>`:esc(l.winner)} (${esc(l.gym||myGym())})</td></tr>
+  <tr><td>vs ${esc(l.loser)} (${esc(l.gym||myGym())})${l.id&&state.reports[l.id]?` <a data-go="report:${l.id}" class="small">highlights</a>`:''}</td></tr>`).join('')}</table>`:
+  `<p class="center mute">No world title fights yet. Win a WBC, WBA or WBO title fight in <a data-go="fight">Practice Fights</a> and it shows up here.</p>`}
+  </div>`;
 }
 function registerHTML(){
   return`<h1>Register</h1>${needDB()}
@@ -822,7 +850,7 @@ function finish(){
   });
   if(r.w!==null&&bout.belt){state.champs[bout.div]=state.champs[bout.div]||{};state.champs[bout.div][bout.belt]=state[S[r.w]].name}
   const txt=r.w===null?`${state.A.name} and ${state.B.name} fight to a ${r.type.toLowerCase()}`:`${state[S[r.w]].name} def. ${state[S[1-r.w]].name} by ${how}${bout.belt?` (${bout.belt} ${bout.div}weight title)`:''}`;
-  state.log.unshift({date,text:txt,id});state.log=state.log.slice(0,40);
+  state.log.unshift({date,text:txt,id,belt:bout.belt&&r.w!==null?bout.belt:null,div:bout.div,winner:r.w!==null?state[S[r.w]].name:'',loser:r.w!==null?state[S[1-r.w]].name:'',wid:r.w!==null?S[r.w]:null,gym:myGym()});state.log=state.log.slice(0,40);
   state.reports[id]={f:fight,b:bout};const ks=Object.keys(state.reports);if(ks.length>10)ks.slice(0,ks.length-10).forEach(k=>delete state.reports[k]);
   state.week++;save();
 }
