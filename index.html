@@ -259,7 +259,7 @@ function parseStatement(toks){
     if(k&&k.t==='op'&&['>','<','=','>=','<=','<>','!=','=='].includes(k.v)){next();const r=parseSum();
       const f={'>':(a,b)=>a>b,'<':(a,b)=>a<b,'=':(a,b)=>a===b,'==':(a,b)=>a===b,'>=':(a,b)=>a>=b,'<=':(a,b)=>a<=b,'<>':(a,b)=>a!==b,'!=':(a,b)=>a!==b}[k.v];
       return c=>f(l(c),r(c))}
-    return c=>!!l(c);
+    return l; /* bare value: keep the number (needed inside parentheses); the statement checks truthiness */
   }
   function parseSum(){let l=parseProd();while(peek()&&peek().t==='op'&&(peek().v==='+'||peek().v==='-')){const o=next().v,r=parseProd(),L=l;l=o==='+'?c=>L(c)+r(c):c=>L(c)-r(c)}return l}
   function parseProd(){let l=parseUnary();while(peek()&&peek().t==='op'&&(peek().v==='*'||peek().v==='/')){const o=next().v,r=parseUnary(),L=l;l=o==='*'?c=>L(c)*r(c):c=>L(c)/(r(c)||1)}return l}
