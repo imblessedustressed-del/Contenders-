@@ -596,7 +596,7 @@ function condText(x,after){
 /* ================= SHARED DATA (Supabase: accounts, forums, messages) ================= */
 cleanSlate();
 const SB_URL='https://ojsphhzgzbxmnfcbitqb.supabase.co',SB_KEY='sb_publishable_SWO9WhiSkoVhflY5CmY08A_hlqCEJSi';
-const BUILD='1794265698';
+const BUILD='1794266104';
 /* A tab left open on an older build must not save over newer data: if the site has been updated, reload before anything else is saved. */
 let staleBuild=false;
 async function checkBuild(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
@@ -962,12 +962,12 @@ function cdivHTML(side){
 }
 function gymHTML(){
   if(ME&&sanctionOf('ban'))return`<h1>${esc(myGym())}</h1>${sanctionNote('ban')}`;
-  const tot=[0,0,0,0];ROSTER().forEach(s=>state[s].rec.forEach((v,i)=>tot[i]+=v));
+  const ALL=[...ROSTER().map(k=>state[k]),...(state.retired||[])],tot=[0,0,0,0];ALL.forEach(f=>(f.rec||[]).forEach((v,i)=>tot[i]+=v));
   let titles=ME?titleWins(ME):0;if(!titles)for(const d in state.champs)titles+=Object.keys(state.champs[d]).length;
   return`<h1>${esc(myGym())}</h1>${ME?`<p class="small"><a data-go="gympub:${ME}">See your gym the way other managers see it</a></p>`:''}
   <p class="news">Contenders News: ${newsLine()}</p>
   <table class="plain"><tr><th>Region</th><th>Earnings</th><th>Record</th><th>Titles</th></tr>
-  <tr><td><b>Contenders</b></td><td>${money([...ROSTER().map(k=>state[k]),...(state.retired||[])].reduce((a,f)=>a+(f.earn||0),0))}</td><td>${tot[0]}-${tot[1]}-${tot[2]}</td><td class="cr">${titles}</td></tr></table>
+  <tr><td><b>Contenders</b></td><td>${money(ALL.reduce((a,f)=>a+(f.earn||0),0))}</td><td>${tot[0]}-${tot[1]}-${tot[2]}</td><td class="cr">${titles}</td></tr></table>
   <p><a data-go="fcards">Recent Fight Cards</a><br><a data-go="results">Recent Results</a></p>
   <p class="cr">Select a fighter from the list below. You may also <a data-go="create">create a new fighter</a> at any time.</p>
   ${ROSTER().length?DIVS.filter(([d])=>ROSTER().some(k=>divOf(state[k])===d)).reverse().map(([d,l])=>`<h2>${esc(d)}weights (${l<1000?l:1000} pounds)</h2>${ROSTER().filter(k=>divOf(state[k])===d).map(fighterLine).join('')}`).join(''):'<p>You have no active fighters. <a data-go="create">Create one</a>.</p>'}
