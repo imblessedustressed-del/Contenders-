@@ -773,11 +773,6 @@ function shortHTML(){
 }
 function changeGymHTML(){return`<h1>Change Gym</h1>${needLogin('name your gym')}${ME?gymForm():''}`}
 function descHTML(){if(!ME)return`<h1>Description</h1>${needLogin('describe your gym')}`;return`<h1>Description</h1><p>Tell other managers about your gym. Plain text only.</p><textarea id="descIn" data-keep rows="6">${esc((ME&&managers[ME]&&managers[ME].desc)||state.gymDesc||'')}</textarea><p><button id="saveDesc">Save Description</button></p>`}
-function loginHTML(){
-  return`<h1>Login</h1>${dbState==='on'?`<p>You are signed in as the manager of <b>${esc(myGym())}</b>.</p>`:''}
-  <p>Contenders uses your Claude sign-in, so there's no separate password to remember, reset or change. When the full site launches, managers will get their own Contenders login.</p>`;
-}
-function logoutHTML(){return`<h1>Logout</h1><p>To sign out, sign out of Claude. Your fighters stay saved in this browser.</p>`}
 /* ---------- Fighter editor ---------- */
 function cornerHTML(side){
   const F=state.draft||(state.draft=newDraft()),left=POOL-used(F);
