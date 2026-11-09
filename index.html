@@ -168,16 +168,16 @@ if opponent = exhausted then 8H/7/5`]
 };
 const DEFAULTS={
   A:{name:'Marcus Reyes',nick:'The Hammer',home:'Tulsa, Oklahoma',build:'normal',str:15,kp:4,spd:10,agl:9,chn:11,cnd:11,hgt:8,cut:2,
-     plan:`# Reyes: walk him down and look for the big shot\n6/6/8\nif hisstuns > 0 then 7H/9/4\nif endurance_percent < 50 then 5/5/10 (clinch)\n10) if score < 0 then 8H/8/4`,rec:[0,0,0,0],hist:[]},
+     plan:`# Reyes: walk him down and look for the big shot\n6/6/8\nif hisstuns > 0 then 7H/9/4\nif endurance_percent < 50 then 5/5/10 (clinch)\n10) if score < 0 then 8H/8/4`,rec:[0,0,0,0],hist:[],locked:true,rating:0,status:0,train:'str',streak:0,ip:0,planName:'Hammer Time'},
   B:{name:'Danny Okafor',nick:'Silk',home:'Houston, Texas',build:'light',str:10,kp:2,spd:14,agl:14,chn:9,cnd:10,hgt:10,cut:1,
-     plan:`1) 5/4/11 (counter)\n2) if score < 1 then 6/5/9 (counter)\n3) 5/4/11 (counter)\nif endurance_percent < 100 - (round - 1) * 4 then 5/4/11 (counter)\nif score < 2 and endurance_percent > 100 - (round - 1) * 4 then 6/5/9 (counter)\nif score < 0 and round <= 7 then 8/4/8 (counter)\n6) if round = 6 then 1/1/9 (clinch)`,rec:[0,0,0,0],hist:[]}
+     plan:`1) 5/4/11 (counter)\n2) if score < 1 then 6/5/9 (counter)\n3) 5/4/11 (counter)\nif endurance_percent < 100 - (round - 1) * 4 then 5/4/11 (counter)\nif score < 2 and endurance_percent > 100 - (round - 1) * 4 then 6/5/9 (counter)\nif score < 0 and round <= 7 then 8/4/8 (counter)\n6) if round = 6 then 1/1/9 (clinch)`,rec:[0,0,0,0],hist:[],locked:true,rating:0,status:0,train:'spd',streak:0,ip:0,planName:'Silk Counter'}
 };
 let state;
-try{state=JSON.parse(localStorage.getItem('contenders_v5'))}catch(e){}
-if(!state||!state.A||!state.B)state={A:JSON.parse(JSON.stringify(DEFAULTS.A)),B:JSON.parse(JSON.stringify(DEFAULTS.B)),div:'Middle',bout:'10',champs:{},log:[],reports:{},week:1,gymName:'',gymDesc:''};
-const save=()=>{try{localStorage.setItem('contenders_v5',JSON.stringify(state))}catch(e){
+try{state=JSON.parse(localStorage.getItem('contenders_v6'))}catch(e){}
+if(!state||!state.A||!state.B)state={A:JSON.parse(JSON.stringify(DEFAULTS.A)),B:JSON.parse(JSON.stringify(DEFAULTS.B)),retired:[],draft:null,div:'Middle',bout:'10',champs:{},log:[],reports:{},week:1,gymName:'',gymDesc:''};
+const save=()=>{try{localStorage.setItem('contenders_v6',JSON.stringify(state))}catch(e){
   const ids=Object.keys(state.reports);ids.slice(0,Math.max(1,ids.length-5)).forEach(k=>delete state.reports[k]);
-  try{localStorage.setItem('contenders_v5',JSON.stringify(state))}catch(e2){}}};
+  try{localStorage.setItem('contenders_v6',JSON.stringify(state))}catch(e2){}}};
 
 /* ================= WeBL FIGHT PLAN LANGUAGE ================= */
 const PLAN_STYLES=['inside','clinch','feint','counter','ring','ropes','outside','allout'];
@@ -321,7 +321,8 @@ function injText(i){
 function prep(F,c){
   let str=F.str,kp=F.kp;const cap=Math.floor(str/3);if(kp>cap){str+=kp-cap;kp=cap}
   let parsed;try{parsed=parsePlan(typeof F.plan==='string'?F.plan:'6/6/8')}catch(e){parsed={stmts:[],errors:[]}}
-  return{F,c,n:escS(lastName(F.name)),str,kp,spd:F.spd,agl:F.agl,chn:F.chn,cnd:F.cnd,hgt:F.hgt,cutres:F.cut,E0:10*F.cnd,E:10*F.cnd,inj:[],
+  const pm=F.primeMul||1;
+  return{F,c,n:escS(lastName(F.name)),str:str*pm,kp,spd:F.spd*pm,agl:F.agl*pm,chn:F.chn,cnd:F.cnd,hgt:F.hgt,cutres:F.cut,E0:10*F.cnd,E:10*F.cnd,inj:[],
     parsed,perc:0,won:0,lost:0,stuns:0,kds:0,warn:0,endFrac:1};
 }
 const oppState=f=>f>=2/3?0:f>=1/3?1:2;
@@ -406,7 +407,7 @@ function simulate(FA,FB,rounds){
     const PU=[0,1].map(i=>{
       const j=1-i,e=eff[i],a=A[i],o=A[j];
       const thrown=Math.max(3,Math.round(9*D[i].agg*(.9+.2*rand())));
-      const k=K_RATING,denom=x=>x*x/(x*x+k*Math.sqrt(k*o.agl));
+      const k=S[0].F.k||K_RATING,denom=x=>x*x/(x*x+k*Math.sqrt(k*o.agl));
       let mult=15/(Math.max(1,eff[i].def)+Math.max(1,eff[j].def));
       const adj=pc=>{let p=pc*mult;const lk=D[i].lk;p=lk<1?p*lk:p+(1-p)*(lk-1);p*=({Head:.8,Body:.8,Cut:.9,Opp:1}[e.tgt]);return clamp(p,.02,.95)};
       const pP=adj(denom(a.spd)),pJ=adj(denom(a.spd*1.5));
@@ -612,11 +613,11 @@ function render(){
   document.querySelectorAll('#side a').forEach(a=>a.classList.toggle('cur',a.dataset.v===view||(base==='topic'&&a.dataset.v==='forums')));
   if(base!=='topic'&&postsUnsub){postsUnsub();postsUnsub=null;postsTopic=null;posts=[]}
   const P={home:homeHTML,register:registerHTML,aup:aupHTML,gym:gymHTML,plans:plansHTML,fight:fightHTML,create:createHTML,cards:cardsHTML,
-    retired:()=>`<h1>Retired Fighters</h1><p>You have no retired fighters.</p>`,clean:cleanHTML,short:shortHTML,changegym:changeGymHTML,desc:descHTML,
+    retired:()=>`<h1>Retired Fighters</h1>${state.retired&&state.retired.length?`<table class="grid"><tr><th>Fighter</th><th>Record</th><th>Rating</th><th>Status</th></tr>${state.retired.map(f=>`<tr><td>${esc(f.name)}</td><td>${f.rec[0]}-${f.rec[1]}-${f.rec[2]} (${f.rec[3]}/${f.rec[1]})</td><td class="n">${f.rating||0}</td><td class="n">${f.status||0}</td></tr>`).join('')}</table>`:'<p>You have no retired fighters.</p>'}`,clean:cleanHTML,short:shortHTML,changegym:changeGymHTML,desc:descHTML,
     login:loginHTML,logout:logoutHTML,forums:forumsHTML,forum:()=>forumHTML(arg),topic:()=>topicHTML(arg),newtopic:()=>newTopicHTML(arg),msgs:msgsHTML,
     simbot:simbotHTML,champs:champsHTML,frank:frankHTML,grank:grankHTML,results:resultsHTML,fcards:resultsHTML,sched:schedHTML,
     discarded:()=>`<h1>Discarded Fighters</h1><p>No fighters have been discarded.</p>`,search:searchHTML,help:helpHTML,newbie:newbieHTML,funding:fundingHTML,
-    edit:()=>cornerHTML(arg),rec:()=>recordHTML(arg),report:()=>savedReportHTML(arg)};
+    edit:()=>planEditHTML(arg),plan:()=>planEditHTML(arg),rec:()=>recordHTML(arg),report:()=>savedReportHTML(arg)};
   $('#view').innerHTML=`<div id="flash" class="note cr" style="display:none;margin-bottom:10px"></div>`+(P[base]||homeHTML)();
 }
 
@@ -672,8 +673,8 @@ function aupHTML(){
 function fighterLine(side){
   const F=state[side],belts=[];
   for(const d in state.champs)for(const b in state.champs[d])if(state.champs[d][b]===F.name)belts.push(`${d}weight ${b}`);
-  return`<p><a data-go="rec:${side}" class="${cc(side)}">${esc(F.name)}</a>${belts.length?' &#9733;':''} <b>Contenders</b> ${recStr(F)} <a data-go="edit:${side}" class="small">Edit</a><br>
-  <span class="small">Height: ${ht(HT(F))} · ${esc(F.home||'')}${belts.length?` · <b>Champion: ${belts.map(esc).join(', ')}</b>`:''}</span><br>
+  return`<p><a data-go="rec:${side}" class="${cc(side)}">${esc(F.name)}</a>${belts.length?' &#9733;':''} <b>Contenders</b> ${recStr(F)} <a data-go="plan:${side}" class="small">Fight plan</a><br>
+  <span class="small">Height: ${ht(HT(F))} · Rating ${F.rating||0} · Status ${F.status||0} · ${esc(F.home||'')}${belts.length?` · <b>Champion: ${belts.map(esc).join(', ')}</b>`:''}</span><br>
   <span class="small">Next bout: ${side==='A'?'vs':'vs'} ${esc(state[side==='A'?'B':'A'].name)} <a data-go="fight">(practice)</a></span></p>`;
 }
 function gymHTML(){
@@ -690,9 +691,10 @@ function gymHTML(){
 function plansHTML(){
   return`<h1>Fight Plans</h1>${['A','B'].map(s=>{const F=state[s];return`<h2 class="${cc(s)}">${esc(F.name)}</h2><pre class="plan">${esc(F.plan)}</pre><p><a data-go="edit:${s}">Edit plan</a></p>`}).join('')}`;
 }
+function newDraft(){return{name:'',nick:'',home:'',build:'normal',str:12,kp:3,spd:12,agl:12,chn:11,cnd:12,hgt:6,cut:2,plan:'6/6/8',planName:'Basic'}}
 function createHTML(){
-  return`<h1>Create a Fighter</h1><p>In this test build your gym has two fighter slots, one for each corner of a practice fight. Rebuilding a slot keeps that fighter's record.</p>
-  <ul><li><a data-go="edit:A">Rebuild the red corner</a> (${esc(state.A.name)})</li><li><a data-go="edit:B">Rebuild the blue corner</a> (${esc(state.B.name)})</li></ul>`;
+  if(!state.draft)state.draft=newDraft();
+  return cornerHTML('D');
 }
 function cardsHTML(){
   const[rs,belt]=state.bout.split('|');
@@ -713,13 +715,12 @@ function loginHTML(){
 function logoutHTML(){return`<h1>Logout</h1><p>To sign out, sign out of Claude. Your fighters stay saved in this browser.</p>`}
 /* ---------- Fighter editor ---------- */
 function cornerHTML(side){
-  if(side!=='A'&&side!=='B')side='A';
-  const F=state[side],left=POOL-used(F);
+  const F=state.draft||(state.draft=newDraft()),left=POOL-used(F);
   const opt=(arr,v)=>arr.map(o=>{const[val,lab]=Array.isArray(o)?o:[o,o];return`<option value="${val}"${String(val)===String(v)?' selected':''}>${lab}</option>`}).join('');
   const statCell=k=>`<td><input class="num" data-st="${k}" value="${F[k]}" inputmode="numeric"> <button class="pm" data-s="${k}" data-d="1">+</button><button class="pm" data-s="${k}" data-d="-1">-</button></td>`;
   const kpNote=F.kp>Math.floor(F.str/3)?`<br><span class="cr small">KO Punch Bonus can't be more than a third of Strength. The extra ${F.kp-Math.floor(F.str/3)} will count as Strength in the ring.</span>`:'';
   const nums=n=>Array.from({length:n+1},(_,i)=>i);
-  return`<h1>${esc(F.name)} <span class="small mute">${recStr(F)}</span></h1>
+  return`<h1>Create a Fighter</h1>
   <p>Please read our <a data-go="aup">policy on offensive names</a> before creating your first fighter.<br>Need advice? Read the <a data-go="newbie">fighter creation guide</a> for new players.</p>
   <div class="flex">
   <table class="grid" data-side="${side}">
@@ -741,12 +742,11 @@ function cornerHTML(side){
   </table>
   </div>
   <p class="small">Height counts toward the total: every inch over 5 feet costs one point. Cut Resistance costs 1, 2 or 3 points.</p>
-  <h2>Fight Plan</h2>
-  <p>Enter your fight plan below. <a data-go="help">Instructions</a> are available online.<br><span class="small">Unrecognized lines are flagged with a "#" below. Paste in your old WeBL plans and they'll work as they are.</span></p>
-  <textarea class="planbox" data-side="${side}" data-f="plan" rows="14" spellcheck="false">${esc(F.plan)}</textarea>
-  ${(()=>{const p=parsePlan(F.plan);return p.errors.length?`<div class="note cr">${p.errors.map(e=>`# Line ${e.line}: <tt>${esc(e.text)}</tt> (${esc(e.msg)})`).join('<br>')}</div>`:`<p class="small mute">Plan OK: ${p.stmts.length} instruction${p.stmts.length===1?'':'s'}.</p>`})()}
-  <p><button data-checkplan="${side}">Check Plan</button></p>
-  <p><button data-go="fight">Take ${esc(lastName(F.name))} to the ring</button> <button data-reset="${side}">Reset to sample fighter</button> <a data-go="rec:${side}">View record</a></p>`;
+  <h2>Where does he go?</h2>
+  <p>Your gym has two fighters in this test build, one for each corner. A new fighter takes over a corner, and the fighter there now retires with his record.</p>
+  <p><select id="slot"><option value="A">Red corner (retires ${esc(state.A.name)})</option><option value="B">Blue corner (retires ${esc(state.B.name)})</option></select></p>
+  <p><button id="createF">Create This Fighter</button> <span class="cr small" id="cerr"></span></p>
+  <p class="small mute">Once he's created, his ability points are locked. He can only improve through training and winning.</p>`;
 }
 /* ---------- Record page ---------- */
 const ICON={
@@ -754,19 +754,50 @@ const ICON={
  w:`<svg class="icon" viewBox="0 0 44 30"><circle cx="22" cy="15" r="11" fill="#5b8bd6" stroke="#2b4f8f"/><text x="22" y="19.5" text-anchor="middle" font-family="Verdana" font-weight="bold" font-size="12" fill="#fff">W</text></svg>`,
  l:`<svg class="icon" viewBox="0 0 44 30"><rect x="11" y="4" width="22" height="22" rx="3" fill="#bbb" stroke="#777"/><text x="22" y="20" text-anchor="middle" font-family="Verdana" font-weight="bold" font-size="12" fill="#555">L</text></svg>`,
  d:`<svg class="icon" viewBox="0 0 44 30"><rect x="11" y="4" width="22" height="22" rx="11" fill="#ddd" stroke="#888"/><text x="22" y="20" text-anchor="middle" font-family="Verdana" font-weight="bold" font-size="12" fill="#555">D</text></svg>`};
+function nextSat(){const d=new Date();d.setDate(d.getDate()+((6-d.getDay()+7)%7||7));return d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'})}
+function weightLbs(F){const lim=weightOf(state.div);if(lim<1000)return lim;return Math.round((150+HT(F)*1.4)*({'very light':.9,light:.95,normal:1,heavy:1.06,'very heavy':1.12}[F.build||'normal']))}
+const primeF=F=>1-Math.min(.3,.015*Math.abs((F.rating||0)-(F.status||0)));
 function recordHTML(side){
   if(side!=='A'&&side!=='B')side='A';
-  const F=state[side],n=esc(F.name),wins=F.rec[0];
+  const F=state[side],n=esc(F.name),O=state[side==='A'?'B':'A'],w=weightLbs(F);
   let titles=0;for(const d in state.champs)for(const b in state.champs[d])if(state.champs[d][b]===F.name)titles++;
-  return`<p><a data-go="edit:${side}" class="b">${n}</a> ${recStr(F)}</p>
-  <table class="grid">${[[0,1],[2,3],[4,5]].map(([a,b])=>`<tr><td>${STATS[a][1]}</td><td class="n">${F[STATS[a][0]]}</td><td>${STATS[b][1]}</td><td class="n">${F[STATS[b][0]]}</td></tr>`).join('')}
-  <tr><td>Cut Resistance</td><td class="n">${['','Low','Normal','High'][F.cut]}</td><td>Build</td><td class="n">${esc(F.build||'normal')}</td></tr>
-  <tr><td>Height</td><td colspan="3">${ht(HT(F))} (${cm(HT(F))} centimeters)</td></tr></table>
-  <p>${n} fights in the <b>${esc(state.div)}weight</b> division out of ${esc(F.home||'parts unknown')} for the ${esc(myGym())} gym.</p>
+  const rows=[['Strength',F.str,'Knockout Punch',F.kp],['Speed',F.spd,'Agility',F.agl],['Chin',F.chn,'Conditioning',F.cnd],
+    ['Cut Resistance',['','Low','Normal','High'][F.cut],'Winning Streak',F.streak||''],['Rating',F.rating||0,'Status',F.status||0],
+    ['Rank',frankOf(side),'Total Earnings','$0'],['Injury Points',F.ip||0,'AP Loss',F.aploss||0]];
+  const pf=primeF(F),prime=pf>=.999?'He is in his prime.':pf>.9?'He is close to his best.':pf>.8?'He is a step off his best.':'He is well past his best.';
+  const tr={str:'strength',spd:'speed',agl:'agility',chn:'chin',cnd:'conditioning',kp:'knockout punch'};
+  return`<p><a data-go="rec:${side}" class="b">${n}</a> ${recStr(F)}</p>
+  <table class="grid">${rows.map(r=>`<tr><td>${r[0]}</td><td class="n">${r[1]}</td><td>${r[2]}</td><td class="n">${r[3]}</td></tr>`).join('')}
+  <tr><td>Height</td><td colspan="3">${ht(HT(F))} (${cm(HT(F))} centimeters)</td></tr>
+  <tr><td>Build</td><td colspan="3">${esc(F.build||'normal')}</td></tr>
+  <tr><td>Weight</td><td colspan="3">${w} pounds (${Math.round(w*.4536)} kilograms)</td></tr>
+  <tr><td>Minimum Weight</td><td colspan="3">${Math.round(w*.96)} pounds (${Math.round(w*.96*.4536)} kilograms)</td></tr></table>
+  <p>${n} fights in the <a data-go="frank">${esc(state.div)}weight</a> division out of ${esc(F.home||'parts unknown')} for the ${esc(myGym())} gym. ${prime}</p>
+  <p>${n}'s next opponent is the ${ht(HT(O)).replace(' 0 inches','')}, <a data-go="rec:${side==='A'?'B':'A'}">${esc(O.name)}</a> ${recStr(O)} from the ${esc(myGym())} gym for $0 on <b>${nextSat()}</b>.</p>
+  <p>${n} is training <b>${tr[F.train||'str']}</b>, but you can instruct him to train for something else:
+   <select data-train="${side}">${Object.entries(tr).map(([k,v])=>`<option value="${k}"${k===(F.train||'str')?' selected':''}>${v}</option>`).join('')}</select></p>
+  <p>${n} is currently using the <b>${esc(F.planName||'Basic')}</b> fight plan. He may</p>
+  <ul><li><a data-go="plan:${side}">edit</a> your ${esc(F.planName||'Basic')} plan, or paste in a different one.</li>
+  <li>Beginners might want to get into the ring with a <a data-go="simbot">sparring partner</a>.</li>
+  <li>Go to <a data-go="fight">practice fights</a>.</li></ul>
+  <p>${n} may also do any of the following:</p>
+  <ul><li><a data-go="forum:press">issue a press release</a>.</li><li><a data-retire="${side}">retire</a>.</li></ul>
   <hr><p><b>${n}'s Record</b></p>
   <p>${n}'s record is ${F.rec[0]}-${F.rec[1]}-${F.rec[2]} (${F.rec[3]}/${F.rec[1]})${titles?` with ${titles} world title${titles>1?'s':''}!`:'.'}</p>
   <p class="small">Select <i>highlights</i> for a detailed account of a fight.</p>
   ${F.hist&&F.hist.length?`<table class="hist">${F.hist.map(h=>`<tr><td>${ICON[h.icon]}</td><td>vs <b>${esc(h.opp)}</b> - ${esc(h.div)}weight ${h.belt?esc(h.belt)+' title ':''}bout on ${esc(h.date)}, week ${h.week}: ${esc(h.res)}. Score: ${esc(h.score)} ${state.reports[h.id]?`<a data-go="report:${h.id}">highlights</a>`:''}</td></tr>`).join('')}</table>`:'<p class="mute">No fights yet.</p>'}`;
+}
+function frankOf(side){const sc=s=>{const r=state[s].rec;return(r[0]+.5*r[2])/Math.max(1,r[0]+r[1]+r[2])+r[0]*.001};return sc(side)>=sc(side==='A'?'B':'A')?1:2}
+function planEditHTML(side){
+  if(side!=='A'&&side!=='B')side='A';
+  const F=state[side],p=parsePlan(F.plan);
+  return`<h1>Fight Plan for ${esc(F.name)}</h1>
+  <table class="grid" data-side="${side}"><tr><td>Plan name:</td><td><input data-f="planName" maxlength="40" value="${esc(F.planName||'Basic')}" style="width:260px"></td></tr></table>
+  <p>Enter your fight plan below. <a data-go="help">Instructions</a> are available online.</p>
+  <p class="small">Note that a "#" is used to flag lines the parser didn't recognize. Old WeBL plans can be pasted in as they are.</p>
+  <textarea class="planbox" data-side="${side}" data-f="plan" rows="16" spellcheck="false">${esc(F.plan)}</textarea>
+  ${p.errors.length?`<div class="note cr">${p.errors.map(e=>`# Line ${e.line}: <tt>${esc(e.text)}</tt> (${esc(e.msg)})`).join('<br>')}</div>`:`<p class="small mute">Plan OK: ${p.stmts.length} instruction${p.stmts.length===1?'':'s'}.</p>`}
+  <p><button data-checkplan="${side}">Submit Form</button> <button data-go="rec:${side}">Back to ${esc(lastName(F.name))}</button></p>`;
 }
 /* ---------- Fights ---------- */
 function fightHTML(){
@@ -783,7 +814,7 @@ function fightHTML(){
   else h+=`<p style="margin-top:16px"><button id="go2">Rematch</button> <button data-go="rec:A">Red corner's record</button> <button data-go="rec:B">Blue corner's record</button></p>`;
   return h;
 }
-function planErr(){for(const s of ['A','B']){const F=state[s];if(used(F)!==POOL)return`${F.name} must total exactly ${POOL} points.`;if(parsePlan(F.plan).errors.length)return`${F.name}'s fight plan has lines the parser didn't recognize. Fix them on his page.`}return''}
+function planErr(){for(const s of ['A','B']){const F=state[s];if(parsePlan(F.plan).errors.length)return`${F.name}'s fight plan has lines the parser didn't recognize. Fix them on his page.`}return''}
 function weightOf(div){const l=(DIVS.find(d=>d[0]===div)||[0,160])[1];return l>=1000?225:l}
 function reportHTML(f,b,upto){
   const S=f.S,W=weightOf(b.div);
@@ -831,7 +862,8 @@ function startFight(){
   const d=new Date();
   bout={rounds:+rs,belt:belt||null,div:state.div,done:false,gym:myGym(),recs:[state.A.rec.slice(),state.B.rec.slice()],
     date:d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'}).replace(/,/g,'').replace(/(\d+) (\d{4})$/,'$1, $2')};
-  fight=simulate(JSON.parse(JSON.stringify(state.A)),JSON.parse(JSON.stringify(state.B)),bout.rounds);shown=1;
+  const prepF=F=>{const c=JSON.parse(JSON.stringify(F));if(c.train)c[c.train]+=1;const pf=primeF(c);c.primeMul=pf;c.k=12+(((state.A.rating||0)+(state.B.rating||0))/2)/3;return c};
+  fight=simulate(prepF(state.A),prepF(state.B),bout.rounds);shown=1;
   if(shown>=fight.rounds.length)finish();render();
 }
 function finish(){
@@ -846,6 +878,12 @@ function finish(){
     if(r.w===null){F.rec[2]++;icon='d';res=`drew (${how})`}
     else if(r.w===i){F.rec[0]++;if(!r.decision)F.rec[3]++;icon=r.decision?'w':'ko';res=`won by ${how}`}
     else{F.rec[1]++;icon='l';res=`lost by ${how}`}
+    F.rating=Math.min(28,(F.rating||0)+1);
+    if(r.w===i){F.streak=(F.streak||0)+1;if((F.status||0)<28){F.status=(F.status||0)+1;const k=F.train||'str';F[k]=Math.min(MAX,F[k]+1);
+      if(F.status>=6&&F.status%2===0){const k2=pick(['str','spd','agl','cnd']);F[k2]=Math.min(MAX,F[k2]+1)}}}
+    else F.streak=0;
+    if(r.w!==null&&r.w!==i&&r.type==='KO'){F.ip=(F.ip||0)+25}
+    if((F.ip||0)>=500){F.ip-=500;F.aploss=(F.aploss||0)+1;const k3=pick(['str','spd','agl','chn','cnd']);F[k3]=Math.max(1,F[k3]-1)}
     F.hist=F.hist||[];F.hist.unshift({id,opp:O.name,div:bout.div,belt:bout.belt,date,week:state.week,res,score,icon});F.hist=F.hist.slice(0,40);
   });
   if(r.w!==null&&bout.belt){state.champs[bout.div]=state.champs[bout.div]||{};state.champs[bout.div][bout.belt]=state[S[r.w]].name}
@@ -1012,13 +1050,18 @@ document.addEventListener('click',async e=>{
   if(t.dataset.v){nav(t.dataset.v);return}
   if(t.dataset.go){nav(t.dataset.go);return}
   if(t.dataset.dm){window._dmTo=t.dataset.dm;nav('msgs');return}
-  const side=(t.closest('[data-side]')||{dataset:{}}).dataset.side||t.dataset.reset;
-  if(t.dataset.s){const F=state[side],k=t.dataset.s,d=+t.dataset.d,nv=F[k]+d;if(nv<MINS[k]||nv>(k==='hgt'?24:MAX))return;F[k]=nv;save();render()}
-  else if(t.dataset.pre){const[st,pl]=PRESETS[t.dataset.pre];Object.assign(state[side],st);state[side].plan=pl;save();render()}
+  const side=(t.closest('[data-side]')||{dataset:{}}).dataset.side||t.dataset.reset;const FS=s=>s==='D'?state.draft:state[s];
+  if(t.dataset.s){const F=FS(side),k=t.dataset.s,d=+t.dataset.d,nv=F[k]+d;if(nv<MINS[k]||nv>(k==='hgt'?24:MAX))return;F[k]=nv;save();render()}
+  else if(t.dataset.pre){const[st,pl]=PRESETS[t.dataset.pre];Object.assign(FS(side),st,{plan:pl,planName:t.dataset.pre});save();render()}
   else if(t.dataset.copy){const F=state[side],i=+t.dataset.copy;for(let j=i+1;j<F.plan.length;j++)F.plan[j]={...F.plan[i]};save();render()}
-  else if(t.dataset.rand){const F=state[side];const ks=['str','spd','agl','chn','cnd'];ks.forEach(k=>F[k]=5);F.kp=0;F.cut=1+Math.floor(rand()*3);F.hgt=3+Math.floor(rand()*10);let left=POOL-used(F);
+  else if(t.dataset.rand){const F=FS(side);const ks=['str','spd','agl','chn','cnd'];ks.forEach(k=>F[k]=5);F.kp=0;F.cut=1+Math.floor(rand()*3);F.hgt=3+Math.floor(rand()*10);let left=POOL-used(F);
     while(left>0){const k=rand()<.08?'kp':pick(ks);if(k==='kp'&&F.kp>=Math.floor(F.str/3))continue;if(F[k]<22){F[k]++;left--}}save();render()}
   else if(t.dataset.reset){const s=t.dataset.reset,keep={rec:state[s].rec,hist:state[s].hist};state[s]=Object.assign(JSON.parse(JSON.stringify(DEFAULTS[s])),keep);save();render()}
+  else if(t.id==='createF'){const D=state.draft;if(!D.name.trim())return $('#cerr').textContent='Give him a name.';if(used(D)!==POOL)return $('#cerr').textContent=`He must total exactly ${POOL} points.`;
+    const slot=$('#slot').value,old=state[slot];state.retired=state.retired||[];state.retired.unshift({name:old.name,rec:old.rec,rating:old.rating,status:old.status});
+    state[slot]={...JSON.parse(JSON.stringify(D)),rec:[0,0,0,0],hist:[],locked:true,rating:0,status:0,train:'str',streak:0,ip:0};state.draft=null;save();nav('rec:'+slot)}
+  else if(t.dataset.retire){const s0=t.dataset.retire;state.retired=state.retired||[];const old=state[s0];state.retired.unshift({name:old.name,rec:old.rec,rating:old.rating,status:old.status});
+    state[s0]=Object.assign(JSON.parse(JSON.stringify(DEFAULTS[s0])),{name:'Open Slot '+(s0==='A'?'Red':'Blue')});save();alertBox(old.name+' has retired. Create a new fighter for this corner.');nav('create')}
   else if(t.dataset.checkplan){const ta=document.querySelector('textarea.planbox');if(ta){state[t.dataset.checkplan].plan=ta.value;save()}render()}
   else if(t.id==='go'||t.id==='go2')startFight();
   else if(t.id==='next'){shown++;if(shown>=fight.rounds.length)finish();render();const r=document.querySelectorAll('.rnd');r[r.length-1].scrollIntoView({behavior:'smooth'})}
@@ -1046,10 +1089,11 @@ document.addEventListener('change',e=>{
   const el=e.target;
   if(el.id==='div'){state.div=el.value;save();return}
   if(el.id==='bout'){state.bout=el.value;save();return}
-  const tb=el.closest('[data-side]');if(!tb)return;const F=state[tb.dataset.side];
+  if(el.dataset.train){state[el.dataset.train].train=el.value;save();return}
+  const tb=el.closest('[data-side]');if(!tb)return;const F=tb.dataset.side==='D'?state.draft:state[tb.dataset.side];
   if(el.dataset.f==='plan'){F.plan=el.value;save();render();return}
   if(el.dataset.st){const k=el.dataset.st;F[k]=clamp(parseInt(el.value)||0,MINS[k],k==='hgt'?24:MAX);save();render();return}
-  if(el.dataset.f){const f=el.dataset.f;F[f]=f==='cut'?+el.value:el.value;save();if(f==='name'||f==='cut')render();return}
+  if(el.dataset.f){const f=el.dataset.f;F[f]=f==='cut'?+el.value:el.value;save();if(f==='cut')render();return}
   if(el.dataset.p){const p=F.plan[+el.dataset.p],k=el.dataset.k;p[k]=(k==='style'||k==='tgt')?el.value:+el.value;save();if(k!=='style'&&k!=='tgt')render()}
 });
 const _render=render;
