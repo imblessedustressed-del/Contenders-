@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Contenders - The Contenders Boxing League</title>
+<style>
+body{margin:0;background:#efefef;color:#3a3a3a;font:16px/1.4 "Times New Roman",Times,serif}
+a{color:#2e3a9e;text-decoration:underline;cursor:pointer}
+a:hover{color:#b22}
+#wrap{display:flex;align-items:flex-start;min-height:100vh}
+#side{width:182px;flex:none;padding:10px 8px 20px;background:#e2e2e2;border-right:3px ridge #bdbdbd;min-height:100vh;box-sizing:border-box}
+#logo{display:block;margin:0 auto 10px;width:120px}
+#menuBtn{display:none}
+.box{border:2px ridge #9a9a9a;background:#d4d4d4;margin:0 4px 14px;text-align:center;font:13px/1.45 Verdana,Tahoma,sans-serif}
+.box .hd{background:#ededed;font-weight:bold;color:#444;padding:1px 0;border-bottom:1px solid #b5b5b5}
+.box a{display:block;color:#3b3b6e}
+.box a.lit{background:#fff3b0;color:#b00000;font-weight:bold;text-decoration:none;animation:glow 1.6s ease-in-out infinite}
+@keyframes glow{50%{background:#ffd34d}}
+.badge{display:inline-block;min-width:16px;padding:0 5px;border-radius:9px;background:#c00;color:#fff;font-size:11px;line-height:16px;vertical-align:1px}
+.box a.cur{color:#8b1a1a;font-weight:bold;text-decoration:none}
+.box.fund{background:#dcdcdc}
+#main{flex:1;min-width:0;padding:10px 26px 50px}
+#mast{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:4px 8px 0}
+#who{padding-top:6px;font-family:Verdana,Tahoma,sans-serif;font-size:12px}
+#mast .t{text-align:center}
+#mast .t1{font:bold 34px Verdana,Tahoma,sans-serif;color:#8b1a1a;text-shadow:1px 1px 0 #b9b9b9,2px 2px 1px #888}
+#mast .t2{font:italic bold 16px Georgia,serif;color:#4a4a4a;text-shadow:1px 1px 0 #ccc}
+hr{border:0;border-top:1px solid #b8b8b8;margin:8px 0 14px}
+h1{font:bold 30px Verdana,Tahoma,sans-serif;color:#555;margin:6px 0 12px}
+h1.date{font:bold 28px "Times New Roman",serif;color:#555;text-transform:uppercase}
+h2{font:bold 21px "Times New Roman",serif;color:#444;margin:14px 0 8px}
+.red{color:#b23030}.navy{color:#24317a}.mute{color:#777}
+.cr{color:#cc4444}.r{color:#d9534f}.b{font-weight:bold}
+table.grid{border:2px ridge #a8a8a8;border-collapse:separate;border-spacing:2px;background:#e9e9e9}
+table.grid td,table.grid th{border:1px inset #bdbdbd;padding:4px 7px;background:#f4f4f4;font-size:15px;vertical-align:middle}
+table.grid th{background:#dedede;font-weight:bold;text-align:left}
+table.grid td.n{text-align:right;min-width:26px}
+table.plain td,table.plain th{padding:2px 12px 2px 0;text-align:left;font-size:16px}
+input,select,textarea{font:14px Verdana,Tahoma,sans-serif;border:1px inset #aaa;background:#fff;padding:2px 3px;color:#222}
+textarea{width:100%;max-width:640px;box-sizing:border-box}
+input.num{width:38px}
+button{font:13px Verdana,Tahoma,sans-serif;background:#e8e8e8;border:2px outset #cfcfcf;padding:2px 8px;color:#333;cursor:pointer}
+button:active{border-style:inset}
+button.pm{width:22px;padding:0;height:22px}
+.presets button{width:100%}
+.flex{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start}
+.rep p{margin:0 0 2px}
+.rep .rnd{border-top:1px solid #bbb;border-bottom:1px solid #bbb;padding:6px 0;margin:22px 0 14px}
+.rep .gap{height:12px}
+.sans{font-family:Verdana,Tahoma,sans-serif;font-size:14px}
+.forumnav{font:12px Verdana,Tahoma,sans-serif;margin:0 0 10px}
+.forumlist dt{margin-top:8px}
+.forumlist dd{margin:0 0 0 40px}
+.post{border-top:1px solid #bbb;padding:6px 0 10px}
+.post .meta{font-weight:bold}
+.post .meta span{font-weight:normal}
+.topic{margin:7px 0}
+.hist td{padding:6px 6px;vertical-align:middle}
+.icon{width:44px;height:30px}
+.small{font-size:14px}
+.planbox{font:14px 'Courier New',monospace;width:100%;max-width:720px}
+pre.plan{font:14px 'Courier New',monospace;background:#f6f6f6;border:1px inset #bbb;padding:8px;white-space:pre-wrap;max-width:720px}
+.mgr{font-size:15px;margin:4px 0 10px}
+.home .banner{display:block;width:100%;max-width:640px;margin:0 auto}
+.center{text-align:center}
+.tag{text-align:center;font-size:18px;color:#555;word-spacing:2px}.tag b{margin:0 14px;white-space:nowrap}
+.cta{text-align:center;font-size:19px;font-weight:bold;line-height:1.7}
+table.champ{margin:0 auto}table.champ td.pw{text-align:center;vertical-align:middle;min-width:90px}
+svg.pow{width:46px;height:38px;display:block;margin:0 auto}
+h1.pubname{font:bold 34px 'Times New Roman',serif;color:#555}
+.note{border:1px dashed #aaa;padding:6px 10px;background:#f6f6f6;font-size:14px;max-width:640px}
+@media(max-width:720px){
+ #wrap{display:block}
+ #side{width:auto;min-height:0;border-right:0;border-bottom:3px ridge #bdbdbd;padding:6px 8px}
+ #logo{width:70px;margin:0 auto 4px}
+ #boxes{display:grid;grid-template-columns:1fr 1fr;gap:0 6px;align-items:start}
+ .box{font-size:12px}
+ .tag b{display:block;margin:2px 0}
+ .box{margin:0 0 8px}
+ #main{padding:8px 10px 40px}
+ #mast .t1{font-size:26px}
+ h1{font-size:23px}
+ table.grid td,table.grid th{padding:3px 4px;font-size:14px}
+}
+</style>
+</head>
+<body>
+<div id="wrap">
+<div id="side">
+  <svg id="logo" viewBox="10 10 110 110" aria-label="Contenders">
+    <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a3242a"/><stop offset="1" stop-color="#5e0f13"/></linearGradient></defs>
+    <path d="M44 22c-14 2-22 14-21 30 1 14 6 24 6 34 0 8 4 13 12 13h36c8 0 12-5 12-12V72c9 0 15-6 15-16 0-11-8-17-17-15-2-11-11-19-24-19z" fill="url(#g)" stroke="#2a0506" stroke-width="3"/>
+    <path d="M86 41c-6 2-9 8-8 15" fill="none" stroke="#2a0506" stroke-width="3"/>
+    <rect x="34" y="99" width="54" height="13" rx="3" fill="#ddd" stroke="#2a0506" stroke-width="3"/>
+    <path d="M42 34c6-6 18-7 26-3" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="5" stroke-linecap="round"/>
+  </svg>
+  <button id="menuBtn">Menu</button>
+  <div id="boxes">
+  <div class="box"><div class="hd">Main</div><a data-v="home">Home</a><a data-v="register">Register</a><a data-v="aup">Acceptable Use Policy</a></div>
+  <div class="box"><div class="hd">Your Gym</div><a data-v="gym">Active Fighters</a><a data-v="plans">Fight Plans</a><a data-v="fight">Practice Fights</a><a data-v="create">Create a Fighter</a><a data-v="cards">Your Fight Cards</a><a data-v="retired">Retired Fighters</a><a data-v="clean">Clean Fight Plans</a><a data-v="short">Short Gym</a><a data-v="changegym">Change Gym</a><a data-v="desc">Description</a><a data-v="login">Login</a><a data-v="logout">Logout</a></div>
+  <div class="box"><div class="hd">Community</div><a data-v="forums">Contenders Forums</a><a data-v="msgs" id="msgLink">Messages</a><a data-v="forum:press">Press Releases</a><a data-v="simbot">Simbot</a></div>
+  <div class="box"><div class="hd">Hall of Records</div><a data-v="champs">Champions</a><a data-v="frank">Fighter Rankings</a><a data-v="grank">Gym Rankings</a><a data-v="results">Fight Results</a><a data-v="fcards">Fight Cards</a><a data-v="sched">Fight Schedule</a><a data-v="discarded">Discarded Fighters</a><a data-v="search">Search Contenders</a></div>
+  <div class="box"><div class="hd">Contenders Help &amp; Tools</div><a data-v="help">Help Pages</a><a data-v="newbie">Newbie Files</a></div>
+  <div class="box"><div class="hd">Other Stuff</div><a data-v="forgot">Forgotten Password</a><a data-v="changepw">Change Email/Passwd.</a></div>
+  <div class="box fund"><a data-v="funding">Contenders Funding</a></div>
+  <div class="box fund"><a data-v="retiregym">Retire Gym (Quit)</a></div>
+  </div>
+</div>
+<div id="main">
+  <div id="mast"><div id="who" class="small"></div><div class="t"><div class="t1">Contenders</div><div class="t2">The Contenders Boxing League</div></div></div>
+  <hr>
+  <div id="view"></div>
+</div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const STATS=[['str','Strength'],['kp','KO Punch Bonus'],['spd','Speed'],['agl','Agility'],['chn','Chin'],['cnd','Conditioning']];
+const POOL=70,MAX=30,MINS={str:1,kp:0,spd:1,agl:1,chn:1,cnd:1,hgt:0};
+const STYLE_NAMES=[['None','None'],['Inside','Inside'],['Counter','Counter-punching'],['Clinch','Clinching'],['Ring','Ring (moving)'],['Feint','Feinting']];
+const TARGETS=[['Opp','Opportunistic'],['Head','Head'],['Body','Body'],['Cut','Go after the cut']];
+const mkPlan=(agg,pow,def,tgt,style)=>`${agg}${{Head:'H',Body:'B',Cut:'C'}[tgt]||''}/${pow}/${def}${style&&style!=='None'?` (${style.toLowerCase()})`:''}`;
+const JUDGES=[{name:'Alvarez',pw:2.6,act:.03},{name:'Whitfield',pw:1.9,act:.12},{name:'Moreau',pw:2.2,act:.07}];
+const DIVS=[['Straw',105],['Junior Fly',108],['Fly',112],['Super Fly',115],['Bantam',118],['Super Bantam',122],['Feather',126],['Super Feather',130],['Light',135],['Welter',147],['Super Welter',154],['Middle',160],['Super Middle',168],['Light Heavy',175],['Cruiser',200],['Heavy',1000]];
+const FIGHT_NIGHT={'Straw':'Sunday','Junior Fly':'Sunday','Fly':'Sunday','Super Fly':'Monday','Bantam':'Monday','Super Bantam':'Monday','Feather':'Tuesday','Super Feather':'Tuesday','Light':'Wednesday','Welter':'Wednesday','Super Welter':'Wednesday','Super Middle':'Thursday','Middle':'Thursday','Cruiser':'Friday','Light Heavy':'Friday','Heavy':'Saturday'};
+const nightOf=div=>FIGHT_NIGHT[div]||null;
+const SCHED_TABLE=()=>`<table class="grid"><tr><th>Fight night</th><th>Divisions</th></tr>${['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'].map(n=>`<tr><td><b>${n}</b></td><td>${DIVS.filter(d=>FIGHT_NIGHT[d[0]]===n).map(d=>d[0]+'weight').join(', ')}${n==='Saturday'?' (alone)':''}</td></tr>`).join('')}</table>`;
+const BELTS=['WBC','WBA','WBO'];
+const FORUMS=[
+ ['announce','Announcements','News from the Contenders commissioner and staff.'],
+ ['help','Help','Ask other managers about the game and how to build a better gym.'],
+ ['bugs','Bug Reports','Found something broken? Tell us here.'],
+ ['lounge','Contenders Lounge','Easygoing talk: congratulations, rivalries, gym news and the like.'],
+ ['tourney','Tournaments','Talk about the latest invitational tournament.'],
+ ['alley','Back Alley','Trash talk and heated arguments. Thick skin required.'],
+ ['simdesign','Simulator Design','Ideas for changing how fights are simulated.'],
+ ['sitedesign','Site Design','Ideas for making this website better.'],
+ ['swap','Fighter Swap','Trade fighters or find a new home for one you don\'t want.'],
+ ['other','Other Games','Video games, real sports and other online games.'],
+ ['real','Real Life Boxing and MMA','For fans of the real thing.'],
+ ['press','Press Releases','Managers call out rivals, hype fights and talk big.']
+];
+const PRESETS={
+  'Slugger':[{str:17,kp:2,spd:10,agl:11,chn:11,cnd:11,hgt:6,cut:2},`# Slugger: steady pressure, empty the tank late
+6/6/8
+if opponent = tired then 7/7/6
+10) 8/7/5
+if endurance_percent < 40 then 4/4/10 (clinch)
+if score >= 4 and round >= 10 then 3/3/14`],
+  'KP Slugger':[{str:15,kp:5,spd:9,agl:11,chn:11,cnd:11,hgt:6,cut:2},`# KP Slugger: hunt the knockout
+6H/7/7
+if hisstuns > 0 then 7H/9/4
+if endurance_percent < 50 then 5/5/10 (clinch)`],
+  'Agile Slugger':[{str:15,kp:3,spd:10,agl:13,chn:10,cnd:11,hgt:6,cut:2},`6/6/8 (inside)
+if score < 0 and round >= 6 then 7/7/6 (inside)
+if endurance_percent < 45 then 4/4/12`],
+  'Balanced':[{str:12,kp:3,spd:12,agl:12,chn:11,cnd:12,hgt:6,cut:2},`# Balanced boxer
+6/5/9
+if score + 12 - round < 0 then 8/6/6
+if score > 2*(1 + 12 - round) then 2/2/16`],
+  'Dancer':[{str:9,kp:1,spd:13,agl:17,chn:9,cnd:13,hgt:6,cut:2},`# Dancer: box from range and stay safe
+4H/3/13 (ring)
+if endurance_percent < 50 then 3/3/12
+if score < 0 and round >= 7 then 5H/4/11 (ring)`],
+  'Counterpuncher':[{str:11,kp:2,spd:16,agl:13,chn:9,cnd:11,hgt:6,cut:2},`1) 5/4/11 (counter)
+2) if score < 1 then 6/5/9 (counter)
+3) 5/4/11 (counter)
+if endurance_percent < 100 - (round - 1) * 4 then 5/4/11 (counter)
+if score < 2 and endurance_percent > 100 - (round - 1) * 4 then 6/5/9 (counter)
+if score < 0 and round <= 7 then 8/4/8 (counter)`],
+  'Clincher':[{str:13,kp:2,spd:10,agl:10,chn:13,cnd:14,hgt:6,cut:2},`# Clincher: grind him down
+4B/4/12 (clinch)
+if opponent >= tired then 6B/6/8
+if endurance_percent < 40 then 2/2/12 (clinch)`],
+  'Flasher':[{str:10,kp:2,spd:17,agl:11,chn:10,cnd:12,hgt:6,cut:2},`7/4/9 (feint)
+if endurance_percent < 50 then 5/4/11
+if opponent = exhausted then 8H/7/5`]
+};
+const DEFAULTS={
+  A:{name:'Marcus Reyes',nick:'The Hammer',home:'Tulsa, Oklahoma',build:'normal',str:15,kp:4,spd:10,agl:9,chn:11,cnd:11,hgt:8,cut:2,
+     plan:`# Reyes: walk him down and look for the big shot\n6/6/8\nif hisstuns > 0 then 7H/9/4\nif endurance_percent < 50 then 5/5/10 (clinch)\n10) if score < 0 then 8H/8/4`,rec:[0,0,0,0],hist:[],locked:true,rating:0,status:0,train:'str',train2:'cnd',streak:0,ip:0,planName:'Hammer Time'},
+  B:{name:'Danny Okafor',nick:'Silk',home:'Houston, Texas',build:'light',str:10,kp:2,spd:14,agl:14,chn:9,cnd:10,hgt:10,cut:1,
+     plan:`1) 5/4/11 (counter)\n2) if score < 1 then 6/5/9 (counter)\n3) 5/4/11 (counter)\nif endurance_percent < 100 - (round - 1) * 4 then 5/4/11 (counter)\nif score < 2 and endurance_percent > 100 - (round - 1) * 4 then 6/5/9 (counter)\nif score < 0 and round <= 7 then 8/4/8 (counter)\n6) if round = 6 then 1/1/9 (clinch)`,rec:[0,0,0,0],hist:[],locked:true,rating:0,status:0,train:'spd',train2:'agl',streak:0,ip:0,planName:'Silk Counter'}
+};
+let state;
+try{state=JSON.parse(localStorage.getItem('contenders_v6'))}catch(e){}
+if(!state||!state.A||!state.B)state={A:JSON.parse(JSON.stringify(DEFAULTS.A)),B:JSON.parse(JSON.stringify(DEFAULTS.B)),retired:[],draft:null,div:'Middle',bout:'10',champs:{},log:[],reports:{},week:1,gymName:'',gymDesc:''};
+const save=()=>{if(typeof syncGym==='function')syncGym();try{localStorage.setItem('contenders_v6',JSON.stringify(state))}catch(e){
+  const ids=Object.keys(state.reports);ids.slice(0,Math.max(1,ids.length-5)).forEach(k=>delete state.reports[k]);
+  try{localStorage.setItem('contenders_v6',JSON.stringify(state))}catch(e2){}}};
+
+%%SIM%%
+
+/* ================= SHARED DATA (Supabase: accounts, forums, messages) ================= */
+const SB_URL='https://ojsphhzgzbxmnfcbitqb.supabase.co',SB_KEY='sb_publishable_SWO9WhiSkoVhflY5CmY08A_hlqCEJSi';
+const SITE_URL='https://imblessedustressed-del.github.io/Contenders-/';
+let SB=null,ME=null,MYEMAIL='',dbState='loading',managers={},topics=[],ims=[],posts=[],postsTopic=null,recovering=false,syncTimer=null,loadedGym=false;
+async function initDB(){
+  try{if(window.supabase&&supabase.createClient)SB=supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:true,detectSessionInUrl:true}})}catch(e){}
+  if(!SB){dbState='off';refresh();return}
+  SB.auth.onAuthStateChange((ev,session)=>{
+    if(ev==='PASSWORD_RECOVERY'){recovering=true;nav('newpass');return}
+    const was=ME;ME=session?session.user.id:null;MYEMAIL=session?session.user.email:'';
+    if(ME&&ME!==was){loadedGym=false;afterLogin()}
+    if(!ME&&was){ims=[];loadedGym=false}
+    updateTop();refresh();
+  });
+  const timer=setTimeout(()=>{if(dbState==='loading'){dbState='slow';refresh()}},10000);
+  try{const{data}=await SB.auth.getSession();ME=data.session?data.session.user.id:null;MYEMAIL=data.session?data.session.user.email:''}catch(e){}
+  await loadPublic();clearTimeout(timer);
+  if(ME)afterLogin();
+  updateTop();refresh();
+  setInterval(()=>{if(document.visibilityState==='visible')loadPublic()},45000);
+  setInterval(()=>{if(ME&&document.visibilityState==='visible')loadIms()},20000);
+  document.addEventListener('visibilitychange',()=>{if(ME&&document.visibilityState==='visible')loadIms()});
+}
+async function loadPublic(){
+  try{
+    const[p,t]=await Promise.all([SB.from('profiles').select('id,gym,description,created_at'),SB.from('topics').select('*').order('last_at',{ascending:false}).limit(500)]);
+    if(p.error||t.error)throw p.error||t.error;
+    managers={};p.data.forEach(r=>managers[r.id]={gym:r.gym,desc:r.description,at:Date.parse(r.created_at)});
+    topics=t.data.map(r=>({id:String(r.id),forum:r.forum,title:r.title,by:r.author,at:Date.parse(r.created_at),last:Date.parse(r.last_at),count:r.post_count}));
+    dbState='on';refresh();
+  }catch(e){if(dbState!=='on'){dbState='slow';refresh()}}
+}
+async function loadIms(){
+  if(!ME)return;
+  const{data,error}=await SB.from('messages').select('*').order('created_at',{ascending:false}).limit(500);
+  if(!error){ims=data.map(m=>({id:m.id,from:m.sender,to:m.recipient,at:Date.parse(m.created_at),text:m.body,read:m.read}));updateMsgLink();refresh()}
+}
+async function loadPosts(tid){
+  const{data,error}=await SB.from('posts').select('*').eq('topic_id',tid).order('created_at').limit(1000);
+  if(!error&&postsTopic===tid){posts=data.map(p=>({id:p.id,by:p.author,at:Date.parse(p.created_at),text:p.body}));refresh()}
+}
+async function afterLogin(){
+  await loadPublic();loadIms();
+  try{
+    const{data}=await SB.from('gym_state').select('data').eq('user_id',ME).maybeSingle();
+    if(data&&data.data&&data.data.A){const rep=state.reports;state=Object.assign(state,data.data);state.reports=rep||{};try{localStorage.setItem('contenders_v6',JSON.stringify(state))}catch(e){}}
+    else await pushGym();
+  }catch(e){}
+  loadedGym=true;render();
+}
+function syncGym(){if(!SB||!ME||!loadedGym)return;clearTimeout(syncTimer);syncTimer=setTimeout(pushGym,1500)}
+async function pushGym(){if(!SB||!ME)return;const{reports,...rest}=state;try{await SB.from('gym_state').upsert({user_id:ME,data:rest,updated_at:new Date().toISOString()})}catch(e){}}
+const gymOf=id=>!id?'A retired gym':(managers[id]&&managers[id].gym)||'A manager';
+const myGym=()=>(ME&&managers[ME]&&managers[ME].gym)||state.gymName||'Your Gym';
+function updateMsgLink(){const n=ims.filter(m=>m.to===ME&&!m.read).length;const l=$('#msgLink');if(!l)return;l.classList.toggle('lit',n>0);l.innerHTML=n?`Messages <span class="badge">${n}</span>`:'Messages';document.title=(n?`(${n}) `:'')+'Contenders - The Contenders Boxing League'}
+function updateTop(){const el=$('#who');if(!el)return;el.innerHTML=ME?`Logged in as <b>${esc(myGym())}</b> | <a data-go="logout">Logout</a>`:`<a data-go="login">Login</a> | <a data-go="register">Sign Up (Free!)</a>`}
+function needDB(){
+  if(dbState==='loading')return`<p class="mute">Connecting to the Contenders server...</p>`;
+  if(dbState==='slow'||dbState==='off')return`<p class="cr">The Contenders server can't be reached right now. Check back in a moment.</p>`;
+  return'';
+}
+function needLogin(what){return ME?'':`<p class="note">You need to <a data-go="login">log in</a> or <a data-go="register">sign up</a> to ${what}.</p>`}
+async function safeWrite(fn){try{const r=await fn();if(r&&r.error)throw r.error;return true}catch(e){alertBox("That didn't go through: "+((e&&e.message)||'unknown error'));return false}}
+function alert0(){$('#view').innerHTML='<h1>Your gym has retired.</h1><p>Thanks for fighting in Contenders. You can <a data-go="register">sign up again</a> any time.</p>';updateTop()}
+function alertBox(t){const v=$('#flash');if(v){v.textContent=t;v.style.display='block';v.scrollIntoView({block:'nearest'})}}
+
+/* ================= UI ================= */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const used=F=>STATS.reduce((s,[k])=>s+F[k],0)+F.hgt+F.cut;
+const HT=F=>60+F.hgt;
+const ht=i=>`${Math.floor(i/12)} feet ${i%12} inches`;
+const cm=i=>Math.round(i*2.54);
+const fullName=F=>F.nick?`${esc(F.name.split(' ')[0])} "${esc(F.nick)}" ${esc(F.name.split(' ').slice(1).join(' '))}`:esc(F.name);
+const recStr=F=>`(${F.rec[0]}-${F.rec[1]}-${F.rec[2]} ${F.rec[3]}/${F.rec[1]})`;
+const cc=side=>side==='A'?'red':'navy';
+const dt=ms=>{const d=new Date(ms),p=n=>String(n).padStart(2,'0');return`${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`};
+const bodyHTML=t=>esc(t).replace(/\n/g,'<br>');
+let view='home',fight=null,shown=0,bout=null;
+
+function nav(v){view=v;$('#side').classList.remove('open');render();window.scrollTo(0,0)}
+$('#menuBtn').onclick=()=>$('#side').classList.toggle('open');
+function refresh(){
+  const a=document.activeElement;
+  if(a&&(a.tagName==='TEXTAREA'||a.tagName==='INPUT')&&a.value)return;
+  const live=['forums','msgs','grank','register','changegym','login','logout','home','desc','changepw'];
+  if(live.includes(view)||view.startsWith('forum:')||view.startsWith('topic:'))render();
+}
+function render(){
+  const base=view.split(':')[0],arg=view.slice(base.length+1);
+  document.querySelectorAll('#side a').forEach(a=>a.classList.toggle('cur',a.dataset.v===view||(base==='topic'&&a.dataset.v==='forums')));
+  if(base!=='topic'){postsTopic=null;posts=[]}
+  const P={home:homeHTML,register:registerHTML,aup:aupHTML,gym:gymHTML,plans:plansHTML,fight:fightHTML,create:createHTML,cards:cardsHTML,
+    retired:()=>`<h1>Retired Fighters</h1>${state.retired&&state.retired.length?`<table class="grid"><tr><th>Fighter</th><th>Record</th><th>Rating</th><th>Status</th></tr>${state.retired.map(f=>`<tr><td>${esc(f.name)}</td><td>${f.rec[0]}-${f.rec[1]}-${f.rec[2]} (${f.rec[3]}/${f.rec[1]})</td><td class="n">${f.rating||0}</td><td class="n">${f.status||0}</td></tr>`).join('')}</table>`:'<p>You have no retired fighters.</p>'}`,clean:cleanHTML,short:shortHTML,changegym:changeGymHTML,desc:descHTML,
+    login:loginHTML,logout:logoutHTML,forgot:forgotHTML,newpass:newPassHTML,changepw:changePwHTML,forums:forumsHTML,forum:()=>forumHTML(arg),topic:()=>topicHTML(arg),newtopic:()=>newTopicHTML(arg),msgs:msgsHTML,
+    simbot:simbotHTML,champs:champsHTML,frank:frankHTML,grank:grankHTML,results:resultsHTML,fcards:resultsHTML,sched:schedHTML,
+    discarded:()=>`<h1>Discarded Fighters</h1><p>No fighters have been discarded.</p>`,search:searchHTML,help:()=>helpHTML(arg),newbie:newbieHTML,funding:fundingHTML,retiregym:retireGymHTML,
+    edit:()=>planEditHTML(arg),plan:()=>planEditHTML(arg),rec:()=>recordHTML(arg),pub:()=>pubHTML(arg),train:()=>trainHTML(arg),report:()=>savedReportHTML(arg)};
+  $('#view').innerHTML=`<div id="flash" class="note cr" style="display:none;margin-bottom:10px"></div>`+(P[base]||homeHTML)();
+}
+
+/* ---------- Main ---------- */
+const POW=`<svg class="pow" viewBox="0 0 60 50"><polygon points="30,2 35,14 48,6 43,19 58,20 45,28 54,40 39,35 34,48 28,36 16,46 18,32 3,34 14,24 4,12 19,15 22,2" fill="#f4c430" stroke="#a33" stroke-width="2"/><text x="30" y="30" text-anchor="middle" font-family="Impact,Arial Black,sans-serif" font-size="13" fill="#c22" transform="rotate(-12 30 28)">BAM!</text></svg>`;
+const FLAGS=[['#b22','#fff','#226'],['#d22','#fff','#d22'],['#063','#fff','#c22'],['#000','#d00','#fc0'],['#039','#fff','#039'],['#c00','#fff','#00a'],['#fc0','#06c','#fc0'],['#090','#fff','#f60'],['#d00','#fff','#d00'],['#00a','#fd0','#00a'],['#c00','#fd0','#c00'],['#fff','#d00','#fff'],['#06c','#fff','#c00'],['#f80','#fff','#090']];
+function bannerSVG(){
+  const flag=(x,y,c)=>`<g transform="translate(${x},${y})"><rect width="30" height="7" fill="${c[0]}"/><rect y="7" width="30" height="6" fill="${c[1]}"/><rect y="13" width="30" height="7" fill="${c[2]}"/><rect width="30" height="20" fill="none" stroke="#555" stroke-width=".6"/></g>`;
+  let f='';for(let i=0;i<14;i++){f+=flag(105+i*35,48,FLAGS[i]);f+=flag(105+i*35,192,FLAGS[(i+5)%14])}
+  const glove=(x,flip)=>`<g transform="translate(${x},0) scale(${flip?-1:1},1)"><path d="M0 70c-18 2-28 16-27 36 1 17 7 30 7 42 0 10 5 16 15 16h44c10 0 15-6 15-15v-24c11 0 18-7 18-19 0-13-10-20-20-18-3-13-13-23-29-23z" fill="url(#gl)" stroke="#1a0304" stroke-width="3"/><rect x="-14" y="164" width="66" height="16" rx="3" fill="#e6e6e6" stroke="#1a0304" stroke-width="3"/></g>`;
+  return`<svg class="banner" viewBox="0 0 700 260" role="img" aria-label="Contenders">
+  <defs><linearGradient id="gl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b82a31"/><stop offset="1" stop-color="#5e0f13"/></linearGradient>
+  <linearGradient id="bl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4a7cf0"/><stop offset="1" stop-color="#1b3fb5"/></linearGradient></defs>
+  <polygon points="350,4 520,130 350,256 180,130" fill="#d9d9d9" stroke="#aaa"/>
+  <rect x="40" y="60" width="18" height="150" rx="4" fill="#ccc" stroke="#888"/><rect x="642" y="60" width="18" height="150" rx="4" fill="#ccc" stroke="#888"/>
+  ${[80,110,140,170].map(y=>`<line x1="58" y1="${y}" x2="642" y2="${y}" stroke="#bbb" stroke-width="5"/>`).join('')}
+  <rect x="100" y="44" width="500" height="172" fill="#cfcfcf" stroke="#666" stroke-width="2"/>
+  ${f}
+  <rect x="110" y="72" width="480" height="116" fill="#bdbdbd" stroke="#555"/>
+  <text x="350" y="152" text-anchor="middle" font-family="'Arial Black',Impact,sans-serif" font-weight="900" font-size="64" fill="url(#bl)" stroke="#0d1f66" stroke-width="2.5" letter-spacing="1">CONTENDERS</text>
+  ${glove(40,false)}${glove(660,true)}
+  </svg>`;
+}
+function titleFights(){return state.log.filter(l=>l.belt).slice(0,9)}
+function homeHTML(){
+  const tf=titleFights();
+  return`<div class="home">${bannerSVG()}
+  <p class="tag"><b>Build your fighter.</b> <b>Take him to the top.</b> <b>Outthink managers from everywhere.</b></p>
+  <p class="small center">Three world titles in every division: the <b>WBC</b>, the <b>WBA</b> and the <b>WBO</b>. Check out the <a data-go="champs">reigning champs</a> and make your own mark.</p>
+  <p class="cta"><a data-go="register">Sign Up to Play (Free!)</a> or <a data-go="gym">Enter Your Gym</a><br><a data-go="fight">Try it Out</a></p>
+  <h2 class="center">Latest Contenders World Championship Action</h2>
+  ${tf.length?`<table class="grid champ">${tf.map(l=>`<tr><td rowspan="2" class="pw">${POW}<a data-go="champs">${esc(l.div)}</a><br><span class="small">${esc(l.belt)}</span></td><td>${l.wid!=null?`<a data-go="rec:${l.wid}">${esc(l.winner)}</a>`:esc(l.winner)} (${esc(l.gym||myGym())})</td></tr>
+  <tr><td>vs ${esc(l.loser)} (${esc(l.gym||myGym())})${l.id&&state.reports[l.id]?` <a data-go="report:${l.id}" class="small">highlights</a>`:''}</td></tr>`).join('')}</table>`:
+  `<p class="center mute">No world title fights yet. Win a WBC, WBA or WBO title fight in <a data-go="fight">Practice Fights</a> and it shows up here.</p>`}
+  </div>`;
+}
+function registerHTML(){
+  if(ME)return`<h1>Register</h1><p>You're signed up and logged in as the manager of <b>${esc(myGym())}</b>.</p><p>Go to <a data-go="gym">your gym</a>, or <a data-go="changegym">change your gym's name</a>.</p>`;
+  return`<h1>Sign Up to Play (Free!)</h1>${needDB()}
+  <p>Pick a gym name, then use your email and a password to log in from any computer or phone. Your fighters, records and fight plans are saved to your account.</p>
+  <form id="regForm"><table class="grid">
+  <tr><td>Gym name:</td><td><input id="rGym" maxlength="40" required style="width:240px"></td></tr>
+  <tr><td>Email:</td><td><input id="rEmail" type="email" autocomplete="email" required style="width:240px"></td></tr>
+  <tr><td>Password:</td><td><input id="rPass" type="password" autocomplete="new-password" minlength="6" required style="width:240px"></td></tr>
+  <tr><td>Password again:</td><td><input id="rPass2" type="password" autocomplete="new-password" minlength="6" required style="width:240px"></td></tr>
+  </table><p><button type="submit">Sign Up</button></p></form>
+  <p class="small">By signing up you agree to the <a data-go="aup">Acceptable Use Policy</a>. Already have a gym? <a data-go="login">Log in</a>.</p>`;
+}
+function gymForm(){return`<table class="grid"><tr><td>Gym name (max 40 characters):</td><td><input id="gymIn" data-keep maxlength="40" value="${esc(myGym()==='Your Gym'?'':myGym())}" style="width:240px"></td></tr></table><p><button id="saveGym">Save Gym Name</button></p>`}
+function loginHTML(){
+  if(ME)return`<h1>Login</h1><p>You're logged in as the manager of <b>${esc(myGym())}</b> (${esc(MYEMAIL)}).</p><p><a data-go="gym">Enter your gym</a> or <a data-go="logout">log out</a>.</p>`;
+  return`<h1>Login</h1>${needDB()}
+  <form id="loginForm"><table class="grid">
+  <tr><td>Email:</td><td><input id="lEmail" type="email" autocomplete="email" required style="width:240px"></td></tr>
+  <tr><td>Password:</td><td><input id="lPass" type="password" autocomplete="current-password" required style="width:240px"></td></tr>
+  </table><p><button type="submit">Enter Your Gym</button></p></form>
+  <p class="small"><a data-go="forgot">Forgotten password?</a> · New here? <a data-go="register">Sign up free</a>.</p>`;
+}
+function logoutHTML(){
+  if(!ME)return`<h1>Logout</h1><p>You're logged out. <a data-go="login">Log in</a></p>`;
+  return`<h1>Logout</h1><p>Log out of <b>${esc(myGym())}</b>? Your gym is saved to your account.</p><p><button id="doLogout">Logout</button></p>`;
+}
+function forgotHTML(){
+  return`<h1>Forgotten Password</h1><p>Enter the email you signed up with and we'll send you a link to set a new password.</p>
+  <form id="forgotForm"><table class="grid"><tr><td>Email:</td><td><input id="fEmail" type="email" required style="width:240px"></td></tr></table><p><button type="submit">Send Reset Link</button></p></form>`;
+}
+function newPassHTML(){
+  return`<h1>Set a New Password</h1>${ME||recovering?`<form id="newPassForm"><table class="grid"><tr><td>New password:</td><td><input id="nPass" type="password" minlength="6" autocomplete="new-password" required style="width:240px"></td></tr>
+  <tr><td>Again:</td><td><input id="nPass2" type="password" minlength="6" autocomplete="new-password" required style="width:240px"></td></tr></table><p><button type="submit">Save Password</button></p></form>`:'<p>Open the link from your reset email to set a new password.</p>'}`;
+}
+function changePwHTML(){
+  if(!ME)return`<h1>Change Email/Password</h1>${needLogin('change your email or password')}`;
+  return`<h1>Change Email/Password</h1><p>Logged in as ${esc(MYEMAIL)}.</p>
+  <form id="newPassForm"><h2>New password</h2><table class="grid"><tr><td>New password:</td><td><input id="nPass" type="password" minlength="6" autocomplete="new-password" required style="width:240px"></td></tr>
+  <tr><td>Again:</td><td><input id="nPass2" type="password" minlength="6" autocomplete="new-password" required style="width:240px"></td></tr></table><p><button type="submit">Change Password</button></p></form>
+  <form id="newEmailForm"><h2>New email</h2><table class="grid"><tr><td>New email:</td><td><input id="nEmail" type="email" required style="width:240px"></td></tr></table><p><button type="submit">Change Email</button></p></form>`;
+}
+function aupHTML(){
+  return`<h1>Acceptable Use Policy</h1>
+  <p>Contenders is a game for fun. By playing you agree to the following:</p>
+  <ol><li>No fighter, gym or forum name may be hateful, obscene, or aimed at a real private person.</li>
+  <li>One gym per person. Don't run extra gyms to feed wins to your main gym.</li>
+  <li>Trash talk is part of boxing. Threats and harassment are not.</li>
+  <li>Don't use bugs to gain an edge. Report them in the Bug Reports forum.</li>
+  <li>The commissioner can rename, retire or remove anything that breaks these rules.</li></ol>`;
+}
+/* ---------- Your Gym ---------- */
+function fighterLine(side){
+  const F=state[side],belts=[];
+  for(const d in state.champs)for(const b in state.champs[d])if(state.champs[d][b]===F.name)belts.push(`${d}weight ${b}`);
+  return`<p><a data-go="rec:${side}" class="${cc(side)}">${esc(F.name)}</a>${belts.length?' &#9733;':''} <b>Contenders</b> ${recStr(F)} <a data-go="plan:${side}" class="small">Fight plan</a><br>
+  <span class="small">Height: ${ht(HT(F))} · Rating ${F.rating||0} · Status ${F.status||0} · ${esc(F.home||'')}${belts.length?` · <b>Champion: ${belts.map(esc).join(', ')}</b>`:''}</span><br>
+  <span class="small">No bouts scheduled.</span></p>`;
+}
+function gymHTML(){
+  const tot=[0,0,0,0];['A','B'].forEach(s=>state[s].rec.forEach((v,i)=>tot[i]+=v));
+  let titles=0;for(const d in state.champs)titles+=Object.keys(state.champs[d]).length;
+  return`<h1>${esc(myGym())}</h1>
+  <p><a data-go="forum:announce">Contenders News</a> · Week ${state.week}</p>
+  <table class="plain"><tr><th>Region</th><th>Record</th><th>Titles</th></tr>
+  <tr><td><b>Contenders</b></td><td>${tot[0]}-${tot[1]}-${tot[2]}</td><td class="cr">${titles}</td></tr></table>
+  <p><a data-go="fcards">Recent Fight Cards</a><br><a data-go="results">Recent Results</a></p>
+  <p class="cr">Select a fighter from the list below. You may also <a data-go="create">create a new fighter</a> at any time.</p>
+  <h2>${esc(state.div)}weights</h2>${fighterLine('A')}${fighterLine('B')}`;
+}
+function plansHTML(){
+  return`<h1>Fight Plans</h1>${['A','B'].map(s=>{const F=state[s];return`<h2 class="${cc(s)}">${esc(F.name)}</h2><pre class="plan">${esc(F.plan)}</pre><p><a data-go="edit:${s}">Edit plan</a></p>`}).join('')}`;
+}
+function newDraft(){return{name:'',nick:'',home:'',build:'normal',str:12,kp:3,spd:12,agl:12,chn:11,cnd:12,hgt:6,cut:2,plan:'6/6/8',planName:'Basic'}}
+function createHTML(){
+  if(!state.draft)state.draft=newDraft();
+  return cornerHTML('D');
+}
+function cardsHTML(){return`<h1>Your Fight Cards</h1><p>None of your fighters have bouts scheduled.</p>`}
+function cleanHTML(){return`<h1>Clean Fight Plans</h1><p>Replace both fighters' plans with the plain plan <tt>6/6/8</tt>.</p><p><button id="cleanPlans">Clean Fight Plans</button></p>`}
+function shortHTML(){
+  return`<h1>Short Gym</h1><table class="grid"><tr><th>Fighter</th><th>Record</th><th>Str</th><th>KP</th><th>Spd</th><th>Agl</th><th>Chn</th><th>Cnd</th><th>Hgt</th></tr>
+  ${['A','B'].map(s=>{const F=state[s];return`<tr><td><a data-go="rec:${s}">${esc(F.name)}</a></td><td>${recStr(F)}</td>${STATS.map(([k])=>`<td class="n">${F[k]}</td>`).join('')}<td>${Math.floor(HT(F)/12)}'${HT(F)%12}"</td></tr>`}).join('')}</table>`;
+}
+function changeGymHTML(){return`<h1>Change Gym</h1>${needLogin('name your gym')}${ME?gymForm():''}`}
+function descHTML(){if(!ME)return`<h1>Description</h1>${needLogin('describe your gym')}`;return`<h1>Description</h1><p>Tell other managers about your gym. Plain text only.</p><textarea id="descIn" data-keep rows="6">${esc((ME&&managers[ME]&&managers[ME].desc)||state.gymDesc||'')}</textarea><p><button id="saveDesc">Save Description</button></p>`}
+/* ---------- Fighter editor ---------- */
+function cornerHTML(side){
+  const F=state.draft||(state.draft=newDraft()),left=POOL-used(F);
+  const opt=(arr,v)=>arr.map(o=>{const[val,lab]=Array.isArray(o)?o:[o,o];return`<option value="${val}"${String(val)===String(v)?' selected':''}>${lab}</option>`}).join('');
+  const statCell=k=>`<td><input class="num" data-st="${k}" value="${F[k]}" inputmode="numeric"> <button class="pm" data-s="${k}" data-d="1">+</button><button class="pm" data-s="${k}" data-d="-1">-</button></td>`;
+  const kpNote=F.kp>Math.floor(F.str/3)?`<br><span class="cr small">KO Punch Bonus can't be more than a third of Strength. The extra ${F.kp-Math.floor(F.str/3)} will count as Strength in the ring.</span>`:'';
+  const nums=n=>Array.from({length:n+1},(_,i)=>i);
+  return`<h1>Create a Fighter</h1>
+  <p>Please read our <a data-go="aup">policy on offensive names</a> before creating your first fighter.<br>Need advice? Read the <a data-go="newbie">fighter creation guide</a> for new players.</p>
+  <div class="flex">
+  <table class="grid" data-side="${side}">
+    <tr><td>Name (Max 40 characters):</td><td colspan="3"><input data-f="name" maxlength="40" value="${esc(F.name)}" style="width:95%"></td></tr>
+    <tr><td>Nickname:</td><td><input data-f="nick" maxlength="30" value="${esc(F.nick)}" style="width:90%"></td><td>Hometown:</td><td><input data-f="home" maxlength="40" value="${esc(F.home||'')}" style="width:90%"></td></tr>
+    <tr><td>Strength:</td>${statCell('str')}<td>KO Punch Bonus:</td>${statCell('kp')}</tr>
+    <tr><td>Speed:</td>${statCell('spd')}<td>Agility:</td>${statCell('agl')}</tr>
+    <tr><td>Chin:</td>${statCell('chn')}<td>Conditioning:</td>${statCell('cnd')}</tr>
+    <tr><td>Cut Resistance:</td><td><select data-f="cut">${opt([[1,'1 (low)'],[2,'2 (normal)'],[3,'3 (high)']],F.cut)}</select></td>
+        <td>Build:</td><td><select data-f="build">${opt(['very light','light','normal','heavy','very heavy'],F.build||'normal')}</select></td></tr>
+    <tr><td>Height:</td><td><input class="num" data-st="hgt" value="${F.hgt}" inputmode="numeric"> <button class="pm" data-s="hgt" data-d="1">+</button><button class="pm" data-s="hgt" data-d="-1">-</button> ${Math.floor(HT(F)/12)}'${HT(F)%12}"</td>
+        <td>Metric Height:</td><td>${cm(HT(F))} centimeters</td></tr>
+    <tr><td>Weight Division:</td><td>${esc(state.div)} (${weightOf(state.div)<1000?weightOf(state.div):'unlimited'})</td><td>Weight:</td><td>${weightOf(state.div)} pounds</td></tr>
+    <tr><td>Total:</td><td colspan="3"><b>${used(F)}</b> <span class="cr small">${left===0?'':`(Must equal ${POOL} before fighting. ${left>0?left+' left':(-left)+' too many'}.)`}</span>${kpNote}</td></tr>
+  </table>
+  <table class="grid presets" data-side="${side}">
+    <tr><td colspan="2"><button data-rand="1">Randomly Generate Fighter</button></td></tr>
+    ${Object.keys(PRESETS).reduce((rows,k,i,arr)=>i%2?rows:rows+`<tr><td><button data-pre="${k}">Make ${k}</button></td><td>${arr[i+1]?`<button data-pre="${arr[i+1]}">Make ${arr[i+1]}</button>`:''}</td></tr>`,'')}
+  </table>
+  </div>
+  <p class="small">Height counts toward the total: every inch over 5 feet costs one point. Cut Resistance costs 1, 2 or 3 points.</p>
+  <h2>Where does he go?</h2>
+  <p>Your gym has two fighters in this test build, one for each corner. A new fighter takes over a corner, and the fighter there now retires with his record.</p>
+  <p><select id="slot"><option value="A">Red corner (retires ${esc(state.A.name)})</option><option value="B">Blue corner (retires ${esc(state.B.name)})</option></select></p>
+  <p><button id="createF">Create This Fighter</button> <span class="cr small" id="cerr"></span></p>
+  <p class="small mute">Once he's created, his ability points are locked. He can only improve through training and winning.</p>`;
+}
+/* ---------- Record page ---------- */
+const ICON={
+ ko:`<svg class="icon" viewBox="0 0 44 30"><polygon points="22,1 26,9 35,4 31,12 42,13 32,18 38,27 27,22 22,29 18,22 7,27 12,18 2,13 13,12 9,4 18,9" fill="#f2c94c" stroke="#8a6d00"/><circle cx="22" cy="15" r="8" fill="#5cb85c"/><text x="22" y="19" text-anchor="middle" font-family="Verdana" font-weight="bold" font-size="9" fill="#fff">KO</text></svg>`,
+ w:`<svg class="icon" viewBox="0 0 44 30"><circle cx="22" cy="15" r="11" fill="#5b8bd6" stroke="#2b4f8f"/><text x="22" y="19.5" text-anchor="middle" font-family="Verdana" font-weight="bold" font-size="12" fill="#fff">W</text></svg>`,
+ l:`<svg class="icon" viewBox="0 0 44 30"><rect x="11" y="4" width="22" height="22" rx="3" fill="#bbb" stroke="#777"/><text x="22" y="20" text-anchor="middle" font-family="Verdana" font-weight="bold" font-size="12" fill="#555">L</text></svg>`,
+ d:`<svg class="icon" viewBox="0 0 44 30"><rect x="11" y="4" width="22" height="22" rx="11" fill="#ddd" stroke="#888"/><text x="22" y="20" text-anchor="middle" font-family="Verdana" font-weight="bold" font-size="12" fill="#555">D</text></svg>`};
+function nextSat(){const d=new Date();d.setDate(d.getDate()+((6-d.getDay()+7)%7||7));return d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'})}
+function weightLbs(F){const lim=weightOf(state.div);if(lim<1000)return lim;return Math.round((150+HT(F)*1.4)*({'very light':.9,light:.95,normal:1,heavy:1.06,'very heavy':1.12}[F.build||'normal']))}
+const PROGS=[['str','weight lifting (STR)'],['kp','heavy bag (KP)'],['spd','speed bag (SPD)'],['agl','jump rope (AGL)'],['chn','sparring (CHN)'],['cnd','roadwork (CND)']];
+const primeF=F=>1-Math.min(.3,.015*Math.abs((F.rating||0)-(F.status||0)));
+function recordHTML(side){
+  if(side!=='A'&&side!=='B')side='A';
+  const F=state[side],n=esc(F.name),O=state[side==='A'?'B':'A'],w=weightLbs(F);
+  let titles=0;for(const d in state.champs)for(const b in state.champs[d])if(state.champs[d][b]===F.name)titles++;
+  const rows=[['Strength',F.str,'Knockout Punch',F.kp],['Speed',F.spd,'Agility',F.agl],['Chin',F.chn,'Conditioning',F.cnd],
+    ['Cut Resistance',['','Low','Normal','High'][F.cut],'Winning Streak',F.streak||''],['Rating',F.rating||0,'Status',F.status||0],
+    ['Rank',frankOf(side),'Total Earnings','$0'],['Injury Points',F.ip||0,'AP Loss',F.aploss||0]];
+  const pf=primeF(F),prime=pf>=.999?'He is in his prime.':pf>.9?'He is close to his best.':pf>.8?'He is a step off his best.':'He is well past his best.';
+  const tr={str:'strength',spd:'speed',agl:'agility',chn:'chin',cnd:'conditioning',kp:'knockout punch'};
+  return`<p><a data-go="pub:${side}" class="b red">${n}</a> ${recStr(F)}</p>
+  <table class="grid">${rows.map(r=>`<tr><td>${r[0]}</td><td class="n">${r[1]}</td><td>${r[2]}</td><td class="n">${r[3]}</td></tr>`).join('')}
+  <tr><td>Height</td><td colspan="3">${ht(HT(F))} (${cm(HT(F))} centimeters)</td></tr>
+  <tr><td>Build</td><td colspan="3">${esc(F.build||'normal')}</td></tr>
+  <tr><td>Weight</td><td colspan="3">${w} pounds (${Math.round(w*.4536)} kilograms)</td></tr>
+  <tr><td>Minimum Weight</td><td colspan="3">${Math.round(w*.96)} pounds (${Math.round(w*.96*.4536)} kilograms)</td></tr></table>
+  <p>${n} fights in the <a data-go="frank">${esc(state.div)}weight</a> division out of ${esc(F.home||'parts unknown')} for the ${esc(myGym())} gym. ${prime}</p>
+  <p>${n} has no bouts scheduled.${nightOf(state.div)?` ${esc(state.div)}weights fight on <b>${nightOf(state.div)}s</b>.`:''}</p>
+  <p>${n} is training <b>${tr[F.train||'str']}</b>${(F.status||0)>=2?` with <b>${tr[F.train2||'cnd']}</b> as his secondary program`:''}, but you can instruct him to <a data-go="train:${side}">train for something else</a>.</p>
+  <p>${n} is currently using the <b>${esc(F.planName||'Basic')}</b> fight plan. He may</p>
+  <ul><li><a data-go="plan:${side}">edit</a> your ${esc(F.planName||'Basic')} plan, or paste in a different one.</li>
+  <li>Beginners might want to get into the ring with a <a data-go="simbot">sparring partner</a>.</li>
+  <li>Go to <a data-go="fight">practice fights</a>.</li></ul>
+  <p>${n} may also do any of the following:</p>
+  <ul><li><a data-go="forum:press">issue a press release</a>.</li><li><a data-retire="${side}">retire</a>.</li></ul>
+  <hr><p><b>${n}'s Record</b></p>
+  <p>${n}'s record is ${F.rec[0]}-${F.rec[1]}-${F.rec[2]} (${F.rec[3]}/${F.rec[1]})${titles?` with ${titles} world title${titles>1?'s':''}!`:'.'}</p>
+  <p class="small">Select <i>highlights</i> for a detailed account of a fight.</p>
+  ${F.hist&&F.hist.length?`<table class="hist">${F.hist.map(h=>`<tr><td>${ICON[h.icon]}</td><td>vs <b>${esc(h.opp)}</b> - ${esc(h.div)}weight ${h.belt?esc(h.belt)+' title ':''}bout on ${esc(h.date)}, week ${h.week}: ${esc(h.res)}. Score: ${esc(h.score)} ${state.reports[h.id]?`<a data-go="report:${h.id}">highlights</a>`:''}</td></tr>`).join('')}</table>`:'<p class="mute">No fights yet.</p>'}`;
+}
+function trainHTML(side){
+  if(side!=='A'&&side!=='B')side='A';
+  const F=state[side],opt=v=>PROGS.map(([k,l])=>`<option value="${k}"${k===v?' selected':''}>${l}</option>`).join('');
+  return`<h1>Training</h1>
+  <table class="plain"><tr><td>Fighter's Name</td><td><select id="trWho">${['A','B'].map(s=>`<option value="${s}"${s===side?' selected':''}>${esc(state[s].name)}</option>`).join('')}</select></td></tr>
+  <tr><td>Primary Training Program</td><td><select data-train="${side}">${opt(F.train||'str')}</select></td></tr>
+  <tr><td>Secondary Training Program (fast track)</td><td><select data-train2="${side}">${opt(F.train2||'cnd')}</select></td></tr></table>
+  <p><button data-go="rec:${side}">Submit Form</button></p>
+  <div class="note"><b>How training works:</b> his primary program gives him +1 in that ability for each fight. When he wins, his status goes up 1 and he keeps an ability point in his primary program. From his third win on he's on the <b>fast track</b> and also gets a point in his secondary program, so every win is worth two points. Status tops out at 28.</div>`;
+}
+const TRAIN_FLAVOR={str:'has been lifting weights every chance he gets (STR)',kp:'has been pounding the heavy bag until it splits (KP)',spd:'has been working the speed bag every morning (SPD)',
+  agl:'has been skipping rope for hours at a time (AGL)',chn:'has been taking shots in sparring to toughen up (CHN)',cnd:'has been running miles before sunrise (CND)'};
+function pubHTML(side){
+  if(side!=='A'&&side!=='B')side='A';
+  const F=state[side],n=esc(F.name),O=state[side==='A'?'B':'A'];
+  let titles=[];for(const d in state.champs)for(const b in state.champs[d])if(state.champs[d][b]===F.name)titles.push(b);
+  const[rs,belt]=state.bout.split('|');
+  return`<h1 class="pubname">${n}</h1>
+  <p>${n} stands ${ht(HT(F))} (${cm(HT(F))} centimeters) tall. He fights for the <a data-go="gym">${esc(myGym())}</a> gym${F.home?` out of ${esc(F.home)}`:''} and is ranked #${frankOf(side)} in the <a data-go="frank">${esc(state.div)}weight</a> division (Contenders).</p>
+  <p>${n} has no bouts scheduled.</p>
+  <p>${n} is rumored to weigh about ${weightLbs(F)} pounds (${Math.round(weightLbs(F)*.4536)} kilograms).</p>
+  <hr><h2>${n}'s Record</h2>
+  <p>${n}'s record is ${F.rec[0]}-${F.rec[1]}-${F.rec[2]} (${F.rec[3]}/${F.rec[1]})${titles.length?` with ${titles.length} world title${titles.length>1?'s':''} (${titles.map(esc).join(', ')})!`:'.'}<br>
+  His current <a data-go="help">rating</a> is ${F.rating||0} and his <a data-go="help">status</a> is ${F.status||0}.<br>His career earnings are $0.</p>
+  <p>Select any icon for a detailed account of a fight.</p>
+  ${F.hist&&F.hist.length?`<p>${n} ${TRAIN_FLAVOR[F.train||'str']}.</p>`:''}
+  ${F.hist&&F.hist.length?`<table class="hist">${F.hist.map(h=>`<tr><td>${state.reports[h.id]?`<a data-go="report:${h.id}">${ICON[h.icon]}</a>`:ICON[h.icon]}</td><td>vs <a data-go="pub:${side==='A'?'B':'A'}">${esc(h.opp)}</a> (${esc(myGym())}) - ${h.oh?esc(h.oh)+' - ':''}${esc(h.div)}weight ${h.belt?esc(h.belt)+' title ':''}bout on ${esc(h.date)}, week ${h.week}: ${esc(h.res)}. Earned $0. Score: ${esc(h.score)} ${state.reports[h.id]?`<a data-go="report:${h.id}">highlights</a>`:''}${h.plan?`. Fight Plan: ${esc(h.plan)}`:''}</td></tr>`).join('')}</table>`:'<p class="mute">No fights yet.</p>'}
+  <p class="small"><a data-go="rec:${side}">Manager's page for ${n}</a></p>`;
+}
+function frankOf(side){const sc=s=>{const r=state[s].rec;return(r[0]+.5*r[2])/Math.max(1,r[0]+r[1]+r[2])+r[0]*.001};return sc(side)>=sc(side==='A'?'B':'A')?1:2}
+function planEditHTML(side){
+  if(side!=='A'&&side!=='B')side='A';
+  const F=state[side],p=parsePlan(F.plan);
+  return`<h1>Fight Plan for ${esc(F.name)}</h1>
+  <table class="grid" data-side="${side}"><tr><td>Plan name:</td><td><input data-f="planName" maxlength="40" value="${esc(F.planName||'Basic')}" style="width:260px"></td></tr></table>
+  <p>Enter your fight plan below. <a data-go="help">Instructions</a> are available online.</p>
+  <p class="small">Note that a "#" is used to flag lines the parser didn't recognize. Old WeBL plans can be pasted in as they are.</p>
+  <textarea class="planbox" data-side="${side}" data-f="plan" rows="16" spellcheck="false">${esc(F.plan)}</textarea>
+  ${p.errors.length?`<div class="note cr">${p.errors.map(e=>`# Line ${e.line}: <tt>${esc(e.text)}</tt> (${esc(e.msg)})`).join('<br>')}</div>`:`<p class="small mute">Plan OK: ${p.stmts.length} instruction${p.stmts.length===1?'':'s'}.</p>`}
+  <p><button data-checkplan="${side}">Submit Form</button> <button data-go="rec:${side}">Back to ${esc(lastName(F.name))}</button></p>`;
+}
+/* ---------- Fights ---------- */
+function fightHTML(){
+  const opt=(arr,v)=>arr.map(([val,lab])=>`<option value="${val}"${val===v?' selected':''}>${lab}</option>`).join('');
+  let h=`<h1>Practice Fights</h1>
+  <table class="grid"><tr><td>Red corner</td><td><a data-go="edit:A" class="red">${esc(state.A.name)}</a> ${recStr(state.A)}</td></tr>
+  <tr><td>Blue corner</td><td><a data-go="edit:B" class="navy">${esc(state.B.name)}</a> ${recStr(state.B)}</td></tr>
+  <tr><td>Weight Division</td><td><select id="div">${opt(DIVS.map(([d,l])=>[d,`${d} (${l<1000?l:'unlimited'})`]),state.div)}</select></td></tr>
+  <tr><td>Bout</td><td><select id="bout">${opt([['10','10-round Contenders bout'],['12|WBC','WBC title, 12 rounds'],['12|WBA','WBA title, 12 rounds'],['12|WBO','WBO title, 12 rounds']],state.bout)}</select></td></tr></table>
+  <p><button id="go">Start the Fight</button> <span class="cr small" id="err"></span></p>`;
+  if(!fight)return h;
+  h+=`<hr><div class="rep">${reportHTML(fight,bout,shown)}</div>`;
+  if(shown<fight.rounds.length)h+=`<p style="margin-top:14px"><button id="next">Next Round</button> <button id="skip">Skip to the End</button></p>`;
+  else h+=`<p style="margin-top:16px"><button id="go2">Rematch</button> <button data-go="rec:A">Red corner's record</button> <button data-go="rec:B">Blue corner's record</button></p>`;
+  return h;
+}
+function planErr(){for(const s of ['A','B']){const F=state[s];if(parsePlan(F.plan).errors.length)return`${F.name}'s fight plan has lines the parser didn't recognize. Fix them on his page.`}return''}
+function weightOf(div){const l=(DIVS.find(d=>d[0]===div)||[0,160])[1];return l>=1000?225:l}
+function reportHTML(f,b,upto){
+  const S=f.S,W=weightOf(b.div);
+  const intro=S.map((x,i)=>`<p>In this corner, standing ${ht(HT(x.F))} (${cm(HT(x.F))} centimeters) tall weighing in at ${W} pounds (${Math.round(W*.4536)} kilograms) with a record of ${b.recs[i][0]} wins, ${b.recs[i][2]} draws, and ${b.recs[i][1]} losses fighting for ${esc(b.gym)} out of ${esc(x.F.home||'parts unknown')} is <b>${esc(x.F.name)}</b>!!</p><div class="gap"></div>`).join('');
+  let h=`<h1 class="date">${esc(b.date)}</h1>${intro}<p>This bout is scheduled for ${b.rounds} rounds.${b.belt?` It is for the <b>${esc(b.belt)} ${esc(b.div)}weight Championship of the World</b>.`:''}</p>`;
+  const end=f.result,last=f.rounds.length;
+  f.rounds.slice(0,upto).forEach((R,ri)=>{
+    h+=`<div class="rnd">ROUND ${R.n}</div>${R.mgr?`<div class="mgr">${R.mgr.join('<br>')}</div>`:''}${(R.say||[]).map((t,i)=>t?`<p>${S[i].n} says, "${esc(t)}"</p>`:'').join('')}<p>${(R.plans||[]).join('<br>')}</p>${(R.pre||[]).join('')}<div class="gap"></div>`;
+    let idle=0;
+    const flushIdle=()=>{const k=Math.min(3,Math.ceil(idle/5));for(let i=0;i<k;i++)h+=`<p>...</p>`;idle=0};
+    R.lines.forEach(l=>{if(!l.html){idle++;return}flushIdle();h+=`<p>${l.html}</p>`});
+    flushIdle();
+    const isLast=ri===last-1;
+    if(isLast&&end&&!end.decision&&!R.cards.length){
+      const wn=S[end.w].n;
+      h+=`<p class="r b">${wn} wins by ${end.type==='KO'?'a Knock Out':end.type==='DQ'?'Disqualification':'a Technical Knockout'}!!</p><p class="b">Time: ${fmt(end.t)}</p>`+afterFight(f,end);
+      return;
+    }
+    h+=`<div class="gap"></div><p>BELL!</p><div class="gap"></div><p>According to the commentators:</p>
+    ${S.map((x,i)=>{const s=R.st[i];return`<p>${x.n} landed ${s.jl+s.pl+s.rl} of ${s.jt+s.pt+s.rt} punches -- ${s.pl} power punches, ${s.jl} jabs, ${s.rl} rights. (${s.pl*4+s.rl*3+s.jl*2} points)</p>`}).join('')}<div class="gap"></div>
+    <p>${R.cc[0]===R.cc[1]?`This round was a ${R.cc[0]}-${R.cc[1]} tie.`:`${S[R.cc[0]>R.cc[1]?0:1].n} won the round ${Math.max(...R.cc)}-${Math.min(...R.cc)}.`}</p>
+    <p>${Math.abs(R.run[0]-R.run[1])<=1?'The fight is too close to call at this point.':`${S[R.run[0]>R.run[1]?0:1].n} is ahead ${Math.max(...R.run)}-${Math.min(...R.run)} on the commentators' card.`}</p>
+    ${R.post.join('')}<div class="gap"></div>`;
+    if(isLast&&end&&!end.decision){h+=`<p class="r b">${S[end.w].n} wins by a Technical Knockout!!</p><p class="b">Time: 3:00 of round ${R.n}</p>`+afterFight(f,end);return}
+    if(isLast&&end&&end.decision){
+      h+=`<p>The fight goes the distance, so it's up to the judges.</p>${f.totals.map((t,j)=>`<p>Judge ${JUDGES[j].name} scores it ${Math.max(...t)}-${Math.min(...t)}${t[0]===t[1]?', even':` for ${S[t[0]>t[1]?0:1].n}`}.</p>`).join('')}
+      <p class="r b">${end.w===null?`It's a ${end.type.toLowerCase()}!!`:`${S[end.w].n} wins by a ${end.type.toLowerCase()}!!`}</p>`+afterFight(f,end);return;
+    }
+    h+=S.map((x,i)=>`<p>${x.n} ${R.cond[i]}</p>`).join('');
+  });
+  return h;
+}
+function afterFight(f,end){
+  const S=f.S;
+  if(end.w===null)return`<div class="gap"></div>${S.map((x,i)=>`<p>${x.n} heads back to his corner. ${f.final[i]}</p>`).join('')}`;
+  const w=S[end.w],l=S[1-end.w];
+  return`<div class="gap"></div><p>${w.n} remains standing while his trainer wipes him down. ${f.final[end.w]}</p>
+  <p>${l.n} ${end.decision?'heads back to his corner.':'needs medical attention from his trainer.'} ${f.final[1-end.w]}</p>
+  ${f.belt&&end.w!==null?'':''}`;
+}
+function savedReportHTML(id){const r=state.reports[id];if(!r)return`<p>That fight report is no longer saved.</p>`;return`<div class="rep">${reportHTML(r.f,r.b,r.f.rounds.length)}</div>`}
+function startFight(){
+  const bad=planErr();if(bad){$('#err').textContent=bad;return}
+  const[rs,belt]=state.bout.split('|');
+  const d=new Date();
+  bout={rounds:+rs,belt:belt||null,div:state.div,done:false,gym:myGym(),recs:[state.A.rec.slice(),state.B.rec.slice()],
+    date:d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'}).replace(/,/g,'').replace(/(\d+) (\d{4})$/,'$1, $2')};
+  const prepF=F=>{const c=JSON.parse(JSON.stringify(F));if(c.train)c[c.train]+=1;const pf=primeF(c);c.primeMul=pf;c.k=12+(((state.A.rating||0)+(state.B.rating||0))/2)/3;return c};
+  fight=simulate(prepF(state.A),prepF(state.B),bout.rounds);shown=1;
+  if(shown>=fight.rounds.length)finish();render();
+}
+function finish(){
+  if(bout.done)return;bout.done=true;
+  const r=fight.result,S=['A','B'],id='f'+Date.now();
+  const date=new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+  const score=fight.totals.map(t=>t.join('-')).join(', ');
+  const how=r.decision?r.type.toLowerCase():`${r.type} in round ${r.round} (${fmt(r.t)})`;
+  S.forEach((s,i)=>{
+    const F=state[s],O=state[S[1-i]];
+    let icon,res;
+    if(r.w===null){F.rec[2]++;icon='d';res=`drew (${how})`}
+    else if(r.w===i){F.rec[0]++;if(!r.decision)F.rec[3]++;icon=r.decision?'w':'ko';res=`won by ${how}`}
+    else{F.rec[1]++;icon='l';res=`lost by ${how}`}
+    F.rating=Math.min(28,(F.rating||0)+1);
+    if(r.w===i){F.streak=(F.streak||0)+1;if((F.status||0)<28){F.status=(F.status||0)+1;const k=F.train||'str';F[k]=Math.min(MAX,F[k]+1);
+      if(F.status>=3){const k2=F.train2||'cnd';F[k2]=Math.min(MAX,F[k2]+1)}}}
+    else F.streak=0;
+    if(r.w!==null&&r.w!==i&&r.type==='KO'){F.ip=(F.ip||0)+25}
+    if((F.ip||0)>=500){F.ip-=500;F.aploss=(F.aploss||0)+1;const k3=pick(['str','spd','agl','chn','cnd']);F[k3]=Math.max(1,F[k3]-1)}
+    F.hist=F.hist||[];F.hist.unshift({id,oh:ht(HT(O)).replace(' 0 inches',''),plan:F.planName||'Basic',opp:O.name,div:bout.div,belt:bout.belt,date,week:state.week,res,score,icon});F.hist=F.hist.slice(0,40);
+  });
+  if(r.w!==null&&bout.belt){state.champs[bout.div]=state.champs[bout.div]||{};state.champs[bout.div][bout.belt]=state[S[r.w]].name}
+  const txt=r.w===null?`${state.A.name} and ${state.B.name} fight to a ${r.type.toLowerCase()}`:`${state[S[r.w]].name} def. ${state[S[1-r.w]].name} by ${how}${bout.belt?` (${bout.belt} ${bout.div}weight title)`:''}`;
+  state.log.unshift({date,text:txt,id,belt:bout.belt&&r.w!==null?bout.belt:null,div:bout.div,winner:r.w!==null?state[S[r.w]].name:'',loser:r.w!==null?state[S[1-r.w]].name:'',wid:r.w!==null?S[r.w]:null,gym:myGym()});state.log=state.log.slice(0,40);
+  state.reports[id]={f:fight,b:bout};const ks=Object.keys(state.reports);if(ks.length>10)ks.slice(0,ks.length-10).forEach(k=>delete state.reports[k]);
+  state.week++;save();
+}
+/* ---------- Community ---------- */
+const forumNav=()=>`<div class="forumnav">${FORUMS.filter(f=>f[0]!=='press').map(f=>`<a data-go="forum:${f[0]}">${f[1].replace('Contenders ','').replace('Real Life Boxing and MMA','Boxing/MMA').replace('Simulator Design','Sim Design').replace('Fighter Swap','Swap')}</a>`).join(' | ')}</div>`;
+function forumsHTML(){
+  const last=fid=>{const t=topics.filter(x=>x.forum===fid);return t.length?` (${dt(Math.max(...t.map(x=>x.last||0)))})`:''};
+  return`${forumNav()}<h1>The Contenders Forums</h1>${needDB()}<p class="sans">Posts in the wrong forum may be moved or deleted.</p>
+  <dl class="forumlist sans">${FORUMS.map(f=>`<dt><a data-go="forum:${f[0]}">${f[1]}</a>${last(f[0])}</dt><dd>${f[2]}</dd>`).join('')}</dl>`;
+}
+function forumHTML(fid){
+  const f=FORUMS.find(x=>x[0]===fid)||FORUMS[0];
+  const list=topics.filter(t=>t.forum===f[0]);
+  return`${forumNav()}<h1>The ${esc(f[1])} Forum</h1><p class="sans">${esc(f[2])}</p>${needDB()}
+  ${dbState==='on'?(ME?`<p class="sans"><a data-go="newtopic:${f[0]}"><b>Start a new topic</b></a></p>`:needLogin('post')):''}
+  <div class="sans">${list.length?list.map(t=>`<div class="topic"><a data-go="topic:${t.id}">${esc(t.title)}</a> (${t.count||0}) by <b>${esc(gymOf(t.by))}</b> Last post on ${dt(t.last||t.at)}.</div>`).join(''):(dbState==='on'?'<p class="mute">No topics yet. Be the first.</p>':'')}</div>`;
+}
+function newTopicHTML(fid){
+  const f=FORUMS.find(x=>x[0]===fid)||FORUMS[0];
+  if(!ME)return`${forumNav()}<h1>New Topic in ${esc(f[1])}</h1>${needLogin('post')}`;
+  return`${forumNav()}<h1>New Topic in ${esc(f[1])}</h1>${needDB()}
+  <p class="sans">Posting as <b>${esc(myGym())}</b></p>
+  <table class="grid"><tr><td>Title:</td><td><input id="tTitle" data-keep maxlength="100" style="width:min(480px,60vw)"></td></tr>
+  <tr><td>Message:</td><td><textarea id="tBody" data-keep rows="8"></textarea></td></tr></table>
+  <p><button id="postTopic" data-forum="${f[0]}">Post Topic</button></p>`;
+}
+function topicHTML(tid){
+  const t=topics.find(x=>x.id===tid);
+  if(SB&&postsTopic!==tid){postsTopic=tid;posts=[];loadPosts(tid)}
+  if(!t)return`${forumNav()}${needDB()}<p class="mute">Loading topic...</p>`;
+  return`${forumNav()}<h1>${esc(t.title)}</h1><p class="sans small"><a data-go="forum:${t.forum}">Back to ${esc((FORUMS.find(f=>f[0]===t.forum)||['',''])[1])}</a></p>
+  <div class="sans">${posts.map(p=>`<div class="post"><div class="meta">Posted by: <a data-dm="${esc(p.by)}" title="Send a message">${esc(gymOf(p.by))}</a><br>Date: <span>${dt(p.at)}</span></div><p>${bodyHTML(p.text)}</p></div>`).join('')}</div>
+  ${dbState==='on'?(ME?`<hr><p class="sans"><b>Reply</b></p><textarea id="rBody" data-keep rows="5"></textarea><p><button id="postReply" data-topic="${t.id}">Post Reply</button></p>`:needLogin('reply')):''}`;
+}
+function msgsHTML(){
+  if(dbState!=='on')return`<h1>Messages</h1>${needDB()}`;
+  if(!ME)return`<h1>Messages</h1>${needLogin('send and read messages')}`;
+  const others=Object.keys(managers).filter(id=>id!==ME);
+  const sel=window._dmTo||'';
+  return`<h1>Messages</h1>
+  <p class="small mute">Messages are private between you and the other manager.</p>
+  <h2>Send a Message</h2>
+  ${others.length?`<table class="grid"><tr><td>To:</td><td><select id="dmTo">${others.map(id=>`<option value="${esc(id)}"${id===sel?' selected':''}>${esc(gymOf(id))}</option>`).join('')}</select></td></tr>
+  <tr><td>Message:</td><td><textarea id="dmBody" data-keep rows="5"></textarea></td></tr></table><p><button id="sendDm">Send</button></p>`:
+  `<p class="mute">No other managers have signed up yet.</p>`}
+  <h2>Inbox</h2>${ims.filter(m=>m.to===ME).map(m=>`<div class="post sans"><div class="meta">From: <a data-dm="${esc(m.from)}">${esc(gymOf(m.from))}</a> ${m.read?'':'<span class="cr">(new)</span>'}<br>Date: <span>${dt(m.at)}</span></div><p>${bodyHTML(m.text)}</p></div>`).join('')||'<p class="mute">No messages.</p>'}
+  <h2>Sent</h2>${ims.filter(m=>m.from===ME).map(m=>`<div class="post sans"><div class="meta">To: ${esc(gymOf(m.to))}<br>Date: <span>${dt(m.at)}</span></div><p>${bodyHTML(m.text)}</p></div>`).join('')||'<p class="mute">Nothing sent yet.</p>'}`;
+}
+async function markRead(){
+  if(!SB||!ME||view!=='msgs'||!ims.some(m=>m.to===ME&&!m.read))return;
+  try{await SB.rpc('mark_messages_read');ims.forEach(m=>{if(m.to===ME)m.read=true});updateMsgLink()}catch(e){}
+}
+function simbotHTML(){
+  return`<h1>Simbot</h1><p>Simbot runs the current matchup many times so you can see how a fight plan holds up before fight night.</p>
+  <p><b class="red">${esc(state.A.name)}</b> vs <b class="navy">${esc(state.B.name)}</b>, ${esc(state.div)}weight, ${state.bout.split('|')[0]} rounds.</p>
+  <p><select id="simN"><option>100</option><option>500</option><option>1000</option></select> <button id="runSim">Run Simbot</button></p><div id="simOut"></div>`;
+}
+function runSimbot(n){
+  const bad=planErr();if(bad){$('#simOut').innerHTML=`<p class="cr">${bad}</p>`;return}
+  const rs=+state.bout.split('|')[0],c={w0:0,k0:0,w1:0,k1:0,d:0};let rounds=0;
+  for(let i=0;i<n;i++){const f=simulate(state.A,state.B,rs),r=f.result;if(r.w===null)c.d++;else{c['w'+r.w]++;if(!r.decision)c['k'+r.w]++}rounds+=f.rounds.length}
+  const p=x=>(100*x/n).toFixed(1)+'%';
+  $('#simOut').innerHTML=`<table class="grid"><tr><th></th><th>Wins</th><th>By stoppage</th><th>By decision</th></tr>
+  <tr><td class="red">${esc(state.A.name)}</td><td class="n">${p(c.w0)}</td><td class="n">${p(c.k0)}</td><td class="n">${p(c.w0-c.k0)}</td></tr>
+  <tr><td class="navy">${esc(state.B.name)}</td><td class="n">${p(c.w1)}</td><td class="n">${p(c.k1)}</td><td class="n">${p(c.w1-c.k1)}</td></tr>
+  <tr><td>Draws</td><td class="n">${p(c.d)}</td><td colspan="2">Average length: ${(rounds/n).toFixed(1)} rounds</td></tr></table>`;
+}
+/* ---------- Hall of Records ---------- */
+function champsHTML(){
+  return`<h1>Champions</h1><table class="grid"><tr><th>Division</th>${BELTS.map(b=>`<th>${b}</th>`).join('')}</tr>
+  ${DIVS.map(([d])=>`<tr><td>${d}weight</td>${BELTS.map(b=>`<td>${state.champs[d]&&state.champs[d][b]?esc(state.champs[d][b]):'<span class="mute">vacant</span>'}</td>`).join('')}</tr>`).join('')}</table>
+  <p class="small mute">Win a WBC, WBA or WBO title fight to fill a belt.</p>`;
+}
+function frankHTML(){
+  const rows=['A','B'].map(s=>({s,F:state[s],pct:(state[s].rec[0]+.5*state[s].rec[2])/Math.max(1,state[s].rec.slice(0,3).reduce((a,b)=>a+b,0))})).sort((a,b)=>b.pct-a.pct);
+  return`<h1>Fighter Rankings</h1><h2>${esc(state.div)}weight (Contenders)</h2><table class="grid"><tr><th>Rank</th><th>Fighter</th><th>Record</th><th>Gym</th></tr>
+  ${rows.map((r,i)=>`<tr><td class="n">#${i+1}</td><td><a data-go="pub:${r.s}">${esc(r.F.name)}</a></td><td>${recStr(r.F)}</td><td>${esc(myGym())}</td></tr>`).join('')}</table>`;
+}
+function grankHTML(){
+  const ids=Object.keys(managers);
+  return`<h1>Gym Rankings</h1>${needDB()}${ids.length?`<table class="grid"><tr><th>Gym</th><th>Since</th><th>Description</th><th></th></tr>${ids.map(id=>`<tr><td><b>${esc(gymOf(id))}</b></td><td>${managers[id].at?dt(managers[id].at).slice(0,10):''}</td><td>${esc(managers[id].desc||'')}</td><td>${id!==ME?`<a data-dm="${esc(id)}">message</a>`:'(you)'}</td></tr>`).join('')}</table>
+  <p class="small mute">Gym records and power ratings will rank here once fighters are shared between managers.</p>`:'<p class="mute">No gyms registered yet.</p>'}`;
+}
+function resultsHTML(){
+  return`<h1>Fight Results</h1>${state.log.length?`<table class="grid">${state.log.map(l=>`<tr><td>${esc(l.date)}</td><td>${esc(l.text)} ${l.id&&state.reports[l.id]?`<a data-go="report:${l.id}">highlights</a>`:''}</td></tr>`).join('')}</table>`:'<p class="mute">No fights yet.</p>'}`;
+}
+function schedHTML(){return`<h1>Fight Schedule</h1><p>Every division has its own fight night each week:</p>${SCHED_TABLE()}<p>No bouts have been scheduled yet. Weekly matchmaking switches on as managers sign up. Until then, use <a data-go="fight">Practice Fights</a> and <a data-go="simbot">Simbot</a>. See <a data-go="help:schedule">The Fight Schedule</a> for how it works.</p>`}
+function searchHTML(){return`<h1>Search Contenders</h1><p><input id="q" data-keep placeholder="Fighter, gym or topic" style="width:260px"> <button id="doSearch">Search</button></p><div id="sres"></div>`}
+function doSearch(q){
+  q=q.trim().toLowerCase();if(!q){$('#sres').innerHTML='';return}
+  const fs=['A','B'].filter(s=>state[s].name.toLowerCase().includes(q)).map(s=>`<p>Fighter: <a data-go="rec:${s}">${esc(state[s].name)}</a></p>`);
+  const gs=Object.keys(managers).filter(id=>gymOf(id).toLowerCase().includes(q)).map(id=>`<p>Gym: <b>${esc(gymOf(id))}</b></p>`);
+  const ts=topics.filter(t=>t.title.toLowerCase().includes(q)).map(t=>`<p>Topic: <a data-go="topic:${t.id}">${esc(t.title)}</a></p>`);
+  const rs=state.log.filter(l=>l.text.toLowerCase().includes(q)).map(l=>`<p>Result: ${esc(l.text)}</p>`);
+  $('#sres').innerHTML=[...fs,...gs,...ts,...rs].join('')||'<p class="mute">Nothing found.</p>';
+}
+/* ---------- Help ---------- */
+const HELP_TOPICS=[['start','Getting Started'],['fighter','Creating a Fighter'],['plans','Writing Fight Plans'],['sim','How Fights Are Simulated'],['training','Training, Rating and Status'],['schedule','The Fight Schedule'],['titles','Rankings and World Titles'],['community','Forums, Messages and Press Releases'],['account','Your Account']];
+function helpHTML(arg){
+  const t=HELP_TOPICS.find(x=>x[0]===arg);
+  const toc=`<p class="small">${HELP_TOPICS.map(x=>`<a data-go="help:${x[0]}">${x[1]}</a>`).join(' | ')}</p>`;
+  if(!t)return`<h1>Help Pages</h1><p>Everything you need to know to run a Contenders gym. New here? Start with the <a data-go="newbie">Newbie Files</a>.</p>
+  <ul>${HELP_TOPICS.map(x=>`<li><a data-go="help:${x[0]}">${x[1]}</a></li>`).join('')}</ul>`;
+  return`${toc}<h1>${t[1]}</h1>${HELP_BODY[t[0]]()}<hr><p class="small"><a data-go="help">Back to Help Pages</a></p>`;
+}
+const HELP_BODY={
+ start:()=>`<p>Contenders is a boxing strategy game. You're the manager: you build fighters, train them, write their fight plans, and watch every bout play out round by round. You never throw a punch yourself. Your decisions win or lose the fight.</p>
+  <ol><li><a data-go="register">Sign up</a> and name your gym.</li><li><a data-go="create">Create a fighter</a> by spending his 70 points.</li><li>Write his <a data-go="help:plans">fight plan</a>.</li><li>Test it with <a data-go="simbot">Simbot</a> or a <a data-go="fight">practice fight</a>.</li><li>Fight on his division's <a data-go="help:schedule">fight night</a>, read the report, adjust, repeat.</li></ol>
+  <p>There are no regions. Everyone fights in one Contenders ranking, with WBC, WBA and WBO world titles in every division.</p>`,
+ fighter:()=>`<p>Every fighter starts with exactly <b>${POOL} points</b> spread across:</p>
+  <table class="grid small"><tr><th>Ability</th><th>What it does</th></tr>
+  <tr><td>Strength (STR)</td><td>Drives all damage. Fades as he tires.</td></tr>
+  <tr><td>KO Punch Bonus (KP)</td><td>Counts triple toward stunning damage. Can't be more than a third of STR, and the extra counts as STR. Doesn't fade.</td></tr>
+  <tr><td>Speed (SPD)</td><td>Lands punches. Fades as he tires.</td></tr>
+  <tr><td>Agility (AGL)</td><td>Avoids punches. Fades as he tires.</td></tr>
+  <tr><td>Chin (CHN)</td><td>How much he can take before stuns, knockdowns and KOs. Doesn't fade.</td></tr>
+  <tr><td>Conditioning (CND)</td><td>Endurance (10 times CND), fatigue and recovery.</td></tr>
+  <tr><td>Height (HGT)</td><td>5 feet plus one inch per point. The taller man gets half the difference added to his SPD and AGL.</td></tr>
+  <tr><td>Cut Resistance</td><td>1 (low), 2 (normal) or 3 (high). Low cuts easily, high rarely does.</td></tr></table>
+  <p>Once a fighter is created his points are <b>locked</b>. He only improves by training and winning. Use the quick-build buttons (Slugger, Dancer, Counterpuncher and so on) as a starting point.</p>`,
+ plans:()=>`<p>A tactic is <tt>AGG/POW/DEF</tt>, like <tt>6/6/8</tt>. The three numbers can't add up to more than 20, and anything left over is rest.</p>
+  <ul>
+  <li><b>Target:</b> a letter right after the AGG number. <tt>5H/7/8</tt> head, <tt>5B/7/8</tt> body, <tt>5C/7/8</tt> go after cuts for a doctor's stoppage. No letter means opportunistic.</li>
+  <li><b>Dirty fighting:</b> <tt>!</tt> after the POW number, like <tt>6/7!/7</tt>.</li>
+  <li><b>Style</b> in parentheses at the end: <tt>(inside)</tt>, <tt>(clinch)</tt>, <tt>(feint)</tt>, <tt>(counter)</tt>, <tt>(ring)</tt>, <tt>(ropes)</tt>, <tt>(outside)</tt>, <tt>(allout)</tt>.</li>
+  <li><b>Rounds:</b> <tt>4) 6/6/8</tt> starts a tactic in round 4 that lasts until another numbered line takes over.</li>
+  <li><b>Conditions:</b> <tt>if score &lt; 0 and round &gt;= 8 then 8/7/5</tt>. Checked at the start of every round. The <b>last true line wins</b>.</li>
+  <li><b>You can test:</b> <tt>round</tt>, <tt>score</tt>, <tt>endurance</tt>, <tt>endurance_percent</tt>, <tt>roundswon</tt>, <tt>roundslost</tt>, <tt>decision_won</tt>, <tt>decision_lost</tt>, <tt>opponent</tt>/<tt>opp</tt> <tt>is strong / tired / exhausted</tt>, <tt>opptiring</tt>, <tt>mycuts</tt>, <tt>hiscuts</tt>, <tt>mystuns</tt>, <tt>hisstuns</tt>, <tt>myknockdowns</tt>, <tt>hisknockdowns</tt>, <tt>warnings</tt>.</li>
+  <li><b>Math and logic:</b> <tt>+ - *</tt>, parentheses, <tt>&lt; &gt; = &lt;= &gt;=</tt>, <tt>and</tt>, <tt>or</tt>, <tt>not</tt>.</li>
+  <li><b>Extras:</b> <tt>towel</tt>, and <tt>say "..."</tt>, <tt>taunt "..."</tt>, <tt>sneer "..."</tt>, <tt>gloat "..."</tt>, <tt>tko "..."</tt> to add your own lines to the fight report.</li>
+  <li>Comments start with <tt>#</tt>. Old WeBL plans paste in as they are.</li></ul>
+  <pre class="plan">6/6/8
+# cruise when way ahead
+if score >= 10 then 4/1/15
+# go for broke when way behind
+if score <= -10 then 5H/10/5 (allout)
+if endurance_percent < 50 then 1/1/10</pre>`,
+ sim:()=>`<p>Fights are worked out a round at a time from both fighters' abilities and plans, then written up blow by blow.</p><ul>
+  <li><b>Endurance</b> starts at 10 times CND. As it drops, STR, SPD and AGL shrink with it. At zero he loses by TKO.</li>
+  <li><b>Damage</b> comes from POW, STR, AGG and SPD against the other man's DEF and AGL. Head shots do more stunning damage, and body shots wear down endurance.</li>
+  <li><b>Stuns:</b> stunning damage of 1.5 times CHN in a round is a stun, 2 times is a knockdown, and 2.5 times is a knockout.</li>
+  <li><b>Punches:</b> about 9 thrown per AGG point. The first 3 per POW point are power punches, the next 3 per POW are rights, and the rest are jabs. SPD against the other man's AGL decides how many land.</li>
+  <li><b>Fatigue</b> each round is AGG plus half of POW. Half his CND is absorbed free. He recovers 10% of lost endurance between rounds, plus 2% for each energy point spent resting.</li>
+  <li><b>Injuries:</b> hard rounds cause cuts, swelling and nose or jaw damage. The ringside doctor stops fights with serious injuries.</li>
+  <li><b>Styles:</b> inside adds STR, clinching adds AGL and smothers punches, feinting adds SPD, counter-punching punishes a slower man, ring and ropes play with AGL, outside uses height, and all-out doubles damage dealt but quadruples damage taken.</li>
+  <li><b>Judges:</b> three judges score each round on the 10-point must system. Stuns and knockdowns win rounds. Otherwise the most punches landed wins, with power punches counting most.</li></ul>
+  <p class="small mute">A few numbers are still being tuned with veteran managers: the exact value of each energy point and the experience rating.</p>`,
+ training:()=>`<ul>
+  <li><b>Rating</b> is experience. It goes up 1 every fight, to a maximum of 28.</li>
+  <li><b>Status</b> goes up 1 with every win, to a maximum of 28.</li>
+  <li>A fighter is in his <b>prime</b> when rating and status are equal. The further apart they are, the further he is off his best.</li>
+  <li><b>Primary training</b> gives +1 in that ability for each fight. Wins 1 and 2 each add a permanent point there.</li>
+  <li><b>Fast track:</b> from the third win on, every win adds a point to the primary program <b>and</b> a point to the secondary program.</li>
+  <li><b>Injury points:</b> a knockout loss adds 25. Every 500 costs him an ability point (AP Loss).</li></ul>
+  <p>Set training from the fighter's page: "train for something else."</p>`,
+ schedule:()=>`<ul>
+  <li><b>Each division fights on its own night every week:</b></li></ul>${SCHED_TABLE()}<ul>
+  <li>Each week your fighters are matched against fighters from other gyms around their ranking. You don't book fights yourself.</li>
+  <li>Get your fight plans and training in <b>before your division's fight night</b>. Whatever is saved when the fights run is what your fighter uses.</li>
+  <li>You don't need to be online. Results, fight reports and new rankings are posted after the fights run.</li>
+  <li>A fighter's page shows his next opponent once he's been matched, so you can scout him and write a plan for that matchup.</li>
+  <li>Between Saturdays, use <a data-go="fight">Practice Fights</a> and <a data-go="simbot">Simbot</a> as much as you like. They don't count on your record.</li></ul>
+  <p class="note">Weekly fight nights are being switched on as managers sign up. Until then, practice fights and Simbot are open to everyone.</p>`,
+ titles:()=>`<ul><li>Every division has three world titles: the <b>WBC</b>, the <b>WBA</b> and the <b>WBO</b>.</li>
+  <li>Divisions: ${DIVS.map(d=>d[0]+(d[1]<1000?' '+d[1]:' (no limit)')).join(', ')}.</li>
+  <li>Fighters are ranked inside their division. The top contenders get title shots, and the latest title fights show on the home page.</li>
+  <li>See the <a data-go="champs">Champions</a>, <a data-go="frank">Fighter Rankings</a> and <a data-go="grank">Gym Rankings</a>.</li></ul>`,
+ community:()=>`<ul><li><a data-go="forums">Forums</a>: everyone can read them, and members can post and reply. Keep posts in the right board.</li>
+  <li><a data-go="forum:press">Press Releases</a>: call out a rival, hype a title fight, talk big.</li>
+  <li><a data-go="msgs">Messages</a>: private between you and one other manager. Click any gym name on a forum post to message him. When you have unread mail, Messages lights up in the sidebar with a count.</li></ul>`,
+ account:()=>`<ul><li>Log in with your email and password on any computer or phone. Your fighters, records and plans are saved to your account.</li>
+  <li><a data-go="forgot">Forgotten Password</a> emails you a reset link. <a data-go="changepw">Change Email/Passwd.</a> works while logged in.</li>
+  <li><a data-go="changegym">Change Gym</a> renames your gym. <a data-go="desc">Description</a> tells other managers about you.</li>
+  <li><a data-go="retiregym">Retire Gym (Quit)</a> deletes your account. Your forum posts stay up, marked as from a retired gym.</li>
+  <li>Please follow the <a data-go="aup">Acceptable Use Policy</a>.</li></ul>`
+};
+function newbieHTML(){
+  return`<h1>Newbie Files</h1><p>Welcome to Contenders. Here's everything a new manager needs, in order.</p>
+  <h2>1. Your first fighter</h2>
+  <p>Go to <a data-go="create">Create a Fighter</a>. Not sure where to start? Tap a quick build:</p>
+  <ul><li><b>Slugger:</b> big Strength and Chin. Walks forward and hits hard.</li>
+  <li><b>Dancer:</b> big Agility and Speed. Hard to hit, wins on points.</li>
+  <li><b>Counterpuncher:</b> big Speed. Makes aggressive fighters pay.</li>
+  <li><b>Clincher:</b> big Conditioning and Chin. Grinds opponents down late.</li></ul>
+  <p>Then tweak the numbers. Rules of thumb: don't let Chin drop too low, since a glass jaw loses to anyone who can punch. Conditioning wins 12-round title fights. Height is expensive but helps against shorter men.</p>
+  <h2>2. Your first fight plan</h2>
+  <p>Start simple. <tt>6/6/8</tt> means 6 points of aggression, 6 of power and 8 of defense every round. Then add one line at a time:</p>
+  <pre class="plan">6/6/8
+# rest if I'm tired
+if endurance_percent < 50 then 4/4/10
+# push if I'm losing late
+if score < 0 and round >= 8 then 8/7/5</pre>
+  <p>Defense matters a lot. Fighters with very low DEF get stunned and knocked out. Full details are in <a data-go="help:plans">Writing Fight Plans</a>.</p>
+  <h2>3. Test it</h2>
+  <p>Run <a data-go="simbot">Simbot</a> 100 times against your other fighter to see how the plan holds up, then read a full <a data-go="fight">practice fight</a> report to see why.</p>
+  <h2>4. Training</h2>
+  <p>On the fighter's page, pick what he trains. Wins raise his status and add ability points. From his third win on he's on the fast track and gets two points per win.</p>
+  <h2>5. Fight night</h2>
+  <p>Each division has its own weekly fight night. The lighter divisions fight Sunday through Tuesday, the middle and big men Wednesday through Friday, and heavyweights fight alone on Saturday. Have your plan saved before his night. Fights run on their own, then check his record for the result and <i>highlights</i> for the full report. See <a data-go="help:schedule">The Fight Schedule</a>.</p>
+  <h2>6. Scout and talk</h2>
+  <p>Click any fighter's name to see his public record and past fight reports. That's how you learn an opponent's habits. Ask questions in the <a data-go="forum:help">Help forum</a>, and say hi in the <a data-go="forum:lounge">Lounge</a>.</p>`;
+}
+function retireGymHTML(){
+  if(!ME)return`<h1>Retire Gym (Quit)</h1>${needLogin('retire your gym')}`;
+  return`<h1>Retire Gym (Quit)</h1><p class="cr"><b>This permanently deletes your account, your fighters and their records, and your messages.</b> Your forum posts stay up, marked as from a retired gym. This can't be undone.</p>
+  <p>To confirm, type your gym name exactly: <b>${esc(myGym())}</b></p>
+  <p><input id="retireName" data-keep style="width:260px"> <button id="doRetireGym">Retire My Gym</button></p>`;
+}
+function fundingHTML(){return`<h1>Contenders Funding</h1><p>Contenders is free to play and run by managers for managers. If the game grows, this page will explain how to help cover hosting costs. For now, the best support is to tell an old WeBL friend about it.</p>`}
+
+/* ---------- events ---------- */
+document.addEventListener('click',async e=>{
+  const t=e.target.closest('[data-go],[data-v],[data-dm],button');if(!t)return;
+  if(t.dataset.v){nav(t.dataset.v);return}
+  if(t.dataset.go){nav(t.dataset.go);return}
+  if(t.dataset.dm){window._dmTo=t.dataset.dm;nav('msgs');return}
+  const side=(t.closest('[data-side]')||{dataset:{}}).dataset.side||t.dataset.reset;const FS=s=>s==='D'?state.draft:state[s];
+  if(t.dataset.s){const F=FS(side),k=t.dataset.s,d=+t.dataset.d,nv=F[k]+d;if(nv<MINS[k]||nv>(k==='hgt'?24:MAX))return;F[k]=nv;save();render()}
+  else if(t.dataset.pre){const[st,pl]=PRESETS[t.dataset.pre];Object.assign(FS(side),st,{plan:pl,planName:t.dataset.pre});save();render()}
+  else if(t.dataset.copy){const F=state[side],i=+t.dataset.copy;for(let j=i+1;j<F.plan.length;j++)F.plan[j]={...F.plan[i]};save();render()}
+  else if(t.dataset.rand){const F=FS(side);const ks=['str','spd','agl','chn','cnd'];ks.forEach(k=>F[k]=5);F.kp=0;F.cut=1+Math.floor(rand()*3);F.hgt=3+Math.floor(rand()*10);let left=POOL-used(F);
+    while(left>0){const k=rand()<.08?'kp':pick(ks);if(k==='kp'&&F.kp>=Math.floor(F.str/3))continue;if(F[k]<22){F[k]++;left--}}save();render()}
+  else if(t.dataset.reset){const s=t.dataset.reset,keep={rec:state[s].rec,hist:state[s].hist};state[s]=Object.assign(JSON.parse(JSON.stringify(DEFAULTS[s])),keep);save();render()}
+  else if(t.id==='createF'){const D=state.draft;if(!D.name.trim())return $('#cerr').textContent='Give him a name.';if(used(D)!==POOL)return $('#cerr').textContent=`He must total exactly ${POOL} points.`;
+    const slot=$('#slot').value,old=state[slot];state.retired=state.retired||[];state.retired.unshift({name:old.name,rec:old.rec,rating:old.rating,status:old.status});
+    state[slot]={...JSON.parse(JSON.stringify(D)),rec:[0,0,0,0],hist:[],locked:true,rating:0,status:0,train:'str',train2:'cnd',streak:0,ip:0};state.draft=null;save();nav('rec:'+slot)}
+  else if(t.dataset.retire){const s0=t.dataset.retire;state.retired=state.retired||[];const old=state[s0];state.retired.unshift({name:old.name,rec:old.rec,rating:old.rating,status:old.status});
+    state[s0]=Object.assign(JSON.parse(JSON.stringify(DEFAULTS[s0])),{name:'Open Slot '+(s0==='A'?'Red':'Blue')});save();alertBox(old.name+' has retired. Create a new fighter for this corner.');nav('create')}
+  else if(t.dataset.checkplan){const ta=document.querySelector('textarea.planbox');if(ta){state[t.dataset.checkplan].plan=ta.value;save()}render()}
+  else if(t.id==='go'||t.id==='go2')startFight();
+  else if(t.id==='next'){shown++;if(shown>=fight.rounds.length)finish();render();const r=document.querySelectorAll('.rnd');r[r.length-1].scrollIntoView({behavior:'smooth'})}
+  else if(t.id==='skip'){shown=fight.rounds.length;finish();render()}
+  else if(t.id==='cleanPlans'){['A','B'].forEach(s=>{state[s].plan='6/6/8'});save();alertBox('Both fight plans have been cleaned.')}
+  else if(t.id==='saveGym'){const v=$('#gymIn').value.trim().slice(0,40);if(v.length<2)return alertBox('Gym names need at least 2 characters.');
+    if(await safeWrite(()=>SB.from('profiles').update({gym:v}).eq('id',ME))){managers[ME]=Object.assign(managers[ME]||{},{gym:v});state.gymName=v;save();updateTop();alertBox('Gym name saved.')}}
+  else if(t.id==='saveDesc'){const v=$('#descIn').value.slice(0,1000);
+    if(await safeWrite(()=>SB.from('profiles').update({description:v}).eq('id',ME))){managers[ME]=Object.assign(managers[ME]||{},{desc:v});alertBox('Description saved.')}}
+  else if(t.id==='doRetireGym'){if($('#retireName').value.trim()!==myGym())return alertBox('The gym name does not match.');
+    t.disabled=true;if(await safeWrite(()=>SB.rpc('retire_gym'))){await SB.auth.signOut().catch(()=>{});try{localStorage.removeItem('contenders_v6')}catch(e){}ME=null;alert0()}else t.disabled=false}
+  else if(t.id==='doLogout'){await SB.auth.signOut();ME=null;ims=[];updateTop();nav('home')}
+  else if(t.id==='postTopic'){const title=$('#tTitle').value.trim().slice(0,100),body=$('#tBody').value.trim().slice(0,8000);if(!title||!body)return alertBox('Give your topic a title and a message.');
+    t.disabled=true;let tid=null;
+    const ok=await safeWrite(async()=>{const r=await SB.from('topics').insert({forum:t.dataset.forum,title}).select('id').single();if(r.error)throw r.error;tid=r.data.id;const p=await SB.from('posts').insert({topic_id:tid,body});if(p.error)throw p.error});
+    if(ok){await loadPublic();nav('topic:'+tid)}else t.disabled=false}
+  else if(t.id==='postReply'){const body=$('#rBody').value.trim().slice(0,8000);if(!body)return;t.disabled=true;
+    const ok=await safeWrite(()=>SB.from('posts').insert({topic_id:+t.dataset.topic,body}));
+    if(ok){$('#rBody').value='';await loadPosts(postsTopic);loadPublic()}t.disabled=false}
+  else if(t.id==='sendDm'){const to=$('#dmTo').value,body=$('#dmBody').value.trim().slice(0,4000);if(!to||!body)return;t.disabled=true;
+    const ok=await safeWrite(()=>SB.from('messages').insert({recipient:to,body}));
+    if(ok){$('#dmBody').value='';window._dmTo=to;await loadIms();alertBox('Message sent to '+gymOf(to)+'.')}t.disabled=false}
+  else if(t.id==='runSim'){t.disabled=true;$('#simOut').innerHTML='<p class="mute">Running...</p>';setTimeout(()=>{runSimbot(+$('#simN').value);t.disabled=false},30)}
+  else if(t.id==='doSearch')doSearch($('#q').value);
+});
+document.addEventListener('submit',async e=>{
+  const f=e.target;e.preventDefault();if(!SB)return alertBox("The Contenders server can't be reached right now.");
+  const btn=f.querySelector('button');if(btn)btn.disabled=true;
+  try{
+  if(f.id==='regForm'){const gym=$('#rGym').value.trim(),email=$('#rEmail').value.trim(),p1=$('#rPass').value,p2=$('#rPass2').value;
+    if(gym.length<2)return alertBox('Gym names need at least 2 characters.');if(p1!==p2)return alertBox("The passwords don't match.");
+    if(Object.values(managers).some(m=>m.gym.toLowerCase()===gym.toLowerCase()))return alertBox('That gym name is taken. Pick another.');
+    const{data,error}=await SB.auth.signUp({email,password:p1,options:{data:{gym},emailRedirectTo:SITE_URL}});
+    if(error)return alertBox(error.message);
+    if(!data.session){$('#view').innerHTML='<h1>Almost there!</h1><p>We sent a confirmation link to <b>'+esc(email)+'</b>. Click it, then <a data-go="login">log in</a>.</p>'}
+    else{state.gymName=gym;save();nav('gym')}}
+  if(f.id==='loginForm'){const{error}=await SB.auth.signInWithPassword({email:$('#lEmail').value.trim(),password:$('#lPass').value});
+    if(error)return alertBox(error.message==='Invalid login credentials'?'Wrong email or password.':error.message);nav('gym')}
+  if(f.id==='forgotForm'){const{error}=await SB.auth.resetPasswordForEmail($('#fEmail').value.trim(),{redirectTo:SITE_URL});
+    alertBox(error?error.message:'If that email has a gym, a reset link is on its way.')}
+  if(f.id==='newPassForm'){const p1=$('#nPass').value,p2=$('#nPass2').value;if(p1!==p2)return alertBox("The passwords don't match.");
+    const{error}=await SB.auth.updateUser({password:p1});if(error)return alertBox(error.message);recovering=false;alertBox('Password changed.')}
+  if(f.id==='newEmailForm'){const{error}=await SB.auth.updateUser({email:$('#nEmail').value.trim()},{emailRedirectTo:SITE_URL});
+    alertBox(error?error.message:'Check both your old and new email for confirmation links.')}
+  }finally{if(btn)btn.disabled=false}
+});
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='q')doSearch(e.target.value)});
+document.addEventListener('change',e=>{
+  const el=e.target;
+  if(el.id==='div'){state.div=el.value;save();return}
+  if(el.id==='bout'){state.bout=el.value;save();return}
+  if(el.dataset.train){state[el.dataset.train].train=el.value;save();return}
+  if(el.dataset.train2){state[el.dataset.train2].train2=el.value;save();return}
+  if(el.id==='trWho'){nav('train:'+el.value);return}
+  const tb=el.closest('[data-side]');if(!tb)return;const F=tb.dataset.side==='D'?state.draft:state[tb.dataset.side];
+  if(el.dataset.f==='plan'){F.plan=el.value;save();render();return}
+  if(el.dataset.st){const k=el.dataset.st;F[k]=clamp(parseInt(el.value)||0,MINS[k],k==='hgt'?24:MAX);save();render();return}
+  if(el.dataset.f){const f=el.dataset.f;F[f]=f==='cut'?+el.value:el.value;save();if(f==='cut')render();return}
+  if(el.dataset.p){const p=F.plan[+el.dataset.p],k=el.dataset.k;p[k]=(k==='style'||k==='tgt')?el.value:+el.value;save();if(k!=='style'&&k!=='tgt')render()}
+});
+const _render=render;
+render=function(){_render();if(view==='msgs')markRead()};
+nav('home');
+initDB();
+</script>
+</body>
+</html>
