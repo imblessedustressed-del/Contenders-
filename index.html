@@ -9,7 +9,7 @@ body{margin:0;background:#efefef;color:#3a3a3a;font:16px/1.4 "Times New Roman",T
 a{color:#2e3a9e;text-decoration:underline;cursor:pointer}
 a:hover{color:#b22}
 #wrap{display:flex;align-items:flex-start;min-height:100vh}
-#side{width:182px;flex:none;padding:10px 8px 20px;background:#e2e2e2;border-right:3px ridge #bdbdbd;min-height:100vh;box-sizing:border-box}
+#side{width:182px;flex:none;padding:10px 8px 20px;background:#e2e2e2;border-right:3px ridge #bdbdbd;min-height:100vh;box-sizing:border-box;position:sticky;top:0;align-self:flex-start;height:100vh;overflow-y:auto}
 #logo{display:block;margin:0 auto 10px;width:120px}
 #menuBtn{display:none}
 .box{border:2px ridge #9a9a9a;background:#d4d4d4;margin:0 4px 14px;text-align:center;font:13px/1.45 Verdana,Tahoma,sans-serif}
@@ -74,7 +74,7 @@ table.granks tr:nth-child(odd) td{background:#e4eef0}
 .note{border:1px dashed #aaa;padding:6px 10px;background:#f6f6f6;font-size:14px;max-width:640px}
 @media(max-width:720px){
  #wrap{display:block}
- #side{width:auto;min-height:0;border-right:0;border-bottom:3px ridge #bdbdbd;padding:6px 8px}
+ #side{width:auto;min-height:0;border-right:0;border-bottom:3px ridge #bdbdbd;padding:6px 8px;position:static;height:auto;overflow:visible}
  #logo{width:70px;margin:0 auto 4px}
  #boxes{display:grid;grid-template-columns:1fr 1fr;gap:0 6px;align-items:start}
  .box{font-size:12px}
