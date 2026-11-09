@@ -104,6 +104,7 @@ h1.pubname{font:bold 34px 'Times New Roman',serif;color:#555}
   <div class="box"><div class="hd">Contenders Help &amp; Tools</div><a data-v="help">Help Pages</a><a data-v="newbie">Newbie Files</a></div>
   <div class="box"><div class="hd">Other Stuff</div><a data-v="forgot">Forgotten Password</a><a data-v="changepw">Change Email/Passwd.</a></div>
   <div class="box fund"><a data-v="funding">Contenders Funding</a></div>
+  <div class="box fund"><a data-v="retiregym">Retire Gym (Quit)</a></div>
   </div>
 </div>
 <div id="main">
@@ -612,7 +613,7 @@ async function afterLogin(){
 }
 function syncGym(){if(!SB||!ME||!loadedGym)return;clearTimeout(syncTimer);syncTimer=setTimeout(pushGym,1500)}
 async function pushGym(){if(!SB||!ME)return;const{reports,...rest}=state;try{await SB.from('gym_state').upsert({user_id:ME,data:rest,updated_at:new Date().toISOString()})}catch(e){}}
-const gymOf=id=>(managers[id]&&managers[id].gym)||'A manager';
+const gymOf=id=>!id?'A retired gym':(managers[id]&&managers[id].gym)||'A manager';
 const myGym=()=>(ME&&managers[ME]&&managers[ME].gym)||state.gymName||'Your Gym';
 function updateMsgLink(){const n=ims.filter(m=>m.to===ME&&!m.read).length;const l=$('#msgLink');if(!l)return;l.classList.toggle('lit',n>0);l.innerHTML=n?`Messages <span class="badge">${n}</span>`:'Messages';document.title=(n?`(${n}) `:'')+'Contenders - The Contenders Boxing League'}
 function updateTop(){const el=$('#who');if(!el)return;el.innerHTML=ME?`Logged in as <b>${esc(myGym())}</b> | <a data-go="logout">Logout</a>`:`<a data-go="login">Login</a> | <a data-go="register">Sign Up (Free!)</a>`}
@@ -623,6 +624,7 @@ function needDB(){
 }
 function needLogin(what){return ME?'':`<p class="note">You need to <a data-go="login">log in</a> or <a data-go="register">sign up</a> to ${what}.</p>`}
 async function safeWrite(fn){try{const r=await fn();if(r&&r.error)throw r.error;return true}catch(e){alertBox("That didn't go through: "+((e&&e.message)||'unknown error'));return false}}
+function alert0(){$('#view').innerHTML='<h1>Your gym has retired.</h1><p>Thanks for fighting in Contenders. You can <a data-go="register">sign up again</a> any time.</p>';updateTop()}
 function alertBox(t){const v=$('#flash');if(v){v.textContent=t;v.style.display='block';v.scrollIntoView({block:'nearest'})}}
 
 /* ================= UI ================= */
@@ -655,7 +657,7 @@ function render(){
     retired:()=>`<h1>Retired Fighters</h1>${state.retired&&state.retired.length?`<table class="grid"><tr><th>Fighter</th><th>Record</th><th>Rating</th><th>Status</th></tr>${state.retired.map(f=>`<tr><td>${esc(f.name)}</td><td>${f.rec[0]}-${f.rec[1]}-${f.rec[2]} (${f.rec[3]}/${f.rec[1]})</td><td class="n">${f.rating||0}</td><td class="n">${f.status||0}</td></tr>`).join('')}</table>`:'<p>You have no retired fighters.</p>'}`,clean:cleanHTML,short:shortHTML,changegym:changeGymHTML,desc:descHTML,
     login:loginHTML,logout:logoutHTML,forgot:forgotHTML,newpass:newPassHTML,changepw:changePwHTML,forums:forumsHTML,forum:()=>forumHTML(arg),topic:()=>topicHTML(arg),newtopic:()=>newTopicHTML(arg),msgs:msgsHTML,
     simbot:simbotHTML,champs:champsHTML,frank:frankHTML,grank:grankHTML,results:resultsHTML,fcards:resultsHTML,sched:schedHTML,
-    discarded:()=>`<h1>Discarded Fighters</h1><p>No fighters have been discarded.</p>`,search:searchHTML,help:helpHTML,newbie:newbieHTML,funding:fundingHTML,
+    discarded:()=>`<h1>Discarded Fighters</h1><p>No fighters have been discarded.</p>`,search:searchHTML,help:()=>helpHTML(arg),newbie:newbieHTML,funding:fundingHTML,retiregym:retireGymHTML,
     edit:()=>planEditHTML(arg),plan:()=>planEditHTML(arg),rec:()=>recordHTML(arg),pub:()=>pubHTML(arg),train:()=>trainHTML(arg),report:()=>savedReportHTML(arg)};
   $('#view').innerHTML=`<div id="flash" class="note cr" style="display:none;margin-bottom:10px"></div>`+(P[base]||homeHTML)();
 }
@@ -1069,7 +1071,7 @@ function grankHTML(){
 function resultsHTML(){
   return`<h1>Fight Results</h1>${state.log.length?`<table class="grid">${state.log.map(l=>`<tr><td>${esc(l.date)}</td><td>${esc(l.text)} ${l.id&&state.reports[l.id]?`<a data-go="report:${l.id}">highlights</a>`:''}</td></tr>`).join('')}</table>`:'<p class="mute">No fights yet.</p>'}`;
 }
-function schedHTML(){return`<h1>Fight Schedule</h1><p>Week ${state.week}.</p><p>Weekly matchmaking (fighters paired up automatically every week) comes with the full site. For now, set up bouts in <a data-go="fight">Practice Fights</a>.</p>`}
+function schedHTML(){return`<h1>Fight Schedule</h1><p>League fights run every <b>Saturday</b>. Next fight night: <b>${nextSat()}</b>.</p><p>No bouts have been scheduled yet. Weekly matchmaking switches on as managers sign up. Until then, use <a data-go="fight">Practice Fights</a> and <a data-go="simbot">Simbot</a>. See <a data-go="help:schedule">The Fight Schedule</a> for how it works.</p>`}
 function searchHTML(){return`<h1>Search Contenders</h1><p><input id="q" data-keep placeholder="Fighter, gym or topic" style="width:260px"> <button id="doSearch">Search</button></p><div id="sres"></div>`}
 function doSearch(q){
   q=q.trim().toLowerCase();if(!q){$('#sres').innerHTML='';return}
@@ -1080,60 +1082,115 @@ function doSearch(q){
   $('#sres').innerHTML=[...fs,...gs,...ts,...rs].join('')||'<p class="mute">Nothing found.</p>';
 }
 /* ---------- Help ---------- */
-function helpHTML(){
-  return`<h1>Help Pages</h1><h2>How fights are simulated</h2>
-  <p>Fights are worked out a round at a time from both fighters' abilities and fight plans, then written up as a blow-by-blow report.</p>
-  <h2>Abilities</h2><ul>
-  <li><b>Total:</b> Strength, KO Punch Bonus, Speed, Agility, Chin, Conditioning, Height and Cut Resistance must add up to exactly ${POOL}.</li>
-  <li><b>Height:</b> 5 feet plus one inch per point. The taller man gets half the height difference added to his Speed and Agility, unless his opponent fights inside.</li>
-  <li><b>Strength</b> drives damage. <b>KO Punch Bonus</b> counts triple toward stunning damage but can't be more than a third of Strength, and it doesn't fade when he tires.</li>
-  <li><b>Speed</b> lands punches and <b>Agility</b> avoids them. Jabs land more often than power punches.</li>
-  <li><b>Conditioning:</b> starting endurance is 10 times Conditioning. Strength, Speed and Agility shrink as endurance drops. If endurance hits zero, he loses by TKO.</li>
-  <li><b>Chin</b> doesn't fade with fatigue. Stunning damage of 1.5 times Chin in a round is a stun, two stuns are a knockdown, and 2.5 times Chin is a knockout.</li></ul>
-  <h2>Fight plans</h2><ul>
-  <li>Each round, split up to 20 energy points between <b>AGG</b>, <b>POW</b> and <b>DEF</b>. He throws about 9 punches per AGG point. The first 3 per POW point are power punches, the next 3 per POW point are rights, and the rest are jabs.</li>
-  <li>Unused points are rest: each one adds 2% of lost endurance to between-round recovery, on top of the normal 10%.</li>
-  <li>Fatigue each round is AGG plus half of POW. He absorbs half his Conditioning for free; the rest comes off his endurance.</li>
-  <li><b>Targets:</b> head shots do more stunning damage, body shots wear down endurance, both land a little less often. Going after a cut makes it more likely to get worse.</li>
-  <li><b>Styles:</b> inside cancels the other man's height edge, counter-punching punishes an opponent who is more aggressive, clinching smothers both fighters' offense, and ring and feinting cost extra fatigue.</li></ul>
-  <h2>Injuries, judges and stoppages</h2><ul>
-  <li>Hard rounds cause cuts, swelling and nose or jaw damage, more often against low cut resistance. Cuts and swelling around the eyes cut into Speed and Agility. The ringside doctor stops fights with serious injuries.</li>
-  <li>Three judges score each round on the 10-point must system. Stuns and knockdowns win the round. Otherwise the most punches landed wins, with power punches worth more than rights and rights worth more than jabs.</li>
-  <li>The referee steps in when one fighter is badly outclassed in a round.</li></ul>
-  <h2 id="plans">Writing fight plans</h2>
-  <p>A tactic is <tt>AGG/POW/DEF</tt>, like <tt>6/6/8</tt>. The three numbers can't add up to more than 20, and anything left over is rest.</p>
+const HELP_TOPICS=[['start','Getting Started'],['fighter','Creating a Fighter'],['plans','Writing Fight Plans'],['sim','How Fights Are Simulated'],['training','Training, Rating and Status'],['schedule','The Fight Schedule'],['titles','Rankings and World Titles'],['community','Forums, Messages and Press Releases'],['account','Your Account']];
+function helpHTML(arg){
+  const t=HELP_TOPICS.find(x=>x[0]===arg);
+  const toc=`<p class="small">${HELP_TOPICS.map(x=>`<a data-go="help:${x[0]}">${x[1]}</a>`).join(' | ')}</p>`;
+  if(!t)return`<h1>Help Pages</h1><p>Everything you need to know to run a Contenders gym. New here? Start with the <a data-go="newbie">Newbie Files</a>.</p>
+  <ul>${HELP_TOPICS.map(x=>`<li><a data-go="help:${x[0]}">${x[1]}</a></li>`).join('')}</ul>`;
+  return`${toc}<h1>${t[1]}</h1>${HELP_BODY[t[0]]()}<hr><p class="small"><a data-go="help">Back to Help Pages</a></p>`;
+}
+const HELP_BODY={
+ start:()=>`<p>Contenders is a boxing strategy game. You're the manager: you build fighters, train them, write their fight plans, and watch every bout play out round by round. You never throw a punch yourself. Your decisions win or lose the fight.</p>
+  <ol><li><a data-go="register">Sign up</a> and name your gym.</li><li><a data-go="create">Create a fighter</a> by spending his 70 points.</li><li>Write his <a data-go="help:plans">fight plan</a>.</li><li>Test it with <a data-go="simbot">Simbot</a> or a <a data-go="fight">practice fight</a>.</li><li>Fight on <a data-go="help:schedule">Saturday</a>, read the report, adjust, repeat.</li></ol>
+  <p>There are no regions. Everyone fights in one Contenders ranking, with WBC, WBA and WBO world titles in every division.</p>`,
+ fighter:()=>`<p>Every fighter starts with exactly <b>${POOL} points</b> spread across:</p>
+  <table class="grid small"><tr><th>Ability</th><th>What it does</th></tr>
+  <tr><td>Strength (STR)</td><td>Drives all damage. Fades as he tires.</td></tr>
+  <tr><td>KO Punch Bonus (KP)</td><td>Counts triple toward stunning damage. Can't be more than a third of STR, and the extra counts as STR. Doesn't fade.</td></tr>
+  <tr><td>Speed (SPD)</td><td>Lands punches. Fades as he tires.</td></tr>
+  <tr><td>Agility (AGL)</td><td>Avoids punches. Fades as he tires.</td></tr>
+  <tr><td>Chin (CHN)</td><td>How much he can take before stuns, knockdowns and KOs. Doesn't fade.</td></tr>
+  <tr><td>Conditioning (CND)</td><td>Endurance (10 times CND), fatigue and recovery.</td></tr>
+  <tr><td>Height (HGT)</td><td>5 feet plus one inch per point. The taller man gets half the difference added to his SPD and AGL.</td></tr>
+  <tr><td>Cut Resistance</td><td>1 (low), 2 (normal) or 3 (high). Low cuts easily, high rarely does.</td></tr></table>
+  <p>Once a fighter is created his points are <b>locked</b>. He only improves by training and winning. Use the quick-build buttons (Slugger, Dancer, Counterpuncher and so on) as a starting point.</p>`,
+ plans:()=>`<p>A tactic is <tt>AGG/POW/DEF</tt>, like <tt>6/6/8</tt>. The three numbers can't add up to more than 20, and anything left over is rest.</p>
   <ul>
-  <li><b>Target:</b> put a letter right after the AGG number. <tt>5H/7/8</tt> goes to the head, <tt>5B/7/8</tt> goes to the body, and <tt>5C/7/8</tt> goes after cuts to get a doctor's stoppage. With no letter he boxes opportunistically.</li>
-  <li><b>Dirty fighting:</b> put <tt>!</tt> after the POW number, like <tt>6/7!/7</tt>.</li>
-  <li><b>Style:</b> add one in parentheses at the end: <tt>(inside)</tt>, <tt>(clinch)</tt>, <tt>(feint)</tt>, <tt>(counter)</tt>, <tt>(ring)</tt>, <tt>(ropes)</tt>, <tt>(outside)</tt> or <tt>(allout)</tt>.</li>
-  <li><b>Rounds:</b> <tt>4) 6/6/8</tt> starts a new tactic in round 4 that lasts until another numbered line takes over.</li>
-  <li><b>Conditions:</b> <tt>if score &lt; 0 and round &gt;= 8 then 8/7/5</tt>. Conditions are checked at the start of every round, and the <b>last true line wins</b>.</li>
-  <li><b>Things you can test:</b> <tt>round</tt>, <tt>score</tt> (how far ahead he thinks he is), <tt>endurance</tt>, <tt>endurance_percent</tt>, <tt>roundswon</tt>, <tt>roundslost</tt>, <tt>decision_won</tt>, <tt>decision_lost</tt>, <tt>opponent</tt> (or <tt>opp</tt>) <tt>is strong / tired / exhausted</tt>, <tt>opptiring</tt>, <tt>mycuts</tt>, <tt>hiscuts</tt>, <tt>mystuns</tt>, <tt>hisstuns</tt>, <tt>myknockdowns</tt>, <tt>hisknockdowns</tt>, <tt>warnings</tt>.</li>
+  <li><b>Target:</b> a letter right after the AGG number. <tt>5H/7/8</tt> head, <tt>5B/7/8</tt> body, <tt>5C/7/8</tt> go after cuts for a doctor's stoppage. No letter means opportunistic.</li>
+  <li><b>Dirty fighting:</b> <tt>!</tt> after the POW number, like <tt>6/7!/7</tt>.</li>
+  <li><b>Style</b> in parentheses at the end: <tt>(inside)</tt>, <tt>(clinch)</tt>, <tt>(feint)</tt>, <tt>(counter)</tt>, <tt>(ring)</tt>, <tt>(ropes)</tt>, <tt>(outside)</tt>, <tt>(allout)</tt>.</li>
+  <li><b>Rounds:</b> <tt>4) 6/6/8</tt> starts a tactic in round 4 that lasts until another numbered line takes over.</li>
+  <li><b>Conditions:</b> <tt>if score &lt; 0 and round &gt;= 8 then 8/7/5</tt>. Checked at the start of every round. The <b>last true line wins</b>.</li>
+  <li><b>You can test:</b> <tt>round</tt>, <tt>score</tt>, <tt>endurance</tt>, <tt>endurance_percent</tt>, <tt>roundswon</tt>, <tt>roundslost</tt>, <tt>decision_won</tt>, <tt>decision_lost</tt>, <tt>opponent</tt>/<tt>opp</tt> <tt>is strong / tired / exhausted</tt>, <tt>opptiring</tt>, <tt>mycuts</tt>, <tt>hiscuts</tt>, <tt>mystuns</tt>, <tt>hisstuns</tt>, <tt>myknockdowns</tt>, <tt>hisknockdowns</tt>, <tt>warnings</tt>.</li>
   <li><b>Math and logic:</b> <tt>+ - *</tt>, parentheses, <tt>&lt; &gt; = &lt;= &gt;=</tt>, <tt>and</tt>, <tt>or</tt>, <tt>not</tt>.</li>
-  <li><b>Extras:</b> <tt>towel</tt> (his corner quits once he's below half endurance), and <tt>say "..."</tt>, <tt>taunt "..."</tt>, <tt>sneer "..."</tt>, <tt>gloat "..."</tt>, <tt>tko "..."</tt> to put your own lines in the fight report.</li>
-  <li>Comments start with <tt>#</tt>. Semicolons at the end of lines are fine.</li></ul>
+  <li><b>Extras:</b> <tt>towel</tt>, and <tt>say "..."</tt>, <tt>taunt "..."</tt>, <tt>sneer "..."</tt>, <tt>gloat "..."</tt>, <tt>tko "..."</tt> to add your own lines to the fight report.</li>
+  <li>Comments start with <tt>#</tt>. Old WeBL plans paste in as they are.</li></ul>
   <pre class="plan">6/6/8
 # cruise when way ahead
 if score >= 10 then 4/1/15
 # go for broke when way behind
 if score <= -10 then 5H/10/5 (allout)
-if endurance_percent < 50 then 1/1/10</pre>
-  <p class="cr small">Still being tuned in this test build: the exact value of each energy point and the experience rating.</p>`;
-}
+if endurance_percent < 50 then 1/1/10</pre>`,
+ sim:()=>`<p>Fights are worked out a round at a time from both fighters' abilities and plans, then written up blow by blow.</p><ul>
+  <li><b>Endurance</b> starts at 10 times CND. As it drops, STR, SPD and AGL shrink with it. At zero he loses by TKO.</li>
+  <li><b>Damage</b> comes from POW, STR, AGG and SPD against the other man's DEF and AGL. Head shots do more stunning damage, and body shots wear down endurance.</li>
+  <li><b>Stuns:</b> stunning damage of 1.5 times CHN in a round is a stun, 2 times is a knockdown, and 2.5 times is a knockout.</li>
+  <li><b>Punches:</b> about 9 thrown per AGG point. The first 3 per POW point are power punches, the next 3 per POW are rights, and the rest are jabs. SPD against the other man's AGL decides how many land.</li>
+  <li><b>Fatigue</b> each round is AGG plus half of POW. Half his CND is absorbed free. He recovers 10% of lost endurance between rounds, plus 2% for each energy point spent resting.</li>
+  <li><b>Injuries:</b> hard rounds cause cuts, swelling and nose or jaw damage. The ringside doctor stops fights with serious injuries.</li>
+  <li><b>Styles:</b> inside adds STR, clinching adds AGL and smothers punches, feinting adds SPD, counter-punching punishes a slower man, ring and ropes play with AGL, outside uses height, and all-out doubles damage dealt but quadruples damage taken.</li>
+  <li><b>Judges:</b> three judges score each round on the 10-point must system. Stuns and knockdowns win rounds. Otherwise the most punches landed wins, with power punches counting most.</li></ul>
+  <p class="small mute">A few numbers are still being tuned with veteran managers: the exact value of each energy point and the experience rating.</p>`,
+ training:()=>`<ul>
+  <li><b>Rating</b> is experience. It goes up 1 every fight, to a maximum of 28.</li>
+  <li><b>Status</b> goes up 1 with every win, to a maximum of 28.</li>
+  <li>A fighter is in his <b>prime</b> when rating and status are equal. The further apart they are, the further he is off his best.</li>
+  <li><b>Primary training</b> gives +1 in that ability for each fight. Wins 1 and 2 each add a permanent point there.</li>
+  <li><b>Fast track:</b> from the third win on, every win adds a point to the primary program <b>and</b> a point to the secondary program.</li>
+  <li><b>Injury points:</b> a knockout loss adds 25. Every 500 costs him an ability point (AP Loss).</li></ul>
+  <p>Set training from the fighter's page: "train for something else."</p>`,
+ schedule:()=>`<ul>
+  <li><b>Fights happen every Saturday.</b> Each week your fighters are matched against fighters from other gyms around their ranking. You don't book fights yourself.</li>
+  <li>Get your fight plans and training in <b>before Saturday</b>. Whatever is saved when the fights run is what your fighter uses.</li>
+  <li>You don't need to be online. Results, fight reports and new rankings are posted after the fights run.</li>
+  <li>A fighter's page shows his next opponent once he's been matched, so you can scout him and write a plan for that matchup.</li>
+  <li>Between Saturdays, use <a data-go="fight">Practice Fights</a> and <a data-go="simbot">Simbot</a> as much as you like. They don't count on your record.</li></ul>
+  <p class="note">Weekly Saturday fights are being switched on as managers sign up. Until then, practice fights and Simbot are open to everyone.</p>`,
+ titles:()=>`<ul><li>Every division has three world titles: the <b>WBC</b>, the <b>WBA</b> and the <b>WBO</b>.</li>
+  <li>Divisions: Fly 112, Bantam 118, Feather 126, Light 135, Welter 147, Middle 160, Light Heavy 175, Cruiser 200, Heavy (no limit).</li>
+  <li>Fighters are ranked inside their division. The top contenders get title shots, and the latest title fights show on the home page.</li>
+  <li>See the <a data-go="champs">Champions</a>, <a data-go="frank">Fighter Rankings</a> and <a data-go="grank">Gym Rankings</a>.</li></ul>`,
+ community:()=>`<ul><li><a data-go="forums">Forums</a>: everyone can read them, and members can post and reply. Keep posts in the right board.</li>
+  <li><a data-go="forum:press">Press Releases</a>: call out a rival, hype a title fight, talk big.</li>
+  <li><a data-go="msgs">Messages</a>: private between you and one other manager. Click any gym name on a forum post to message him. When you have unread mail, Messages lights up in the sidebar with a count.</li></ul>`,
+ account:()=>`<ul><li>Log in with your email and password on any computer or phone. Your fighters, records and plans are saved to your account.</li>
+  <li><a data-go="forgot">Forgotten Password</a> emails you a reset link. <a data-go="changepw">Change Email/Passwd.</a> works while logged in.</li>
+  <li><a data-go="changegym">Change Gym</a> renames your gym. <a data-go="desc">Description</a> tells other managers about you.</li>
+  <li><a data-go="retiregym">Retire Gym (Quit)</a> deletes your account. Your forum posts stay up, marked as from a retired gym.</li>
+  <li>Please follow the <a data-go="aup">Acceptable Use Policy</a>.</li></ul>`
+};
 function newbieHTML(){
-  return`<h1>Newbie Files</h1>
-  <h2>Building your first fighter</h2>
-  <p>Start with a quick build on the Create a Fighter page and adjust from there. A few rules of thumb:</p>
-  <ul><li><b>Sluggers</b> need Strength and Chin. Keep KO Punch Bonus at a third of Strength or less.</li>
-  <li><b>Dancers</b> live on Agility and Speed, with high DEF in their plans.</li>
-  <li><b>Counterpunchers</b> want Speed and do best against aggressive opponents.</li>
-  <li><b>Clinchers</b> need Conditioning and Chin to grind out long fights.</li>
-  <li>Height is expensive but gives Speed and Agility against shorter men. A short slugger can cancel it by fighting inside.</li>
-  <li>Don't drop Chin too low. A glass jaw loses to anyone who can punch.</li></ul>
-  <h2>Fight plans</h2>
-  <p>Every round gets its own AGG, POW and DEF. High AGG and POW burn endurance fast, so many managers start steady, go to the body to wear the other man down, and empty the tank late. Use "Copy down" to fill the rest of the fight from one round.</p>
-  <h2>Scouting</h2>
-  <p>Every fight report is saved. Open a fighter's record and click <i>highlights</i> to see how he fights before you make your plan. Use <a data-go="simbot">Simbot</a> to test a plan many times.</p>`;
+  return`<h1>Newbie Files</h1><p>Welcome to Contenders. Here's everything a new manager needs, in order.</p>
+  <h2>1. Your first fighter</h2>
+  <p>Go to <a data-go="create">Create a Fighter</a>. Not sure where to start? Tap a quick build:</p>
+  <ul><li><b>Slugger:</b> big Strength and Chin. Walks forward and hits hard.</li>
+  <li><b>Dancer:</b> big Agility and Speed. Hard to hit, wins on points.</li>
+  <li><b>Counterpuncher:</b> big Speed. Makes aggressive fighters pay.</li>
+  <li><b>Clincher:</b> big Conditioning and Chin. Grinds opponents down late.</li></ul>
+  <p>Then tweak the numbers. Rules of thumb: don't let Chin drop too low, since a glass jaw loses to anyone who can punch. Conditioning wins 12-round title fights. Height is expensive but helps against shorter men.</p>
+  <h2>2. Your first fight plan</h2>
+  <p>Start simple. <tt>6/6/8</tt> means 6 points of aggression, 6 of power and 8 of defense every round. Then add one line at a time:</p>
+  <pre class="plan">6/6/8
+# rest if I'm tired
+if endurance_percent < 50 then 4/4/10
+# push if I'm losing late
+if score < 0 and round >= 8 then 8/7/5</pre>
+  <p>Defense matters a lot. Fighters with very low DEF get stunned and knocked out. Full details are in <a data-go="help:plans">Writing Fight Plans</a>.</p>
+  <h2>3. Test it</h2>
+  <p>Run <a data-go="simbot">Simbot</a> 100 times against your other fighter to see how the plan holds up, then read a full <a data-go="fight">practice fight</a> report to see why.</p>
+  <h2>4. Training</h2>
+  <p>On the fighter's page, pick what he trains. Wins raise his status and add ability points. From his third win on he's on the fast track and gets two points per win.</p>
+  <h2>5. Fight night is Saturday</h2>
+  <p>Have your plan saved before <b>Saturday</b>. Fights run on their own, then check his record for the result and <i>highlights</i> for the full report. See <a data-go="help:schedule">The Fight Schedule</a>.</p>
+  <h2>6. Scout and talk</h2>
+  <p>Click any fighter's name to see his public record and past fight reports. That's how you learn an opponent's habits. Ask questions in the <a data-go="forum:help">Help forum</a>, and say hi in the <a data-go="forum:lounge">Lounge</a>.</p>`;
+}
+function retireGymHTML(){
+  if(!ME)return`<h1>Retire Gym (Quit)</h1>${needLogin('retire your gym')}`;
+  return`<h1>Retire Gym (Quit)</h1><p class="cr"><b>This permanently deletes your account, your fighters and their records, and your messages.</b> Your forum posts stay up, marked as from a retired gym. This can't be undone.</p>
+  <p>To confirm, type your gym name exactly: <b>${esc(myGym())}</b></p>
+  <p><input id="retireName" data-keep style="width:260px"> <button id="doRetireGym">Retire My Gym</button></p>`;
 }
 function fundingHTML(){return`<h1>Contenders Funding</h1><p>Contenders is free to play and run by managers for managers. If the game grows, this page will explain how to help cover hosting costs. For now, the best support is to tell an old WeBL friend about it.</p>`}
 
@@ -1164,6 +1221,8 @@ document.addEventListener('click',async e=>{
     if(await safeWrite(()=>SB.from('profiles').update({gym:v}).eq('id',ME))){managers[ME]=Object.assign(managers[ME]||{},{gym:v});state.gymName=v;save();updateTop();alertBox('Gym name saved.')}}
   else if(t.id==='saveDesc'){const v=$('#descIn').value.slice(0,1000);
     if(await safeWrite(()=>SB.from('profiles').update({description:v}).eq('id',ME))){managers[ME]=Object.assign(managers[ME]||{},{desc:v});alertBox('Description saved.')}}
+  else if(t.id==='doRetireGym'){if($('#retireName').value.trim()!==myGym())return alertBox('The gym name does not match.');
+    t.disabled=true;if(await safeWrite(()=>SB.rpc('retire_gym'))){await SB.auth.signOut().catch(()=>{});try{localStorage.removeItem('contenders_v6')}catch(e){}ME=null;alert0()}else t.disabled=false}
   else if(t.id==='doLogout'){await SB.auth.signOut();ME=null;ims=[];updateTop();nav('home')}
   else if(t.id==='postTopic'){const title=$('#tTitle').value.trim().slice(0,100),body=$('#tBody').value.trim().slice(0,8000);if(!title||!body)return alertBox('Give your topic a title and a message.');
     t.disabled=true;let tid=null;
