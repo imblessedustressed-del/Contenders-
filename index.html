@@ -69,6 +69,7 @@ pre.plan{font:14px 'Courier New',monospace;background:#f6f6f6;border:1px inset #
 table.champ{margin:0 auto}table.champ td.pw{text-align:center;vertical-align:middle;min-width:90px}
 svg.pow{width:46px;height:38px;display:block;margin:0 auto}
 h1.pubname{font:bold 34px 'Times New Roman',serif;color:#555}
+p.fl{margin:0 0 18px 30px;line-height:1.5}
 .note{border:1px dashed #aaa;padding:6px 10px;background:#f6f6f6;font-size:14px;max-width:640px}
 @media(max-width:720px){
  #wrap{display:block}
@@ -662,7 +663,7 @@ function render(){
   document.querySelectorAll('#side a').forEach(a=>a.classList.toggle('cur',a.dataset.v===view||(base==='topic'&&a.dataset.v==='forums')));
   if(base!=='topic'){postsTopic=null;posts=[]}
   const P={home:homeHTML,register:registerHTML,aup:aupHTML,gym:gymHTML,plans:plansHTML,fight:fightHTML,create:createHTML,cards:cardsHTML,
-    retired:()=>`<h1>Retired Fighters</h1>${state.retired&&state.retired.length?`<table class="grid"><tr><th>Fighter</th><th>Record</th><th>Rating</th><th>Status</th></tr>${state.retired.map(f=>`<tr><td>${esc(f.name)}</td><td>${f.rec[0]}-${f.rec[1]}-${f.rec[2]} (${f.rec[3]}/${f.rec[1]})</td><td class="n">${f.rating||0}</td><td class="n">${f.status||0}</td></tr>`).join('')}</table>`:'<p>You have no retired fighters.</p>'}`,clean:cleanHTML,short:shortHTML,changegym:changeGymHTML,desc:descHTML,
+    retired:retiredHTML,clean:cleanHTML,short:shortHTML,changegym:changeGymHTML,desc:descHTML,
     login:loginHTML,logout:logoutHTML,forgot:forgotHTML,newpass:newPassHTML,changepw:changePwHTML,forums:forumsHTML,forum:()=>forumHTML(arg),topic:()=>topicHTML(arg),newtopic:()=>newTopicHTML(arg),msgs:msgsHTML,
     simbot:simbotHTML,champs:champsHTML,frank:frankHTML,grank:grankHTML,results:resultsHTML,fcards:resultsHTML,sched:schedHTML,
     discarded:()=>`<h1>Discarded Fighters</h1><p>No fighters have been discarded.</p>`,search:searchHTML,help:()=>helpHTML(arg),newbie:newbieHTML,funding:fundingHTML,retiregym:retireGymHTML,
@@ -756,10 +757,15 @@ function aupHTML(){
 /* ---------- Your Gym ---------- */
 function fighterLine(side){
   const F=state[side],belts=[];
+  if(/^Open Slot/.test(F.name))return`<p class="fl"><i>${esc(F.name)}</i>: <a data-go="create">create a fighter</a> or bring one back from <a data-go="retired">your retired fighters</a>.</p>`;
   for(const d in state.champs)for(const b in state.champs[d])if(state.champs[d][b]===F.name)belts.push(`${d}weight ${b}`);
-  return`<p><a data-go="rec:${side}" class="${cc(side)}">${esc(F.name)}</a>${belts.length?' &#9733;':''} <b>Contenders</b> ${recStr(F)} <a data-go="plan:${side}" class="small">Fight plan</a><br>
-  <span class="small">Height: ${ht(HT(F))} · Rating ${F.rating||0} · Status ${F.status||0} · ${esc(F.home||'')}${belts.length?` · <b>Champion: ${belts.map(esc).join(', ')}</b>`:''}</span><br>
-  <span class="small">No bouts scheduled.</span></p>`;
+  const wi=weighIn(F,state.div);
+  return`<p class="fl"><a data-go="rec:${side}" class="${cc(side)}">${esc(F.name)}</a>${belts.length?' <span style="color:#e8a400">&#9733;</span>':''} Rank #${frankOf(side)} <b>Contenders</b> (${F.rec[0]}-${F.rec[1]}-${F.rec[2]}) ${F.rating||0}(${F.status||0}) <a data-go="pub:${side}">Bio</a><br>
+  Weight: ${natWeight(F)}/${minWeight(F)} pounds<br>
+  Next Bout: none scheduled${nightOf(state.div)?` (${esc(state.div)}weights fight ${nightOf(state.div)}s)`:''}<br>
+  Fight Plan: <a data-go="plan:${side}">${esc(F.planName||'Basic')}</a><br>
+  Options: <a data-go="forum:press">Talk Trash</a> | <a data-go="desc">Change Description</a> | <a data-retire="${side}">Retire</a>${belts.length?`<br><b>Champion: ${belts.map(esc).join(', ')}</b>`:''}
+  ${wi.endMul<1?`<br><span class="cr small">May be fighting at a disadvantage due to weight.</span>`:''}</p>`;
 }
 function gymHTML(){
   const tot=[0,0,0,0];['A','B'].forEach(s=>state[s].rec.forEach((v,i)=>tot[i]+=v));
@@ -770,7 +776,17 @@ function gymHTML(){
   <tr><td><b>Contenders</b></td><td>${tot[0]}-${tot[1]}-${tot[2]}</td><td class="cr">${titles}</td></tr></table>
   <p><a data-go="fcards">Recent Fight Cards</a><br><a data-go="results">Recent Results</a></p>
   <p class="cr">Select a fighter from the list below. You may also <a data-go="create">create a new fighter</a> at any time.</p>
-  <h2>${esc(state.div)}weights</h2>${fighterLine('A')}${fighterLine('B')}`;
+  <h2>${esc(state.div)}weights (${weightOf(state.div)<1000?weightOf(state.div):1000} pounds)</h2>${fighterLine('A')}${fighterLine('B')}
+  <p>&#9758; <a data-go="retired">Your Gym's Retired Fighters</a></p>`;
+}
+function retiredHTML(){
+  const L=state.retired||[];
+  if(!L.length)return`<h1>Your Gym's Retired Fighters</h1><p>You have no retired fighters.</p><p><a data-go="gym">Back to your active fighters</a></p>`;
+  const divs={};L.forEach((f,i)=>{const d=f.div||state.div;(divs[d]=divs[d]||[]).push([f,i])});
+  return`<h1>Your Gym's Retired Fighters</h1><p class="cr">Select a fighter to bring back. You may also <a data-go="create">create a new fighter</a> at any time.</p>
+  ${Object.entries(divs).map(([d,arr])=>`<h2>${esc(d)}weights (${weightOf(d)<1000?weightOf(d):1000} pounds)</h2>${arr.map(([f,i])=>`<p class="fl"><b>${esc(f.name)}</b> <b>Contenders</b> (${f.rec[0]}-${f.rec[1]}-${f.rec[2]}) ${f.rating||0}(${f.status||0})<br>
+  ${f.str?`Weight: ${natWeight(f)}/${minWeight(f)} pounds · Activate: <a data-activate="${i}" data-slot="A">red corner</a> | <a data-activate="${i}" data-slot="B">blue corner</a>`:'<span class="small mute">Retired before full records were kept.</span>'}</p>`).join('')}`).join('')}
+  <p><a data-go="gym">Back to your active fighters</a></p>`;
 }
 function plansHTML(){
   return`<h1>Fight Plans</h1>${['A','B'].map(s=>{const F=state[s];return`<h2 class="${cc(s)}">${esc(F.name)}</h2><pre class="plan">${esc(F.plan)}</pre><p><a data-go="edit:${s}">Edit plan</a></p>`}).join('')}`;
@@ -1212,7 +1228,7 @@ function fundingHTML(){return`<h1>Contenders Funding</h1><p>Contenders is free t
 
 /* ---------- events ---------- */
 document.addEventListener('click',async e=>{
-  const t=e.target.closest('[data-go],[data-v],[data-dm],button');if(!t)return;
+  const t=e.target.closest('[data-go],[data-v],[data-dm],[data-retire],[data-activate],button');if(!t)return;
   if(t.dataset.v){nav(t.dataset.v);return}
   if(t.dataset.go){nav(t.dataset.go);return}
   if(t.dataset.dm){window._dmTo=t.dataset.dm;nav('msgs');return}
@@ -1226,10 +1242,16 @@ document.addEventListener('click',async e=>{
     while(left>0){const k=rand()<.08?'kp':pick(ks);if(k==='kp'&&F.kp>=Math.floor(F.str/3))continue;if(F[k]<22){F[k]++;left--}}save();render()}
   else if(t.dataset.reset){const s=t.dataset.reset,keep={rec:state[s].rec,hist:state[s].hist};state[s]=Object.assign(JSON.parse(JSON.stringify(DEFAULTS[s])),keep);save();render()}
   else if(t.id==='createF'){const D=state.draft;if(!D.name.trim())return $('#cerr').textContent='Give him a name.';if(used(D)!==POOL)return $('#cerr').textContent=`He must total exactly ${POOL} points.`;if(D.kp>Math.floor(D.str/3))return $('#cerr').textContent='KO Punch Bonus needs 3 Strength per point.';
-    const slot=$('#slot').value,old=state[slot];state.retired=state.retired||[];state.retired.unshift({name:old.name,rec:old.rec,rating:old.rating,status:old.status});
+    const slot=$('#slot').value,old=state[slot];state.retired=state.retired||[];if(!/^Open Slot/.test(old.name))state.retired.unshift(JSON.parse(JSON.stringify(old)));
     state[slot]={...JSON.parse(JSON.stringify(D)),rec:[0,0,0,0],hist:[],locked:true,rating:0,status:0,train:'str',train2:'cnd',streak:0,ip:0};state.draft=null;save();nav('rec:'+slot)}
-  else if(t.dataset.retire){const s0=t.dataset.retire;state.retired=state.retired||[];const old=state[s0];state.retired.unshift({name:old.name,rec:old.rec,rating:old.rating,status:old.status});
-    state[s0]=Object.assign(JSON.parse(JSON.stringify(DEFAULTS[s0])),{name:'Open Slot '+(s0==='A'?'Red':'Blue')});save();alertBox(old.name+' has retired. Create a new fighter for this corner.');nav('create')}
+  else if(t.dataset.retire){const s0=t.dataset.retire,old=state[s0];if(/^Open Slot/.test(old.name))return;
+    if(!window.confirm(`Retire ${old.name}? He'll move to your retired fighters, and you can bring him back later.`))return;
+    state.retired=state.retired||[];state.retired.unshift(JSON.parse(JSON.stringify(old)));
+    state[s0]=Object.assign(JSON.parse(JSON.stringify(DEFAULTS[s0])),{name:'Open Slot '+(s0==='A'?'Red':'Blue'),rec:[0,0,0,0],hist:[]});save();nav('retired')}
+  else if(t.dataset.activate){const i=+t.dataset.activate,f=state.retired[i];if(!f)return;const slot=t.dataset.slot;
+    if(!f.str){return alertBox("This fighter was retired before full records were kept, so he can't be brought back.")}
+    const cur=state[slot];if(!window.confirm(`Bring ${f.name} back into the ${slot==='A'?'red':'blue'} corner?${/^Open Slot/.test(cur.name)?'':` ${cur.name} will retire.`}`))return;
+    state.retired.splice(i,1);if(!/^Open Slot/.test(cur.name))state.retired.unshift(JSON.parse(JSON.stringify(cur)));state[slot]=f;save();nav('rec:'+slot)}
   else if(t.dataset.checkplan){const ta=document.querySelector('textarea.planbox');if(ta){state[t.dataset.checkplan].plan=ta.value;save()}render()}
   else if(t.id==='go'||t.id==='go2')startFight();
   else if(t.id==='next'){shown++;if(shown>=fight.rounds.length)finish();render();const r=document.querySelectorAll('.rnd');r[r.length-1].scrollIntoView({behavior:'smooth'})}
