@@ -731,10 +731,10 @@ function reportHTML(f,b,upto){
 }
 function afterFight(f,end){
   const S=f.S;
-  if(end.w===null)return`<div class="gap"></div>${S.map((x,i)=>`<p>${x.n} heads back to his corner. ${f.final[i]}</p>`).join('')}`;
+  if(end.w===null)return`<div class="gap"></div>${S.map((x,i)=>`<p>${x.n} walks back to his corner. ${f.final[i]}</p>`).join('')}`;
   const w=S[end.w],l=S[1-end.w];
-  return`<div class="gap"></div><p>${w.n} remains standing while his trainer wipes him down. ${f.final[end.w]}</p>
-  <p>${l.n} ${end.decision?'heads back to his corner.':'needs medical attention from his trainer.'} ${f.final[1-end.w]}</p>
+  return`<div class="gap"></div><p>${w.n} raises his gloves to the crowd as his corner climbs into the ring. ${f.final[end.w]}</p>
+  <p>${l.n} ${end.decision?'walks back to his corner.':'is checked over by the ringside doctor.'} ${f.final[1-end.w]}</p>
   ${f.belt&&end.w!==null?'':''}`;
 }
 let lrep={};

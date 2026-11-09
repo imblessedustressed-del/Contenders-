@@ -585,7 +585,8 @@ function pbp(S,PU,eff,st,kd,injNews,ended){
 }
 function condText(x,after){
   const f=x.E/x.E0,parts=[];
-  if(!after)parts.push(f>.8?"doesn't need to rest.":f>.55?'is breathing hard.':f>.3?'is sucking wind.':'is out on his feet.');
+  /* between-round corner report: endurance left = share of STR/SPD/AGL left */
+  if(!after)parts.push(f>.8?"is fresh and doesn't need a breather.":f>.6?'stays on his feet in the corner while his trainer towels him off.':f>.4?'takes a swig of water and drops onto his stool.':f>.25?'is clearly running on fumes.':'slumps on his stool while his corner works to keep him going.');
   const inj=x.inj.filter(i=>i.lvl>0).map(injText);
   if(inj.length)parts.push('He has '+inj.join(', ')+'.');
   return parts.join(' ');
@@ -1112,10 +1113,10 @@ function reportHTML(f,b,upto){
 }
 function afterFight(f,end){
   const S=f.S;
-  if(end.w===null)return`<div class="gap"></div>${S.map((x,i)=>`<p>${x.n} heads back to his corner. ${f.final[i]}</p>`).join('')}`;
+  if(end.w===null)return`<div class="gap"></div>${S.map((x,i)=>`<p>${x.n} walks back to his corner. ${f.final[i]}</p>`).join('')}`;
   const w=S[end.w],l=S[1-end.w];
-  return`<div class="gap"></div><p>${w.n} remains standing while his trainer wipes him down. ${f.final[end.w]}</p>
-  <p>${l.n} ${end.decision?'heads back to his corner.':'needs medical attention from his trainer.'} ${f.final[1-end.w]}</p>
+  return`<div class="gap"></div><p>${w.n} raises his gloves to the crowd as his corner climbs into the ring. ${f.final[end.w]}</p>
+  <p>${l.n} ${end.decision?'walks back to his corner.':'is checked over by the ringside doctor.'} ${f.final[1-end.w]}</p>
   ${f.belt&&end.w!==null?'':''}`;
 }
 let lrep={};

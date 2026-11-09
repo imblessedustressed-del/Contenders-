@@ -262,7 +262,8 @@ function pbp(S,PU,eff,st,kd,injNews,ended){
 }
 function condText(x,after){
   const f=x.E/x.E0,parts=[];
-  if(!after)parts.push(f>.8?"doesn't need to rest.":f>.55?'is breathing hard.':f>.3?'is sucking wind.':'is out on his feet.');
+  /* between-round corner report: endurance left = share of STR/SPD/AGL left */
+  if(!after)parts.push(f>.8?"is fresh and doesn't need a breather.":f>.6?'stays on his feet in the corner while his trainer towels him off.':f>.4?'takes a swig of water and drops onto his stool.':f>.25?'is clearly running on fumes.':'slumps on his stool while his corner works to keep him going.');
   const inj=x.inj.filter(i=>i.lvl>0).map(injText);
   if(inj.length)parts.push('He has '+inj.join(', ')+'.');
   return parts.join(' ');
