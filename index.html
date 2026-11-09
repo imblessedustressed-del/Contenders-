@@ -71,6 +71,12 @@ svg.pow{width:46px;height:38px;display:block;margin:0 auto}
 h1.pubname{font:bold 34px 'Times New Roman',serif;color:#555}
 p.fl{margin:0 0 18px 30px;line-height:1.5}
 table.granks tr:nth-child(odd) td{background:#e4eef0}
+.rksel p{margin:4px 0}.rksel select{font-size:13px}.rkh{font-family:Georgia,serif;font-size:22px;margin:14px 0}
+table.wranks{margin:0 auto;border-collapse:collapse;font-family:Georgia,serif;font-size:14px}
+table.wranks th{background:#2ec4c4;color:#123;text-align:left;padding:2px 8px;font-weight:bold}
+table.wranks td{padding:2px 8px;vertical-align:bottom}
+table.wranks tr:nth-child(even) td{background:#c9ecec}table.wranks tr:nth-child(odd) td{background:#f4fbfb}
+svg.belt{width:46px;height:24px;display:block}
 .note{border:1px dashed #aaa;padding:6px 10px;background:#f6f6f6;font-size:14px;max-width:640px}
 @media(max-width:720px){
  #wrap{display:block}
@@ -683,7 +689,7 @@ $('#menuBtn').onclick=()=>$('#side').classList.toggle('open');
 function refresh(){
   const a=document.activeElement;
   if(a&&(a.tagName==='TEXTAREA'||a.tagName==='INPUT')&&a.value)return;
-  const live=['gym','rec','pub','fcards','forums','msgs','grank','gympub','gymret','opub','register','changegym','login','logout','home','desc','changepw'];
+  const live=['frank','gym','rec','pub','fcards','forums','msgs','grank','gympub','gymret','opub','register','changegym','login','logout','home','desc','changepw'];
   if(live.includes(view.split(':')[0])||view.startsWith('forum:')||view.startsWith('topic:'))render();
 }
 function render(){
@@ -693,7 +699,7 @@ function render(){
   const P={home:homeHTML,register:registerHTML,aup:aupHTML,gym:gymHTML,plans:plansHTML,fight:fightHTML,create:createHTML,cards:cardsHTML,
     retired:retiredHTML,clean:cleanHTML,short:shortHTML,changegym:changeGymHTML,desc:descHTML,
     login:loginHTML,logout:logoutHTML,forgot:forgotHTML,newpass:newPassHTML,changepw:changePwHTML,forums:forumsHTML,forum:()=>forumHTML(arg),topic:()=>topicHTML(arg),newtopic:()=>newTopicHTML(arg),msgs:msgsHTML,
-    simbot:simbotHTML,champs:champsHTML,frank:frankHTML,grank:grankHTML,results:resultsHTML,fcards:fightCardsHTML,sched:schedHTML,
+    simbot:simbotHTML,champs:champsHTML,frank:()=>frankHTML(arg),grank:grankHTML,results:resultsHTML,fcards:fightCardsHTML,sched:schedHTML,
     discarded:()=>`<h1>Discarded Fighters</h1><p>No fighters have been discarded.</p>`,search:searchHTML,help:()=>helpHTML(arg),newbie:newbieHTML,funding:fundingHTML,retiregym:retireGymHTML,
     edit:()=>planEditHTML(arg),plan:()=>planEditHTML(arg),pf:()=>planFormHTML(arg),rec:()=>recordHTML(arg),gympub:()=>gymPubHTML(arg),gymret:()=>gymRetHTML(arg),opub:()=>oFighterHTML(arg),cdiv:()=>cdivHTML(arg),pub:()=>pubHTML(arg),train:()=>trainHTML(arg),report:()=>savedReportHTML(arg),lreport:()=>leagueReportHTML(arg)};
   $('#view').innerHTML=`<div id="flash" class="note cr" style="display:none;margin-bottom:10px"></div>`+(P[base]||homeHTML)();
@@ -1038,7 +1044,7 @@ function pubHTML(side){
   ${F.hist&&F.hist.length?`<table class="hist">${F.hist.map(h=>`<tr><td>${h.bout?`<a data-go="lreport:${h.bout}">${ICON[h.icon]}</a>`:state.reports[h.id]?`<a data-go="report:${h.id}">${ICON[h.icon]}</a>`:ICON[h.icon]}</td><td>vs ${h.oid&&FTR(h.oid)?`<a data-go="pub:${h.oid}">${esc(h.opp)}</a>`:esc(h.opp)} (${esc(myGym())}) - ${h.oh?esc(h.oh)+' - ':''}${esc(h.div)}weight ${h.belt?esc(h.belt)+' title ':''}bout on ${esc(h.date)}, week ${h.week}: ${esc(h.res)}. Earned $0. Score: ${esc(h.score)} ${h.bout?`<a data-go="lreport:${h.bout}">highlights</a>`:state.reports[h.id]?`<a data-go="report:${h.id}">highlights</a>`:''}${h.plan?`. Fight Plan: ${esc(h.plan)}`:''}</td></tr>`).join('')}</table>`:'<p class="mute">No fights yet.</p>'}
   <p class="small"><a data-go="rec:${side}">Manager's page for ${n}</a></p>`;
 }
-function frankOf(side){const sc=s=>{const r=state[s].rec;return(r[0]+.5*r[2])/Math.max(1,r[0]+r[1]+r[2])+r[0]*.001};const d=divOf(state[side]);const peers=ROSTER().filter(k=>divOf(state[k])===d).sort((a,b)=>sc(b)-sc(a));return peers.indexOf(side)+1}
+function frankOf(side){if(ME&&cards[ME]){const i=rankedIn(divOf(state[side])).findIndex(x=>x.uid===ME&&x.f.id===side);if(i>=0)return i+1}const sc=s=>{const r=state[s].rec;return(r[0]+.5*r[2])/Math.max(1,r[0]+r[1]+r[2])+r[0]*.001};const d=divOf(state[side]);const peers=ROSTER().filter(k=>divOf(state[k])===d).sort((a,b)=>sc(b)-sc(a));return peers.indexOf(side)+1}
 function planEditHTML(side){if(!FTR(side))return planFormHTML('');return planFormHTML('edit:'+encN(state[side].planName||'Basic'))}
 /* ---------- Fights ---------- */
 function fightHTML(){
@@ -1218,10 +1224,26 @@ function champsHTML(){
   ${DIVS.map(([d])=>`<tr><td>${d}weight</td>${BELTS.map(b=>`<td>${state.champs[d]&&state.champs[d][b]?esc(state.champs[d][b]):'<span class="mute">vacant</span>'}</td>`).join('')}</tr>`).join('')}</table>
   <p class="small mute">Win a WBC, WBA or WBO title fight to fill a belt.</p>`;
 }
-function frankHTML(){
-  const rows=ROSTER().filter(k=>divOf(state[k])===state.div).map(s=>({s,F:state[s],pct:(state[s].rec[0]+.5*state[s].rec[2])/Math.max(1,state[s].rec.slice(0,3).reduce((a,b)=>a+b,0))})).sort((a,b)=>b.pct-a.pct);
-  return`<h1>Fighter Rankings</h1><h2>${esc(state.div)}weight (Contenders)</h2><table class="grid"><tr><th>Rank</th><th>Fighter</th><th>Record</th><th>Gym</th></tr>
-  ${rows.map((r,i)=>`<tr><td class="n">#${i+1}</td><td><a data-go="pub:${r.s}">${esc(r.F.name)}</a></td><td>${recStr(r.F)}</td><td>${esc(myGym())}</td></tr>`).join('')}</table>`;
+const BELT_ICON=`<svg class="belt" viewBox="0 0 58 30"><rect x="1" y="11" width="56" height="9" rx="2" fill="#7a1a1a" stroke="#3d0b0b"/><ellipse cx="29" cy="15.5" rx="15" ry="13" fill="#e8b923" stroke="#8a6200" stroke-width="1.5"/><ellipse cx="29" cy="15.5" rx="10" ry="8.5" fill="#f6d65c" stroke="#a87800"/><path d="M23 13 l3 -4 l3 3 l3 -3 l3 4 v4 h-12z" fill="#b8860b"/><rect x="5" y="13" width="6" height="5" rx="1" fill="#e8b923"/><rect x="47" y="13" width="6" height="5" rx="1" fill="#e8b923"/></svg>`;
+/* League week = number of fight dates already run */
+const leagueWeek=()=>new Set(bouts.filter(b=>b.status==='done').map(b=>b.fight_date)).size;
+function allFighters(){const out=[];for(const uid in cards){const m=managers[uid];if(!m)continue;((cards[uid]||{}).fighters||[]).forEach(f=>out.push({uid,f,m}))}return out}
+function rankedIn(div){return allFighters().filter(x=>x.f.div===div).map(x=>{const r=x.f.rec||[0,0,0,0];return{...x,r,t:(x.f.titles||[]).length,dif:r[0]-r[1],pct:(r[0]+.5*r[2])/Math.max(1,r[0]+r[1]+r[2])}})
+    .sort((a,b)=>b.t-a.t||(b.f.rating||0)-(a.f.rating||0)||(b.f.status||0)-(a.f.status||0)||b.dif-a.dif||b.pct-a.pct||b.r[3]-a.r[3]||a.f.name.localeCompare(b.f.name))}
+function frankHTML(arg){
+  let div=decN(arg||'');if(!DIVS.some(d=>d[0]===div)){const mine=ME?((cards[ME]||{}).fighters||[])[0]:null;div=(mine&&mine.div)||(ROSTER()[0]&&divOf(state[ROSTER()[0]]))||'Heavy'}
+  const wk=leagueWeek();
+  const rows=rankedIn(div);
+  return`<div class="center rksel"><p>Rankings for other divisions, regions, and past weeks:</p>
+  <select id="rkDiv">${DIVS.map(([d])=>`<option value="${esc(d)}"${d===div?' selected':''}>${esc(d)}weight</option>`).join('')}</select>
+  <select id="rkReg"><option>Contenders</option></select>
+  <select id="rkWk"><option>${wk}</option></select>
+  <button id="rkGo">Rankings</button></div><hr>
+  <h1 class="center rkh">${esc(div)}weight Rankings in Contenders after Week ${wk}</h1>${needDB()}
+  ${rows.length?`<table class="wranks"><tr><th>Rank</th><th>Fighter</th><th>Location</th><th>Record</th><th>KOs</th><th>Rating (Status)</th><th>Manager</th></tr>
+  ${rows.map((x,i)=>`<tr><td>${i+1}.</td><td>${x.t?BELT_ICON+'<br>':''}<a data-go="opub:${x.uid}:${encN(x.f.id)}">${esc(x.f.name)}</a>${STAR(x.t>0)}</td><td>${esc(x.f.home||x.m.loc||'')}</td><td>${x.r[0]}-${x.r[1]}-${x.r[2]}</td><td>${x.r[3]}</td><td>${x.f.rating||0} (${x.f.status||0})</td><td><a data-go="gympub:${x.uid}">${esc(x.m.gym)}</a>${x.m.bot?' <span class="small mute">(bot)</span>':''}</td></tr>`).join('')}</table>`:
+  `<p class="center mute">No active fighters in this division yet.</p>`}
+  <p class="small mute center">Ranked by world titles, then rating, then status, then wins minus losses.</p>`;
 }
 function gymStats(uid){const c=cards[uid]||{fighters:[],retired:[]},all=[...(c.fighters||[]),...(c.retired||[])];
   const r=[0,0,0,0];all.forEach(f=>(f.rec||[]).forEach((v,i)=>r[i]+=v));const titles=all.reduce((a,f)=>a+(f.titles||[]).length,0);
@@ -1450,6 +1472,7 @@ document.addEventListener('click',async e=>{
   else if(t.id==='go'||t.id==='go2')startFight();
   else if(t.id==='next'){shown++;if(shown>=fight.rounds.length)finish();render();const r=document.querySelectorAll('.rnd');r[r.length-1].scrollIntoView({behavior:'smooth'})}
   else if(t.id==='skip'){shown=fight.rounds.length;finish();render()}
+  else if(t.id==='rkGo'){nav('frank:'+encN($('#rkDiv').value))}
   else if(t.id==='cdivGo'){const sd=t.dataset.side,F=FTR(sd);if(F&&!myBout(sd)){F.div=$('#cdivSel').value;save();alertBox(`${F.name} now fights at ${F.div}weight.`);nav('gym')}}
   else if(t.id==='cleanPlans'){ensurePlans();if(state.plans['Basic']==null)state.plans['Basic']='6/6/8';ROSTER().forEach(s=>usePlan(s,'Basic'));save();alertBox('All fight plans have been cleaned.')}
   else if(t.id==='saveGym'){const v=$('#gymIn').value.trim().slice(0,40);if(v.length<2)return alertBox('Gym names need at least 2 characters.');
