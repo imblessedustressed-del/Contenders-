@@ -596,7 +596,7 @@ function condText(x,after){
 /* ================= SHARED DATA (Supabase: accounts, forums, messages) ================= */
 cleanSlate();
 const SB_URL='https://ojsphhzgzbxmnfcbitqb.supabase.co',SB_KEY='sb_publishable_SWO9WhiSkoVhflY5CmY08A_hlqCEJSi';
-const BUILD='1794266104';
+const BUILD='1794266360';
 /* A tab left open on an older build must not save over newer data: if the site has been updated, reload before anything else is saved. */
 let staleBuild=false;
 async function checkBuild(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
@@ -707,7 +707,7 @@ $('#menuBtn').onclick=()=>$('#side').classList.toggle('open');
 function refresh(){
   const a=document.activeElement;
   if(a&&(a.tagName==='TEXTAREA'||a.tagName==='INPUT')&&a.value)return;
-  const live=['champs','frank','gym','rec','pub','fcards','forums','msgs','grank','gympub','gymret','opub','register','changegym','login','logout','home','desc','changepw'];
+  const live=['champs','frank','gym','rec','pub','fcards','forums','msgs','grank','gympub','gymret','opub','rpub','register','changegym','login','logout','home','desc','changepw'];
   if(live.includes(view.split(':')[0])||view.startsWith('forum:')||view.startsWith('topic:'))render();
 }
 function render(){
@@ -719,7 +719,7 @@ function render(){
     login:loginHTML,logout:logoutHTML,forgot:forgotHTML,newpass:newPassHTML,changepw:changePwHTML,forums:forumsHTML,forum:()=>forumHTML(arg),topic:()=>topicHTML(arg),newtopic:()=>newTopicHTML(arg),msgs:msgsHTML,
     simbot:simbotHTML,champs:champsHTML,frank:()=>frankHTML(arg),grank:grankHTML,results:resultsHTML,fcards:fightCardsHTML,sched:schedHTML,
     discarded:()=>`<h1>Discarded Fighters</h1><p>No fighters have been discarded.</p>`,search:searchHTML,help:()=>helpHTML(arg),newbie:newbieHTML,funding:fundingHTML,retiregym:retireGymHTML,
-    edit:()=>planEditHTML(arg),plan:()=>planEditHTML(arg),pf:()=>planFormHTML(arg),rec:()=>recordHTML(arg),gympub:()=>gymPubHTML(arg),gymret:()=>gymRetHTML(arg),opub:()=>oFighterHTML(arg),cdiv:()=>cdivHTML(arg),pub:()=>pubHTML(arg),train:()=>trainHTML(arg),report:()=>savedReportHTML(arg),lreport:()=>leagueReportHTML(arg),ppv:ppvHTML};
+    edit:()=>planEditHTML(arg),plan:()=>planEditHTML(arg),pf:()=>planFormHTML(arg),rec:()=>recordHTML(arg),gympub:()=>gymPubHTML(arg),gymret:()=>gymRetHTML(arg),opub:()=>oFighterHTML(arg),rpub:()=>retFighterHTML(arg),cdiv:()=>cdivHTML(arg),pub:()=>pubHTML(arg),train:()=>trainHTML(arg),report:()=>savedReportHTML(arg),lreport:()=>leagueReportHTML(arg),ppv:ppvHTML};
   $('#view').innerHTML=`<div id="flash" class="note cr" style="display:none;margin-bottom:10px"></div>`+(P[base]||homeHTML)();
 }
 
@@ -978,8 +978,8 @@ function retiredHTML(){
   if(!L.length)return`<h1>Your Gym's Retired Fighters</h1><p>You have no retired fighters.</p><p><a data-go="gym">Back to your active fighters</a></p>`;
   const divs={};L.forEach((f,i)=>{const d=f.div||state.div;(divs[d]=divs[d]||[]).push([f,i])});
   return`<h1>Your Gym's Retired Fighters</h1><p class="cr">Select a fighter to bring back. You may also <a data-go="create">create a new fighter</a> at any time.</p>
-  ${Object.entries(divs).map(([d,arr])=>`<h2>${esc(d)}weights (${weightOf(d)<1000?weightOf(d):1000} pounds)</h2>${arr.map(([f,i])=>`<p class="fl"><b>${esc(f.name)}</b> <b>Contenders</b> (${f.rec[0]}-${f.rec[1]}-${f.rec[2]}) ${f.rating||0}(${f.status||0})<br>
-  ${f.str?`Weight: ${natWeight(f)}/${minWeight(f)} pounds · <a data-activate="${i}">Activate</a>`:'<span class="small mute">Retired before full records were kept.</span>'}</p>`).join('')}`).join('')}
+  ${Object.entries(divs).map(([d,arr])=>`<h2>${esc(d)}weights (${weightOf(d)<1000?weightOf(d):1000} pounds)</h2>${arr.map(([f,i])=>`<p class="fl"><a data-go="rpub:${ME}:r${i}"><b>${esc(f.name)}</b></a> <b>Contenders</b> (${f.rec[0]}-${f.rec[1]}-${f.rec[2]}) ${f.rating||0}(${f.status||0})<br>
+  ${f.str?`Weight: ${natWeight(f)}/${minWeight(f)} pounds · <a data-activate="${i}">Unretire fighter</a>`:'<span class="small mute">Retired before full records were kept.</span>'}</p>`).join('')}`).join('')}
   <p><a data-go="gym">Back to your active fighters</a></p>`;
 }
 /* ===== Fight plan library (WeBL style) ===== */
@@ -1411,8 +1411,24 @@ function gymPubHTML(uid){
 function gymRetHTML(uid){
   const m=managers[uid];if(!m)return`<h1>Gym not found</h1><p>${needDB()}<a data-go="grank">Back to Gym Rankings</a></p>`;
   const R=(cards[uid]||{}).retired||[];
-  return`<h1>${esc(m.gym)}'s Retired Fighters</h1>${R.length?R.map(f=>{const r=f.rec||[0,0,0,0];return`<p class="fl">${esc(f.name)}${(f.titles||[]).length?' <span style="color:#e8a400">&#9733;</span>':''} - ${esc(f.div)}weight - ${r[0]} wins (${r[3]} by knock out), ${r[1]} losses, and ${r[2]} draws. Rating ${f.rating}. Status ${f.status}.${(f.titles||[]).length?` <b class="r">Winner of ${f.titles.length} world title${f.titles.length>1?'s':''}!!</b>`:''} Career earnings ${money(f.earn)}.</p>`}).join(''):'<p class="mute">This gym has no retired fighters.</p>'}
+  return`<h1>${esc(m.gym)}'s Retired Fighters</h1>${R.length?R.map(f=>{const r=f.rec||[0,0,0,0];return`<p class="fl"><a data-go="rpub:${uid}:${encN(f.id)}">${esc(f.name)}</a>${(f.titles||[]).length?' <span style="color:#e8a400">&#9733;</span>':''} - ${esc(f.div)}weight - ${r[0]} wins (${r[3]} by knock out), ${r[1]} losses, and ${r[2]} draws. Rating ${f.rating}. Status ${f.status}.${(f.titles||[]).length?` <b class="r">Winner of ${f.titles.length} world title${f.titles.length>1?'s':''}!!</b>`:''} Career earnings ${money(f.earn)}.</p>`}).join(''):'<p class="mute">This gym has no retired fighters.</p>'}
   <p><a data-go="gympub:${uid}">Back to ${esc(m.gym)}</a></p>`;
+}
+function retFighterHTML(arg){
+  const j=arg.indexOf(':'),uid=arg.slice(0,j),rid=decN(arg.slice(j+1)),idx=+String(rid).replace(/^r/,''),m=managers[uid];
+  const mine=uid===ME,own=mine?(state.retired||[])[idx]:null,pc=((cards[uid]||{}).retired||[]).find(x=>x.id===rid);
+  const f=own||pc;if(!f)return`<p>That retired fighter wasn't found. <a data-go="${mine?'retired':'gymret:'+uid}">Back to the retired fighters</a></p>`;
+  const n=esc(f.name),r=f.rec||[0,0,0,0],gym=mine?myGym():(m?m.gym:'A retired gym');
+  const tw=(f.hist||[]).filter(h=>h.belt&&(h.icon==='w'||h.icon==='ko')).length||(f.titles||[]).length;
+  const hg=f.hgt!=null?f.hgt:null;
+  return`<h1 class="pubname">${n}</h1>
+  <p class="cr"><b>Retired.</b> ${n} fought for the <a data-go="${mine?'gym':'gympub:'+uid}">${esc(gym)}</a> gym${f.home?` out of ${esc(f.home)}`:''} in the ${esc(f.div||'')}weight division (Contenders)${hg!=null?` and stands ${ht(60+hg)} (${cm(60+hg)} centimeters) tall`:''}.</p>
+  ${mine?(own&&own.str?`<p>&#9758; <a data-activate="${idx}"><b>Unretire ${n}</b></a> and put him back on your active roster with his full record.</p>`:'<p class="small mute">This fighter was retired before full records were kept, so he can\'t be brought back.</p>'):''}
+  <hr><h2>${n}'s Record</h2>
+  <p>${n}'s final record is ${r[0]}-${r[1]}-${r[2]} (${r[3]}/${r[1]})${tw?` <b class="r">Winner of ${tw} world title${tw>1?'s':''}!!</b>`:''}<br>
+  His final rating was ${f.rating||0} and his status was ${f.status||0}.<br>His career earnings are ${money(f.earn)}.<br>${fanLine(f)}</p>
+  ${(f.hist||[]).length?`<p>Select any icon for a detailed account of a fight.</p><table class="hist">${f.hist.map(h=>`<tr><td>${h.bout?`<a data-go="lreport:${h.bout}">${resultIcon(h)}</a>`:resultIcon(h)}</td><td>vs ${esc(h.opp)}${h.ogym?` (${esc(h.ogym)})`:''} - ${h.oh?esc(h.oh)+' - ':''}${esc(h.div)}weight ${h.belt?esc(h.belt)+' title ':''}bout on ${esc(h.date)}: ${esc(h.res)}.${h.earned?` Earned ${money(h.earned)}.`:''} Score: ${esc(h.score)}${h.bout?` <a data-go="lreport:${h.bout}">highlights</a>`:''}${h.plan?`. Fight Plan: ${esc(h.plan)}`:''}</td></tr>`).join('')}</table>`:'<p class="mute">No fight history on file.</p>'}
+  <p class="small"><a data-go="${mine?'retired':'gymret:'+uid}">Back to the retired fighters</a></p>`;
 }
 function oFighterHTML(arg){
   const i=arg.indexOf(':'),uid=arg.slice(0,i),fid=decN(arg.slice(i+1)),m=managers[uid],f=((cards[uid]||{}).fighters||[]).find(x=>x.id===fid);
