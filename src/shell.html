@@ -248,7 +248,7 @@ async function loadPublic(){
     managers={};p.data.forEach(r=>managers[r.id]={gym:r.gym,desc:r.description,loc:r.location||'',bot:!!r.is_bot,at:Date.parse(r.created_at)});
     const bids=p.data.filter(r=>r.is_bot).map(r=>r.id);
     if(bids.length){const bs=await SB.from('gym_state').select('user_id,data').in('user_id',bids);if(!bs.error){botF={};bs.data.forEach(r=>{const d=r.data||{};(d.roster||[]).forEach(k=>{if(d[k])botF['bot:'+r.user_id+':'+k]={...d[k],gymName:managers[r.user_id].gym}})})}}
-    bouts=(bt&&!bt.error&&bt.data)||[];if(loadedGym)applyLeague();cards={};if(gc&&!gc.error)gc.data.forEach(r=>cards[r.user_id]=r.data||{});
+    bouts=(bt&&!bt.error&&bt.data)||[];cards={};if(gc&&!gc.error)gc.data.forEach(r=>cards[r.user_id]=r.data||{});
     topics=t.data.map(r=>({id:String(r.id),forum:r.forum,title:r.title,by:r.author,at:Date.parse(r.created_at),last:Date.parse(r.last_at),count:r.post_count}));
     dbState='on';refresh();
   }catch(e){if(dbState!=='on'){dbState='slow';refresh()}}
@@ -270,7 +270,7 @@ async function afterLogin(){
     if(data&&data.data&&(Array.isArray(data.data.roster)||data.data.A)){const rep=state.reports;state=Object.assign({},data.data);state.reports=rep||{};if(!state.bout||state.bout.split('|')[0]!=='12')state.bout='12';if(!state.practiceCleared){cleanSlate();await pushGym()}try{localStorage.setItem('contenders_v6',JSON.stringify(state))}catch(e){}}
     else await pushGym();
   }catch(e){}
-  loadedGym=true;applyLeague();pushGym();render();
+  loadedGym=true;loadSanctions();pushGym();render();
 }
 function syncGym(){if(!SB||!ME||!loadedGym)return;clearTimeout(syncTimer);syncTimer=setTimeout(pushGym,1500)}
 function publicCard(){
@@ -286,12 +286,18 @@ async function pushGym(){if(!SB||!ME)return;if(staleBuild){checkBuild();return}c
 const gymOf=id=>!id?'A retired gym':(managers[id]&&managers[id].gym)||'A manager';
 const myGym=()=>(ME&&managers[ME]&&managers[ME].gym)||state.gymName||'Your Gym';
 function updateMsgLink(){const n=ims.filter(m=>m.to===ME&&!m.read).length;const l=$('#msgLink');if(!l)return;l.classList.toggle('lit',n>0);l.innerHTML=n?`Messages <span class="badge">${n}</span>`:'Messages';document.title=(n?`(${n}) `:'')+'Contenders - The Contenders Boxing League'}
-function updateTop(){const el=$('#who');if(!el)return;el.innerHTML=ME?`Logged in as <b>${esc(myGym())}</b> | <a data-go="logout">Logout</a>`:`<a data-go="login">Login</a> | <a data-go="register">Sign Up (Free!)</a>`}
+function updateTop(){const el=$('#who');if(!el)return;el.innerHTML=ME?`Logged in as <b>${esc(myGym())}</b>${mySanctions.length?` <span class="cr">(${sanctionOf('gag').kind==='ban'?'banned':'gagged'})</span>`:''} | <a data-go="logout">Logout</a>`:`<a data-go="login">Login</a> | <a data-go="register">Sign Up (Free!)</a>`}
 function needDB(){
   if(dbState==='loading')return`<p class="mute">Connecting to the Contenders server...</p>`;
   if(dbState==='slow'||dbState==='off')return`<p class="cr">The Contenders server can't be reached right now. Check back in a moment.</p>`;
   return'';
 }
+let mySanctions=[];
+async function loadSanctions(){if(!SB||!ME)return;const{data}=await SB.from('sanctions').select('*').eq('lifted',false);const now=Date.now();
+  mySanctions=(data||[]).filter(x=>Date.parse(x.starts)<=now&&(!x.ends||Date.parse(x.ends)>now));updateTop();refresh()}
+const sanctionOf=k=>mySanctions.find(x=>x.kind==='ban')||mySanctions.find(x=>x.kind===k);
+function sanctionNote(k){const x=sanctionOf(k);if(!x)return'';const until=x.ends?`until ${new Date(x.ends).toLocaleString('en-US',{weekday:'long',month:'long',day:'numeric',hour:'numeric',minute:'2-digit'})}`:'until the commissioner lifts it';
+  return`<p class="note cr"><b>${x.kind==='ban'?'Your gym is banned':'You are gagged'}</b> ${until} (strike ${x.strike}${x.reason?`: ${esc(x.reason)}`:''}). ${x.kind==='ban'?'You can read the site, but you can\'t play, post or send messages.':'You can keep playing, but you can\'t post in the forums or send messages.'}</p>`}
 function needLogin(what){return ME?'':`<p class="note">You need to <a data-go="login">log in</a> or <a data-go="register">sign up</a> to ${what}.</p>`}
 async function safeWrite(fn){try{const r=await fn();if(r&&r.error)throw r.error;return true}catch(e){alertBox("That didn't go through: "+((e&&e.message)||'unknown error'));return false}}
 function alert0(){$('#view').innerHTML='<h1>Your gym has retired.</h1><p>Thanks for fighting in Contenders. You can <a data-go="register">sign up again</a> any time.</p>';updateTop()}
@@ -522,7 +528,11 @@ function aupHTML(){
   <li>One gym per person. Don't run extra gyms to feed wins to your main gym.</li>
   <li>Trash talk is part of boxing. Threats and harassment are not.</li>
   <li>Don't use bugs to gain an edge. Report them in the Bug Reports forum.</li>
-  <li>The commissioner can rename, retire or remove anything that breaks these rules.</li></ol>`;
+  <li>The commissioner can rename, retire or remove anything that breaks these rules.</li>
+  <li>No stealing: don't try to get into another manager's account, read his fight plans, or copy his gym. Fighters, records and money can only change through real fights.</li></ol>
+  <h2>Penalties</h2><p>Breaking the rules earns a strike. A <b>gag</b> stops you from posting in the forums or sending messages. A <b>ban</b> stops you from playing, posting and messaging. You can still read the site either way.</p>
+  <ol><li><b>First strike:</b> 2 days.</li><li><b>Second strike:</b> 2 weeks.</li><li><b>Third strike:</b> permanent, until the league lifts it.</li></ol>
+  <p>Cheating or stealing goes straight to a ban. Your own page tells you if you're gagged or banned, why, and until when.</p>`;
 }
 /* ---------- Your Gym ---------- */
 /* ---------- Scheduled bouts (set by the commissioner in the bouts table) ---------- */
@@ -569,6 +579,7 @@ function cdivHTML(side){
   <p class="small mute">A fighter who can't sweat down to the limit fights with less endurance.</p><p><a data-go="gym">Back to your gym</a></p>`;
 }
 function gymHTML(){
+  if(ME&&sanctionOf('ban'))return`<h1>${esc(myGym())}</h1>${sanctionNote('ban')}`;
   const tot=[0,0,0,0];ROSTER().forEach(s=>state[s].rec.forEach((v,i)=>tot[i]+=v));
   let titles=ME?titleWins(ME):0;if(!titles)for(const d in state.champs)titles+=Object.keys(state.champs[d]).length;
   return`<h1>${esc(myGym())}</h1>${ME?`<p class="small"><a data-go="gympub:${ME}">See your gym the way other managers see it</a></p>`:''}
@@ -809,7 +820,7 @@ function reportHTML(f,b,upto){
   let h=`<h1 class="date">${esc(b.date)}</h1>${b.venue?`<p>${b.tv&&b.tv.tier==='ppv'?'Live on pay-per-view from':b.tv&&b.tv.tier==='undercard'?'On the pay-per-view undercard, live from':b.tv&&b.tv.tier==='tv'?'Live on TV from':'Live from'} <b>${esc(b.venue.name)}</b> in ${esc(b.venue.city)}${b.att?`. Attendance: ${crowdText(b.venue,b.att)}`:''}.${b.tv&&b.tv.buys?` Pay-per-view buys: <b>${b.tv.buys.toLocaleString('en-US')}</b> worldwide (${Object.entries(b.tv.regions||{}).filter(([,v])=>v).map(([r,v])=>`${esc(r)} ${v.toLocaleString('en-US')}`).join(', ')}).`:b.tv&&b.tv.viewers?` Viewers: <b>${b.tv.viewers.toLocaleString('en-US')}</b>.`:''}</p><div class="gap"></div>`:''}${intro}<p>This bout is scheduled for ${b.rounds} rounds.${b.belt?` It is for the <b>${esc(b.belt)} ${esc(b.div)}weight Championship of the World</b>.`:''}</p>`;
   const end=f.result,last=f.rounds.length;
   f.rounds.slice(0,upto).forEach((R,ri)=>{
-    h+=`<div class="rnd">ROUND ${R.n}</div>${R.mgr?`<div class="mgr">${R.mgr.filter((m,i)=>!b.mine||b.mine[i]).join('<br>')}</div>`:''}${(R.say||[]).map((t,i)=>t?`<p>${S[i].n} says, "${esc(t)}"</p>`:'').join('')}<p>${(R.plans||[]).join('<br>')}</p>${(R.pre||[]).join('')}<div class="gap"></div>`;
+    h+=`<div class="rnd">ROUND ${R.n}</div>${R.mgr&&R.mgr.some(Boolean)?`<div class="mgr">${R.mgr.filter((m,i)=>m&&(!b.mine||b.mine[i])).join('<br>')}</div>`:''}${(R.say||[]).map((t,i)=>t?`<p>${S[i].n} says, "${esc(t)}"</p>`:'').join('')}<p>${(R.plans||[]).join('<br>')}</p>${(R.pre||[]).join('')}<div class="gap"></div>`;
     let idle=0;
     const flushIdle=()=>{const k=Math.min(3,Math.ceil(idle/5));for(let i=0;i<k;i++)h+=`<p>...</p>`;idle=0};
     R.lines.forEach(l=>{if(!l.html){idle++;return}flushIdle();h+=`<p>${l.html}</p>`});
@@ -847,8 +858,10 @@ function leagueReportHTML(id){
   const r=lrep[id];
   if(!r){if(SB&&r!==null){lrep[id]=null;SB.from('bouts').select('*').eq('id',id).maybeSingle().then(({data})=>{lrep[id]=data||false;if(view==='lreport:'+id)render()})}return'<p>Loading fight report...</p>'}
   if(!r.result)return`<p>That fight hasn't been fought yet. <a data-go="fcards">Back to Fight Cards</a></p>`;
+  if(r.mine===undefined&&SB&&ME){r.mine=null;SB.from('bout_private').select('mgr').eq('bout_id',id).maybeSingle().then(({data})=>{r.mine=data?data.mgr:[];if(view==='lreport:'+id)render()})}
+  const side=r.red_user===ME?0:r.blue_user===ME?1:-1,f={...r.result.f,rounds:r.result.f.rounds.map((R,i)=>({...R,mgr:side>=0&&Array.isArray(r.mine)&&r.mine[i]?(side===0?[r.mine[i],'']:['',r.mine[i]]):null}))};
   const b={...r.result.b,mine:[r.red_user===ME,r.blue_user===ME],venue:r.venue,att:r.summary&&r.summary.att,tv:r.summary&&r.summary.tv};
-  return`<div class="rep">${reportHTML(r.result.f,b,r.result.f.rounds.length)}</div><p class="small"><a data-go="results">Recent Results</a> | <a data-go="fcards">Recent Fight Cards</a></p>`;
+  return`<div class="rep">${reportHTML(f,b,f.rounds.length)}</div><p class="small"><a data-go="results">Recent Results</a> | <a data-go="fcards">Recent Fight Cards</a></p>`;
 }
 function savedReportHTML(id){const r=state.reports[id];if(!r)return`<p>That fight report is no longer saved.</p>`;return`<div class="rep">${reportHTML(r.f,r.b,r.f.rounds.length)}</div>`}
 /* Everything a fighter brings into the ring: weigh-in, the +1 from training, prime, the landing constant, and weights for the giant-killer rule */
@@ -922,6 +935,7 @@ function forumHTML(fid){
 function newTopicHTML(fid){
   const f=FORUMS.find(x=>x[0]===fid)||FORUMS[0];
   if(!ME)return`${forumNav()}<h1>New Topic in ${esc(f[1])}</h1>${needLogin('post')}`;
+  if(sanctionOf('gag'))return`${forumNav()}<h1>New Topic in ${esc(f[1])}</h1>${sanctionNote('gag')}`;
   return`${forumNav()}<h1>New Topic in ${esc(f[1])}</h1>${needDB()}
   <p class="sans">Posting as <b>${esc(myGym())}</b></p>
   <table class="grid"><tr><td>Title:</td><td><input id="tTitle" data-keep maxlength="100" style="width:min(480px,60vw)"></td></tr>
@@ -934,7 +948,7 @@ function topicHTML(tid){
   if(!t)return`${forumNav()}${needDB()}<p class="mute">Loading topic...</p>`;
   return`${forumNav()}<h1>${esc(t.title)}</h1><p class="sans small"><a data-go="forum:${t.forum}">Back to ${esc((FORUMS.find(f=>f[0]===t.forum)||['',''])[1])}</a></p>
   <div class="sans">${posts.map(p=>`<div class="post"><div class="meta">Posted by: ${p.by?`<a data-dm="${esc(p.by)}" title="Send a message">${esc(gymOf(p.by))}</a>`:`<b>${postsTopic&&(topics.find(t=>t.id===postsTopic)||{}).forum==='announce'?'The Commissioner':gymOf(null)}</b>`}<br>Date: <span>${dt(p.at)}</span></div><p>${bodyHTML(p.text)}</p></div>`).join('')}</div>
-  ${dbState==='on'?(ME?`<hr><p class="sans"><b>Reply</b></p><textarea id="rBody" data-keep rows="5"></textarea><p><button id="postReply" data-topic="${t.id}">Post Reply</button></p>`:needLogin('reply')):''}`;
+  ${dbState==='on'?(ME?sanctionOf('gag')?sanctionNote('gag'):`<hr><p class="sans"><b>Reply</b></p><textarea id="rBody" data-keep rows="5"></textarea><p><button id="postReply" data-topic="${t.id}">Post Reply</button></p>`:needLogin('reply')):''}`;
 }
 function msgsHTML(){
   if(dbState!=='on')return`<h1>Messages</h1>${needDB()}`;
@@ -944,7 +958,7 @@ function msgsHTML(){
   return`<h1>Messages</h1>
   <p class="small mute">Messages are private between you and the other manager.</p>
   <h2>Send a Message</h2>
-  ${others.length?`<table class="grid"><tr><td>To:</td><td><select id="dmTo">${others.map(id=>`<option value="${esc(id)}"${id===sel?' selected':''}>${esc(gymOf(id))}</option>`).join('')}</select></td></tr>
+  ${sanctionOf('gag')?sanctionNote('gag'):others.length?`<table class="grid"><tr><td>To:</td><td><select id="dmTo">${others.map(id=>`<option value="${esc(id)}"${id===sel?' selected':''}>${esc(gymOf(id))}</option>`).join('')}</select></td></tr>
   <tr><td>Message:</td><td><textarea id="dmBody" data-keep rows="5"></textarea></td></tr></table><p><button id="sendDm">Send</button></p>`:
   `<p class="mute">No other managers have signed up yet.</p>`}
   <h2>Inbox</h2>${ims.filter(m=>m.to===ME).map(m=>`<div class="post sans"><div class="meta">From: <a data-dm="${esc(m.from)}">${esc(gymOf(m.from))}</a> ${m.read?'':'<span class="cr">(new)</span>'}<br>Date: <span>${dt(m.at)}</span></div><p>${bodyHTML(m.text)}</p></div>`).join('')||'<p class="mute">No messages.</p>'}
@@ -1203,12 +1217,12 @@ document.addEventListener('click',async e=>{
     state.roster.push(slot);state[slot]={...JSON.parse(JSON.stringify(D)),div:divOf(D),rec:[0,0,0,0],hist:[],locked:true,rating:0,status:0,train:'str',train2:'cnd',streak:0,ip:0};state.draft=null;save();nav('rec:'+slot)}
   else if(t.dataset.retire){const s0=t.dataset.retire,old=FTR(s0);if(!old)return;
     if(!window.confirm(`Retire ${old.name}? He'll move to your retired fighters, and you can bring him back later.`))return;
-    state.retired=state.retired||[];state.retired.unshift(JSON.parse(JSON.stringify({...old,div:divOf(old)})));
+    state.retired=state.retired||[];state.retired.unshift(JSON.parse(JSON.stringify({...old,div:divOf(old),fid:s0})));
     state.roster=ROSTER().filter(k=>k!==s0);delete state[s0];save();nav('retired')}
   else if(t.dataset.activate){const i=+t.dataset.activate,f=state.retired[i];if(!f)return;
     if(!f.str){return alertBox("This fighter was retired before full records were kept, so he can't be brought back.")}
     if(!window.confirm(`Bring ${f.name} out of retirement?`))return;
-    const id='f'+Date.now().toString(36);state.retired.splice(i,1);ROSTER();state.roster.push(id);state[id]=f;save();nav('rec:'+id)}
+    const id=f.fid||('f'+Date.now().toString(36));state.retired.splice(i,1);ROSTER();state.roster.push(id);state[id]=f;save();nav('rec:'+id)}
   else if(t.dataset.ezcopy){const r=easyRows(),i=+t.dataset.ezcopy;for(let j=i+1;j<12;j++)r[j]={...r[i]};render()}
   else if(t.id==='pfCheckBtn'){$('#pfCheck').innerHTML=planErrBox($('#pfText').value)}
   else if(t.id==='pfSaveEasy'){const n=$('#pfName').value.trim(),er=planName_ok(n);if(er)return alertBox(er);if(easyRows().some(r=>r.agg+r.pow+r.def>20))return alertBox('A round uses more than 20 energy points.');
