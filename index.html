@@ -596,7 +596,7 @@ function condText(x,after){
 /* ================= SHARED DATA (Supabase: accounts, forums, messages) ================= */
 cleanSlate();
 const SB_URL='https://ojsphhzgzbxmnfcbitqb.supabase.co',SB_KEY='sb_publishable_SWO9WhiSkoVhflY5CmY08A_hlqCEJSi';
-const BUILD='1794264410';
+const BUILD='1794264493';
 /* A tab left open on an older build must not save over newer data: if the site has been updated, reload before anything else is saved. */
 let staleBuild=false;
 async function checkBuild(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
@@ -748,6 +748,9 @@ const TIMES=['','one','two','three','four','five','six','seven','eight','nine','
 function champLine(uid,fid){const c={};bouts.forEach(b=>{if(b.status!=='done'||!b.belt||!b.summary||b.summary.w==null)return;const w=b.summary.w===0;
   if((w?b.red_user:b.blue_user)===uid&&(w?b.red_fid:b.blue_fid)===fid)c[b.belt]=(c[b.belt]||0)+1});
   const parts=BELTS.filter(b=>c[b]).sort((x,y)=>c[y]-c[x]).map(b=>`${TIMES[c[b]]||c[b]}-time ${b} champion`);return parts.length?parts.join(' and '):''}
+const cap=t=>t?t[0].toUpperCase()+t.slice(1):t;
+/* title fights won (defenses included) by a gym, or by one of its fighters */
+const titleWins=(uid,fid)=>bouts.filter(b=>{if(b.status!=='done'||!b.belt||!b.summary||b.summary.w==null)return false;const w=b.summary.w===0;return(w?b.red_user:b.blue_user)===uid&&(fid==null||(w?b.red_fid:b.blue_fid)===fid)}).length;
 const recTitles=(uid,fid)=>{const t=champLine(uid,fid);return t?`, <b>${esc(t)}</b>!`:'.'};
 /* Weight on a public profile: the rumor only before his debut. After that, only whether he's over or under; otherwise he makes the limit. */
 function weightNote(n,div,w,mw,fights){
@@ -867,7 +870,7 @@ function fighterLine(side){
   Weight: ${natWeight(F)}/${minWeight(F)} pounds<br>
   Next Bout: ${nb?boutLine(nb):`none scheduled${nightOf(divOf(F))?` (${esc(divOf(F))}weights fight ${nightOf(divOf(F))}s)`:''}`}<br>
   Fight Plan: <a data-go="pf:edit:${encN(F.planName||'Basic')}">${esc(F.planName||'Basic')}</a>${planUpdated(F.planName||'Basic')} <a data-go="train:${side}">Training:</a> ${esc(tr)}<br>
-  Options: <a data-go="forum:press">Talk Trash</a> | <a data-go="cdiv:${side}">Change Weight Division</a> | <a data-go="desc">Change Description</a> | <a data-retire="${side}">Retire</a>${belts.length?`<br><b>Champion: ${belts.map(esc).join(', ')}</b>`:''}
+  Options: <a data-go="forum:press">Talk Trash</a> | <a data-go="cdiv:${side}">Change Weight Division</a> | <a data-go="desc">Change Description</a> | <a data-retire="${side}">Retire</a>${(()=>{const t=champLine(ME,side);return t?`<br><b class="r">${esc(cap(t))}</b>${belts.length?` <span class="small">(holds the ${belts.map(esc).join(' and ')} title${belts.length>1?'s':''})</span>`:''}`:belts.length?`<br><b>Champion: ${belts.map(esc).join(', ')}</b>`:''})()}
   ${wi.endMul<1?`<br><span class="cr small">May be fighting at a disadvantage due to weight.</span>`:''}</p>`;
 }
 function cdivHTML(side){
@@ -879,11 +882,11 @@ function cdivHTML(side){
 }
 function gymHTML(){
   const tot=[0,0,0,0];ROSTER().forEach(s=>state[s].rec.forEach((v,i)=>tot[i]+=v));
-  let titles=0;for(const d in state.champs)titles+=Object.keys(state.champs[d]).length;
+  let titles=ME?titleWins(ME):0;if(!titles)for(const d in state.champs)titles+=Object.keys(state.champs[d]).length;
   return`<h1>${esc(myGym())}</h1>${ME?`<p class="small"><a data-go="gympub:${ME}">See your gym the way other managers see it</a></p>`:''}
   <p class="news">Contenders News: ${newsLine()}</p>
-  <table class="plain"><tr><th>Region</th><th>Record</th><th>Titles</th></tr>
-  <tr><td><b>Contenders</b></td><td>${tot[0]}-${tot[1]}-${tot[2]}</td><td class="cr">${titles}</td></tr></table>
+  <table class="plain"><tr><th>Region</th><th>Earnings</th><th>Record</th><th>Titles</th></tr>
+  <tr><td><b>Contenders</b></td><td>${money([...ROSTER().map(k=>state[k]),...(state.retired||[])].reduce((a,f)=>a+(f.earn||0),0))}</td><td>${tot[0]}-${tot[1]}-${tot[2]}</td><td class="cr">${titles}</td></tr></table>
   <p><a data-go="fcards">Recent Fight Cards</a><br><a data-go="results">Recent Results</a></p>
   <p class="cr">Select a fighter from the list below. You may also <a data-go="create">create a new fighter</a> at any time.</p>
   ${ROSTER().length?DIVS.filter(([d])=>ROSTER().some(k=>divOf(state[k])===d)).reverse().map(([d,l])=>`<h2>${esc(d)}weights (${l<1000?l:1000} pounds)</h2>${ROSTER().filter(k=>divOf(state[k])===d).map(fighterLine).join('')}`).join(''):'<p>You have no active fighters. <a data-go="create">Create one</a>.</p>'}
@@ -1306,12 +1309,12 @@ function frankHTML(arg){
   <p class="small mute center">Champions first, then ranked by rating, then status, then winning streak, then win percentage.</p>`;
 }
 function gymStats(uid){const c=cards[uid]||{fighters:[],retired:[]},all=[...(c.fighters||[]),...(c.retired||[])];
-  const r=[0,0,0,0];all.forEach(f=>(f.rec||[]).forEach((v,i)=>r[i]+=v));const titles=all.reduce((a,f)=>a+(f.titles||[]).length,0);
+  const r=[0,0,0,0];all.forEach(f=>(f.rec||[]).forEach((v,i)=>r[i]+=v));const titles=titleWins(uid)||all.reduce((a,f)=>a+(f.titles||[]).length,0);
   const n=r[0]+r[1]+r[2];return{earn:all.reduce((a,f)=>a+(f.earn||0),0),rec:r,titles,diff:r[0]-r[1],pct:n?Math.round(100*(r[0]+.5*r[2])/n):0,active:(c.fighters||[]).length}}
 function gymPubHTML(uid){
   const m=managers[uid];if(!m)return`<h1>Gym not found</h1><p>${needDB()}<a data-go="grank">Back to Gym Rankings</a></p>`;
   const c=cards[uid]||{fighters:[],retired:[]},g=gymStats(uid),fl=(f,i,act)=>{const r=f.rec||[0,0,0,0];
-    return`<p class="fl">${act?`<a data-go="opub:${uid}:${encN(f.id)}">${esc(f.name)}</a>`:esc(f.name)}${(f.titles||[]).length?' <span style="color:#e8a400">&#9733;</span>':''} - ${esc(f.div)}weight - ${r[0]} wins (${r[3]} by knock out), ${r[1]} losses, and ${r[2]} draws. Rating ${f.rating}. Status ${f.status}.${(f.titles||[]).length?` <b class="r">Winner of ${(f.titles||[]).length} world title${f.titles.length>1?'s':''}!!</b>`:''} Career earnings ${money(f.earn)}.</p>`};
+    return`<p class="fl">${act?`<a data-go="opub:${uid}:${encN(f.id)}">${esc(f.name)}</a>`:esc(f.name)}${(f.titles||[]).length?' <span style="color:#e8a400">&#9733;</span>':''} - ${esc(f.div)}weight - ${r[0]} wins (${r[3]} by knock out), ${r[1]} losses, and ${r[2]} draws. Rating ${f.rating}. Status ${f.status}.${(()=>{const t=act?champLine(uid,f.id):'';return t?` <b class="r">${esc(cap(t))}!!</b>`:(f.titles||[]).length?` <b class="r">Winner of ${f.titles.length} world title${f.titles.length>1?'s':''}!!</b>`:''})()} Career earnings ${money(f.earn)}.</p>`};
   return`<h1 class="pubname">${esc(m.gym)}${m.bot?' <span class="small mute">(bot gym)</span>':''}</h1>${m.bot?'<p class="small mute">A computer-run gym that fills out the rankings. Spar with its fighters in Practice Fights.</p>':''}
   <p>${esc(m.gym)} trains fighters${m.loc?` in ${esc(m.loc)}`:''}. Managing since ${m.at?dt(m.at).slice(0,10):'recently'}.${uid!==ME&&!m.bot?` <a data-dm="${esc(uid)}">Send a message</a>`:''}</p>
   ${m.desc?`<div class="note" style="white-space:pre-wrap">${esc(m.desc)}</div>`:''}
