@@ -434,7 +434,7 @@ function applyLeague(){if(!ME)return;state.applied=state.applied||{};let ch=fals
   if(ch)save()}
 const STAR=champ=>`<span class="star" style="color:${champ?'#e8a400':'#3b6fd8'}">&#9733;</span>`;
 function boutLine(x){if(!x)return'';const o=x.o,r=o.rec;
-  return`${x.b.belt?`<b>${esc(x.b.belt)} title fight</b> vs`:''}the ${o.hgt!=null?ht(60+o.hgt)+',':''} <a data-go="opub:${x.ou}:${encN(x.of)}">${esc(o.name)}</a>${STAR(o.champ)} (${r[0]}-${r[1]}-${r[2]} ${o.rating}/${o.status}) from the <a data-go="gympub:${x.ou}">${esc(x.gym)}</a> gym${x.b.purse?` for $${Number(x.b.purse).toLocaleString('en-US')}`:''} on <b>${esc(x.date)}</b>.`}
+  return`${x.b.belt?`<b>${esc(x.b.belt)} title fight</b> vs `:''}the ${o.hgt!=null?ht(60+o.hgt)+',':''} <a data-go="opub:${x.ou}:${encN(x.of)}">${esc(o.name)}</a>${STAR(o.champ)} (${r[0]}-${r[1]}-${r[2]} ${o.rating}/${o.status}) from the <a data-go="gympub:${x.ou}">${esc(x.gym)}</a> gym${x.b.purse?` for $${Number(x.b.purse).toLocaleString('en-US')}`:''} on <b>${esc(x.date)}</b>.`}
 const planStamp=n=>{state.planAt=state.planAt||{};state.planAt[n]=Date.now()};
 const planUpdated=n=>{const t=state.planAt&&state.planAt[n];return t?` updated ${new Date(t).toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'})}`:''};
 function fighterLine(side){
