@@ -335,27 +335,27 @@ const RT=['straight right','cross','right hand','straight right'];
 const TGT_H=['jaw','face','eye','nose','temple','head','chin'];
 const TGT_B=['stomach','ribs','solar plexus','body','midsection','kidney'];
 const NUMS=['ONE','TWO','THREE','FOUR','FIVE','SIX','SEVEN','EIGHT','NINE','TEN'];
-const INJ_LOCS=[['cut','left eye',1],['cut','right eye',1],['cut','forehead',1],['cut','lip',1],['swell','left eye',2],['swell','right eye',2],['nose','nose',1],['jaw','jaw',1]];
+const INJ_LOCS=[['cut','above right eye',1],['cut','above left eye',1],['cut','below right eye',1],['cut','below left eye',1],['swell','right eye',2],['swell','left eye',2],['nose','nose',1],['jaw','jaw',1]];
 const CUTRES={1:1.5,2:1,3:.5};
 const K_RATING=12;
-let EP_A=3,EP_B=.5,STUN_K=.8;
-const ep=x=>EP_A+EP_B*x;
 
 function newSev(){const r=rand();return r<2/3?1:r<8/9?2:r<26/27?3:4}
 function promote(l){if(l>=3)return 4;if(l===2)return rand()<2/3?3:4;const r=rand();return r<2/3?2:r<8/9?3:4}
 function injEnd(i){if(i.type==='cut')return i.lvl;if(i.type==='nose')return i.lvl>=2?i.lvl:0;if(i.type==='jaw')return i.lvl>=4?10:0;return 0}
 function injText(i){
-  if(i.type==='cut')return`${['','a minor cut','a cut','a serious cut','a gash'][i.lvl]} ${i.loc==='lip'?'on his lip':i.loc==='forehead'?'on his forehead':'over his '+i.loc}`;
+  if(i.type==='cut')return`${['','a minor cut','a cut','a serious cut','a gash'][i.lvl]} ${i.loc.startsWith('below')?'under his '+i.loc.slice(6):'over his '+i.loc.replace(/^above /,'')}`;
   if(i.type==='swell')return['',`swelling around his ${i.loc}`,`his ${i.loc} swelling badly`,`his ${i.loc} badly swollen`,`his ${i.loc} swollen shut`][i.lvl];
   if(i.type==='nose')return['','a bloody nose','a fractured nose','a fractured nose','a broken nose'][i.lvl];
-  return i.lvl>=4?'a broken jaw':'a sore jaw';
+  return['','a bloody lip','a bloody mouth','a broken tooth','a broken jaw'][i.lvl];
 }
 function prep(F,c){
   let str=F.str,kp=F.kp;const cap=Math.floor(str/3);if(kp>cap){str+=kp-cap;kp=cap}
   let parsed;try{parsed=parsePlan(typeof F.plan==='string'?F.plan:'6/6/8')}catch(e){parsed={stmts:[],errors:[]}}
   const pm=F.primeMul||1;
   return{F,c,n:escS(lastName(F.name)),str:str*pm,kp,spd:F.spd*pm,agl:F.agl*pm,chn:F.chn,cnd:F.cnd,hgt:F.hgt,cutres:F.cut,E0:10*F.cnd,E:10*F.cnd*(F.endMul||1),inj:[],fw:F.fightW||0,
-    parsed,perc:0,won:0,lost:0,stuns:0,kds:0,warn:0,endFrac:1};
+    parsed,perc:0,won:0,lost:0,stuns:0,kds:0,warn:0,endFrac:1,ipDmg:0,
+    fights:(F.rec||[0,0,0]).slice(0,3).reduce((a,b)=>a+b,0),
+    giant:(F.divLim||0)>=200&&(F.minW||0)>200?((F.minW-200)/10):0};
 }
 const oppState=f=>f>=2/3?0:f>=1/3?1:2;
 function ctxFor(S,i,r){const x=S[i],y=S[1-i];
@@ -385,11 +385,11 @@ function simulate(FA,FB,rounds){
     const A=base.map(b=>({...b}));
     for(let i=0;i<2;i++){const j=1-i,me=P[i],op=P[j],e=eff[i],o=eff[j],b=base[i],ob=base[j],a=A[i],oa=A[j];
       switch(me.style){
-        case'inside':a.str+=1+Math.max(0,b.str-ob.str)/2;a.agl*=.9;o.dmgMul*=1.1;e.notes.push('His STR is increased by fighting inside.');break;
+        case'inside':a.str+=1+Math.max(0,b.str-ob.str)/2;o.dmgMul*=1.1;e.notes.push('His STR is increased by fighting inside.');break;
         case'clinch':{a.agl+=1+(b.str>ob.str?(b.str-ob.str)/2:0);const lost=Math.min(e.agg,.15*op.agg);e.agg-=lost;e.rest+=lost;e.notes.push('His AGG is reduced by clinching.');break}
         case'feint':a.spd+=1+Math.max(0,b.spd-ob.spd)/2;e.fat+=1;e.notes.push('His SPD is increased by feinting.');break;
         case'counter':{a.str+=1;const adv=(b.spd+S[i].hgt)-(ob.spd+S[j].hgt);
-          if(adv>0){a.agl+=.25*adv;oa.agl=Math.max(ob.agl*.5,oa.agl-.25*adv)}else if(adv<0){oa.agl+=.25*-adv;a.agl-=.25*-adv;e.notes.push('His counter-punching backfires!')}
+          if(adv>0){a.agl+=adv/3;oa.agl=Math.max(ob.agl*.5,oa.agl-adv/3)}else if(adv<0){oa.agl+=-adv/3;a.agl=Math.max(b.agl*.5,a.agl-(-adv)/3);e.notes.push('His counter-punching backfires!')}
           e.agg*=.85;e.notes.push('His AGG is reduced by counter-punching.');break}
         case'ring':a.agl+=1+Math.max(0,b.agl-ob.agl)/2;e.fat+=1;e.notes.push('His AGL is increased by using the ring.');break;
         case'ropes':if(b.agl>ob.agl&&ob.agl>8)oa.agl=Math.max(8,oa.agl-(2/3)*(b.agl-ob.agl));a.agl-=1;e.notes.push('He is laying on the ropes.');break;
@@ -404,6 +404,7 @@ function simulate(FA,FB,rounds){
         if(S[i].warn>=2){e.deduct=(e.deduct||0)+1;R.pre.push(`<p class="r">${S[i].n} has a point deducted!</p>`)}
         if(rand()<.05*Math.pow(2,S[i].warn-1)){ended={type:'DQ',w:1-i,why:`${S[i].n} was disqualified for fouling`,t:30+rand()*140,dq:true}}}
     }
+    for(let i=0;i<2;i++)if(!eff[i].dirty&&rand()<.01){S[i].warn++;R.pre.push(`<p>The referee warns ${S[i].n} for an accidental low blow.</p>`)}
     const A2=A.map(a=>({...a}));
     const hd=S[0].hgt-S[1].hgt;
     if(hd!==0){const t=hd>0?0:1,bonus=Math.abs(hd)*(P[t].style==='outside'?.75:.5);A2[t].spd+=bonus;A2[t].agl+=bonus}
@@ -414,7 +415,8 @@ function simulate(FA,FB,rounds){
         if(j.type==='swell'&&j.lvl>=2){a.pen.spd+=.5*j.lvl;a.pen.agl+=.5*j.lvl}
         if(j.type==='nose')a.pen.fat+=1;
       }
-      const f=clamp(x.E/x.E0,.05,1);
+      const N=eff[i].agg+.5*eff[i].pow,imm=Math.max(0,N-x.cnd);a.imm=imm;
+      const f=clamp((x.E-imm)/x.E0,.05,1);a.f=f;
       a.str=Math.max(1,a.str*f);a.spd=Math.max(1,a.spd*f-a.pen.spd);a.agl=Math.max(1,a.agl*f-a.pen.agl);
     });
     A.splice(0,2,...A2);
@@ -425,13 +427,14 @@ function simulate(FA,FB,rounds){
     const luck=[0,1].map(()=>.8+.4*(rand()+rand())/2);
     const thrMul=[1,1],lkMul=[1,1];
     const calc=()=>[0,1].map(i=>{
-      const j=1-i,e=eff[i],a=A[i],o=A[j],od=ep(eff[j].def);
-      const agg=Math.max(.5,e.agg*thrMul[i]),pow=ep(e.pow),lk=luck[i]*lkMul[i];
-      const core=Math.sqrt(ep(agg)*a.spd)/(od*o.agl);
-      const base=pow*a.str*core*e.dmgMul*lk;
+      const j=1-i,e=eff[i],a=A[i],o=A[j],od=Math.max(1,eff[j].def);
+      const agg=Math.max(1,e.agg*thrMul[i]),pow=Math.max(1,e.pow),lk=luck[i]*lkMul[i];
+      const off=Math.sqrt(agg*a.spd)*pow*e.dmgMul*lk;
+      const raw=a.str*off/(od*o.agl);
       const tE={Head:.8,Body:1.2,Cut:.9,Opp:1}[e.tgt],tS={Head:1.2,Body:.8,Cut:.9,Opp:1}[e.tgt];
-      const stun=STUN_K*pow*(a.str+3*S[i].kp)*core*e.dmgMul*lk*tS;
-      return{base,end:base*tE,stun,ratio:stun/S[j].chn,agg,lk};
+      const sDef=Math.max(1,o.agl+(S[j].chn-10)*(o.f||1));
+      const stun=(a.str+3*S[i].kp)*off/(od*sDef)*tS;
+      return{base:raw/lk/e.dmgMul,end:raw*tE,stun,ratio:stun/S[j].chn,agg,lk};
     });
     let D=calc();
     const stunsOf=ratio=>ratio>=2.5?99:ratio>=2.4?4:ratio>=2.25?3:ratio>=2?2:ratio>=1.5?1:0;
@@ -452,8 +455,8 @@ function simulate(FA,FB,rounds){
     /* --- endurance damage, injuries, fatigue --- */
     const injNews=[[],[]];
     for(let i=0;i<2;i++){const j=1-i,X=S[i],Y=S[j],e=eff[i];
-      Y.E-=D[i].end;
-      let p=Math.pow(D[i].base,2)/10/100;
+      Y.E-=D[i].end;Y.ipDmg+=D[i].base;
+      let p=Math.pow(D[i].base,2)/10/100*(1+.005*Y.fights);
       p*=e.tgt==='Head'||e.tgt==='Cut'?1.5:e.tgt==='Body'?.25:1;p*=CUTRES[Y.cutres]||1;p=Math.min(.5,p);
       for(const ex of Y.inj.slice()){
         if(rand()<p*(e.tgt==='Cut'?1.5:1)){
@@ -472,7 +475,7 @@ function simulate(FA,FB,rounds){
       }
     }
     for(let i=0;i<2;i++){const X=S[i],e=eff[i];
-      const fat=e.agg+.5*e.pow+e.fat+A[i].pen.fat;X.E-=Math.max(0,fat-X.cnd/2)}
+      const fat=e.agg+.5*e.pow+e.fat+A[i].pen.fat+X.giant;X.E-=Math.max(0,fat-X.cnd/2)}
     /* --- stoppages --- */
     const ko=[0,1].filter(i=>st[i]>=99);
     if(!ended&&ko.length){const w=ko.length===2?(D[0].ratio>=D[1].ratio?0:1):ko[0];const rr=D[w].ratio/2.5;ended={type:'KO',w,why:'counted out',t:clamp(180*rand()/rr,8,178)}}
@@ -519,6 +522,7 @@ function simulate(FA,FB,rounds){
     out.result={type,w:type.includes('Draw')?null:wa>wb?0:1,round:rounds,t:180,decision:true};
   }
   out.final=S.map(x=>condText(x,true));
+  out.ip=S.map((x,i)=>out.result.type==='KO'&&out.result.w===1-i?25:Math.max(0,Math.round(x.ipDmg-5*x.chn)));
   return out;
 }
 function scoreRound(st,kd,sl,PU,D){
@@ -526,7 +530,7 @@ function scoreRound(st,kd,sl,PU,D){
   if(st[0]!==st[1])w=st[0]>st[1]?0:1;
   else{
     const sc=PU.map(p=>(p.pl*2+p.rl*1.5+p.jl)*(1+gauss()*.08));
-    if(Math.abs(sc[0]-sc[1])/Math.max(1,sc[0],sc[1])<.05){sc[0]*=1+.01*D[0].end;sc[1]*=1+.01*D[1].end}
+    if(Math.abs(sc[0]-sc[1])/Math.max(1,sc[0],sc[1])<.05){sc[0]*=1+.01*(D[0].end+D[0].stun)/2;sc[1]*=1+.01*(D[1].end+D[1].stun)/2}
     if(Math.abs(sc[0]-sc[1])<.1)return[10,10];
     w=sc[0]>sc[1]?0:1;
   }
@@ -729,6 +733,8 @@ function bannerSVG(){
 function fName(uid,fid){const c=cards[uid]||{};const f=[...(c.fighters||[])].find(x=>x.id===fid);return f?f.name:((botF['bot:'+uid+':'+fid]||{}).name||'A retired fighter')}
 function currentChamps(){const m={};bouts.filter(b=>b.status==='done'&&b.belt&&b.summary&&b.summary.w!=null).sort((a,b)=>a.fight_date.localeCompare(b.fight_date)||a.id-b.id).forEach(b=>{const w=b.summary.w===0;(m[b.div]=m[b.div]||{})[b.belt]={uid:w?b.red_user:b.blue_user,fid:w?b.red_fid:b.blue_fid}});return m}
 function beltsOf(uid,fid){const m=currentChamps(),out=[];for(const d in m)for(const bl in m[d])if(m[d][bl].uid===uid&&m[d][bl].fid===fid)out.push(d+' '+bl);return out}
+const latestNews=()=>topics.filter(t=>t.forum==='announce').sort((a,b)=>(b.at||0)-(a.at||0))[0];
+const newsLine=()=>{const n=latestNews();return n?`<a data-go="topic:${n.id}"><b>${esc(n.title)}</b></a> <span class="small mute">(${dt(n.at).slice(0,10)})</span> · <a data-go="forum:announce">all news</a>`:'<a data-go="forum:announce">Contenders News</a>'};
 function titleFights(){return bouts.filter(b=>b.status==='done'&&b.belt&&b.summary).slice(0,9).map(b=>{const w=b.summary.w,ru=[b.red_user,b.red_fid],bu=[b.blue_user,b.blue_fid],W=w===1?bu:ru,L=w===1?ru:bu;
   return{id:b.id,div:b.div,belt:b.belt,draw:w==null,winner:fName(...W),wu:W[0],wf:W[1],wgym:gymOf(W[0]),loser:fName(...L),lu:L[0],lf:L[1],lgym:gymOf(L[0]),how:b.summary.how}})}
 function homeHTML(){
@@ -737,6 +743,7 @@ function homeHTML(){
   <p class="tag"><b>Build your fighter.</b> <b>Take him to the top.</b> <b>Outthink managers from everywhere.</b></p>
   <p class="small center">Three world titles in every division: the <b>WBC</b>, the <b>WBA</b> and the <b>WBO</b>. Check out the <a data-go="champs">reigning champs</a> and make your own mark.</p>
   <p class="cta"><a data-go="register">Sign Up to Play (Free!)</a> or <a data-go="gym">Enter Your Gym</a><br><a data-go="fight">Try it Out</a></p>
+  <p class="center news">Contenders News: ${newsLine()}</p>
   <h2 class="center">Latest Contenders World Championship Action</h2>
   ${tf.length?`<table class="grid champ">${tf.map(l=>`<tr><td rowspan="2" class="pw">${POW}<a data-go="champs">${esc(l.div)}</a><br><span class="small">${esc(l.belt)}</span></td><td><a data-go="opub:${l.wu}:${encN(l.wf)}">${esc(l.winner)}</a> (<a data-go="gympub:${l.wu}">${esc(l.wgym)}</a>)${l.draw?' drew':''}</td></tr>
   <tr><td>vs <a data-go="opub:${l.lu}:${encN(l.lf)}">${esc(l.loser)}</a> (<a data-go="gympub:${l.lu}">${esc(l.lgym)}</a>), ${esc(l.how)} <a data-go="lreport:${l.id}" class="small">highlights</a></td></tr>`).join('')}</table>`:
@@ -811,7 +818,7 @@ function boutRes(b,red){const m=b.summary||{};const how=m.how||'';if(m.w==null)r
 /* apply finished bouts to my fighters' records once (records, rating/status, training points, history) */
 function applyLeague(){if(!ME)return;state.applied=state.applied||{};let ch=false;
   myDone().forEach(({b,k,x})=>{if(state.applied[b.id])return;const F=FTR(k);state.applied[b.id]=1;ch=true;if(!F||!b.summary)return;
-    applyResult(F,x.red?0:1,b.summary,{id:'L'+b.id,bout:b.id,oid:null,oh:x.o.hgt!=null?ht(60+x.o.hgt):'',opp:x.o.name,ogym:x.gym,div:b.div,belt:b.belt,date:x.date.replace(/^\w+, /,''),week:state.week});
+    applyResult(F,x.red?0:1,{...b.summary,ip:b.summary.ip?b.summary.ip[x.red?0:1]:undefined},{id:'L'+b.id,bout:b.id,oid:null,oh:x.o.hgt!=null?ht(60+x.o.hgt):'',opp:x.o.name,ogym:x.gym,div:b.div,belt:b.belt,date:x.date.replace(/^\w+, /,''),week:state.week});
     if(b.summary.w!=null&&b.belt){state.champs[b.div]=state.champs[b.div]||{};if((b.summary.w===0)===x.red)state.champs[b.div][b.belt]=F.name;else if(state.champs[b.div][b.belt]===F.name)delete state.champs[b.div][b.belt]}});
   if(ch)save()}
 const STAR=champ=>`<span class="star" style="color:${champ?'#e8a400':'#3b6fd8'}">&#9733;</span>`;
@@ -841,7 +848,7 @@ function gymHTML(){
   const tot=[0,0,0,0];ROSTER().forEach(s=>state[s].rec.forEach((v,i)=>tot[i]+=v));
   let titles=0;for(const d in state.champs)titles+=Object.keys(state.champs[d]).length;
   return`<h1>${esc(myGym())}</h1>${ME?`<p class="small"><a data-go="gympub:${ME}">See your gym the way other managers see it</a></p>`:''}
-  <p><a data-go="forum:announce">Contenders News</a> · Week ${state.week}</p>
+  <p class="news">Contenders News: ${newsLine()}</p>
   <table class="plain"><tr><th>Region</th><th>Record</th><th>Titles</th></tr>
   <tr><td><b>Contenders</b></td><td>${tot[0]}-${tot[1]}-${tot[2]}</td><td class="cr">${titles}</td></tr></table>
   <p><a data-go="fcards">Recent Fight Cards</a><br><a data-go="results">Recent Results</a></p>
@@ -1005,7 +1012,7 @@ function recordHTML(side){
   <tr><td>Minimum Weight</td><td colspan="3">${minWeight(F)} pounds (${Math.round(minWeight(F)*.4536)} kilograms)</td></tr></table>
   <p>${n} fights in the <a data-go="frank">${esc(divOf(F))}weight</a> division out of ${esc(F.home||'parts unknown')} for the ${esc(myGym())} gym. ${prime}</p>
   <p>${myBout(side)?`${n}'s next bout: ${boutLine(myBout(side))}`:`${n} has no bouts scheduled.${nightOf(divOf(F))?` ${esc(divOf(F))}weights fight on <b>${nightOf(divOf(F))}s</b>.`:''}`}</p>
-  <p>${n} is training <b>${tr[F.train||'str']}</b>${(F.status||0)>=2?` with <b>${tr[F.train2||'cnd']}</b> as his secondary program`:''}, but you can instruct him to <a data-go="train:${side}">train for something else</a>.</p>
+  <p>${n} is training <b>${tr[F.train||'str']}</b>, but you can instruct him to <a data-go="train:${side}">train for something else</a>.</p>
   <p>${n} is currently using the <b>${esc(F.planName||'Basic')}</b> fight plan. He may</p>
   <ul><li>choose a different fight plan: <select data-useplan="${side}">${planNames().map(p=>`<option${p===F.planName?' selected':''}>${esc(p)}</option>`).join('')}</select></li>
   <li><a data-go="pf:create">create a new fight plan</a></li>
@@ -1025,10 +1032,10 @@ function trainHTML(side){
   const F=state[side],opt=v=>PROGS.map(([k,l])=>`<option value="${k}"${k===v?' selected':''}>${l}</option>`).join('');
   return`<h1>Training</h1>
   <table class="plain"><tr><td>Fighter's Name</td><td><select id="trWho">${ROSTER().map(s=>`<option value="${s}"${s===side?' selected':''}>${esc(state[s].name)}</option>`).join('')}</select></td></tr>
-  <tr><td>Primary Training Program</td><td><select data-train="${side}">${opt(F.train||'str')}</select></td></tr>
-  <tr><td>Secondary Training Program (fast track)</td><td><select data-train2="${side}">${opt(F.train2||'cnd')}</select></td></tr></table>
+  <tr><td>Training Program</td><td><select data-train="${side}">${opt(F.train||'str')}</select></td></tr>
+</table>
   <p><button data-go="rec:${side}">Submit Form</button></p>
-  <div class="note"><b>How training works:</b> his primary program gives him +1 in that ability for each fight. When he wins, his status goes up 1 and he keeps an ability point in his primary program. From his third win on he's on the <b>fast track</b> and also gets a point in his secondary program, so every win is worth two points. Status tops out at 28.</div>`;
+  <div class="note"><b>How training works:</b> his training program gives him +1 in that ability for each fight. When he wins, his status goes up 1 and he keeps that point for good. At status 6 and every even status after it (8, 10, 12...), a win is worth a second point, which goes at random to STR, SPD, AGL or CND. Status tops out at 28.</div>`;
 }
 const TRAIN_FLAVOR={str:'has been lifting weights every chance he gets (STR)',kp:'has been pounding the heavy bag until it splits (KP)',spd:'has been working the speed bag every morning (SPD)',
   agl:'has been skipping rope for hours at a time (AGL)',chn:'has been taking shots in sparring to toughen up (CHN)',cnd:'has been running miles before sunrise (CND)'};
@@ -1120,6 +1127,9 @@ function leagueReportHTML(id){
   return`<div class="rep">${reportHTML(r.result.f,b,r.result.f.rounds.length)}</div><p class="small"><a data-go="results">Recent Results</a> | <a data-go="fcards">Recent Fight Cards</a></p>`;
 }
 function savedReportHTML(id){const r=state.reports[id];if(!r)return`<p>That fight report is no longer saved.</p>`;return`<div class="rep">${reportHTML(r.f,r.b,r.f.rounds.length)}</div>`}
+/* Everything a fighter brings into the ring: weigh-in, the +1 from training, prime, the landing constant, and weights for the giant-killer rule */
+function prepFighter(F,FA,FB,div){const c=JSON.parse(JSON.stringify(F));const wi=weighIn(F,div);c.fightW=wi.fight;c.endMul=wi.endMul;if(c.train)c[c.train]+=1;c.primeMul=primeF(c);
+  c.k=12+(((FA.rating||0)+(FB.rating||0))/2)/3;c.minW=minWeight(F);c.divLim=(DIVS.find(d=>d[0]===div)||[0,160])[1];return c}
 function startFight(){
   const bad=planErr();if(bad){$('#err').textContent=bad;return}
   const[rs,belt]=state.bout.split('|');
@@ -1127,7 +1137,7 @@ function startFight(){
   const[RC,BC]=corners();if(!RC||!BC||RC===BC){$('#err').textContent='Pick two different fighters.';return}const FA=getF(RC),FB=getF(BC);
   bout={rounds:+rs,belt:belt||null,div:state.div,done:false,gym:myGym(),ids:[RC,BC],recs:[FA.rec.slice(),FB.rec.slice()],
     date:d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'}).replace(/,/g,'').replace(/(\d+) (\d{4})$/,'$1, $2')};
-  const prepF=F=>{const c=JSON.parse(JSON.stringify(F));const wi=weighIn(F,state.div);c.fightW=wi.fight;c.endMul=wi.endMul;if(c.train)c[c.train]+=1;const pf=primeF(c);c.primeMul=pf;c.k=12+(((FA.rating||0)+(FB.rating||0))/2)/3;return c};
+  const prepF=F=>prepFighter(F,FA,FB,state.div);
   fight=simulate(prepF(FA),prepF(FB),bout.rounds);shown=1;
   if(shown>=fight.rounds.length)finish();render();
 }
@@ -1137,10 +1147,12 @@ function applyResult(F,i,r,m){
   else if(r.w===i){F.rec[0]++;if(!r.decision)F.rec[3]++;icon=r.decision?'w':'ko';res=`won by ${how}`}
   else{F.rec[1]++;icon='l';res=`lost by ${how}`}
   F.rating=Math.min(28,(F.rating||0)+1);
-  if(r.w===i){F.streak=(F.streak||0)+1;if((F.status||0)<28){F.status=(F.status||0)+1;const k=F.train||'str';F[k]=Math.min(MAX,F[k]+1);
-    if(F.status>=3){const k2=F.train2||'cnd';F[k2]=Math.min(MAX,F[k2]+1)}}}
+  /* WeBL: each status point gives 1 ability point (the trained ability); at status 6 and every even level after, a 2nd point at random from STR, SPD, AGL, CND */
+  F.gains=null;
+  if(r.w===i){F.streak=(F.streak||0)+1;if((F.status||0)<28){F.status=(F.status||0)+1;const k=F.train||'str';F[k]=Math.min(MAX,F[k]+1);F.gains=[k];
+    if(F.status>=6&&F.status%2===0){const k2=pick(['str','spd','agl','cnd']);F[k2]=Math.min(MAX,F[k2]+1);F.gains.push(k2)}}}
   else F.streak=0;
-  if(r.w!=null&&r.w!==i&&r.type==='KO'){F.ip=(F.ip||0)+25}
+  F.ip=(F.ip||0)+(r.ip!=null?r.ip:(r.w!=null&&r.w!==i&&r.type==='KO'?25:0));
   if((F.ip||0)>=500){F.ip-=500;F.aploss=(F.aploss||0)+1;const k3=pick(['str','spd','agl','chn','cnd']);F[k3]=Math.max(1,F[k3]-1)}
   F.hist=F.hist||[];F.hist.unshift({...m,plan:F.planName||'Basic',res,score:r.score,icon});F.hist=F.hist.slice(0,40);
 }
@@ -1171,7 +1183,7 @@ function forumHTML(fid){
   const list=topics.filter(t=>t.forum===f[0]);
   return`${forumNav()}<h1>The ${esc(f[1])} Forum</h1><p class="sans">${esc(f[2])}</p>${needDB()}
   ${dbState==='on'?(ME?`<p class="sans"><a data-go="newtopic:${f[0]}"><b>Start a new topic</b></a></p>`:needLogin('post')):''}
-  <div class="sans">${list.length?list.map(t=>`<div class="topic"><a data-go="topic:${t.id}">${esc(t.title)}</a> (${t.count||0}) by <b>${esc(gymOf(t.by))}</b> Last post on ${dt(t.last||t.at)}.</div>`).join(''):(dbState==='on'?'<p class="mute">No topics yet. Be the first.</p>':'')}</div>`;
+  <div class="sans">${list.length?list.map(t=>`<div class="topic"><a data-go="topic:${t.id}">${esc(t.title)}</a> (${t.count||0}) by <b>${esc(t.by?gymOf(t.by):(t.forum==='announce'?'The Commissioner':gymOf(t.by)))}</b> Last post on ${dt(t.last||t.at)}.</div>`).join(''):(dbState==='on'?'<p class="mute">No topics yet. Be the first.</p>':'')}</div>`;
 }
 function newTopicHTML(fid){
   const f=FORUMS.find(x=>x[0]===fid)||FORUMS[0];
@@ -1187,7 +1199,7 @@ function topicHTML(tid){
   if(SB&&postsTopic!==tid){postsTopic=tid;posts=[];loadPosts(tid)}
   if(!t)return`${forumNav()}${needDB()}<p class="mute">Loading topic...</p>`;
   return`${forumNav()}<h1>${esc(t.title)}</h1><p class="sans small"><a data-go="forum:${t.forum}">Back to ${esc((FORUMS.find(f=>f[0]===t.forum)||['',''])[1])}</a></p>
-  <div class="sans">${posts.map(p=>`<div class="post"><div class="meta">Posted by: <a data-dm="${esc(p.by)}" title="Send a message">${esc(gymOf(p.by))}</a><br>Date: <span>${dt(p.at)}</span></div><p>${bodyHTML(p.text)}</p></div>`).join('')}</div>
+  <div class="sans">${posts.map(p=>`<div class="post"><div class="meta">Posted by: ${p.by?`<a data-dm="${esc(p.by)}" title="Send a message">${esc(gymOf(p.by))}</a>`:`<b>${postsTopic&&(topics.find(t=>t.id===postsTopic)||{}).forum==='announce'?'The Commissioner':gymOf(null)}</b>`}<br>Date: <span>${dt(p.at)}</span></div><p>${bodyHTML(p.text)}</p></div>`).join('')}</div>
   ${dbState==='on'?(ME?`<hr><p class="sans"><b>Reply</b></p><textarea id="rBody" data-keep rows="5"></textarea><p><button id="postReply" data-topic="${t.id}">Post Reply</button></p>`:needLogin('reply')):''}`;
 }
 function msgsHTML(){
@@ -1216,7 +1228,7 @@ function simbotHTML(){
 function runSimbot(n){
   const bad=planErr();if(bad){$('#simOut').innerHTML=`<p class="cr">${bad}</p>`;return}
   const rs=+state.bout.split('|')[0],c={w0:0,k0:0,w1:0,k1:0,d:0};let rounds=0;
-  const[RC,BC]=corners();if(!RC||!BC)return;const prep=F=>{const c=JSON.parse(JSON.stringify(F));const wi=weighIn(F,state.div);c.fightW=wi.fight;c.endMul=wi.endMul;return c};const PA=prep(getF(RC)),PB=prep(getF(BC));for(let i=0;i<n;i++){const f=simulate(PA,PB,rs),r=f.result;if(r.w===null)c.d++;else{c['w'+r.w]++;if(!r.decision)c['k'+r.w]++}rounds+=f.rounds.length}
+  const[RC,BC]=corners();if(!RC||!BC)return;const FA=getF(RC),FB=getF(BC),PA=prepFighter(FA,FA,FB,state.div),PB=prepFighter(FB,FA,FB,state.div);for(let i=0;i<n;i++){const f=simulate(PA,PB,rs),r=f.result;if(r.w===null)c.d++;else{c['w'+r.w]++;if(!r.decision)c['k'+r.w]++}rounds+=f.rounds.length}
   const p=x=>(100*x/n).toFixed(1)+'%';
   $('#simOut').innerHTML=`<table class="grid"><tr><th></th><th>Wins</th><th>By stoppage</th><th>By decision</th></tr>
   <tr><td class="red">${esc(getF(RC).name)}</td><td class="n">${p(c.w0)}</td><td class="n">${p(c.k0)}</td><td class="n">${p(c.w0-c.k0)}</td></tr>
@@ -1377,9 +1389,9 @@ if endurance_percent < 50 then 1/1/10</pre>`,
   <li><b>Rating</b> is experience. It goes up 1 every fight, to a maximum of 28.</li>
   <li><b>Status</b> goes up 1 with every win, to a maximum of 28.</li>
   <li>A fighter is in his <b>prime</b> when rating and status are equal. The further apart they are, the further he is off his best.</li>
-  <li><b>Primary training</b> gives +1 in that ability for each fight. Wins 1 and 2 each add a permanent point there.</li>
-  <li><b>Fast track:</b> from the third win on, every win adds a point to the primary program <b>and</b> a point to the secondary program.</li>
-  <li><b>Injury points:</b> a knockout loss adds 25. Every 500 costs him an ability point (AP Loss).</li></ul>
+  <li><b>Training</b> gives +1 in that ability for each fight. A win raises status by 1 and makes that point permanent.</li>
+  <li><b>Bonus points:</b> at status 6 and every even status after it, a win also adds a second point at random to STR, SPD, AGL or CND.</li>
+  <li><b>Injury points:</b> each fight, damage up to 5 times his CHN is free and the rest becomes injury points. A knockout loss counts as 25. Every 500 costs him an ability point (AP Loss).</li></ul>
   <p>Set training from the fighter's page: "train for something else."</p>`,
  schedule:()=>`<ul>
   <li><b>Each division fights on its own night every week:</b></li></ul>${SCHED_TABLE()}<ul>
@@ -1422,7 +1434,7 @@ if score < 0 and round >= 8 then 8/7/5</pre>
   <h2>3. Test it</h2>
   <p>Run <a data-go="simbot">Simbot</a> 100 times against your other fighter to see how the plan holds up, then read a full <a data-go="fight">practice fight</a> report to see why.</p>
   <h2>4. Training</h2>
-  <p>On the fighter's page, pick what he trains. Wins raise his status and add ability points. From his third win on he's on the fast track and gets two points per win.</p>
+  <p>On the fighter's page, pick what he trains. Wins raise his status and add ability points. From status 6 on, every second status level is worth two points.</p>
   <h2>5. Fight night</h2>
   <p>Each division has its own weekly fight night. The lighter divisions fight Sunday through Tuesday, the middle and big men Wednesday through Friday, and heavyweights fight alone on Saturday. Have your plan saved before his night. Fights run on their own, then check his record for the result and <i>highlights</i> for the full report. See <a data-go="help:schedule">The Fight Schedule</a>.</p>
   <h2>6. Scout and talk</h2>

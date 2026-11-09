@@ -18,13 +18,16 @@ Contenders is a text-based boxing strategy game modeled on the old Web Boxing Le
 - `profiles.location` is the gym's location shown in Gym Rankings.
 - `retire_gym()` RPC deletes the caller's account.
 - **Bot gyms:** four computer-run gyms (profiles.is_bot = true, ids 00000000-0000-0000-0000-0000000000b0..b3, no password so nobody can log in as them). Their gym_state is readable by everyone so players can spar with them in Practice Fights. Generator: `bots/gen.py`. Weight formula: (160 + 9.2*(height_in - 68)) * build + 1.5*(STR-12) - 1.0*(AGL-12).
-- Known balance issue (owner aware): in the current engine SPD/AGL builds dominate STR/CHN builds; waiting on the real energy point table before changing the engine.
+- **Engine source of truth:** WeBL's published rules page https://webl.vivi.com/eko/gory-details.html (owner-approved Nov 9, 2026). Energy points enter the damage formula raw (there is no separate table). Remaining ambiguity: landing constant k = 12 + (average of the two ratings)/3 is our reading of "1/3 of the two fighters' rating". Training follows WeBL: +1 trained point per status gain, plus a random STR/SPD/AGL/CND point at status 6 and every even status after.
+- League bouts are run with `prepFighter()` + `simulate()` from the built index.html; the result's `ip` (injury points per corner) goes into `bouts.summary.ip`.
 
 ## Rules for maintenance
+- **Transparency rule (owner, Nov 9, 2026):** every owner-approved change to the simulator, rules or any major gameplay change is posted to Contenders News (forum `announce`, topic and post with author NULL, shown as "The Commissioner") the moment it goes live. Say it was approved by the owner, and that the owner has no access to anyone's plans, gyms or fighters.
+- Bot gyms only use public information (records, fight reports) to plan against a manager's fighter, never his plan text.
 - The owner approves anything that changes gameplay, rules, the simulator, the schedule, titles, or a manager's fighters or records.
 - The scheduled commissioner check is REPORT-ONLY: it reads and reports, and never changes code, the database or settings. Bug fixes are made only after the owner approves them.
 - Never copy WeBL's text or graphics. Match its layout and mechanics in original wording.
 - League fights are **not** scheduled yet. Do not start weekly fights without the owner's approval.
 
 ## Open questions waiting on the WeBL forum
-Energy point (AGG/POW/DEF) effect table, the prime penalty when rating and status differ, weight/build rules, the "rating" constant in the punch formula, stuns beyond three, and the full injury location list.
+Answered by the rules page except: the prime penalty when rating and status differ, build weight rules, the exact meaning of the rating constant, and stun thresholds beyond three.

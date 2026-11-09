@@ -12,27 +12,27 @@ const RT=['straight right','cross','right hand','straight right'];
 const TGT_H=['jaw','face','eye','nose','temple','head','chin'];
 const TGT_B=['stomach','ribs','solar plexus','body','midsection','kidney'];
 const NUMS=['ONE','TWO','THREE','FOUR','FIVE','SIX','SEVEN','EIGHT','NINE','TEN'];
-const INJ_LOCS=[['cut','left eye',1],['cut','right eye',1],['cut','forehead',1],['cut','lip',1],['swell','left eye',2],['swell','right eye',2],['nose','nose',1],['jaw','jaw',1]];
+const INJ_LOCS=[['cut','above right eye',1],['cut','above left eye',1],['cut','below right eye',1],['cut','below left eye',1],['swell','right eye',2],['swell','left eye',2],['nose','nose',1],['jaw','jaw',1]];
 const CUTRES={1:1.5,2:1,3:.5};
 const K_RATING=12;
-let EP_A=3,EP_B=.5,STUN_K=.8;
-const ep=x=>EP_A+EP_B*x;
 
 function newSev(){const r=rand();return r<2/3?1:r<8/9?2:r<26/27?3:4}
 function promote(l){if(l>=3)return 4;if(l===2)return rand()<2/3?3:4;const r=rand();return r<2/3?2:r<8/9?3:4}
 function injEnd(i){if(i.type==='cut')return i.lvl;if(i.type==='nose')return i.lvl>=2?i.lvl:0;if(i.type==='jaw')return i.lvl>=4?10:0;return 0}
 function injText(i){
-  if(i.type==='cut')return`${['','a minor cut','a cut','a serious cut','a gash'][i.lvl]} ${i.loc==='lip'?'on his lip':i.loc==='forehead'?'on his forehead':'over his '+i.loc}`;
+  if(i.type==='cut')return`${['','a minor cut','a cut','a serious cut','a gash'][i.lvl]} ${i.loc.startsWith('below')?'under his '+i.loc.slice(6):'over his '+i.loc.replace(/^above /,'')}`;
   if(i.type==='swell')return['',`swelling around his ${i.loc}`,`his ${i.loc} swelling badly`,`his ${i.loc} badly swollen`,`his ${i.loc} swollen shut`][i.lvl];
   if(i.type==='nose')return['','a bloody nose','a fractured nose','a fractured nose','a broken nose'][i.lvl];
-  return i.lvl>=4?'a broken jaw':'a sore jaw';
+  return['','a bloody lip','a bloody mouth','a broken tooth','a broken jaw'][i.lvl];
 }
 function prep(F,c){
   let str=F.str,kp=F.kp;const cap=Math.floor(str/3);if(kp>cap){str+=kp-cap;kp=cap}
   let parsed;try{parsed=parsePlan(typeof F.plan==='string'?F.plan:'6/6/8')}catch(e){parsed={stmts:[],errors:[]}}
   const pm=F.primeMul||1;
   return{F,c,n:escS(lastName(F.name)),str:str*pm,kp,spd:F.spd*pm,agl:F.agl*pm,chn:F.chn,cnd:F.cnd,hgt:F.hgt,cutres:F.cut,E0:10*F.cnd,E:10*F.cnd*(F.endMul||1),inj:[],fw:F.fightW||0,
-    parsed,perc:0,won:0,lost:0,stuns:0,kds:0,warn:0,endFrac:1};
+    parsed,perc:0,won:0,lost:0,stuns:0,kds:0,warn:0,endFrac:1,ipDmg:0,
+    fights:(F.rec||[0,0,0]).slice(0,3).reduce((a,b)=>a+b,0),
+    giant:(F.divLim||0)>=200&&(F.minW||0)>200?((F.minW-200)/10):0};
 }
 const oppState=f=>f>=2/3?0:f>=1/3?1:2;
 function ctxFor(S,i,r){const x=S[i],y=S[1-i];
@@ -62,11 +62,11 @@ function simulate(FA,FB,rounds){
     const A=base.map(b=>({...b}));
     for(let i=0;i<2;i++){const j=1-i,me=P[i],op=P[j],e=eff[i],o=eff[j],b=base[i],ob=base[j],a=A[i],oa=A[j];
       switch(me.style){
-        case'inside':a.str+=1+Math.max(0,b.str-ob.str)/2;a.agl*=.9;o.dmgMul*=1.1;e.notes.push('His STR is increased by fighting inside.');break;
+        case'inside':a.str+=1+Math.max(0,b.str-ob.str)/2;o.dmgMul*=1.1;e.notes.push('His STR is increased by fighting inside.');break;
         case'clinch':{a.agl+=1+(b.str>ob.str?(b.str-ob.str)/2:0);const lost=Math.min(e.agg,.15*op.agg);e.agg-=lost;e.rest+=lost;e.notes.push('His AGG is reduced by clinching.');break}
         case'feint':a.spd+=1+Math.max(0,b.spd-ob.spd)/2;e.fat+=1;e.notes.push('His SPD is increased by feinting.');break;
         case'counter':{a.str+=1;const adv=(b.spd+S[i].hgt)-(ob.spd+S[j].hgt);
-          if(adv>0){a.agl+=.25*adv;oa.agl=Math.max(ob.agl*.5,oa.agl-.25*adv)}else if(adv<0){oa.agl+=.25*-adv;a.agl-=.25*-adv;e.notes.push('His counter-punching backfires!')}
+          if(adv>0){a.agl+=adv/3;oa.agl=Math.max(ob.agl*.5,oa.agl-adv/3)}else if(adv<0){oa.agl+=-adv/3;a.agl=Math.max(b.agl*.5,a.agl-(-adv)/3);e.notes.push('His counter-punching backfires!')}
           e.agg*=.85;e.notes.push('His AGG is reduced by counter-punching.');break}
         case'ring':a.agl+=1+Math.max(0,b.agl-ob.agl)/2;e.fat+=1;e.notes.push('His AGL is increased by using the ring.');break;
         case'ropes':if(b.agl>ob.agl&&ob.agl>8)oa.agl=Math.max(8,oa.agl-(2/3)*(b.agl-ob.agl));a.agl-=1;e.notes.push('He is laying on the ropes.');break;
@@ -81,6 +81,7 @@ function simulate(FA,FB,rounds){
         if(S[i].warn>=2){e.deduct=(e.deduct||0)+1;R.pre.push(`<p class="r">${S[i].n} has a point deducted!</p>`)}
         if(rand()<.05*Math.pow(2,S[i].warn-1)){ended={type:'DQ',w:1-i,why:`${S[i].n} was disqualified for fouling`,t:30+rand()*140,dq:true}}}
     }
+    for(let i=0;i<2;i++)if(!eff[i].dirty&&rand()<.01){S[i].warn++;R.pre.push(`<p>The referee warns ${S[i].n} for an accidental low blow.</p>`)}
     const A2=A.map(a=>({...a}));
     const hd=S[0].hgt-S[1].hgt;
     if(hd!==0){const t=hd>0?0:1,bonus=Math.abs(hd)*(P[t].style==='outside'?.75:.5);A2[t].spd+=bonus;A2[t].agl+=bonus}
@@ -91,7 +92,8 @@ function simulate(FA,FB,rounds){
         if(j.type==='swell'&&j.lvl>=2){a.pen.spd+=.5*j.lvl;a.pen.agl+=.5*j.lvl}
         if(j.type==='nose')a.pen.fat+=1;
       }
-      const f=clamp(x.E/x.E0,.05,1);
+      const N=eff[i].agg+.5*eff[i].pow,imm=Math.max(0,N-x.cnd);a.imm=imm;
+      const f=clamp((x.E-imm)/x.E0,.05,1);a.f=f;
       a.str=Math.max(1,a.str*f);a.spd=Math.max(1,a.spd*f-a.pen.spd);a.agl=Math.max(1,a.agl*f-a.pen.agl);
     });
     A.splice(0,2,...A2);
@@ -102,13 +104,14 @@ function simulate(FA,FB,rounds){
     const luck=[0,1].map(()=>.8+.4*(rand()+rand())/2);
     const thrMul=[1,1],lkMul=[1,1];
     const calc=()=>[0,1].map(i=>{
-      const j=1-i,e=eff[i],a=A[i],o=A[j],od=ep(eff[j].def);
-      const agg=Math.max(.5,e.agg*thrMul[i]),pow=ep(e.pow),lk=luck[i]*lkMul[i];
-      const core=Math.sqrt(ep(agg)*a.spd)/(od*o.agl);
-      const base=pow*a.str*core*e.dmgMul*lk;
+      const j=1-i,e=eff[i],a=A[i],o=A[j],od=Math.max(1,eff[j].def);
+      const agg=Math.max(1,e.agg*thrMul[i]),pow=Math.max(1,e.pow),lk=luck[i]*lkMul[i];
+      const off=Math.sqrt(agg*a.spd)*pow*e.dmgMul*lk;
+      const raw=a.str*off/(od*o.agl);
       const tE={Head:.8,Body:1.2,Cut:.9,Opp:1}[e.tgt],tS={Head:1.2,Body:.8,Cut:.9,Opp:1}[e.tgt];
-      const stun=STUN_K*pow*(a.str+3*S[i].kp)*core*e.dmgMul*lk*tS;
-      return{base,end:base*tE,stun,ratio:stun/S[j].chn,agg,lk};
+      const sDef=Math.max(1,o.agl+(S[j].chn-10)*(o.f||1));
+      const stun=(a.str+3*S[i].kp)*off/(od*sDef)*tS;
+      return{base:raw/lk/e.dmgMul,end:raw*tE,stun,ratio:stun/S[j].chn,agg,lk};
     });
     let D=calc();
     const stunsOf=ratio=>ratio>=2.5?99:ratio>=2.4?4:ratio>=2.25?3:ratio>=2?2:ratio>=1.5?1:0;
@@ -129,8 +132,8 @@ function simulate(FA,FB,rounds){
     /* --- endurance damage, injuries, fatigue --- */
     const injNews=[[],[]];
     for(let i=0;i<2;i++){const j=1-i,X=S[i],Y=S[j],e=eff[i];
-      Y.E-=D[i].end;
-      let p=Math.pow(D[i].base,2)/10/100;
+      Y.E-=D[i].end;Y.ipDmg+=D[i].base;
+      let p=Math.pow(D[i].base,2)/10/100*(1+.005*Y.fights);
       p*=e.tgt==='Head'||e.tgt==='Cut'?1.5:e.tgt==='Body'?.25:1;p*=CUTRES[Y.cutres]||1;p=Math.min(.5,p);
       for(const ex of Y.inj.slice()){
         if(rand()<p*(e.tgt==='Cut'?1.5:1)){
@@ -149,7 +152,7 @@ function simulate(FA,FB,rounds){
       }
     }
     for(let i=0;i<2;i++){const X=S[i],e=eff[i];
-      const fat=e.agg+.5*e.pow+e.fat+A[i].pen.fat;X.E-=Math.max(0,fat-X.cnd/2)}
+      const fat=e.agg+.5*e.pow+e.fat+A[i].pen.fat+X.giant;X.E-=Math.max(0,fat-X.cnd/2)}
     /* --- stoppages --- */
     const ko=[0,1].filter(i=>st[i]>=99);
     if(!ended&&ko.length){const w=ko.length===2?(D[0].ratio>=D[1].ratio?0:1):ko[0];const rr=D[w].ratio/2.5;ended={type:'KO',w,why:'counted out',t:clamp(180*rand()/rr,8,178)}}
@@ -196,6 +199,7 @@ function simulate(FA,FB,rounds){
     out.result={type,w:type.includes('Draw')?null:wa>wb?0:1,round:rounds,t:180,decision:true};
   }
   out.final=S.map(x=>condText(x,true));
+  out.ip=S.map((x,i)=>out.result.type==='KO'&&out.result.w===1-i?25:Math.max(0,Math.round(x.ipDmg-5*x.chn)));
   return out;
 }
 function scoreRound(st,kd,sl,PU,D){
@@ -203,7 +207,7 @@ function scoreRound(st,kd,sl,PU,D){
   if(st[0]!==st[1])w=st[0]>st[1]?0:1;
   else{
     const sc=PU.map(p=>(p.pl*2+p.rl*1.5+p.jl)*(1+gauss()*.08));
-    if(Math.abs(sc[0]-sc[1])/Math.max(1,sc[0],sc[1])<.05){sc[0]*=1+.01*D[0].end;sc[1]*=1+.01*D[1].end}
+    if(Math.abs(sc[0]-sc[1])/Math.max(1,sc[0],sc[1])<.05){sc[0]*=1+.01*(D[0].end+D[0].stun)/2;sc[1]*=1+.01*(D[1].end+D[1].stun)/2}
     if(Math.abs(sc[0]-sc[1])<.1)return[10,10];
     w=sc[0]>sc[1]?0:1;
   }
