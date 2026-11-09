@@ -31,7 +31,7 @@ function prep(F,c){
   let str=F.str,kp=F.kp;const cap=Math.floor(str/3);if(kp>cap){str+=kp-cap;kp=cap}
   let parsed;try{parsed=parsePlan(typeof F.plan==='string'?F.plan:'6/6/8')}catch(e){parsed={stmts:[],errors:[]}}
   const pm=F.primeMul||1;
-  return{F,c,n:escS(lastName(F.name)),str:str*pm,kp,spd:F.spd*pm,agl:F.agl*pm,chn:F.chn,cnd:F.cnd,hgt:F.hgt,cutres:F.cut,E0:10*F.cnd,E:10*F.cnd,inj:[],
+  return{F,c,n:escS(lastName(F.name)),str:str*pm,kp,spd:F.spd*pm,agl:F.agl*pm,chn:F.chn,cnd:F.cnd,hgt:F.hgt,cutres:F.cut,E0:10*F.cnd,E:10*F.cnd*(F.endMul||1),inj:[],fw:F.fightW||0,
     parsed,perc:0,won:0,lost:0,stuns:0,kds:0,warn:0,endFrac:1};
 }
 const oppState=f=>f>=2/3?0:f>=1/3?1:2;
@@ -45,6 +45,8 @@ function ctxFor(S,i,r){const x=S[i],y=S[1-i];
 function simulate(FA,FB,rounds){
   const S=[prep(FA,'red'),prep(FB,'blue')];
   const out={rounds:[],result:null,S};
+  /* weight advantage: heavier man gets +1 STR per 5% (fractions kept), nothing above 300 lb */
+  if(S[0].fw&&S[1].fw){const w0=Math.min(300,S[0].fw),w1=Math.min(300,S[1].fw),h=w0>=w1?0:1,lo=Math.min(w0,w1);if(lo>0&&w0!==w1)S[h].str+=(Math.abs(w0-w1)/lo*100)/5}
   const run=[0,0];
   for(let r=1;r<=rounds&&!out.result;r++){
     const CH=S.map((x,i)=>choosePlan(x.parsed,ctxFor(S,i,r)));
