@@ -775,7 +775,7 @@ function recordHTML(side){
   <tr><td>Weight</td><td colspan="3">${w} pounds (${Math.round(w*.4536)} kilograms)</td></tr>
   <tr><td>Minimum Weight</td><td colspan="3">${Math.round(w*.96)} pounds (${Math.round(w*.96*.4536)} kilograms)</td></tr></table>
   <p>${n} fights in the <a data-go="frank">${esc(state.div)}weight</a> division out of ${esc(F.home||'parts unknown')} for the ${esc(myGym())} gym. ${prime}</p>
-  <p>${n}'s next opponent is the ${ht(HT(O)).replace(' 0 inches','')}, <a data-go="rec:${side==='A'?'B':'A'}">${esc(O.name)}</a> ${recStr(O)} from the ${esc(myGym())} gym for $0 on <b>${nextSat()}</b>.</p>
+  <p>${n}'s next opponent is the ${ht(HT(O)).replace(' 0 inches','')}, <a data-go="pub:${side==='A'?'B':'A'}">${esc(O.name)}</a> ${recStr(O)} from the ${esc(myGym())} gym for $0 on <b>${nextSat()}</b>.</p>
   <p>${n} is training <b>${tr[F.train||'str']}</b>${(F.status||0)>=2?` with <b>${tr[F.train2||'cnd']}</b> as his secondary program`:''}, but you can instruct him to <a data-go="train:${side}">train for something else</a>.</p>
   <p>${n} is currently using the <b>${esc(F.planName||'Basic')}</b> fight plan. He may</p>
   <ul><li><a data-go="plan:${side}">edit</a> your ${esc(F.planName||'Basic')} plan, or paste in a different one.</li>
@@ -806,13 +806,14 @@ function pubHTML(side){
   let titles=[];for(const d in state.champs)for(const b in state.champs[d])if(state.champs[d][b]===F.name)titles.push(b);
   const[rs,belt]=state.bout.split('|');
   return`<h1 class="pubname">${n}</h1>
-  <p>${n} stands ${ht(HT(F))} (${cm(HT(F))} centimeters) tall. He fights for the <a data-go="gym">${esc(myGym())}</a> gym${F.home?` out of ${esc(F.home)}`:''} and is ranked #${frankOf(side)} in the <a data-go="frank">${esc(state.div)}weight</a> division (Contenders). He was created by <a data-go="grank">${esc(myGym())}</a>.</p>
-  <p>${n}'s next bout is ${belt?`a <b>${esc(belt)} title fight</b> `:''}against the ${ht(HT(O)).replace(' 0 inches','')}, <a data-go="pub:${side==='A'?'B':'A'}">${esc(O.name)}</a> ${recStr(O)} from the ${esc(myGym())} gym for $0 on <b>${nextSat()}</b>.</p>
+  <p>${n} stands ${ht(HT(F))} (${cm(HT(F))} centimeters) tall. He fights for the <a data-go="gym">${esc(myGym())}</a> gym${F.home?` out of ${esc(F.home)}`:''} and is ranked #${frankOf(side)} in the <a data-go="frank">${esc(state.div)}weight</a> division (Contenders).</p>
+  <p>${n}'s ${belt?`next bout is a <b>${esc(belt)} title fight</b> against`:'next opponent is'} the ${ht(HT(O)).replace(' 0 inches','')}, <a data-go="pub:${side==='A'?'B':'A'}">${esc(O.name)}</a> ${recStr(O)} from the ${esc(myGym())} gym for $0 on <b>${nextSat()}</b>.</p>
+  <p>${n} is rumored to weigh about ${weightLbs(F)} pounds (${Math.round(weightLbs(F)*.4536)} kilograms).</p>
   <hr><h2>${n}'s Record</h2>
   <p>${n}'s record is ${F.rec[0]}-${F.rec[1]}-${F.rec[2]} (${F.rec[3]}/${F.rec[1]})${titles.length?` with ${titles.length} world title${titles.length>1?'s':''} (${titles.map(esc).join(', ')})!`:'.'}<br>
   His current <a data-go="help">rating</a> is ${F.rating||0} and his <a data-go="help">status</a> is ${F.status||0}.<br>His career earnings are $0.</p>
   <p>Select any icon for a detailed account of a fight.</p>
-  <p>${n} ${TRAIN_FLAVOR[F.train||'str']}.</p>
+  ${F.hist&&F.hist.length?`<p>${n} ${TRAIN_FLAVOR[F.train||'str']}.</p>`:''}
   <p>vs <a data-go="pub:${side==='A'?'B':'A'}">${esc(O.name)}</a> (<a data-go="gym">${esc(myGym())}</a>) - ${ht(HT(O)).replace(' 0 inches','')} - ${esc(state.div)}weight ${belt?esc(belt)+' title ':''}bout on ${nextSat().replace(/^\w+, /,'')}, week ${state.week}. Fight Plan: <a data-go="plan:${side}">${esc(F.planName||'Basic')}</a></p>
   ${F.hist&&F.hist.length?`<table class="hist">${F.hist.map(h=>`<tr><td>${state.reports[h.id]?`<a data-go="report:${h.id}">${ICON[h.icon]}</a>`:ICON[h.icon]}</td><td>vs <a data-go="pub:${side==='A'?'B':'A'}">${esc(h.opp)}</a> (${esc(myGym())}) - ${h.oh?esc(h.oh)+' - ':''}${esc(h.div)}weight ${h.belt?esc(h.belt)+' title ':''}bout on ${esc(h.date)}, week ${h.week}: ${esc(h.res)}. Earned $0. Score: ${esc(h.score)} ${state.reports[h.id]?`<a data-go="report:${h.id}">highlights</a>`:''}${h.plan?`. Fight Plan: ${esc(h.plan)}`:''}</td></tr>`).join('')}</table>`:'<p class="mute">No fights yet.</p>'}
   <p class="small"><a data-go="rec:${side}">Manager's page for ${n}</a></p>`;
