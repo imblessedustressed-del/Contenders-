@@ -220,7 +220,7 @@ let staleBuild=false;
 async function checkBuild(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
   if(v&&BUILD.indexOf('%')<0&&v!==BUILD&&+v>+BUILD){staleBuild=true;const a=document.activeElement;if(!(a&&(a.tagName==='TEXTAREA'||a.tagName==='INPUT')&&a.value))location.reload()}}catch(e){}}
 const SITE_URL='https://imblessedustressed-del.github.io/Contenders-/';
-let bouts=[],cards={},botF={},SB=null,ME=null,MYEMAIL='',dbState='loading',managers={},topics=[],ims=[],posts=[],postsTopic=null,recovering=false,syncTimer=null,loadedGym=false;
+let vacancies=[],bouts=[],cards={},botF={},SB=null,ME=null,MYEMAIL='',dbState='loading',managers={},topics=[],ims=[],posts=[],postsTopic=null,recovering=false,syncTimer=null,loadedGym=false;
 async function initDB(){
   try{if(window.supabase&&supabase.createClient)SB=supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:true,detectSessionInUrl:true}})}catch(e){}
   if(!SB){dbState='off';refresh();return}
@@ -248,7 +248,7 @@ async function loadPublic(){
     managers={};p.data.forEach(r=>managers[r.id]={gym:r.gym,desc:r.description,loc:r.location||'',bot:!!r.is_bot,at:Date.parse(r.created_at)});
     const bids=p.data.filter(r=>r.is_bot).map(r=>r.id);
     if(bids.length){const bs=await SB.from('gym_state').select('user_id,data').in('user_id',bids);if(!bs.error){botF={};bs.data.forEach(r=>{const d=r.data||{};(d.roster||[]).forEach(k=>{if(d[k])botF['bot:'+r.user_id+':'+k]={...d[k],gymName:managers[r.user_id].gym}})})}}
-    bouts=(bt&&!bt.error&&bt.data)||[];cards={};if(gc&&!gc.error)gc.data.forEach(r=>cards[r.user_id]=r.data||{});
+    bouts=(bt&&!bt.error&&bt.data)||[];try{const vq=await SB.from('vacancies').select('div,belt,bout_id,vacated_at');if(!vq.error)vacancies=vq.data||[]}catch(e){}cards={};if(gc&&!gc.error)gc.data.forEach(r=>cards[r.user_id]=r.data||{});
     topics=t.data.map(r=>({id:String(r.id),forum:r.forum,title:r.title,by:r.author,at:Date.parse(r.created_at),last:Date.parse(r.last_at),count:r.post_count}));
     dbState='on';refresh();
   }catch(e){if(dbState!=='on'){dbState='slow';refresh()}}
@@ -363,7 +363,10 @@ function bannerSVG(){
 }
 /* League titles come from finished title bouts: the last winner of each belt holds it (a draw keeps the champion). */
 function fName(uid,fid){const c=cards[uid]||{};const f=[...(c.fighters||[])].find(x=>x.id===fid);return f?f.name:((botF['bot:'+uid+':'+fid]||{}).name||'A retired fighter')}
-function currentChamps(){const m={};bouts.filter(b=>b.status==='done'&&b.belt&&b.summary&&b.summary.w!=null).sort((a,b)=>a.fight_date.localeCompare(b.fight_date)||a.id-b.id).forEach(b=>{const w=b.summary.w===0;(m[b.div]=m[b.div]||{})[b.belt]={uid:w?b.red_user:b.blue_user,fid:w?b.red_fid:b.blue_fid}});return m}
+function currentChamps(){const m={};bouts.filter(b=>b.status==='done'&&b.belt&&b.summary&&b.summary.w!=null).sort((a,b)=>a.fight_date.localeCompare(b.fight_date)||a.id-b.id).forEach(b=>{const w=b.summary.w===0;(m[b.div]=m[b.div]||{})[b.belt]=vacancies.some(v=>v.bout_id===b.id&&v.belt===b.belt)?null:{uid:w?b.red_user:b.blue_user,fid:w?b.red_fid:b.blue_fid}});for(const d in m)for(const bl in m[d])if(!m[d][bl])delete m[d][bl];return m}
+/* A champion who retires keeps his belt until the next scheduling run; if he hasn't been unretired by then, the belt is vacated and a vacant title fight is scheduled. */
+const champRetired=c=>!!(c&&cards[c.uid]&&!(cards[c.uid].fighters||[]).some(f=>f.id===c.fid));
+const RETIRED_CHAMP_NOTE='retired: the belt will be vacated (and his win streak lost) at the next scheduling run unless he returns'
 function beltsOf(uid,fid){const m=currentChamps(),out=[];for(const d in m)for(const bl in m[d])if(m[d][bl].uid===uid&&m[d][bl].fid===fid)out.push(d+' '+bl);return out}
 const latestNews=()=>topics.filter(t=>t.forum==='announce').sort((a,b)=>(b.at||0)-(a.at||0))[0];
 const newsLine=()=>{const n=latestNews();return n?`<a data-go="topic:${n.id}"><b>${esc(n.title)}</b></a> <span class="small mute">(${dt(n.at).slice(0,10)})</span> · <a data-go="forum:announce">all news</a>`:'<a data-go="forum:announce">Contenders News</a>'};
@@ -986,8 +989,8 @@ function runSimbot(n){
 /* ---------- Hall of Records ---------- */
 function champsHTML(){
   return`<h1>Champions</h1><table class="grid"><tr><th>Division</th>${BELTS.map(b=>`<th>${b}</th>`).join('')}</tr>
-  ${(()=>{const m=currentChamps();return DIVS.map(([d])=>`<tr><td>${d}weight</td>${BELTS.map(b=>{const c=m[d]&&m[d][b];return`<td>${c?`<a data-go="opub:${c.uid}:${encN(c.fid)}">${esc(fName(c.uid,c.fid))}</a><br><span class="small">${esc(gymOf(c.uid))}</span>`:'<span class="mute">vacant</span>'}</td>`}).join('')}</tr>`).join('')})()}</table>
-  <p class="small mute">Win a WBC, WBA or WBO title fight to fill a belt.</p>`;
+  ${(()=>{const m=currentChamps();return DIVS.map(([d])=>`<tr><td>${d}weight</td>${BELTS.map(b=>{const c=m[d]&&m[d][b];return`<td>${c?`<a data-go="opub:${c.uid}:${encN(c.fid)}">${esc(fName(c.uid,c.fid))}</a><br><span class="small">${esc(gymOf(c.uid))}</span>${champRetired(c)?`<br><span class="small cr">${RETIRED_CHAMP_NOTE}</span>`:''}`:'<span class="mute">vacant</span>'}</td>`}).join('')}</tr>`).join('')})()}</table>
+  <p class="small mute">Win a WBC, WBA or WBO title fight to fill a belt. A champion who retires keeps his belt only until the next scheduling run; if he hasn't been brought back by then, the belt is vacated, he loses his win streak, and a fight for the vacant title is scheduled. Retiring a fighter who has a bout booked also costs him his win streak.</p>`;
 }
 const BELT_ICON=`<svg class="belt" viewBox="0 0 58 30"><rect x="1" y="11" width="56" height="9" rx="2" fill="#7a1a1a" stroke="#3d0b0b"/><ellipse cx="29" cy="15.5" rx="15" ry="13" fill="#e8b923" stroke="#8a6200" stroke-width="1.5"/><ellipse cx="29" cy="15.5" rx="10" ry="8.5" fill="#f6d65c" stroke="#a87800"/><path d="M23 13 l3 -4 l3 3 l3 -3 l3 4 v4 h-12z" fill="#b8860b"/><rect x="5" y="13" width="6" height="5" rx="1" fill="#e8b923"/><rect x="47" y="13" width="6" height="5" rx="1" fill="#e8b923"/></svg>`;
 /* League week = number of fight dates already run */
@@ -1042,6 +1045,8 @@ function retFighterHTML(arg){
   return`<h1 class="pubname">${n}</h1>
   <p class="cr"><b>Retired.</b> ${n} fought for the <a data-go="${mine?'gym':'gympub:'+uid}">${esc(gym)}</a> gym${f.home?` out of ${esc(f.home)}`:''} in the ${esc(f.div||'')}weight division (Contenders)${hg!=null?` and stands ${ht(60+hg)} (${cm(60+hg)} centimeters) tall`:''}.</p>
   ${mine?(own&&own.str?`<p>&#9758; <a data-activate="${idx}"><b>Unretire ${n}</b></a> and put him back on your active roster with his full record.</p>`:'<p class="small mute">This fighter was retired before full records were kept, so he can\'t be brought back.</p>'):''}
+  ${(()=>{const m=currentChamps(),held=[];for(const d in m)for(const bl in m[d])if(m[d][bl].uid===uid&&m[d][bl].fid===(own?own.fid:null))held.push(d+'weight '+bl);return held.length?`<p class="note cr"><b>Retired champion.</b> ${n} still holds the ${esc(held.join(' and '))} title. If he isn't unretired before the next scheduling run, the belt is vacated, he loses his win streak (no ducking in Contenders), and a fight for the vacant title is scheduled.</p>`:''})()}
+  ${f.ducked?`<p class="small cr">${n} retired instead of facing a scheduled fight or defending his title, so his win streak was taken away.</p>`:''}
   <hr><h2>${n}'s Record</h2>
   <p>${n}'s final record is ${r[0]}-${r[1]}-${r[2]} (${r[3]}/${r[1]})${tw?` <b class="r">Winner of ${tw} world title${tw>1?'s':''}!!</b>`:''}<br>
   His final rating was ${f.rating||0} and his status was ${f.status||0}.<br>His career earnings are ${money(f.earn)}.<br>${fanLine(f)}</p>
@@ -1232,7 +1237,7 @@ document.addEventListener('click',async e=>{
     ensurePlans();if(state.plans[D.planName]==null)state.plans[D.planName]=D.plan;
     state.roster.push(slot);state[slot]={...JSON.parse(JSON.stringify(D)),div:divOf(D),rec:[0,0,0,0],hist:[],locked:true,rating:0,status:0,train:'str',train2:'cnd',streak:0,ip:0};state.draft=null;save();nav('rec:'+slot)}
   else if(t.dataset.retire){const s0=t.dataset.retire,old=FTR(s0);if(!old)return;
-    if(!window.confirm(`Retire ${old.name}? He'll move to your retired fighters, and you can bring him back later.`))return;
+    if(!window.confirm(myBout(s0)?`${old.name} has a bout scheduled. Retiring him now counts as ducking the fight: he loses his win streak. Retire him anyway?`:`Retire ${old.name}? He'll move to your retired fighters, and you can bring him back later.`))return;
     state.retired=state.retired||[];state.retired.unshift(JSON.parse(JSON.stringify({...old,div:divOf(old),fid:s0})));
     state.roster=ROSTER().filter(k=>k!==s0);delete state[s0];save();nav('retired')}
   else if(t.dataset.activate){const i=+t.dataset.activate,f=state.retired[i];if(!f)return;

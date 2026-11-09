@@ -31,6 +31,10 @@ Contenders is a text-based boxing strategy game modeled on the old Web Boxing Le
 - Per-round tactics (energy points) are private: `bout_private(bout_id, user_id, mgr)`, readable only by that manager; `bouts.result` never contains `mgr`.
 - Sanctions: `sanctions(user_id, kind gag|ban, strike, reason, ends, lifted)`. `select public.give_strike(uid, 'gag'|'ban', reason)` gives the next strike: 2 days, then 14 days, then permanent (lift with `update sanctions set lifted=true`). RLS blocks gagged users from topics/posts/messages and banned users from gym_state/gym_public. Owner's standing order: the commissioner may gag or ban on his own judgment (e.g. a known plan/gym thief called "dub"); the scheduled check stays report-only and only recommends.
 
+## Retired champions and ducking (owner-approved Nov 9, 2026)
+- A champion who retires keeps his belt until the next fight-scheduling run. **First step of every scheduling run:** `select * from public.vacate_retired_champs();` (commissioner only). For each champion not on his gym's active roster it records a row in `vacancies(div, belt, bout_id, ...)` (the site treats that title-winning bout as no longer holding the belt), removes the belt from his gym's `champs`, and resets his win streak (`ducked: true`). Then schedule a fight for each vacant title it returned (top contenders in that division).
+- No ducking: retiring a fighter who has a bout scheduled (`bouts.status <> 'done'`) resets his win streak to 0 (`gym_state_protect`). The commissioner then cancels or forfeits that bout.
+
 ## Rules for maintenance
 - **Transparency rule (owner, Nov 9, 2026):** every owner-approved change to the simulator, rules or any major gameplay change is posted to Contenders News (forum `announce`, topic and post with author NULL, shown as "The Commissioner") the moment it goes live. Say it was approved by the owner, and that the owner has no access to anyone's plans, gyms or fighters.
 - Bot gyms only use public information (records, fight reports) to plan against a manager's fighter, never his plan text.
