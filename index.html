@@ -64,6 +64,7 @@ pre.plan{font:14px 'Courier New',monospace;background:#f6f6f6;border:1px inset #
 .cta{text-align:center;font-size:19px;font-weight:bold;line-height:1.7}
 table.champ{margin:0 auto}table.champ td.pw{text-align:center;vertical-align:middle;min-width:90px}
 svg.pow{width:46px;height:38px;display:block;margin:0 auto}
+h1.pubname{font:bold 34px 'Times New Roman',serif;color:#555}
 .note{border:1px dashed #aaa;padding:6px 10px;background:#f6f6f6;font-size:14px;max-width:640px}
 @media(max-width:720px){
  #wrap{display:block}
@@ -617,7 +618,7 @@ function render(){
     login:loginHTML,logout:logoutHTML,forums:forumsHTML,forum:()=>forumHTML(arg),topic:()=>topicHTML(arg),newtopic:()=>newTopicHTML(arg),msgs:msgsHTML,
     simbot:simbotHTML,champs:champsHTML,frank:frankHTML,grank:grankHTML,results:resultsHTML,fcards:resultsHTML,sched:schedHTML,
     discarded:()=>`<h1>Discarded Fighters</h1><p>No fighters have been discarded.</p>`,search:searchHTML,help:helpHTML,newbie:newbieHTML,funding:fundingHTML,
-    edit:()=>planEditHTML(arg),plan:()=>planEditHTML(arg),rec:()=>recordHTML(arg),train:()=>trainHTML(arg),report:()=>savedReportHTML(arg)};
+    edit:()=>planEditHTML(arg),plan:()=>planEditHTML(arg),rec:()=>recordHTML(arg),pub:()=>pubHTML(arg),train:()=>trainHTML(arg),report:()=>savedReportHTML(arg)};
   $('#view').innerHTML=`<div id="flash" class="note cr" style="display:none;margin-bottom:10px"></div>`+(P[base]||homeHTML)();
 }
 
@@ -767,7 +768,7 @@ function recordHTML(side){
     ['Rank',frankOf(side),'Total Earnings','$0'],['Injury Points',F.ip||0,'AP Loss',F.aploss||0]];
   const pf=primeF(F),prime=pf>=.999?'He is in his prime.':pf>.9?'He is close to his best.':pf>.8?'He is a step off his best.':'He is well past his best.';
   const tr={str:'strength',spd:'speed',agl:'agility',chn:'chin',cnd:'conditioning',kp:'knockout punch'};
-  return`<p><a data-go="rec:${side}" class="b">${n}</a> ${recStr(F)}</p>
+  return`<p><a data-go="pub:${side}" class="b red">${n}</a> ${recStr(F)}</p>
   <table class="grid">${rows.map(r=>`<tr><td>${r[0]}</td><td class="n">${r[1]}</td><td>${r[2]}</td><td class="n">${r[3]}</td></tr>`).join('')}
   <tr><td>Height</td><td colspan="3">${ht(HT(F))} (${cm(HT(F))} centimeters)</td></tr>
   <tr><td>Build</td><td colspan="3">${esc(F.build||'normal')}</td></tr>
@@ -796,6 +797,25 @@ function trainHTML(side){
   <tr><td>Secondary Training Program (fast track)</td><td><select data-train2="${side}">${opt(F.train2||'cnd')}</select></td></tr></table>
   <p><button data-go="rec:${side}">Submit Form</button></p>
   <div class="note"><b>How training works:</b> his primary program gives him +1 in that ability for each fight. When he wins, his status goes up 1 and he keeps an ability point in his primary program. From his third win on he's on the <b>fast track</b> and also gets a point in his secondary program, so every win is worth two points. Status tops out at 28.</div>`;
+}
+const TRAIN_FLAVOR={str:'has been lifting weights every chance he gets (STR)',kp:'has been pounding the heavy bag until it splits (KP)',spd:'has been working the speed bag every morning (SPD)',
+  agl:'has been skipping rope for hours at a time (AGL)',chn:'has been taking shots in sparring to toughen up (CHN)',cnd:'has been running miles before sunrise (CND)'};
+function pubHTML(side){
+  if(side!=='A'&&side!=='B')side='A';
+  const F=state[side],n=esc(F.name),O=state[side==='A'?'B':'A'];
+  let titles=[];for(const d in state.champs)for(const b in state.champs[d])if(state.champs[d][b]===F.name)titles.push(b);
+  const[rs,belt]=state.bout.split('|');
+  return`<h1 class="pubname">${n}</h1>
+  <p>${n} stands ${ht(HT(F))} (${cm(HT(F))} centimeters) tall. He fights for the <a data-go="gym">${esc(myGym())}</a> gym${F.home?` out of ${esc(F.home)}`:''} and is ranked #${frankOf(side)} in the <a data-go="frank">${esc(state.div)}weight</a> division (Contenders). He was created by <a data-go="grank">${esc(myGym())}</a>.</p>
+  <p>${n}'s next bout is ${belt?`a <b>${esc(belt)} title fight</b> `:''}against the ${ht(HT(O)).replace(' 0 inches','')}, <a data-go="pub:${side==='A'?'B':'A'}">${esc(O.name)}</a> ${recStr(O)} from the ${esc(myGym())} gym for $0 on <b>${nextSat()}</b>.</p>
+  <hr><h2>${n}'s Record</h2>
+  <p>${n}'s record is ${F.rec[0]}-${F.rec[1]}-${F.rec[2]} (${F.rec[3]}/${F.rec[1]})${titles.length?` with ${titles.length} world title${titles.length>1?'s':''} (${titles.map(esc).join(', ')})!`:'.'}<br>
+  His current <a data-go="help">rating</a> is ${F.rating||0} and his <a data-go="help">status</a> is ${F.status||0}.<br>His career earnings are $0.</p>
+  <p>Select any icon for a detailed account of a fight.</p>
+  <p>${n} ${TRAIN_FLAVOR[F.train||'str']}.</p>
+  <p>vs <a data-go="pub:${side==='A'?'B':'A'}">${esc(O.name)}</a> (<a data-go="gym">${esc(myGym())}</a>) - ${ht(HT(O)).replace(' 0 inches','')} - ${esc(state.div)}weight ${belt?esc(belt)+' title ':''}bout on ${nextSat().replace(/^\w+, /,'')}, week ${state.week}. Fight Plan: <a data-go="plan:${side}">${esc(F.planName||'Basic')}</a></p>
+  ${F.hist&&F.hist.length?`<table class="hist">${F.hist.map(h=>`<tr><td>${state.reports[h.id]?`<a data-go="report:${h.id}">${ICON[h.icon]}</a>`:ICON[h.icon]}</td><td>vs <a data-go="pub:${side==='A'?'B':'A'}">${esc(h.opp)}</a> (${esc(myGym())}) - ${h.oh?esc(h.oh)+' - ':''}${esc(h.div)}weight ${h.belt?esc(h.belt)+' title ':''}bout on ${esc(h.date)}, week ${h.week}: ${esc(h.res)}. Earned $0. Score: ${esc(h.score)} ${state.reports[h.id]?`<a data-go="report:${h.id}">highlights</a>`:''}${h.plan?`. Fight Plan: ${esc(h.plan)}`:''}</td></tr>`).join('')}</table>`:'<p class="mute">No fights yet.</p>'}
+  <p class="small"><a data-go="rec:${side}">Manager's page for ${n}</a></p>`;
 }
 function frankOf(side){const sc=s=>{const r=state[s].rec;return(r[0]+.5*r[2])/Math.max(1,r[0]+r[1]+r[2])+r[0]*.001};return sc(side)>=sc(side==='A'?'B':'A')?1:2}
 function planEditHTML(side){
@@ -894,7 +914,7 @@ function finish(){
     else F.streak=0;
     if(r.w!==null&&r.w!==i&&r.type==='KO'){F.ip=(F.ip||0)+25}
     if((F.ip||0)>=500){F.ip-=500;F.aploss=(F.aploss||0)+1;const k3=pick(['str','spd','agl','chn','cnd']);F[k3]=Math.max(1,F[k3]-1)}
-    F.hist=F.hist||[];F.hist.unshift({id,opp:O.name,div:bout.div,belt:bout.belt,date,week:state.week,res,score,icon});F.hist=F.hist.slice(0,40);
+    F.hist=F.hist||[];F.hist.unshift({id,oh:ht(HT(O)).replace(' 0 inches',''),plan:F.planName||'Basic',opp:O.name,div:bout.div,belt:bout.belt,date,week:state.week,res,score,icon});F.hist=F.hist.slice(0,40);
   });
   if(r.w!==null&&bout.belt){state.champs[bout.div]=state.champs[bout.div]||{};state.champs[bout.div][bout.belt]=state[S[r.w]].name}
   const txt=r.w===null?`${state.A.name} and ${state.B.name} fight to a ${r.type.toLowerCase()}`:`${state[S[r.w]].name} def. ${state[S[1-r.w]].name} by ${how}${bout.belt?` (${bout.belt} ${bout.div}weight title)`:''}`;
@@ -976,7 +996,7 @@ function champsHTML(){
 function frankHTML(){
   const rows=['A','B'].map(s=>({s,F:state[s],pct:(state[s].rec[0]+.5*state[s].rec[2])/Math.max(1,state[s].rec.slice(0,3).reduce((a,b)=>a+b,0))})).sort((a,b)=>b.pct-a.pct);
   return`<h1>Fighter Rankings</h1><h2>${esc(state.div)}weight (Contenders)</h2><table class="grid"><tr><th>Rank</th><th>Fighter</th><th>Record</th><th>Gym</th></tr>
-  ${rows.map((r,i)=>`<tr><td class="n">#${i+1}</td><td><a data-go="rec:${r.s}">${esc(r.F.name)}</a></td><td>${recStr(r.F)}</td><td>${esc(myGym())}</td></tr>`).join('')}</table>`;
+  ${rows.map((r,i)=>`<tr><td class="n">#${i+1}</td><td><a data-go="pub:${r.s}">${esc(r.F.name)}</a></td><td>${recStr(r.F)}</td><td>${esc(myGym())}</td></tr>`).join('')}</table>`;
 }
 function grankHTML(){
   const ids=Object.keys(managers);
