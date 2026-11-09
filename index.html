@@ -121,10 +121,10 @@ const STYLE_NAMES=[['None','None'],['Inside','Inside'],['Counter','Counter-punch
 const TARGETS=[['Opp','Opportunistic'],['Head','Head'],['Body','Body'],['Cut','Go after the cut']];
 const mkPlan=(agg,pow,def,tgt,style)=>`${agg}${{Head:'H',Body:'B',Cut:'C'}[tgt]||''}/${pow}/${def}${style&&style!=='None'?` (${style.toLowerCase()})`:''}`;
 const JUDGES=[{name:'Alvarez',pw:2.6,act:.03},{name:'Whitfield',pw:1.9,act:.12},{name:'Moreau',pw:2.2,act:.07}];
-const DIVS=[['Fly',112],['Bantam',118],['Feather',126],['Light',135],['Welter',147],['Super Welter',154],['Middle',160],['Super Middle',168],['Light Heavy',175],['Cruiser',200],['Heavy',1000]];
-const FIGHT_NIGHT={'Light':'Wednesday','Welter':'Wednesday','Super Welter':'Wednesday','Super Middle':'Thursday','Middle':'Thursday','Cruiser':'Friday','Light Heavy':'Friday','Heavy':'Saturday'};
+const DIVS=[['Straw',105],['Junior Fly',108],['Fly',112],['Super Fly',115],['Bantam',118],['Super Bantam',122],['Feather',126],['Super Feather',130],['Light',135],['Welter',147],['Super Welter',154],['Middle',160],['Super Middle',168],['Light Heavy',175],['Cruiser',200],['Heavy',1000]];
+const FIGHT_NIGHT={'Straw':'Sunday','Junior Fly':'Sunday','Fly':'Sunday','Super Fly':'Monday','Bantam':'Monday','Super Bantam':'Monday','Feather':'Tuesday','Super Feather':'Tuesday','Light':'Wednesday','Welter':'Wednesday','Super Welter':'Wednesday','Super Middle':'Thursday','Middle':'Thursday','Cruiser':'Friday','Light Heavy':'Friday','Heavy':'Saturday'};
 const nightOf=div=>FIGHT_NIGHT[div]||null;
-const SCHED_TABLE=()=>`<table class="grid"><tr><th>Fight night</th><th>Divisions</th></tr>${['Wednesday','Thursday','Friday','Saturday'].map(n=>`<tr><td><b>${n}</b></td><td>${DIVS.filter(d=>FIGHT_NIGHT[d[0]]===n).map(d=>d[0]+'weight').join(', ')}${n==='Saturday'?' (alone)':''}</td></tr>`).join('')}<tr><td><i>To be announced</i></td><td>${DIVS.filter(d=>!FIGHT_NIGHT[d[0]]).map(d=>d[0]+'weight').join(', ')}</td></tr></table>`;
+const SCHED_TABLE=()=>`<table class="grid"><tr><th>Fight night</th><th>Divisions</th></tr>${['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'].map(n=>`<tr><td><b>${n}</b></td><td>${DIVS.filter(d=>FIGHT_NIGHT[d[0]]===n).map(d=>d[0]+'weight').join(', ')}${n==='Saturday'?' (alone)':''}</td></tr>`).join('')}</table>`;
 const BELTS=['WBC','WBA','WBO'];
 const FORUMS=[
  ['announce','Announcements','News from the Contenders commissioner and staff.'],
@@ -1186,7 +1186,7 @@ if score < 0 and round >= 8 then 8/7/5</pre>
   <h2>4. Training</h2>
   <p>On the fighter's page, pick what he trains. Wins raise his status and add ability points. From his third win on he's on the fast track and gets two points per win.</p>
   <h2>5. Fight night</h2>
-  <p>Each division has its own weekly fight night. Heavyweights fight alone on Saturday, and the rest spread over Wednesday, Thursday and Friday. Have your plan saved before his night. Fights run on their own, then check his record for the result and <i>highlights</i> for the full report. See <a data-go="help:schedule">The Fight Schedule</a>.</p>
+  <p>Each division has its own weekly fight night. The lighter divisions fight Sunday through Tuesday, the middle and big men Wednesday through Friday, and heavyweights fight alone on Saturday. Have your plan saved before his night. Fights run on their own, then check his record for the result and <i>highlights</i> for the full report. See <a data-go="help:schedule">The Fight Schedule</a>.</p>
   <h2>6. Scout and talk</h2>
   <p>Click any fighter's name to see his public record and past fight reports. That's how you learn an opponent's habits. Ask questions in the <a data-go="forum:help">Help forum</a>, and say hi in the <a data-go="forum:lounge">Lounge</a>.</p>`;
 }
