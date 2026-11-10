@@ -528,7 +528,7 @@ function simulate(FA,FB,rounds){
     out.result={type,w:type.includes('Draw')?null:wa>wb?0:1,round:rounds,t:180,decision:true};
   }
   out.final=S.map(x=>condText(x,true));
-  out.ip=S.map((x,i)=>out.result.type==='KO'&&out.result.w===1-i?25:Math.max(0,Math.round(x.ipDmg-5*x.chn)));
+  out.ip=S.map((x,i)=>out.result.type==='KO'&&out.result.w===1-i?10:Math.max(0,Math.round(x.ipDmg-5*x.chn)));
   return out;
 }
 function scoreRound(st,kd,sl,PU,D){
@@ -602,7 +602,7 @@ function condText(x,after){
 /* ================= SHARED DATA (Supabase: accounts, forums, messages) ================= */
 cleanSlate();
 const SB_URL='https://ojsphhzgzbxmnfcbitqb.supabase.co',SB_KEY='sb_publishable_SWO9WhiSkoVhflY5CmY08A_hlqCEJSi';
-const BUILD='1794270883';
+const BUILD='1794283006';
 /* A tab left open on an older build must not save over newer data: if the site has been updated, reload before anything else is saved. */
 let staleBuild=false;
 async function checkBuild(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
@@ -1289,7 +1289,7 @@ function applyResult(F,i,r,m){
   else if(r.w===i){F.rec[0]++;if(!r.decision)F.rec[3]++;icon=r.decision?'w':'ko';res=`won by ${how}`}
   else{F.rec[1]++;icon='l';res=`lost by ${how}`}
   ratingStatus(F,r.w==null?'draw':r.w===i?'win':'loss',r);
-  F.ip=(F.ip||0)+(r.ip!=null?r.ip:(r.w!=null&&r.w!==i&&r.type==='KO'?25:0));
+  F.ip=(F.ip||0)+(r.ip!=null?r.ip:(r.w!=null&&r.w!==i&&r.type==='KO'?10:0));
   if((F.ip||0)>=500){F.ip-=500;F.aploss=(F.aploss||0)+1;const k3=pick(['str','spd','agl','chn','cnd']);F[k3]=Math.max(1,F[k3]-1)}
   F.earn=(F.earn||0)+(r.purse||0);F.fans=Math.max(0,(F.fans||0)+(r.fans||0));F.ppv=(F.ppv||0)+(r.buys||0);
   F.hist=F.hist||[];F.hist.unshift({...m,plan:F.planName||'Basic',res,score:r.score,icon,earned:r.purse||0});F.hist=F.hist.slice(0,40);

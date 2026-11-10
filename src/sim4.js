@@ -202,7 +202,7 @@ function simulate(FA,FB,rounds){
     out.result={type,w:type.includes('Draw')?null:wa>wb?0:1,round:rounds,t:180,decision:true};
   }
   out.final=S.map(x=>condText(x,true));
-  out.ip=S.map((x,i)=>out.result.type==='KO'&&out.result.w===1-i?25:Math.max(0,Math.round(x.ipDmg-5*x.chn)));
+  out.ip=S.map((x,i)=>out.result.type==='KO'&&out.result.w===1-i?10:Math.max(0,Math.round(x.ipDmg-5*x.chn)));
   return out;
 }
 function scoreRound(st,kd,sl,PU,D){

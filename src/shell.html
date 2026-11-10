@@ -904,7 +904,7 @@ function applyResult(F,i,r,m){
   else if(r.w===i){F.rec[0]++;if(!r.decision)F.rec[3]++;icon=r.decision?'w':'ko';res=`won by ${how}`}
   else{F.rec[1]++;icon='l';res=`lost by ${how}`}
   ratingStatus(F,r.w==null?'draw':r.w===i?'win':'loss',r);
-  F.ip=(F.ip||0)+(r.ip!=null?r.ip:(r.w!=null&&r.w!==i&&r.type==='KO'?25:0));
+  F.ip=(F.ip||0)+(r.ip!=null?r.ip:(r.w!=null&&r.w!==i&&r.type==='KO'?10:0));
   if((F.ip||0)>=500){F.ip-=500;F.aploss=(F.aploss||0)+1;const k3=pick(['str','spd','agl','chn','cnd']);F[k3]=Math.max(1,F[k3]-1)}
   F.earn=(F.earn||0)+(r.purse||0);F.fans=Math.max(0,(F.fans||0)+(r.fans||0));F.ppv=(F.ppv||0)+(r.buys||0);
   F.hist=F.hist||[];F.hist.unshift({...m,plan:F.planName||'Basic',res,score:r.score,icon,earned:r.purse||0});F.hist=F.hist.slice(0,40);
