@@ -34,6 +34,14 @@ GYMS=[("Bayou Iron Works","New Orleans, Louisiana","Hot gym, long rounds. We fig
       ("Steel Valley Boxing","Pittsburgh, Pennsylvania","Mill-town fighters. Five styles in every weight class, and none of them back up.",1,["Pittsburgh, Pennsylvania","Youngstown, Ohio","Buffalo, New York","Erie, Pennsylvania","Wheeling, West Virginia","Gary, Indiana","Glasgow, Scotland","Cardiff, Wales"]),
       ("Desert Wind Fight Club","Phoenix, Arizona","Patient boxers from the desert. We win rounds and wait for you to fade.",-1,["Phoenix, Arizona","Tucson, Arizona","El Paso, Texas","Albuquerque, New Mexico","Hermosillo, Mexico","Mexicali, Mexico","Reno, Nevada","Las Cruces, New Mexico"]),
       ("Harbor Lights Boxing","Baltimore, Maryland","A waterfront gym with a fighter for every style. Take your pick.",0,["Baltimore, Maryland","Norfolk, Virginia","Boston, Massachusetts","Providence, Rhode Island","Liverpool, England","Dublin, Ireland","Lagos, Nigeria","San Juan, Puerto Rico"])]
+GYMS2=[("Rust Belt Pugilists","Detroit, Michigan","Factory hours, factory toughness. One of every style in every weight class.",1,["Detroit, Michigan","Flint, Michigan","Toledo, Ohio","Akron, Ohio","Milwaukee, Wisconsin","Windsor, Ontario","Sheffield, England","Leeds, England"]),
+       ("Pacific Coast Boxing","San Diego, California","Sunny gym, sharp boxers. Five styles deep in every division.",-1,["San Diego, California","Los Angeles, California","Oxnard, California","Tijuana, Mexico","Ensenada, Mexico","Honolulu, Hawaii","Cebu, Philippines","Auckland, New Zealand"]),
+       ("Lone Star Fight Factory","San Antonio, Texas","Big state, big punchers, and a fighter for every style.",0,["San Antonio, Texas","Dallas, Texas","Fort Worth, Texas","Corpus Christi, Texas","Laredo, Texas","Monterrey, Mexico","Oklahoma City, Oklahoma","Tulsa, Oklahoma"]),
+       ("Atlantic City Ring Club","Atlantic City, New Jersey","Boardwalk fighters. Every style, every weight, every night.",1,["Atlantic City, New Jersey","Camden, New Jersey","Trenton, New Jersey","Philadelphia, Pennsylvania","Wilmington, Delaware","Bronx, New York","Kingston, Jamaica","Santo Domingo, Dominican Republic"])]
+import os
+if os.environ.get('SET')=='2': GYMS=GYMS2
+OFF=0xb8 if os.environ.get('SET')=='2' else 0xb4
+OUT='bots3.json' if os.environ.get('SET')=='2' else 'bots2.json'
 taken=set(json.load(open(sys.argv[2]))) if len(sys.argv)>2 else set()
 def name():
   while True:
@@ -71,7 +79,7 @@ def fit(t,lim,prev):
   _,h,b,F=best;return h,b,cut,F
 out=[]
 for gi,(gn,loc,desc,temper,towns) in enumerate(GYMS):
-  g={'id':str(uuid.UUID(int=0xb4+gi)),'gym':gn,'loc':loc,'desc':desc,'fighters':[]}
+  g={'id':str(uuid.UUID(int=OFF+gi)),'gym':gn,'loc':loc,'desc':desc,'fighters':[]}
   n=0
   for di,(d,lim) in enumerate(DIVS):
     prev=DIVS[di-1][1] if di else 0
@@ -81,7 +89,7 @@ for gi,(gn,loc,desc,temper,towns) in enumerate(GYMS):
       g['fighters'].append(dict(F,hgt=h-60,cut=cut,build=b,name=name(),nick=random.choice(NICK),home=random.choice(towns),div=d,
         plan=plan(t,temper),planName=f"{t} ({gn.split()[0]})",train=tr[0],train2=tr[1],style=t,key=f"b{n}"));n+=1
   out.append(g)
-json.dump(out,open('/home/claude/contenders-/bots/bots2.json','w'),indent=1)
+json.dump(out,open('/home/claude/contenders-/bots/'+OUT,'w'),indent=1)
 for g in out:
   print(g['gym'],len(g['fighters']))
 for f in out[0]['fighters'][::7]:
