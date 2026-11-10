@@ -181,7 +181,7 @@ if score < 0 and round <= 7 then 8/4/8 (counter)`],
 4B/4/12 (clinch)
 if opponent >= tired then 6B/6/8
 if endurance_percent < 40 then 2/2/12 (clinch)`],
-  'Flasher':[{str:10,kp:2,spd:17,agl:11,chn:10,cnd:12,hgt:6,cut:2},`7/4/9 (feint)
+  'Flasher':[{str:14,kp:4,spd:18,agl:10,chn:10,cnd:6,hgt:6,cut:2},`7/4/9 (feint)
 if endurance_percent < 50 then 5/4/11
 if opponent = exhausted then 8H/7/5`]
 };
@@ -597,7 +597,7 @@ function condText(x,after){
 /* ================= SHARED DATA (Supabase: accounts, forums, messages) ================= */
 cleanSlate();
 const SB_URL='https://ojsphhzgzbxmnfcbitqb.supabase.co',SB_KEY='sb_publishable_SWO9WhiSkoVhflY5CmY08A_hlqCEJSi';
-const BUILD='1794270549';
+const BUILD='1794270632';
 /* A tab left open on an older build must not save over newer data: if the site has been updated, reload before anything else is saved. */
 let staleBuild=false;
 async function checkBuild(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
@@ -1051,7 +1051,7 @@ function planFormHTML(arg){
   return back;
 }
 function planName_ok(n,except){n=(n||'').trim();if(!n)return'Give the plan a name.';if(n.length>40)return'Plan names can be up to 40 characters.';if(n!==except&&state.plans[n]!=null)return'You already have a plan with that name.';return''}
-function newDraft(){return{name:'',nick:'',home:'',build:'normal',str:12,kp:3,spd:12,agl:12,chn:11,cnd:12,hgt:6,cut:2,plan:'6/6/8',planName:'Basic'}}
+function newDraft(){return{name:'',nick:'',home:'',build:'normal',str:12,kp:2,spd:12,agl:12,chn:11,cnd:13,hgt:6,cut:2,plan:'6/6/8',planName:'Basic'}}
 function createHTML(){
   if(!state.draft)state.draft=newDraft();
   return cornerHTML('D');
