@@ -51,5 +51,10 @@ Goal: every fighter type has a real chance; the better fight plan decides. Tune 
 - Big heavyweights lose badly to smaller ones: the over-200-lb fatigue penalty (1 per 10 lb) is heavy, and the small-man edge adds to it (6'5" 258 lb lost 99% to 6'0" 202 lb, both 70 points, even before the small-man edge).
 - The all-out style (x2 damage dealt, x4 taken) gets its user knocked out in round 1 almost every time. The Flasher template avoids it.
 
+## Planned for Thursday Nov 12, 2026 (owner approved, his usage resets then)
+1. Server-side league runner (Supabase edge function on a nightly timer, same engine) so bots fight each other too and nightly fights don't use Claude. Bot-vs-bot fights keep the result line only; fights with a human keep the full report. Bots join next week's cycle.
+2. WeBL weight formula: get the owner's readings from WeBL's create page (or its page source) and match it. Known WeBL points: 7'1" very heavy STR 3 AGL 8 CND 13 = 302 lb (min 291); 7'1" very light STR 3 AGL 10 CND 13 = 250 (min 241). Our min-weight math already matches; only natural weight is off. Recheck all bots make weight after.
+3. Bare Knuckles region (owner, Nov 9): same setup as the regular region (region chosen at creation, separate rankings and champions, same WBC/WBA/WBO belts, BK bot fighters added to the existing bot gyms with BK-style builds and plans, same fight nights). WeBL BK rules (webl.vivi.com/eko/regions.html): 25 rounds; decision = most knockdowns (a foul point deduction counts as a knockdown for the opponent), then most stuns, else draw; 5% endurance recovery between rounds; the doctor never stops the fight; both eyes swollen shut = automatic clinch every round. Rating and status cap at 18 in BK (owner: "like it is there"), unlike the regular region. Strategy notes: webl-static.vivi.com/helpfiles/SpecialtyRegions.html.
+
 ## Open questions waiting on the WeBL forum
 Answered by the rules page except: the prime penalty when rating and status differ, build weight rules, the exact meaning of the rating constant, and stun thresholds beyond three.
