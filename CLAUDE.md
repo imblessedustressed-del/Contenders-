@@ -3,7 +3,7 @@
 Contenders is a text-based boxing strategy game modeled on the old Web Boxing League (WeBL, webl.vivi.com). The owner is the GitHub user imblessedustressed-del. Claude acts as league commissioner and maintainer.
 
 ## Where things live
-- **Live site:** https://imblessedustressed-del.github.io/Contenders-/ (GitHub Pages, served from the `main` branch root).
+- **Live site:** https://contendersboxingleague.com (custom domain since Nov 10, 2026, registered at Porkbun by the owner; DNS: 4 GitHub A + 4 AAAA records and www CNAME to imblessedustressed-del.github.io; repo `CNAME` file). The old https://imblessedustressed-del.github.io/Contenders-/ redirects there. GitHub Pages, served from the `main` branch root.
 - **Source:** `src/shell.html` (all pages, styles and UI code; contains the placeholder `%%SIM%%`), `src/plan.js` (WeBL fight plan language parser), `src/sim4.js` (round-based fight engine).
 - **Build:** `sh build.sh` writes `index.html` = shell with plan.js + sim4.js inlined. Always edit `src/`, rebuild, then commit both `src/` and `index.html`.
 - **Backend:** Supabase project `ojsphhzgzbxmnfcbitqb` (organization "Contenders", free plan). Email/password auth with email confirmation turned off. Site URL is set to the live site.
