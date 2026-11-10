@@ -4,6 +4,16 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Contenders - The Contenders Boxing League</title>
+<meta name="description" content="Contenders is a free online boxing manager game. Build fighters, write fight plans, and climb the rankings in weekly 12-round fights with title belts, purses, pay-per-view and a full fight report every bout. In the spirit of the classic Web Boxing League (WeBL).">
+<meta name="keywords" content="boxing game, online boxing manager, text boxing game, boxing simulation, browser game, free boxing game, fight plan, WeBL, Web Boxing League, PBBG">
+<link rel="canonical" href="https://contendersboxingleague.com/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Contenders">
+<meta property="og:title" content="Contenders - The Contenders Boxing League">
+<meta property="og:description" content="Contenders is a free online boxing manager game. Build fighters, write fight plans, and climb the rankings in weekly 12-round fights with title belts, purses, pay-per-view and a full fight report every bout. In the spirit of the classic Web Boxing League (WeBL).">
+<meta property="og:url" content="https://contendersboxingleague.com/">
+<meta name="twitter:card" content="summary">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"Contenders - The Contenders Boxing League","url":"https://contendersboxingleague.com/","description":"Contenders is a free online boxing manager game. Build fighters, write fight plans, and climb the rankings in weekly 12-round fights with title belts, purses, pay-per-view and a full fight report every bout. In the spirit of the classic Web Boxing League (WeBL).","genre":["Sports","Strategy","Simulation"],"gamePlatform":"Web browser","applicationCategory":"Game","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}}</script>
 <style>
 body{margin:0;background:#f3ece0;color:#2f2a24;font:16px/1.4 "Times New Roman",Times,serif}
 a{color:#1d4e89;text-decoration:underline;cursor:pointer}
@@ -130,6 +140,7 @@ svg.belt{width:46px;height:24px;display:block}
   <div id="mast"><div id="who" class="small"></div><div class="t"><div class="t1">Contenders</div><div class="t2">The Contenders Boxing League</div></div></div>
   <hr>
   <div id="view"></div>
+  <noscript><h1>Contenders - The Contenders Boxing League</h1><p>Contenders is a free online boxing manager game. Create boxers with your own mix of strength, speed, agility, chin and conditioning, write round-by-round fight plans, and send them into weekly 12-round fights against other gyms. Win purses, fans and pay-per-view money, climb the rankings in sixteen weight divisions from Strawweight to Heavyweight, and fight for WBC, WBA and WBO world titles. Every bout comes with a full blow-by-blow fight report. Turn on JavaScript to play.</p></noscript>
 </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -232,7 +243,7 @@ const BUILD='%%BUILD%%';
 let staleBuild=false;
 async function checkBuild(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
   if(v&&BUILD.indexOf('%')<0&&v!==BUILD&&+v>+BUILD){staleBuild=true;const a=document.activeElement;if(!(a&&(a.tagName==='TEXTAREA'||a.tagName==='INPUT')&&a.value))location.reload()}}catch(e){}}
-const SITE_URL='https://imblessedustressed-del.github.io/Contenders-/';
+const SITE_URL='https://contendersboxingleague.com/';
 let vacancies=[],bouts=[],cards={},botF={},SB=null,ME=null,MYEMAIL='',dbState='loading',managers={},topics=[],ims=[],posts=[],postsTopic=null,recovering=false,syncTimer=null,loadedGym=false;
 async function initDB(){
   try{if(window.supabase&&supabase.createClient)SB=supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:true,detectSessionInUrl:true}})}catch(e){}
