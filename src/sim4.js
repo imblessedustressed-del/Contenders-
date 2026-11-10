@@ -47,6 +47,9 @@ function simulate(FA,FB,rounds){
   const out={rounds:[],result:null,S};
   /* weight advantage: heavier man gets +1 STR per 5% (fractions kept), nothing above 300 lb */
   if(S[0].fw&&S[1].fw){const w0=Math.min(300,S[0].fw),w1=Math.min(300,S[1].fw),h=w0>=w1?0:1,lo=Math.min(w0,w1);if(lo>0&&w0!==w1)S[h].str+=(Math.abs(w0-w1)/lo*100)/5}
+  /* heavyweight small-man edge (owner rule, Nov 9, 2026): the shorter man gets +0.5 SPD per inch, the lighter man +1 AGL per 5% (300 lb cap) */
+  if((FA.divLim||0)>=1000){const hd=S[0].hgt-S[1].hgt;if(hd)S[hd>0?1:0].spd+=Math.abs(hd)*.5;
+    if(S[0].fw&&S[1].fw){const w0=Math.min(300,S[0].fw),w1=Math.min(300,S[1].fw),lo=Math.min(w0,w1);if(lo>0&&w0!==w1)S[w0<w1?0:1].agl+=(Math.abs(w0-w1)/lo*100)/5}}
   const run=[0,0];
   for(let r=1;r<=rounds&&!out.result;r++){
     const CH=S.map((x,i)=>choosePlan(x.parsed,ctxFor(S,i,r)));
