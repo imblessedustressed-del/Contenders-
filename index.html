@@ -76,6 +76,7 @@ pre.plan{font:14px 'Courier New',monospace;background:#fbf7ef;border:1px inset #
 .home .banner{display:block;width:100%;max-width:640px;margin:0 auto}
 .center{text-align:center}
 .tag{text-align:center;font-size:18px;color:#555;word-spacing:2px}.tag b{margin:0 14px;white-space:nowrap}
+.tag2{text-align:center;margin:-4px 0 10px}.tag2 b{display:inline-block;margin:4px 6px;padding:5px 12px;border-radius:999px;background:#fff3f3;border:1px solid #f0c4c4;color:#b3122e;font-size:14px;white-space:nowrap}
 .cta{text-align:center;font-size:19px;font-weight:bold;line-height:1.7}
 table.champ{margin:0 auto}table.champ td.pw{text-align:center;vertical-align:middle;min-width:90px}
 svg.pow{width:46px;height:38px;display:block;margin:0 auto}
@@ -685,7 +686,7 @@ function condText(x,after){
 /* ================= SHARED DATA (Supabase: accounts, forums, messages) ================= */
 cleanSlate();
 const SB_URL='https://ojsphhzgzbxmnfcbitqb.supabase.co',SB_KEY='sb_publishable_SWO9WhiSkoVhflY5CmY08A_hlqCEJSi';
-const BUILD='1794329432';
+const BUILD='1794329729';
 /* A tab left open on an older build must not save over newer data: if the site has been updated, reload before anything else is saved. */
 let staleBuild=false;
 async function checkBuild(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
@@ -945,6 +946,7 @@ function homeHTML(){
   const tf=titleFights();
   return`<div class="home">${bannerSVG()}
   <p class="tag"><b>Build your fighter.</b> <b>Take him to the top.</b> <b>Outthink managers from everywhere.</b></p>
+  <p class="tag2"><b>&#129354; Fight 12 AI bot gyms</b> <b>&#127942; Climb the rankings</b> <b>&#128176; Earn purses &amp; PPV money</b></p>
   <p class="small center">Three world titles in every division: the <b>WBC</b>, the <b>WBA</b> and the <b>WBO</b>. Check out the <a data-go="champs">reigning champs</a> and make your own mark.</p>
   <p class="cta"><a data-go="register">Sign Up to Play (Free!)</a> or <a data-go="gym">Enter Your Gym</a><br><a data-go="fight">Try it Out</a></p>
   <p class="center news">Contenders News: ${newsLine()}</p>
