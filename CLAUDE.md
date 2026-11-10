@@ -44,5 +44,11 @@ Contenders is a text-based boxing strategy game modeled on the old Web Boxing Le
 - Never copy WeBL's text or graphics. Match its layout and mechanics in original wording.
 - League fights are **not** scheduled yet. Do not start weekly fights without the owner's approval. Owner's launch plan (Nov 9, 2026): he makes his fighters in a day or two, then says go; then one fight per week per fighter, on the existing division fight nights (`FIGHT_NIGHT`, matching WeBL's old schedule).
 
+## Balance (owner, Nov 9, 2026)
+Goal: every fighter type has a real chance; the better fight plan decides. Tune the sim after launch from player feedback (Simulator Design forum), every change posted to Contenders News. Known issues from pre-launch engine tests, to revisit with real data:
+- Counterpunchers win about 60% against other types and KO Punchers about 30% (counter-punching steals AGL from slower, shorter men).
+- Big heavyweights lose badly to smaller ones: the over-200-lb fatigue penalty (1 per 10 lb) is heavy, and the small-man edge adds to it (6'5" 258 lb lost 99% to 6'0" 202 lb, both 70 points, even before the small-man edge).
+- The all-out style (x2 damage dealt, x4 taken) gets its user knocked out in round 1 almost every time. The Flasher template avoids it.
+
 ## Open questions waiting on the WeBL forum
 Answered by the rules page except: the prime penalty when rating and status differ, build weight rules, the exact meaning of the rating constant, and stun thresholds beyond three.
