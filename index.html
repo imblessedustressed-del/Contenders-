@@ -70,6 +70,7 @@ table.champ{margin:0 auto}table.champ td.pw{text-align:center;vertical-align:mid
 svg.pow{width:46px;height:38px;display:block;margin:0 auto}
 h1.pubname{font:bold 34px 'Times New Roman',serif;color:#1f2a3a}
 p.fl{margin:0 0 18px 30px;line-height:1.5}
+h3.divh{font:bold 17px 'Times New Roman',serif;color:#1f2a3a;margin:16px 0 10px 12px}
 table.granks tr:nth-child(odd) td{background:#f1e8d8}
 .rksel p{margin:4px 0}.rksel select{font-size:13px}.rkh{font-family:Georgia,serif;font-size:22px;margin:14px 0}
 table.wranks{margin:0 auto;border-collapse:collapse;font-family:Georgia,serif;font-size:14px}
@@ -596,7 +597,7 @@ function condText(x,after){
 /* ================= SHARED DATA (Supabase: accounts, forums, messages) ================= */
 cleanSlate();
 const SB_URL='https://ojsphhzgzbxmnfcbitqb.supabase.co',SB_KEY='sb_publishable_SWO9WhiSkoVhflY5CmY08A_hlqCEJSi';
-const BUILD='1794267563';
+const BUILD='1794269468';
 /* A tab left open on an older build must not save over newer data: if the site has been updated, reload before anything else is saved. */
 let staleBuild=false;
 async function checkBuild(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
@@ -1400,21 +1401,23 @@ function gymStats(uid){const c=cards[uid]||{fighters:[],retired:[]},all=[...(c.f
   const n=r[0]+r[1]+r[2];return{earn:all.reduce((a,f)=>a+(f.earn||0),0),rec:r,titles,diff:r[0]-r[1],pct:n?Math.round(100*(r[0]+.5*r[2])/n):0,active:(c.fighters||[]).length}}
 function gymPubHTML(uid){
   const m=managers[uid];if(!m)return`<h1>Gym not found</h1><p>${needDB()}<a data-go="grank">Back to Gym Rankings</a></p>`;
-  const c=cards[uid]||{fighters:[],retired:[]},g=gymStats(uid),fl=(f,i,act)=>{const r=f.rec||[0,0,0,0];
-    return`<p class="fl">${act?`<a data-go="opub:${uid}:${encN(f.id)}">${esc(f.name)}</a>`:esc(f.name)}${(f.titles||[]).length?' <span style="color:#e8a400">&#9733;</span>':''} - ${esc(f.div)}weight - ${r[0]} wins (${r[3]} by knock out), ${r[1]} losses, and ${r[2]} draws. Rating ${f.rating}. Status ${f.status}.${(()=>{const t=act?[reignLine(uid,f.id),champLine(uid,f.id)].filter(Boolean).join(', '):'';return t?` <b class="r">${esc(cap(t))}!!</b>`:(f.titles||[]).length?` <b class="r">Winner of ${f.titles.length} world title${f.titles.length>1?'s':''}!!</b>`:''})()} Career earnings ${money(f.earn)}.</p>`};
+  const c=cards[uid]||{fighters:[],retired:[]},g=gymStats(uid),rk={};(c.fighters||[]).forEach(f=>{if(!rk[f.div])rk[f.div]=rankedIn(f.div)});const fl=(f,i,act)=>{const r=f.rec||[0,0,0,0];
+    return`<p class="fl">${act?`<a data-go="opub:${uid}:${encN(f.id)}">${esc(f.name)}</a>`:esc(f.name)}${(f.titles||[]).length?' <span style="color:#e8a400">&#9733;</span>':''} ${r[0]} wins (${r[3]} by knock out), ${r[1]} losses, and ${r[2]} draws. Rating ${f.rating||0}. Status ${f.status||0}.${(()=>{const t=act?[reignLine(uid,f.id),champLine(uid,f.id)].filter(Boolean).join(', '):'';return t?` <b class="r">${esc(cap(t))}!!</b>`:(f.titles||[]).length?` <b class="r">Winner of ${f.titles.length} world title${f.titles.length>1?'s':''}!!</b>`:''})()}${act&&rk[f.div]?(()=>{const n=rk[f.div].findIndex(x=>x.uid===uid&&x.f.id===f.id)+1;return n?` Rank #${n} in <a data-go="frank:${encN(f.div)}">Contenders</a>.`:''})():''} Career earnings ${money(f.earn)}.</p>`};
+  const byDiv=(L,act)=>[...DIVS].reverse().filter(([d])=>L.some(f=>f.div===d)).map(([d])=>`<h3 class="divh">${esc(d)}weights</h3>${L.map((f,i)=>[f,i]).filter(([f])=>f.div===d).sort((x,y)=>{const r=f=>{const n=act&&rk[d]?rk[d].findIndex(z=>z.uid===uid&&z.f.id===f.id):-1;return n<0?1e9:n};return r(x[0])-r(y[0])}).map(([f,i])=>fl(f,i,act)).join('')}`).join('');
   return`<h1 class="pubname">${esc(m.gym)}${m.bot?' <span class="small mute">(bot gym)</span>':''}</h1>${m.bot?'<p class="small mute">A computer-run gym that fills out the rankings. Spar with its fighters in Practice Fights.</p>':''}
   <p>${esc(m.gym)} trains fighters${m.loc?` in ${esc(m.loc)}`:''}. Managing since ${m.at?dt(m.at).slice(0,10):'recently'}.${uid!==ME&&!m.bot?` <a data-dm="${esc(uid)}">Send a message</a>`:''}</p>
   ${m.desc?`<div class="note" style="white-space:pre-wrap">${esc(m.desc)}</div>`:''}
   <table class="plain" style="margin-top:12px"><tr><th>Region</th><th>Earnings</th><th>Record</th><th>Titles</th></tr>
   <tr><td><b>Contenders</b></td><td>${money(g.earn)}</td><td>${g.rec[0]}-${g.rec[1]}-${g.rec[2]}</td><td class="cr">${g.titles}</td></tr></table>
-  <h2>Fighters Managed by ${esc(m.gym)}</h2>${(c.fighters||[]).length?c.fighters.map((f,i)=>fl(f,i,true)).join(''):'<p class="mute">No active fighters.</p>'}
+  <h2>Fighters Managed by ${esc(m.gym)}</h2>${(c.fighters||[]).length?byDiv(c.fighters,true):'<p class="mute">No active fighters.</p>'}
   <p>&#9758; <a data-go="gymret:${uid}">${esc(m.gym)}'s Retired Fighters</a>${(c.retired||[]).length?` (${c.retired.length})`:''}</p>
   <p><a data-go="grank">Back to Gym Rankings</a></p>`;
 }
 function gymRetHTML(uid){
   const m=managers[uid];if(!m)return`<h1>Gym not found</h1><p>${needDB()}<a data-go="grank">Back to Gym Rankings</a></p>`;
   const R=(cards[uid]||{}).retired||[];
-  return`<h1>${esc(m.gym)}'s Retired Fighters</h1>${R.length?R.map(f=>{const r=f.rec||[0,0,0,0];return`<p class="fl"><a data-go="rpub:${uid}:${encN(f.id)}">${esc(f.name)}</a>${(f.titles||[]).length?' <span style="color:#e8a400">&#9733;</span>':''} - ${esc(f.div)}weight - ${r[0]} wins (${r[3]} by knock out), ${r[1]} losses, and ${r[2]} draws. Rating ${f.rating}. Status ${f.status}.${(f.titles||[]).length?` <b class="r">Winner of ${f.titles.length} world title${f.titles.length>1?'s':''}!!</b>`:''} Career earnings ${money(f.earn)}.</p>`}).join(''):'<p class="mute">This gym has no retired fighters.</p>'}
+  const one=f=>{const r=f.rec||[0,0,0,0];return`<p class="fl"><a data-go="rpub:${uid}:${encN(f.id)}">${esc(f.name)}</a>${(f.titles||[]).length?' <span style="color:#e8a400">&#9733;</span>':''} ${r[0]} wins (${r[3]} by knock out), ${r[1]} losses, and ${r[2]} draws. Rating ${f.rating}. Status ${f.status}.${(f.titles||[]).length?` <b class="r">Winner of ${f.titles.length} world title${f.titles.length>1?'s':''}!!</b>`:''} Career earnings ${money(f.earn)}.</p>`};
+  return`<h1>${esc(m.gym)}'s Retired Fighters</h1>${R.length?[...DIVS].reverse().filter(([d])=>R.some(f=>f.div===d)).map(([d])=>`<h3 class="divh">${esc(d)}weights</h3>${R.filter(f=>f.div===d).map(one).join('')}`).join(''):'<p class="mute">This gym has no retired fighters.</p>'}
   <p><a data-go="gympub:${uid}">Back to ${esc(m.gym)}</a></p>`;
 }
 function retFighterHTML(arg){
