@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Contenders - The Contenders Boxing League</title>
+<meta name="google-site-verification" content="wDRDov4aw-_xIJqXTX8Txu9U4FK2ZMPCaz0DuWRoVwc" />
 <meta name="description" content="Contenders is a free online boxing manager game. Build fighters, write fight plans, and climb the rankings in weekly 12-round fights with title belts, purses, pay-per-view and a full fight report every bout. In the spirit of the classic Web Boxing League (WeBL).">
 <meta name="keywords" content="boxing game, online boxing manager, text boxing game, boxing simulation, browser game, free boxing game, fight plan, WeBL, Web Boxing League, PBBG">
 <link rel="canonical" href="https://contendersboxingleague.com/">
@@ -623,7 +624,7 @@ function condText(x,after){
 /* ================= SHARED DATA (Supabase: accounts, forums, messages) ================= */
 cleanSlate();
 const SB_URL='https://ojsphhzgzbxmnfcbitqb.supabase.co',SB_KEY='sb_publishable_SWO9WhiSkoVhflY5CmY08A_hlqCEJSi';
-const BUILD='1794325168';
+const BUILD='1794325921';
 /* A tab left open on an older build must not save over newer data: if the site has been updated, reload before anything else is saved. */
 let staleBuild=false;
 async function checkBuild(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
