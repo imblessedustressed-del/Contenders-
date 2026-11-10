@@ -597,7 +597,7 @@ function condText(x,after){
 /* ================= SHARED DATA (Supabase: accounts, forums, messages) ================= */
 cleanSlate();
 const SB_URL='https://ojsphhzgzbxmnfcbitqb.supabase.co',SB_KEY='sb_publishable_SWO9WhiSkoVhflY5CmY08A_hlqCEJSi';
-const BUILD='1794269468';
+const BUILD='1794270549';
 /* A tab left open on an older build must not save over newer data: if the site has been updated, reload before anything else is saved. */
 let staleBuild=false;
 async function checkBuild(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
@@ -1112,7 +1112,7 @@ function natWeight(F){const h=HT(F);return Math.round((160+9.2*(h-68))*(BUILDS[F
 function freeLoss(F){return natWeight(F)*0.0025*((F.cnd||10)+2)}
 function minWeight(F){return Math.round(natWeight(F)-freeLoss(F))}
 /* WeBL: R = division limit / (weight - free loss); starting endurance x R^2 when he has to sweat */
-function weighIn(F,div){const lim=weightOf(div),w=natWeight(F);if(lim>=1000)return{fight:w,endMul:1};const m=w-freeLoss(F);if(m<=lim)return{fight:Math.min(w,lim),endMul:1};const R=lim/m;return{fight:lim,endMul:R*R}}
+function weighIn(F,div){const lim=(DIVS.find(d=>d[0]===div)||[0,160])[1],w=natWeight(F);if(lim>=1000)return{fight:w,endMul:1};const m=w-freeLoss(F);if(m<=lim)return{fight:Math.min(w,lim),endMul:1};const R=lim/m;return{fight:lim,endMul:R*R}}
 function weightLbs(F){return natWeight(F)}
 const PROGS=[['str','weight lifting (STR)'],['kp','heavy bag (KP)'],['spd','speed bag (SPD)'],['agl','jump rope (AGL)'],['chn','sparring (CHN)'],['cnd','roadwork (CND)']];
 const primeF=F=>1-Math.min(.3,.015*Math.abs((F.rating||0)-(F.status||0)));
@@ -1202,7 +1202,7 @@ function planErr(){for(const s of corners()){const F=getF(s);if(!F)return'Pick t
 function weightOf(div){const l=(DIVS.find(d=>d[0]===div)||[0,160])[1];return l>=1000?225:l}
 function reportHTML(f,b,upto){
   const S=f.S,W=weightOf(b.div);
-  const intro=S.map((x,i)=>`<p>In this corner, standing ${ht(HT(x.F))} (${cm(HT(x.F))} centimeters) tall weighing in at ${W} pounds (${Math.round(W*.4536)} kilograms) with a record of ${b.recs[i][0]} wins, ${b.recs[i][2]} draws, and ${b.recs[i][1]} losses fighting for ${esc((b.gyms&&b.gyms[i])||b.gym)} out of ${esc(x.F.home||'parts unknown')} is <b>${esc(x.F.name)}</b>!!</p><div class="gap"></div>`).join('');
+  const intro=S.map((x,i)=>{const Wx=(x.F.fightW&&weightOf(b.div)===225)?x.F.fightW:W;return`<p>In this corner, standing ${ht(HT(x.F))} (${cm(HT(x.F))} centimeters) tall weighing in at ${Wx} pounds (${Math.round(Wx*.4536)} kilograms) with a record of ${b.recs[i][0]} wins, ${b.recs[i][2]} draws, and ${b.recs[i][1]} losses fighting for ${esc((b.gyms&&b.gyms[i])||b.gym)} out of ${esc(x.F.home||'parts unknown')} is <b>${esc(x.F.name)}</b>!!</p><div class="gap"></div>`}).join('');
   let h=`<h1 class="date">${esc(b.date)}</h1>${b.venue?`<p>${b.tv&&b.tv.tier==='ppv'?'Live on pay-per-view from':b.tv&&b.tv.tier==='undercard'?'On the pay-per-view undercard, live from':b.tv&&b.tv.tier==='tv'?'Live on TV from':'Live from'} <b>${esc(b.venue.name)}</b> in ${esc(b.venue.city)}${b.att?`. Attendance: ${crowdText(b.venue,b.att)}`:''}.${b.tv&&b.tv.buys?` Pay-per-view buys: <b>${b.tv.buys.toLocaleString('en-US')}</b> worldwide (${Object.entries(b.tv.regions||{}).filter(([,v])=>v).map(([r,v])=>`${esc(r)} ${v.toLocaleString('en-US')}`).join(', ')}).`:b.tv&&b.tv.viewers?` Viewers: <b>${b.tv.viewers.toLocaleString('en-US')}</b>.`:''}</p><div class="gap"></div>`:''}${intro}<p>This bout is scheduled for ${b.rounds} rounds.${b.belt?` It is for the <b>${esc(b.belt)} ${esc(b.div)}weight Championship of the World</b>.`:''}</p>`;
   const end=f.result,last=f.rounds.length;
   f.rounds.slice(0,upto).forEach((R,ri)=>{
@@ -1610,7 +1610,7 @@ document.addEventListener('click',async e=>{
   if(t.dataset.go){nav(t.dataset.go);return}
   if(t.dataset.dm){window._dmTo=t.dataset.dm;nav('msgs');return}
   const side=(t.closest('[data-side]')||{dataset:{}}).dataset.side||t.dataset.reset;const FS=s=>s==='D'?state.draft:FTR(s);
-  if(t.dataset.s){const F=FS(side),k=t.dataset.s,d=+t.dataset.d,nv=F[k]+d;if(nv<MINS[k]||nv>(k==='hgt'?24:MAX))return;
+  if(t.dataset.s){const F=FS(side),k=t.dataset.s,d=+t.dataset.d,nv=F[k]+d;if(nv<MINS[k]||nv>(k==='hgt'?25:MAX))return;
     if(k==='kp'&&nv>Math.floor(F.str/3))return alertBox(`He needs ${nv*3} Strength for ${nv} KO Punch Bonus.`);
     if(k==='str'&&F.kp>Math.floor(nv/3))return alertBox(`Lower his KO Punch Bonus first. ${F.kp} KP needs ${F.kp*3} Strength.`);F[k]=nv;save();render()}
   else if(t.dataset.pre){const[st,pl]=PRESETS[t.dataset.pre];ensurePlans();if(state.plans[t.dataset.pre]==null)state.plans[t.dataset.pre]=pl;Object.assign(FS(side),st,{plan:state.plans[t.dataset.pre],planName:t.dataset.pre});save();render()}
@@ -1706,7 +1706,7 @@ document.addEventListener('change',e=>{
   if(el.id==='trWho'){nav('train:'+el.value);return}
   const tb=el.closest('[data-side]');if(!tb)return;const F=tb.dataset.side==='D'?state.draft:FTR(tb.dataset.side);if(!F)return;
   if(el.dataset.f==='plan'){F.plan=el.value;save();render();return}
-  if(el.dataset.st){const k=el.dataset.st;F[k]=clamp(parseInt(el.value)||0,MINS[k],k==='hgt'?24:MAX);if(k==='kp')F.kp=Math.min(F.kp,Math.floor(F.str/3));if(k==='str')F.kp=Math.min(F.kp,Math.floor(F.str/3));save();render();return}
+  if(el.dataset.st){const k=el.dataset.st;F[k]=clamp(parseInt(el.value)||0,MINS[k],k==='hgt'?25:MAX);if(k==='kp')F.kp=Math.min(F.kp,Math.floor(F.str/3));if(k==='str')F.kp=Math.min(F.kp,Math.floor(F.str/3));save();render();return}
   if(el.dataset.f){const f=el.dataset.f;F[f]=f==='cut'?+el.value:el.value;save();if(f==='cut'||f==='build'||f==='div')render();return}
   if(el.dataset.p){const p=F.plan[+el.dataset.p],k=el.dataset.k;p[k]=(k==='style'||k==='tgt')?el.value:+el.value;save();if(k!=='style'&&k!=='tgt')render()}
 });
