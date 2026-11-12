@@ -11,3 +11,5 @@ open('index.html','w').write(s.replace('%%SIM%%',eng).replace('%%BUILD%%',b))
 open('version.txt','w').write(b)
 print('index.html rebuilt, build',b)
 PY
+# Engine bundle for the server-side league runner (needs: cd tools && npm i)
+node tools/mkcore.js || echo 'WARNING: engine-core.js not rebuilt (run: cd tools && npm i)'
