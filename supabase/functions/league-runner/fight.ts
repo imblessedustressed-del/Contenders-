@@ -5,7 +5,7 @@ export function fightOne(C: any, B: any, red: any, blue: any) {
   const rR = FA.rating || 0, rB = FB.rating || 0;
   const f: any = (C as any).simulate(C.prepFighter(FA, FA, FB, div), C.prepFighter(FB, FA, FB, div), B.rounds || 12);
   const r = f.result, how = r.decision ? r.type.toLowerCase() : `${r.type} in round ${r.round} (${C.fmt(r.t)})`;
-  const score = f.totals.map((t: number[]) => t.join("-")).join(", ");
+  const score = f.bk && r.decision && f.bkScore ? `knockdowns ${f.bkScore.kd.join("-")}, stuns ${f.bkScore.stuns.join("-")}` : f.totals.map((t: number[]) => t.join("-")).join(", ");
   const purse = C.boutPurses(rR, rB, belt, null, star);
   const v = B.venue || { name: "", city: "", cap: 1000, tier: "club", tv: "stream" };
   const att = C.attendanceFor(v, Math.max(rR, rB), belt, star);
