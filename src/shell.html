@@ -439,7 +439,7 @@ $('#installBtn').onclick=async()=>{if(installEvt){installEvt.prompt();await inst
 function refresh(){
   const a=document.activeElement;
   if(a&&(a.tagName==='TEXTAREA'||a.tagName==='INPUT')&&a.value)return;
-  const live=['champs','frank','gym','rec','pub','fcards','forums','msgs','grank','gympub','gymret','opub','rpub','register','changegym','login','logout','home','desc','changepw'];
+  const live=['sched','champs','frank','gym','rec','pub','fcards','forums','msgs','grank','gympub','gymret','opub','rpub','register','changegym','login','logout','home','desc','changepw'];
   if(live.includes(view.split(':')[0])||view.startsWith('forum:')||view.startsWith('topic:'))render();
 }
 function render(){

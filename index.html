@@ -700,7 +700,7 @@ function condText(x,after){
 /* ================= SHARED DATA (Supabase: accounts, forums, messages) ================= */
 cleanSlate();
 const SB_URL='https://ojsphhzgzbxmnfcbitqb.supabase.co',SB_KEY='sb_publishable_SWO9WhiSkoVhflY5CmY08A_hlqCEJSi';
-const BUILD='1794520539';
+const BUILD='1794520619';
 /* A tab left open on an older build must not save over newer data: if the site has been updated, reload before anything else is saved. */
 let staleBuild=false;
 async function checkBuild(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
@@ -824,7 +824,7 @@ $('#installBtn').onclick=async()=>{if(installEvt){installEvt.prompt();await inst
 function refresh(){
   const a=document.activeElement;
   if(a&&(a.tagName==='TEXTAREA'||a.tagName==='INPUT')&&a.value)return;
-  const live=['champs','frank','gym','rec','pub','fcards','forums','msgs','grank','gympub','gymret','opub','rpub','register','changegym','login','logout','home','desc','changepw'];
+  const live=['sched','champs','frank','gym','rec','pub','fcards','forums','msgs','grank','gympub','gymret','opub','rpub','register','changegym','login','logout','home','desc','changepw'];
   if(live.includes(view.split(':')[0])||view.startsWith('forum:')||view.startsWith('topic:'))render();
 }
 function render(){
