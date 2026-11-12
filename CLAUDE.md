@@ -72,6 +72,9 @@ Goal: every fighter type has a real chance; the better fight plan decides. Tune 
 - Separate rankings (`frank:Div@bk`), champions (`champs:bk`; currentChamps keys BK belts as 'BK '+div), help page `help:bk`. Practice/Simbot: two BK fighters always go 25 rounds under BK rules.
 - BK bots: started as 128 (one per division in each of b4-bb, keys k0-k15), topped up to 5 per division per gym by the runner, from `bots/gen_bk.py 1225 <taken.json>` -> `bots/bots_bk.json` (loaded through pg_net from the site). Types rotate Grinder (ropes), Clincher, Flasher. Engine tests: Grinder beats Flasher, Clincher beats Grinder, Flasher about even with Clincher; Grinder mirrors draw often. Revisit with real data.
 
+## Time zone (owner, Nov 12, 2026: "make sure everything's central time")
+Everything runs on Central time: the runner computes the date/time in America/Chicago itself (pg_cron fires every 15 minutes, so cron's own UTC clock doesn't matter), the database default time zone is America/Chicago, and both Claude scheduled tasks use CRON_TZ=America/Chicago (commissioner check at 12 past midnight, 6 AM, noon and 6 PM Central).
+
 ## Direction (owner, Nov 12, 2026)
 Starting the week of Nov 16, Contenders moves away from WeBL and makes its own way ("no one's going to play from that game"). WeBL is no longer the source of truth for new work; the owner decides new rules.
 
