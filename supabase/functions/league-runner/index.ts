@@ -9,7 +9,6 @@ import { loadCore } from "./core.ts";
 import { fightOne } from "./fight.ts";
 
 const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
-const BOT_START = "2026-11-15"; // bots join from next week's cycle (owner, Nov 2026)
 const MAX_FIGHTS = 250; // per pass; the next pass picks up the rest
 const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
@@ -123,7 +122,7 @@ Deno.serve(async (req) => {
       bots.filter((b) => !busy.has(pk(b.u, b.k))).forEach((b) => (byDiv[b.F.div + "|" + b.reg] ||= []).push(b));
       for (const [dk, list] of Object.entries(byDiv)) {
         const div = dk.split("|")[0];
-        const date = nextNight(C, div, today); if (!date || date < BOT_START) continue;
+        const date = nextNight(C, div, today); if (!date) continue;
         list.forEach((b) => (b.r = (b.F.rating || 0) + Math.random() * 0.9));
         list.sort((x, y) => x.r - y.r);
         while (list.length > 1) {
