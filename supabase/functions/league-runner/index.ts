@@ -1,8 +1,9 @@
 // Contenders nightly league runner (Supabase edge function).
 // Called every 15 minutes by pg_cron; it only acts during fight night (10:40-11:59 PM Central) unless ?force=1.
+// Fights run from 10:40 PM; booking happens at the midnight pass (11:50 PM on), after that night's fights (owner, Nov 12).
 // Each pass: 1) vacate belts of retired champions, 2) fight every scheduled bout dated today or earlier,
 // 3) book next bouts: each human fighter vs a bot in his division and region (Contenders or Bare Knuckles, 25 rounds), and the remaining bots against each other,
-// on the division's fight night, never sooner than 24 hours after a fighter's last fight (tomorrow's night skips a week).
+// on the division's next fight night: tonight's fighters get next week's night; a night less than 24 hours away (tomorrow) skips to the week after.
 // Same engine as the site: core.js is generated from src/ by tools/mkcore.js.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { loadCore } from "./core.ts";
@@ -83,12 +84,10 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 3) book next bouts (only once every due fight is done)
-    if (leftDue === 0) {
+    // 3) book next bouts at the midnight pass (only once every due fight is done)
+    if (leftDue === 0 && (bookOnly || mins >= 23 * 60 + 50)) {
       const open = await all(() => sb.from("bouts").select("red_user,red_fid,blue_user,blue_fid").neq("status", "done"));
       const busy = new Set<string>(); open.forEach((b) => { busy.add(pk(b.red_user, b.red_fid)); busy.add(pk(b.blue_user, b.blue_fid)); });
-      const todays = await all(() => sb.from("bouts").select("red_user,red_fid,blue_user,blue_fid").eq("status", "done").eq("fight_date", today));
-      todays.forEach((b) => { busy.add(pk(b.red_user, b.red_fid)); busy.add(pk(b.blue_user, b.blue_fid)); }); // 24-hour rest
       const free = (bot: boolean) => {
         const out: any[] = [];
         for (const [u, d] of Object.entries(S)) {
