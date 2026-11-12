@@ -1,147 +1,20 @@
-// Contenders nightly league runner (Supabase edge function).
-// Called every 15 minutes by pg_cron; it only acts during fight night (10:40-11:59 PM Central) unless ?force=1.
-// Fights run from 10:40 PM; booking happens at the midnight pass (11:50 PM on), after that night's fights (owner, Nov 12).
-// Each pass: 1) vacate belts of retired champions, 2) fight every scheduled bout dated today or earlier,
-// 3) book next bouts: each human fighter vs a bot in his division and region (Contenders or Bare Knuckles, 25 rounds), and the remaining bots against each other,
-// on the division's next fight night: tonight's fighters get next week's night; a night less than 24 hours away (tomorrow) skips to the week after.
-// Same engine as the site: core.js is generated from src/ by tools/mkcore.js.
+// Contenders league runner (Supabase edge function). Tiny on purpose: every run it downloads the fight engine
+// (/engine-core.js) and the runner logic (/runner-lib.js, bundled from lib.ts + botgen.ts + press.ts by build.sh)
+// from the live site, so a site push updates the runner without redeploying. See lib.ts for what a pass does.
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { loadCore } from "./core.ts";
-import { fightOne } from "./fight.ts";
-
 const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
-const MAX_FIGHTS = 250; // per pass; the next pass picks up the rest
-const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-
-const chicago = () => {
-  const p = Object.fromEntries(new Intl.DateTimeFormat("en-US", { timeZone: "America/Chicago", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" })
-    .formatToParts(new Date()).map((x) => [x.type, x.value]));
-  return { date: `${p.year}-${p.month}-${p.day}`, mins: +p.hour * 60 + +p.minute };
-};
-const addDays = (d: string, n: number) => { const t = new Date(d + "T12:00:00Z"); t.setUTCDate(t.getUTCDate() + n); return t.toISOString().slice(0, 10); };
-const weekday = (d: string) => DAYS[new Date(d + "T12:00:00Z").getUTCDay()];
-function nextNight(C: any, div: string, today: string) {
-  const night = (C.FIGHT_NIGHT as Record<string, string>)[div];
-  if (!night) return null;
-  for (let n = 1; n <= 7; n++) { const d = addDays(today, n); if (weekday(d) === night) return n === 1 ? addDays(d, 7) : d; }
-  return null;
+const ENGINE = ["simulate", "fmt", "prepFighter", "applyResult", "boutPurses", "attendanceFor", "fightFans", "broadcastResult", "venueTier", "pickVenue", "broadcastTier", "ht", "DIVS", "FIGHT_NIGHT", "minWeight", "natWeight", "parsePlan"];
+async function get(path: string) {
+  const r = await fetch(`https://contendersboxingleague.com/${path}?v=${Date.now()}`);
+  if (!r.ok) throw new Error(`${path} download failed: ${r.status}`);
+  return await r.text();
 }
-const pk = (u: string, f: string) => u + ":" + f;
-const cardEntry = (F: any) => ({
-  region: F.region || null, rec: F.rec, rating: F.rating || 0, status: F.status || 0, streak: F.streak || 0, earn: F.earn || 0, fans: F.fans || 0, ppv: F.ppv || 0,
-  hist: (F.hist || []).slice(0, 25).map((h: any) => Object.fromEntries(["opp", "oh", "div", "belt", "date", "week", "res", "score", "icon", "plan", "ogym", "bout", "earned"].map((k) => [k, h[k] ?? null]))),
-});
-async function all(q: () => any) { // page through a select
-  const out: any[] = [];
-  for (let from = 0; ; from += 1000) { const { data, error } = await q().range(from, from + 999); if (error) throw error; out.push(...data); if (data.length < 1000) return out; }
-}
-
 Deno.serve(async (req) => {
-  const url = new URL(req.url);
-  // the caller must send the key kept in the private runner_key table (only pg_cron and the service role can read it)
-  const { data: key } = await sb.from("runner_key").select("k").eq("id", 1).maybeSingle();
-  if (!key?.k || req.headers.get("x-runner-key") !== key.k) return new Response("no", { status: 401 });
-  const { date: today, mins } = chicago();
-  const force = url.searchParams.get("force") === "1";
-  const bookOnly = url.searchParams.get("book") === "1";
-  if (!force && mins < 22 * 60 + 40) return Response.json({ skipped: "not fight time", today });
-  const { data: rid } = await sb.rpc("runner_begin");
-  if (!rid) return Response.json({ skipped: "another pass is running" });
-  const log: string[] = [];
-  let ran = 0, booked = 0, vacated = 0, leftDue = 0;
   try {
-    const C = await loadCore();
-    // 1) retired champions lose their belts
-    const vac = await sb.rpc("vacate_retired_champs");
-    if (vac.error) log.push("vacate: " + vac.error.message); else vacated = (vac.data || []).length;
-
-    // load gyms
-    const profs = await all(() => sb.from("profiles").select("id,gym,is_bot"));
-    const P: Record<string, any> = Object.fromEntries(profs.map((p) => [p.id, p]));
-    const states = await all(() => sb.from("gym_state").select("user_id,data"));
-    const S: Record<string, any> = Object.fromEntries(states.map((s) => [s.user_id, s.data || {}]));
-
-    // 2) fight due bouts
-    if (!bookOnly) {
-      const due = await all(() => sb.from("bouts").select("*").eq("status", "scheduled").lte("fight_date", today).order("fight_date").order("id"));
-      for (const B of due) {
-        if (ran >= MAX_FIGHTS) { leftDue++; continue; }
-        if (B.belt) { log.push(`bout ${B.id}: title fight, left for the commissioner`); continue; }
-        const FA = S[B.red_user]?.[B.red_fid], FB = S[B.blue_user]?.[B.blue_fid];
-        if (!FA || !FB) { log.push(`bout ${B.id}: fighter missing`); continue; }
-        try {
-          const o = fightOne(C, B, { F: FA, gym: P[B.red_user]?.gym || "" }, { F: FB, gym: P[B.blue_user]?.gym || "" });
-          const { data, error } = await sb.rpc("commit_bout", { p_bout: B.id, p_summary: o.summary, p_result: o.result, p_mgr: o.mgr, p_after: o.after, p_cards: o.after.map(cardEntry) });
-          if (error) { log.push(`bout ${B.id}: ${error.message}`); continue; }
-          if (data === "done") {
-            ran++;
-            // keep our in-memory copy current (retired fighters leave the roster)
-            [[B.red_user, B.red_fid, o.after[0]], [B.blue_user, B.blue_fid, o.after[1]]].forEach(([u, k, F]: any) => {
-              if (F.retireAfter) { S[u].roster = (S[u].roster || []).filter((x: string) => x !== k); delete S[u][k]; } else S[u][k] = F;
-            });
-          }
-        } catch (e) { log.push(`bout ${B.id}: ${(e as Error).message}`); }
-      }
-    }
-
-    // 3) book next bouts at the midnight pass (only once every due fight is done)
-    if (leftDue === 0 && (bookOnly || mins >= 23 * 60 + 50)) {
-      const open = await all(() => sb.from("bouts").select("red_user,red_fid,blue_user,blue_fid").neq("status", "done"));
-      const busy = new Set<string>(); open.forEach((b) => { busy.add(pk(b.red_user, b.red_fid)); busy.add(pk(b.blue_user, b.blue_fid)); });
-      const free = (bot: boolean) => {
-        const out: any[] = [];
-        for (const [u, d] of Object.entries(S)) {
-          if (!P[u] || !!P[u].is_bot !== bot) continue;
-          for (const k of (d.roster || [])) { const F = d[k]; if (F && F.div && !busy.has(pk(u, k))) out.push({ u, k, F, gym: P[u].gym, reg: F.region === "bk" ? "bk" : "" }); }
-        }
-        return out;
-      };
-      const rows: any[] = [];
-      const book = (a: any, b: any, date: string, botOnly: boolean) => {
-        const ra = a.F.rating || 0, rb = b.F.rating || 0, contender = Math.max(ra, rb) >= 3;
-        const v: any = C.pickVenue(C.venueTier(a.F.div, ra, rb, null, 1, contender));
-        v.tv = C.broadcastTier(null, 1, contender);
-        rows.push({ fight_date: date, div: a.F.div, red_user: a.u, red_fid: a.k, blue_user: b.u, blue_fid: b.k, belt: null, rounds: a.reg === "bk" ? 25 : 12, region: a.reg || null, status: "scheduled", venue: v, bot_only: botOnly });
-        busy.add(pk(a.u, a.k)); busy.add(pk(b.u, b.k));
-      };
-      const bots = free(true);
-      // humans first: closest-rated bot in his division, preferring bots he hasn't fought and a different gym than last time
-      for (const h of free(false)) {
-        const date = nextNight(C, h.F.div, today); if (!date) continue;
-        const seen = new Set((h.F.hist || []).filter((x: any) => x.bout).map((x: any) => x.opp + "|" + x.ogym));
-        const lastGym = ((h.F.hist || []).find((x: any) => x.bout) || {}).ogym;
-        const cands = bots.filter((b) => b.F.div === h.F.div && b.reg === h.reg && !busy.has(pk(b.u, b.k))); // same division and region
-        if (!cands.length) { log.push(`no bot free for ${h.F.name} (${h.F.div})`); continue; }
-        const score = (b: any) => Math.abs((b.F.rating || 0) - (h.F.rating || 0)) + (seen.has(b.F.name + "|" + b.gym) ? 3 : 0) + (b.gym === lastGym ? 1 : 0) + Math.random() * 0.9;
-        cands.sort((x, y) => score(x) - score(y));
-        book(h, cands[0], date, false);
-      }
-      // then the bots against each other: same division, different gyms, closest rating
-      const byDiv: Record<string, any[]> = {};
-      bots.filter((b) => !busy.has(pk(b.u, b.k))).forEach((b) => (byDiv[b.F.div + "|" + b.reg] ||= []).push(b));
-      for (const [dk, list] of Object.entries(byDiv)) {
-        const div = dk.split("|")[0];
-        const date = nextNight(C, div, today); if (!date) continue;
-        list.forEach((b) => (b.r = (b.F.rating || 0) + Math.random() * 0.9));
-        list.sort((x, y) => x.r - y.r);
-        while (list.length > 1) {
-          const a = list.shift();
-          const recent = new Set((a.F.hist || []).slice(0, 3).map((x: any) => x.opp + "|" + x.ogym));
-          let j = list.findIndex((b) => b.gym !== a.gym && !recent.has(b.F.name + "|" + b.gym) && Math.abs(b.r - a.r) <= 3);
-          if (j < 0) j = list.findIndex((b) => b.gym !== a.gym);
-          if (j < 0) continue;
-          const [b] = list.splice(j, 1);
-          book(a, b, date, true);
-        }
-      }
-      for (let i = 0; i < rows.length; i += 200) {
-        const { error } = await sb.from("bouts").insert(rows.slice(i, i + 200));
-        if (error) { log.push("booking: " + error.message); break; } else booked += Math.min(200, rows.length - i);
-      }
-    }
+    const C = new Function((await get("engine-core.js")) + "\nreturn {" + ENGINE.join(",") + "};")();
+    const lib = new Function((await get("runner-lib.js")) + "\nreturn RunnerLib;")();
+    return await lib.handle(req, sb, C);
   } catch (e) {
-    log.push("error: " + (e as Error).message);
+    return new Response("runner error: " + (e as Error).message, { status: 500 });
   }
-  await sb.from("league_runs").update({ finished_at: new Date().toISOString(), ran, booked, vacated, left_due: leftDue, note: log.join("\n").slice(0, 4000) || null }).eq("id", rid);
-  return Response.json({ today, ran, booked, vacated, leftDue, log });
 });

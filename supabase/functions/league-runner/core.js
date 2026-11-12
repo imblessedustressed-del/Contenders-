@@ -468,4 +468,4 @@ function applyResult(F,i,r,m){
   F.earn=(F.earn||0)+(r.purse||0);F.fans=Math.max(0,(F.fans||0)+(r.fans||0));F.ppv=(F.ppv||0)+(r.buys||0);
   F.hist=F.hist||[];F.hist.unshift({...m,plan:F.planName||'Basic',res,score:r.score,icon,earned:r.purse||0});F.hist=F.hist.slice(0,40);
 }
-export {simulate,fmt,prepFighter,applyResult,boutPurses,attendanceFor,fightFans,broadcastResult,venueTier,pickVenue,broadcastTier,ht,DIVS,FIGHT_NIGHT};
+export {simulate,fmt,parsePlan,minWeight,natWeight,prepFighter,applyResult,boutPurses,attendanceFor,fightFans,broadcastResult,venueTier,pickVenue,broadcastTier,ht,DIVS,FIGHT_NIGHT};

@@ -13,3 +13,5 @@ print('index.html rebuilt, build',b)
 PY
 # Engine bundle for the server-side league runner (needs: cd tools && npm i)
 node tools/mkcore.js || echo 'WARNING: engine-core.js not rebuilt (run: cd tools && npm i)'
+# Runner logic for the league-runner edge function (downloaded by it at run time)
+(cd tools && npx esbuild ../supabase/functions/league-runner/lib.ts --bundle --format=iife --global-name=RunnerLib --target=es2022 --outfile=../runner-lib.js --log-level=warning) || echo 'WARNING: runner-lib.js not rebuilt (run: cd tools && npm i)'
