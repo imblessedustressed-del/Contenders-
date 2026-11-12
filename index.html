@@ -700,7 +700,7 @@ function condText(x,after){
 /* ================= SHARED DATA (Supabase: accounts, forums, messages) ================= */
 cleanSlate();
 const SB_URL='https://ojsphhzgzbxmnfcbitqb.supabase.co',SB_KEY='sb_publishable_SWO9WhiSkoVhflY5CmY08A_hlqCEJSi';
-const BUILD='1794520170';
+const BUILD='1794520263';
 /* A tab left open on an older build must not save over newer data: if the site has been updated, reload before anything else is saved. */
 let staleBuild=false;
 async function checkBuild(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
@@ -729,7 +729,12 @@ async function initDB(){
 }
 async function loadPublic(){
   try{
-    const[p,t,gc,bt]=await Promise.all([SB.from('profiles').select('id,gym,description,location,is_bot,created_at'),SB.from('topics').select('*').order('last_at',{ascending:false}).limit(500),SB.from('gym_public').select('user_id,data,updated_at'),SB.from('bouts').select('id,fight_date,div,red_user,red_fid,blue_user,blue_fid,belt,purse,status,summary,venue').in('status',['scheduled','done']).order('fight_date',{ascending:false}).limit(300)]);
+    const[p,t,gc,bt]=await Promise.all([SB.from('profiles').select('id,gym,description,location,is_bot,created_at'),SB.from('topics').select('*').order('last_at',{ascending:false}).limit(500),SB.from('gym_public').select('user_id,data,updated_at'),(async()=>{const C='id,fight_date,div,red_user,red_fid,blue_user,blue_fid,belt,purse,status,summary,venue,bot_only';
+      const q=await Promise.all([SB.from('bouts').select(C).or('bot_only.eq.false,belt.not.is.null').order('fight_date',{ascending:false}).limit(2000),
+        SB.from('bouts').select(C).eq('bot_only',true).eq('status','scheduled').limit(1000),
+        SB.from('bouts').select(C).eq('bot_only',true).eq('status','done').is('belt',null).order('fight_date',{ascending:false}).limit(400)]);
+      const e=q.find(x=>x.error);if(e)return e;const seen=new Set(),data=[];q.forEach(x=>x.data.forEach(b=>{if(!seen.has(b.id)){seen.add(b.id);data.push(b)}}));
+      data.sort((a,b)=>a.fight_date<b.fight_date?1:a.fight_date>b.fight_date?-1:b.id-a.id);return{data,error:null}})()]);
     if(p.error||t.error)throw p.error||t.error;
     managers={};p.data.forEach(r=>managers[r.id]={gym:r.gym,desc:r.description,loc:r.location||'',bot:!!r.is_bot,at:Date.parse(r.created_at)});
     const bids=p.data.filter(r=>r.is_bot).map(r=>r.id);
@@ -1358,6 +1363,8 @@ let lrep={};
 function leagueReportHTML(id){
   const r=lrep[id];
   if(!r){if(SB&&r!==null){lrep[id]=null;SB.from('bouts').select('*').eq('id',id).maybeSingle().then(({data})=>{lrep[id]=data||false;if(view==='lreport:'+id)render()})}return'<p>Loading fight report...</p>'}
+  if(!r.result&&r.status==='done'&&r.summary){const n=k=>{const c=cards[r[k+'_user']]||{};const f=(c.fighters||[]).concat(c.retired||[]).find(x=>x.id===r[k+'_fid']);return f?f.name:'?'};const w=r.summary.w;
+    return`<h1>${esc(n('red'))} vs ${esc(n('blue'))}</h1><p>${w==null?'Draw':esc(n(w===0?'red':'blue'))+' won'} by ${esc(r.summary.how)}${r.summary.decision?` (${esc(r.summary.score)})`:''}.</p><p class="small mute">Computer-vs-computer bouts keep the result only, no round-by-round report.</p><p class="small"><a data-go="results">Recent Results</a> | <a data-go="fcards">Recent Fight Cards</a></p>`}
   if(!r.result)return`<p>That fight hasn't been fought yet. <a data-go="fcards">Back to Fight Cards</a></p>`;
   if(r.mine===undefined&&SB&&ME){r.mine=null;SB.from('bout_private').select('mgr').eq('bout_id',id).maybeSingle().then(({data})=>{r.mine=data?data.mgr:[];if(view==='lreport:'+id)render()})}
   const side=r.red_user===ME?0:r.blue_user===ME?1:-1,f={...r.result.f,rounds:r.result.f.rounds.map((R,i)=>({...R,mgr:side>=0&&Array.isArray(r.mine)&&r.mine[i]?(side===0?[r.mine[i],'']:['',r.mine[i]]):null}))};
