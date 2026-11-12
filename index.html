@@ -2,7 +2,15 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#1f2a3a">
+<link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Contenders">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Contenders - The Contenders Boxing League</title>
 <meta name="google-site-verification" content="wDRDov4aw-_xIJqXTX8Txu9U4FK2ZMPCaz0DuWRoVwc" />
 <meta name="description" content="Contenders is a free online boxing manager game. Build fighters, write fight plans, and climb the rankings in weekly 12-round fights with title belts, purses, pay-per-view and a full fight report every bout. In the spirit of the classic Web Boxing League (WeBL).">
@@ -23,6 +31,10 @@ a:hover{color:#b22}
 #side{width:182px;flex:none;padding:10px 8px 20px;background:#1f2a3a;border-right:3px solid #8b1a1a;min-height:100vh;box-sizing:border-box;position:sticky;top:0;align-self:flex-start;height:100vh;overflow-y:auto}
 #logo{display:block;margin:0 auto 10px;width:120px}
 #menuBtn{display:none}
+#installBtn{display:block;width:100%;margin:0 0 10px;padding:9px 10px;border:0;border-radius:999px;background:#c8102e;color:#fff;font:600 14px system-ui,sans-serif;cursor:pointer}
+#installBtn[hidden],#installTip[hidden]{display:none}
+#installTip{color:#dfe6f0;font:13px/1.35 system-ui,sans-serif;background:rgba(255,255,255,.08);border-radius:8px;padding:8px;margin:0 0 10px}
+@media (display-mode:standalone){#installBtn,#installTip{display:none!important}}
 .box{border:1px solid #0e1520;background:#efe6d6;margin:0 4px 14px;text-align:center;font:13px/1.45 Verdana,Tahoma,sans-serif}
 .box .hd{background:#8b1a1a;font-weight:bold;color:#fff;padding:2px 0;border-bottom:1px solid #5e0f0f}
 .box a{display:block;color:#24324a}
@@ -188,6 +200,8 @@ pre.plan{background:#fbfaf7;border:1px solid var(--line)}
     <path d="M42 34c6-6 18-7 26-3" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="5" stroke-linecap="round"/>
   </svg>
   <button id="menuBtn">Menu</button>
+  <button id="installBtn" hidden>&#128242; Install the App</button>
+  <div id="installTip" hidden>On iPhone: tap the Share button <b>&#11014;&#65039;</b> in Safari, then <b>Add to Home Screen</b>.</div>
   <div id="boxes">
   <div class="box"><div class="hd">Main</div><a data-v="home">Home</a><a data-v="register">Register</a><a data-v="aup">Acceptable Use Policy</a></div>
   <div class="box"><div class="hd">Your Gym</div><a data-v="gym">Active Fighters</a><a data-v="plans">Fight Plans</a><a data-v="fight">Practice Fights</a><a data-v="create">Create a Fighter</a><a data-v="short">Short Gym</a><a data-v="changegym">Change Gym</a><a data-v="desc">Description</a><a data-v="login">Login</a><a data-v="logout">Logout</a></div>
@@ -686,7 +700,7 @@ function condText(x,after){
 /* ================= SHARED DATA (Supabase: accounts, forums, messages) ================= */
 cleanSlate();
 const SB_URL='https://ojsphhzgzbxmnfcbitqb.supabase.co',SB_KEY='sb_publishable_SWO9WhiSkoVhflY5CmY08A_hlqCEJSi';
-const BUILD='1794329729';
+const BUILD='1794519808';
 /* A tab left open on an older build must not save over newer data: if the site has been updated, reload before anything else is saved. */
 let staleBuild=false;
 async function checkBuild(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
@@ -794,6 +808,14 @@ const hashView=()=>{const h=decodeURIComponent(location.hash.slice(1));return h&
 function nav(v){if(hashView()===v&&location.hash){show(v);return}location.hash=encodeURIComponent(v).replace(/%3A/g,':')}
 window.addEventListener('hashchange',()=>{if(location.hash.includes('='))return;show(hashView())});
 $('#menuBtn').onclick=()=>$('#side').classList.toggle('open');
+// Installable app (PWA)
+let installEvt=null;
+if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));
+const standalone=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e;if(!standalone())$('#installBtn').hidden=false});
+window.addEventListener('appinstalled',()=>{$('#installBtn').hidden=true;$('#installTip').hidden=true});
+if(/iphone|ipad|ipod/i.test(navigator.userAgent)&&!standalone())$('#installBtn').hidden=false;
+$('#installBtn').onclick=async()=>{if(installEvt){installEvt.prompt();await installEvt.userChoice.catch(()=>{});installEvt=null;$('#installBtn').hidden=true}else $('#installTip').hidden=!$('#installTip').hidden};
 function refresh(){
   const a=document.activeElement;
   if(a&&(a.tagName==='TEXTAREA'||a.tagName==='INPUT')&&a.value)return;
