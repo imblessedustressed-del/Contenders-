@@ -1,7 +1,7 @@
 // Contenders nightly league runner (Supabase edge function).
 // Called every 15 minutes by pg_cron; it only acts during fight night (10:40-11:59 PM Central) unless ?force=1.
 // Each pass: 1) vacate belts of retired champions, 2) fight every scheduled bout dated today or earlier,
-// 3) book next bouts: each human fighter vs a bot in his division, and the remaining bots against each other,
+// 3) book next bouts: each human fighter vs a bot in his division and region (Contenders or Bare Knuckles, 25 rounds), and the remaining bots against each other,
 // on the division's fight night, never sooner than 24 hours after a fighter's last fight (tomorrow's night skips a week).
 // Same engine as the site: core.js is generated from src/ by tools/mkcore.js.
 import { createClient } from "npm:@supabase/supabase-js@2";
@@ -28,7 +28,7 @@ function nextNight(C: any, div: string, today: string) {
 }
 const pk = (u: string, f: string) => u + ":" + f;
 const cardEntry = (F: any) => ({
-  rec: F.rec, rating: F.rating || 0, status: F.status || 0, streak: F.streak || 0, earn: F.earn || 0, fans: F.fans || 0, ppv: F.ppv || 0,
+  region: F.region || null, rec: F.rec, rating: F.rating || 0, status: F.status || 0, streak: F.streak || 0, earn: F.earn || 0, fans: F.fans || 0, ppv: F.ppv || 0,
   hist: (F.hist || []).slice(0, 25).map((h: any) => Object.fromEntries(["opp", "oh", "div", "belt", "date", "week", "res", "score", "icon", "plan", "ogym", "bout", "earned"].map((k) => [k, h[k] ?? null]))),
 });
 async function all(q: () => any) { // page through a select
@@ -94,7 +94,7 @@ Deno.serve(async (req) => {
         const out: any[] = [];
         for (const [u, d] of Object.entries(S)) {
           if (!P[u] || !!P[u].is_bot !== bot) continue;
-          for (const k of (d.roster || [])) { const F = d[k]; if (F && F.div && !busy.has(pk(u, k))) out.push({ u, k, F, gym: P[u].gym }); }
+          for (const k of (d.roster || [])) { const F = d[k]; if (F && F.div && !busy.has(pk(u, k))) out.push({ u, k, F, gym: P[u].gym, reg: F.region === "bk" ? "bk" : "" }); }
         }
         return out;
       };
@@ -103,7 +103,7 @@ Deno.serve(async (req) => {
         const ra = a.F.rating || 0, rb = b.F.rating || 0, contender = Math.max(ra, rb) >= 3;
         const v: any = C.pickVenue(C.venueTier(a.F.div, ra, rb, null, 1, contender));
         v.tv = C.broadcastTier(null, 1, contender);
-        rows.push({ fight_date: date, div: a.F.div, red_user: a.u, red_fid: a.k, blue_user: b.u, blue_fid: b.k, belt: null, rounds: 12, status: "scheduled", venue: v, bot_only: botOnly });
+        rows.push({ fight_date: date, div: a.F.div, red_user: a.u, red_fid: a.k, blue_user: b.u, blue_fid: b.k, belt: null, rounds: a.reg === "bk" ? 25 : 12, region: a.reg || null, status: "scheduled", venue: v, bot_only: botOnly });
         busy.add(pk(a.u, a.k)); busy.add(pk(b.u, b.k));
       };
       const bots = free(true);
@@ -112,7 +112,7 @@ Deno.serve(async (req) => {
         const date = nextNight(C, h.F.div, today); if (!date) continue;
         const seen = new Set((h.F.hist || []).filter((x: any) => x.bout).map((x: any) => x.opp + "|" + x.ogym));
         const lastGym = ((h.F.hist || []).find((x: any) => x.bout) || {}).ogym;
-        const cands = bots.filter((b) => b.F.div === h.F.div && !busy.has(pk(b.u, b.k)));
+        const cands = bots.filter((b) => b.F.div === h.F.div && b.reg === h.reg && !busy.has(pk(b.u, b.k))); // same division and region
         if (!cands.length) { log.push(`no bot free for ${h.F.name} (${h.F.div})`); continue; }
         const score = (b: any) => Math.abs((b.F.rating || 0) - (h.F.rating || 0)) + (seen.has(b.F.name + "|" + b.gym) ? 3 : 0) + (b.gym === lastGym ? 1 : 0) + Math.random() * 0.9;
         cands.sort((x, y) => score(x) - score(y));
@@ -120,8 +120,9 @@ Deno.serve(async (req) => {
       }
       // then the bots against each other: same division, different gyms, closest rating
       const byDiv: Record<string, any[]> = {};
-      bots.filter((b) => !busy.has(pk(b.u, b.k))).forEach((b) => (byDiv[b.F.div] ||= []).push(b));
-      for (const [div, list] of Object.entries(byDiv)) {
+      bots.filter((b) => !busy.has(pk(b.u, b.k))).forEach((b) => (byDiv[b.F.div + "|" + b.reg] ||= []).push(b));
+      for (const [dk, list] of Object.entries(byDiv)) {
+        const div = dk.split("|")[0];
         const date = nextNight(C, div, today); if (!date || date < BOT_START) continue;
         list.forEach((b) => (b.r = (b.F.rating || 0) + Math.random() * 0.9));
         list.sort((x, y) => x.r - y.r);

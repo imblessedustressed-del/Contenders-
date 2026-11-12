@@ -3,7 +3,7 @@
 export function fightOne(C: any, B: any, red: any, blue: any) {
   const FA = red.F, FB = blue.F, div = B.div, belt = B.belt || null, star = 1;
   const rR = FA.rating || 0, rB = FB.rating || 0;
-  const f: any = (C as any).simulate(C.prepFighter(FA, FA, FB, div), C.prepFighter(FB, FA, FB, div), 12);
+  const f: any = (C as any).simulate(C.prepFighter(FA, FA, FB, div), C.prepFighter(FB, FA, FB, div), B.rounds || 12);
   const r = f.result, how = r.decision ? r.type.toLowerCase() : `${r.type} in round ${r.round} (${C.fmt(r.t)})`;
   const score = f.totals.map((t: number[]) => t.join("-")).join(", ");
   const purse = C.boutPurses(rR, rB, belt, null, star);
@@ -26,7 +26,7 @@ export function fightOne(C: any, B: any, red: any, blue: any) {
   });
   const summary = { w: r.w, decision: !!r.decision, type: r.type, round: r.round, how, score, ip: f.ip, ratings: [rR, rB], purse, att, fans, tv };
   // Bot-vs-bot bouts keep the result line only; any bout with a human keeps the full report.
-  const result = B.bot_only ? null : { f, b: { rounds: 12, belt, div, gym: "", gyms: [red.gym, blue.gym], recs: [FA.rec.slice(), FB.rec.slice()], date } };
+  const result = B.bot_only ? null : { f, b: { rounds: B.rounds || 12, belt, div, gym: "", gyms: [red.gym, blue.gym], recs: [FA.rec.slice(), FB.rec.slice()], date } };
   return { summary, result, mgr: B.bot_only ? null : mgr, after };
 }
 

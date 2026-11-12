@@ -25,7 +25,7 @@ JS_VENUE = '''(a)=>{const contender=Math.max(...a.ratings)>=3;const tier=venueTi
 
 JS_RUN = '''(a)=>{const B=a.bout,FA=a.red.F,FB=a.blue.F,div=B.div,belt=B.belt||null,star=a.star||1;
   const rR=FA.rating||0,rB=FB.rating||0;
-  const f=simulate(prepFighter(FA,FA,FB,div),prepFighter(FB,FA,FB,div),12);
+  const f=simulate(prepFighter(FA,FA,FB,div),prepFighter(FB,FA,FB,div),B.rounds||12);
   const r=f.result,how=r.decision?r.type.toLowerCase():`${r.type} in round ${r.round} (${fmt(r.t)})`,score=f.totals.map(t=>t.join('-')).join(', ');
   const purse=boutPurses(rR,rB,belt,a.champSide??null,star);
   const v=B.venue||{name:'',city:'',cap:1000,tier:'club',tv:'stream'};
@@ -36,7 +36,7 @@ JS_RUN = '''(a)=>{const B=a.bout,FA=a.red.F,FB=a.blue.F,div=B.div,belt=B.belt||n
   const d=new Date(B.fight_date+'T12:00:00');
   const date=d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
   const sdate=d.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
-  const b={rounds:12,belt,div,gym:'',gyms:[a.red.gym,a.blue.gym],recs:[FA.rec.slice(),FB.rec.slice()],date};
+  const b={rounds:B.rounds||12,belt,div,gym:'',gyms:[a.red.gym,a.blue.gym],recs:[FA.rec.slice(),FB.rec.slice()],date};
   const mgr=[f.rounds.map(R=>(R.mgr||[])[0]||''),f.rounds.map(R=>(R.mgr||[])[1]||'')];
   f.rounds.forEach(R=>{delete R.mgr});
   f.S=f.S.map(x=>({n:x.n,F:{name:x.F.name,nick:x.F.nick,home:x.F.home,hgt:x.F.hgt}}));

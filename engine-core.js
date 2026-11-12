@@ -164,10 +164,14 @@ function simulate(FA,FB,rounds){
   /* heavyweight small-man edge (owner rule, Nov 9, 2026): the shorter man gets +0.5 SPD per inch, the lighter man +1 AGL per 5% (300 lb cap) */
   if((FA.divLim||0)>=1000){const hd=S[0].hgt-S[1].hgt;if(hd)S[hd>0?1:0].spd+=Math.abs(hd)*.5;
     if(S[0].fw&&S[1].fw){const w0=Math.min(300,S[0].fw),w1=Math.min(300,S[1].fw),lo=Math.min(w0,w1);if(lo>0&&w0!==w1)S[w0<w1?0:1].agl+=(Math.abs(w0-w1)/lo*100)/5}}
+  /* Bare Knuckles region (both fighters BK): 25 rounds, 5% recovery, no doctor, eyes shut = forced clinch, decided by knockdowns then stuns */
+  const BK=!!(FA.bk&&FB.bk);out.bk=BK;S.forEach(x=>x.ded=0);
   const run=[0,0];
   for(let r=1;r<=rounds&&!out.result;r++){
     const CH=S.map((x,i)=>choosePlan(x.parsed,ctxFor(S,i,r)));
     const P=CH.map(c=>({...c.tactic}));
+    const forced=[0,1].map(i=>BK&&S[i].inj.filter(z=>z.type==='swell'&&z.lvl>=4).length>=2);
+    forced.forEach((f,i)=>{if(f)P[i].style='clinch'});
     const R={n:r,lines:[],cards:[],post:[],pre:[]};
     S.forEach((x,i)=>{x.msgs=CH[i].msgs});
     /* towel */
@@ -215,7 +219,7 @@ function simulate(FA,FB,rounds){
     });
     A.splice(0,2,...A2);
     R.plans=S.map((x,i)=>planLine(x,P[i]));
-    R.mgr=S.map((x,i)=>`${x.n} has ${x.E.toFixed(1)} endurance points remaining.<br>Tactics: aggressiveness = ${eff[i].agg.toFixed(1)}, power = ${eff[i].pow.toFixed(1)}, defense = ${eff[i].def.toFixed(1)}, resting ${eff[i].rest.toFixed(1)}${P[i].tgt!=='Opp'?`, target ${P[i].tgt.toLowerCase()}`:''}${P[i].dirty?', fighting dirty':''}${eff[i].notes.length?'<br>'+eff[i].notes.join(' '):''}`);
+    R.mgr=S.map((x,i)=>`${forced[i]?'Both eyes are swollen shut, so he can only clinch. ':''}${x.n} has ${x.E.toFixed(1)} endurance points remaining.<br>Tactics: aggressiveness = ${eff[i].agg.toFixed(1)}, power = ${eff[i].pow.toFixed(1)}, defense = ${eff[i].def.toFixed(1)}, resting ${eff[i].rest.toFixed(1)}${P[i].tgt!=='Opp'?`, target ${P[i].tgt.toLowerCase()}`:''}${P[i].dirty?', fighting dirty':''}${eff[i].notes.length?'<br>'+eff[i].notes.join(' '):''}`);
     R.say=S.map(x=>x.msgs.say||'');
     if(ended&&(ended.towel)){R.lines=[{t:0,html:`<p class="r b">${escS(ended.why)}!!</p>`}];R.st=[0,1].map(()=>({pt:0,pl:0,rt:0,rl:0,jt:0,jl:0,kd:0,stun:0}));out.result={...ended,round:r};R.cond=S.map(x=>condText(x));out.rounds.push(R);break}
     const luck=[0,1].map(()=>.8+.4*(rand()+rand())/2);
@@ -284,13 +288,13 @@ function simulate(FA,FB,rounds){
     else{
       /* judging */
       R.cards=[0,1,2].map(()=>scoreRound(st,kd,sl,PU,D));
-      for(let i=0;i<2;i++){if(P[i].style==='clinch'&&P[i].def>10&&rand()<Math.pow(P[i].def-10,2)/100){R.cards.forEach(c=>c[i]--);R.post.push(`<p class="r">${S[i].n} is penalized a point for refusing to break the clinch.</p>`)}
-        if(eff[i].deduct)R.cards.forEach(c=>c[i]-=eff[i].deduct)}
+      for(let i=0;i<2;i++){if(P[i].style==='clinch'&&P[i].def>10&&rand()<Math.pow(P[i].def-10,2)/100){R.cards.forEach(c=>c[i]--);S[i].ded++;R.post.push(`<p class="r">${S[i].n} is penalized a point for refusing to break the clinch.</p>`)}
+        if(eff[i].deduct){R.cards.forEach(c=>c[i]-=eff[i].deduct);S[i].ded+=eff[i].deduct}}
       for(let i=0;i<2;i++){const jv=R.cards[Math.floor(rand()*3)];S[i].perc+=jv[i]-jv[1-i];
         if(R.cards.every(c=>c[i]>c[1-i]))S[i].won++;if(R.cards.every(c=>c[i]<c[1-i]))S[i].lost++}
       const k=R.cards.map(c=>c.join('-'));const mode=k.find(x=>k.filter(y=>y===x).length>1)||k[0];
       R.cc=mode.split('-').map(Number);run[0]+=R.cc[0];run[1]+=R.cc[1];R.run=[...run];
-      if(r<rounds){
+      if(r<rounds&&!BK){
         for(let i=0;i<2&&!ended;i++){const x=S[i];
           const bad=x.inj.find(z=>(z.lvl>=3&&z.dmg>=7)||(z.lvl>=4&&z.dmg>=6));
           const shut=x.inj.filter(z=>z.type==='swell'&&z.lvl>=4).length>=2;
@@ -301,11 +305,17 @@ function simulate(FA,FB,rounds){
     }
     R.cond=S.map(x=>condText(x));
     /* recovery */
-    S.forEach((x,i)=>{x.endFrac=x.E/x.E0;const lost=x.E0-x.E;x.E=Math.min(x.E0,x.E+.1*lost+.02*eff[i].rest*lost)});
+    S.forEach((x,i)=>{x.endFrac=x.E/x.E0;const lost=x.E0-x.E;x.E=Math.min(x.E0,x.E+(BK?.05:.1)*lost+.02*eff[i].rest*lost)});
     out.rounds.push(R);
   }
   const tot=[0,1,2].map(j=>out.rounds.reduce((s,R)=>R.cards.length?[s[0]+R.cards[j][0],s[1]+R.cards[j][1]]:s,[0,0]));
   out.totals=tot;
+  if(!out.result&&BK){
+    /* knockdowns each man scored (a point deducted from his opponent counts as one), then stuns */
+    const kd=[0,1].map(i=>S[1-i].kds+S[1-i].ded),sn=[0,1].map(i=>S[1-i].stuns);out.bkScore={kd,stuns:sn};
+    const type=kd[0]!==kd[1]?'Knockdown Decision':sn[0]!==sn[1]?'Stun Decision':'Draw';
+    out.result={type,w:type==='Draw'?null:kd[0]!==kd[1]?(kd[0]>kd[1]?0:1):(sn[0]>sn[1]?0:1),round:rounds,t:180,decision:true};
+  }
   if(!out.result){
     let wa=0,wb=0,dr=0;tot.forEach(t=>t[0]>t[1]?wa++:t[1]>t[0]?wb++:dr++);
     let type;
@@ -389,6 +399,7 @@ function condText(x,after){
 const POOL=70,MAX=30,MINS={str:1,kp:0,spd:1,agl:1,chn:1,cnd:1,hgt:0};
 const DIVS=[['Straw',105],['Junior Fly',108],['Fly',112],['Super Fly',115],['Bantam',118],['Super Bantam',122],['Feather',126],['Super Feather',130],['Light',135],['Welter',147],['Super Welter',154],['Middle',160],['Super Middle',168],['Light Heavy',175],['Cruiser',200],['Heavy',1000]];
 const FIGHT_NIGHT={'Straw':'Sunday','Junior Fly':'Sunday','Fly':'Sunday','Super Fly':'Monday','Bantam':'Monday','Super Bantam':'Monday','Feather':'Tuesday','Super Feather':'Tuesday','Light':'Wednesday','Welter':'Wednesday','Super Welter':'Wednesday','Super Middle':'Thursday','Middle':'Thursday','Cruiser':'Friday','Light Heavy':'Friday','Heavy':'Saturday'};
+const isBK=F=>!!F&&F.region==='bk';
 const HT=F=>60+F.hgt;
 const ht=i=>`${Math.floor(i/12)} feet ${i%12} inches`;
 function boutPurses(rRed,rBlue,belt,champSide,star){const top=Math.max(rRed||0,rBlue||0);let pot=2000*Math.pow(1.35,top)*(star||1);if(belt)pot*=4;
@@ -436,10 +447,10 @@ function minWeight(F){return Math.round(natWeight(F)-freeLoss(F))}
 function weighIn(F,div){const lim=(DIVS.find(d=>d[0]===div)||[0,160])[1],w=natWeight(F);if(lim>=1000)return{fight:w,endMul:1};const m=w-freeLoss(F);if(m<=lim)return{fight:Math.min(w,lim),endMul:1};const R=lim/m;return{fight:lim,endMul:R*R}}
 const primeF=F=>1-Math.min(.3,.015*Math.abs((F.rating||0)-(F.status||0)));
 function prepFighter(F,FA,FB,div){const c=JSON.parse(JSON.stringify(F));const wi=weighIn(F,div);c.fightW=wi.fight;c.endMul=wi.endMul;if(c.train)c[c.train]+=1;c.primeMul=primeF(c);
-  c.k=12+(((FA.rating||0)+(FB.rating||0))/2)/3;c.minW=minWeight(F);c.divLim=(DIVS.find(d=>d[0]===div)||[0,160])[1];return c}
+  c.k=12+(((FA.rating||0)+(FB.rating||0))/2)/3;c.bk=isBK(F);c.minW=minWeight(F);c.divLim=(DIVS.find(d=>d[0]===div)||[0,160])[1];return c}
 function ratingStatus(F,out,r){
   const me=F.rating||0,opp=r.oppRating!=null?r.oppRating:me;F.gains=[];
-  if(out==='win'){const inc=(F.streak||0)>0?2:1;F.rating=Math.min(28,me+inc);
+  if(out==='win'){const inc=(F.streak||0)>0?2:1;F.rating=Math.min(isBK(F)?18:28,me+inc);
     const before=F.status||0;if(F.rating>before){for(let s=before+1;s<=F.rating;s++){const k=F.train||'str';F[k]=Math.min(MAX,F[k]+1);F.gains.push(k);
         if(s>=6&&s%2===0){const k2=pick(['str','spd','agl','cnd']);F[k2]=Math.min(MAX,F[k2]+1);F.gains.push(k2)}}
       F.status=F.rating;F.streak=(F.streak||0)+1}else F.streak=0;

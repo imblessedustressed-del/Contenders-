@@ -50,10 +50,14 @@ function simulate(FA,FB,rounds){
   /* heavyweight small-man edge (owner rule, Nov 9, 2026): the shorter man gets +0.5 SPD per inch, the lighter man +1 AGL per 5% (300 lb cap) */
   if((FA.divLim||0)>=1000){const hd=S[0].hgt-S[1].hgt;if(hd)S[hd>0?1:0].spd+=Math.abs(hd)*.5;
     if(S[0].fw&&S[1].fw){const w0=Math.min(300,S[0].fw),w1=Math.min(300,S[1].fw),lo=Math.min(w0,w1);if(lo>0&&w0!==w1)S[w0<w1?0:1].agl+=(Math.abs(w0-w1)/lo*100)/5}}
+  /* Bare Knuckles region (both fighters BK): 25 rounds, 5% recovery, no doctor, eyes shut = forced clinch, decided by knockdowns then stuns */
+  const BK=!!(FA.bk&&FB.bk);out.bk=BK;S.forEach(x=>x.ded=0);
   const run=[0,0];
   for(let r=1;r<=rounds&&!out.result;r++){
     const CH=S.map((x,i)=>choosePlan(x.parsed,ctxFor(S,i,r)));
     const P=CH.map(c=>({...c.tactic}));
+    const forced=[0,1].map(i=>BK&&S[i].inj.filter(z=>z.type==='swell'&&z.lvl>=4).length>=2);
+    forced.forEach((f,i)=>{if(f)P[i].style='clinch'});
     const R={n:r,lines:[],cards:[],post:[],pre:[]};
     S.forEach((x,i)=>{x.msgs=CH[i].msgs});
     /* towel */
@@ -101,7 +105,7 @@ function simulate(FA,FB,rounds){
     });
     A.splice(0,2,...A2);
     R.plans=S.map((x,i)=>planLine(x,P[i]));
-    R.mgr=S.map((x,i)=>`${x.n} has ${x.E.toFixed(1)} endurance points remaining.<br>Tactics: aggressiveness = ${eff[i].agg.toFixed(1)}, power = ${eff[i].pow.toFixed(1)}, defense = ${eff[i].def.toFixed(1)}, resting ${eff[i].rest.toFixed(1)}${P[i].tgt!=='Opp'?`, target ${P[i].tgt.toLowerCase()}`:''}${P[i].dirty?', fighting dirty':''}${eff[i].notes.length?'<br>'+eff[i].notes.join(' '):''}`);
+    R.mgr=S.map((x,i)=>`${forced[i]?'Both eyes are swollen shut, so he can only clinch. ':''}${x.n} has ${x.E.toFixed(1)} endurance points remaining.<br>Tactics: aggressiveness = ${eff[i].agg.toFixed(1)}, power = ${eff[i].pow.toFixed(1)}, defense = ${eff[i].def.toFixed(1)}, resting ${eff[i].rest.toFixed(1)}${P[i].tgt!=='Opp'?`, target ${P[i].tgt.toLowerCase()}`:''}${P[i].dirty?', fighting dirty':''}${eff[i].notes.length?'<br>'+eff[i].notes.join(' '):''}`);
     R.say=S.map(x=>x.msgs.say||'');
     if(ended&&(ended.towel)){R.lines=[{t:0,html:`<p class="r b">${escS(ended.why)}!!</p>`}];R.st=[0,1].map(()=>({pt:0,pl:0,rt:0,rl:0,jt:0,jl:0,kd:0,stun:0}));out.result={...ended,round:r};R.cond=S.map(x=>condText(x));out.rounds.push(R);break}
     const luck=[0,1].map(()=>.8+.4*(rand()+rand())/2);
@@ -170,13 +174,13 @@ function simulate(FA,FB,rounds){
     else{
       /* judging */
       R.cards=[0,1,2].map(()=>scoreRound(st,kd,sl,PU,D));
-      for(let i=0;i<2;i++){if(P[i].style==='clinch'&&P[i].def>10&&rand()<Math.pow(P[i].def-10,2)/100){R.cards.forEach(c=>c[i]--);R.post.push(`<p class="r">${S[i].n} is penalized a point for refusing to break the clinch.</p>`)}
-        if(eff[i].deduct)R.cards.forEach(c=>c[i]-=eff[i].deduct)}
+      for(let i=0;i<2;i++){if(P[i].style==='clinch'&&P[i].def>10&&rand()<Math.pow(P[i].def-10,2)/100){R.cards.forEach(c=>c[i]--);S[i].ded++;R.post.push(`<p class="r">${S[i].n} is penalized a point for refusing to break the clinch.</p>`)}
+        if(eff[i].deduct){R.cards.forEach(c=>c[i]-=eff[i].deduct);S[i].ded+=eff[i].deduct}}
       for(let i=0;i<2;i++){const jv=R.cards[Math.floor(rand()*3)];S[i].perc+=jv[i]-jv[1-i];
         if(R.cards.every(c=>c[i]>c[1-i]))S[i].won++;if(R.cards.every(c=>c[i]<c[1-i]))S[i].lost++}
       const k=R.cards.map(c=>c.join('-'));const mode=k.find(x=>k.filter(y=>y===x).length>1)||k[0];
       R.cc=mode.split('-').map(Number);run[0]+=R.cc[0];run[1]+=R.cc[1];R.run=[...run];
-      if(r<rounds){
+      if(r<rounds&&!BK){
         for(let i=0;i<2&&!ended;i++){const x=S[i];
           const bad=x.inj.find(z=>(z.lvl>=3&&z.dmg>=7)||(z.lvl>=4&&z.dmg>=6));
           const shut=x.inj.filter(z=>z.type==='swell'&&z.lvl>=4).length>=2;
@@ -187,11 +191,17 @@ function simulate(FA,FB,rounds){
     }
     R.cond=S.map(x=>condText(x));
     /* recovery */
-    S.forEach((x,i)=>{x.endFrac=x.E/x.E0;const lost=x.E0-x.E;x.E=Math.min(x.E0,x.E+.1*lost+.02*eff[i].rest*lost)});
+    S.forEach((x,i)=>{x.endFrac=x.E/x.E0;const lost=x.E0-x.E;x.E=Math.min(x.E0,x.E+(BK?.05:.1)*lost+.02*eff[i].rest*lost)});
     out.rounds.push(R);
   }
   const tot=[0,1,2].map(j=>out.rounds.reduce((s,R)=>R.cards.length?[s[0]+R.cards[j][0],s[1]+R.cards[j][1]]:s,[0,0]));
   out.totals=tot;
+  if(!out.result&&BK){
+    /* knockdowns each man scored (a point deducted from his opponent counts as one), then stuns */
+    const kd=[0,1].map(i=>S[1-i].kds+S[1-i].ded),sn=[0,1].map(i=>S[1-i].stuns);out.bkScore={kd,stuns:sn};
+    const type=kd[0]!==kd[1]?'Knockdown Decision':sn[0]!==sn[1]?'Stun Decision':'Draw';
+    out.result={type,w:type==='Draw'?null:kd[0]!==kd[1]?(kd[0]>kd[1]?0:1):(sn[0]>sn[1]?0:1),round:rounds,t:180,decision:true};
+  }
   if(!out.result){
     let wa=0,wb=0,dr=0;tot.forEach(t=>t[0]>t[1]?wa++:t[1]>t[0]?wb++:dr++);
     let type;
