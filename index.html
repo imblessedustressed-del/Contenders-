@@ -747,7 +747,7 @@ function condText(x,after){
 /* ================= SHARED DATA (Supabase: accounts, forums, messages) ================= */
 cleanSlate();
 const SB_URL='https://ojsphhzgzbxmnfcbitqb.supabase.co',SB_KEY='sb_publishable_SWO9WhiSkoVhflY5CmY08A_hlqCEJSi';
-const BUILD='1794537252';
+const BUILD='1794538410';
 /* A tab left open on an older build must not save over newer data: if the site has been updated, reload before anything else is saved. */
 let staleBuild=false;
 async function checkBuild(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
@@ -1338,10 +1338,12 @@ function trainHTML(side){
   const F=state[side],opt=v=>PROGS.map(([k,l])=>`<option value="${k}"${k===v?' selected':''}>${l}</option>`).join('');
   return`<h1>Training</h1>
   <table class="plain"><tr><td>Fighter's Name</td><td><select id="trWho">${ROSTER().map(s=>`<option value="${s}"${s===side?' selected':''}>${esc(state[s].name)}</option>`).join('')}</select></td></tr>
-  <tr><td>Training Program</td><td><select data-train="${side}">${opt(F.train||'str')}</select></td></tr>
+  <tr><td>Primary Training</td><td><select data-train="${side}">${opt(F.train||'str')}</select></td></tr>
+  <tr><td>Secondary Training</td><td><select data-train2="${side}">${opt(F.train2||F.train||'str')}</select></td></tr>
+  ${(F.streak||0)>0?`<tr><td><b>Fast Track</b> (third)</td><td><select data-train3="${side}">${opt(F.train3||F.train2||F.train||'str')}</select> <span class="small cr">Only counts if he wins this fight.</span></td></tr>`:''}
 </table>
   <p><button data-go="rec:${side}">Submit Form</button></p>
-  <div class="note"><b>How training works:</b> his training program gives him +1 in that ability for each fight. When a win raises his status, he keeps that point for good, one point for every status level gained (a win on a streak is worth two levels). At status 6 and every even status after it (8, 10, 12...), that level is worth a second point, which goes at random to STR, SPD, AGL or CND. Status tops out at 28.</div>`;
+  <div class="note"><b>How training works:</b> his primary program gives him +1 in that ability for each fight. When a win raises his status he earns ability points for good: one for every status level gained, plus a bonus point at status 6 and every even status after it (8, 10, 12...). The first point goes to his <b>primary</b> program and the second to his <b>secondary</b> program.<br><b>Fast track:</b> on a winning streak a win is worth two status levels, which can mean three points. While he's on a streak a third box appears: pick the ability for that third point before his fight. It only counts if he wins. If he loses or draws, the streak is over, fast tracking stops and the third box goes away until he starts a new streak. Status tops out at 28 (18 in Bare Knuckles).</div>`;
 }
 const TRAIN_FLAVOR={str:'has been lifting weights every chance he gets (STR)',kp:'has been pounding the heavy bag until it splits (KP)',spd:'has been working the speed bag every morning (SPD)',
   agl:'has been skipping rope for hours at a time (AGL)',chn:'has been taking shots in sparring to toughen up (CHN)',cnd:'has been running miles before sunrise (CND)'};
@@ -1458,15 +1460,19 @@ function startFight(){
    rating: win +1 (+2 if already on a winning streak); loss -1, never below 0, but no loss when beaten by a higher-rated
    fighter, or on a split/majority decision unless it's a title fight against an equal or lower-rated opponent.
    status = highest rating ever reached. Each status point gained = 1 ability point in the trained ability;
-   at status 6 and every even level after, a 2nd point at random from STR, SPD, AGL, CND. Streak grows only when status rises. */
+   at status 6 and every even level after, a bonus point. Points go to the primary, secondary and (fast track) third programs in that order. No random points. Streak grows only when status rises. */
 function ratingStatus(F,out,r){
   const me=F.rating||0,opp=r.oppRating!=null?r.oppRating:me;F.gains=[];
-  if(out==='win'){const inc=(F.streak||0)>0?2:1;F.rating=Math.min(isBK(F)?18:28,me+inc);
-    const before=F.status||0;if(F.rating>before){for(let s=before+1;s<=F.rating;s++){const k=F.train||'str';F[k]=Math.min(MAX,F[k]+1);F.gains.push(k);
-        if(s>=6&&s%2===0){const k2=pick(['str','spd','agl','cnd']);F[k2]=Math.min(MAX,F[k2]+1);F.gains.push(k2)}}
+  if(out==='win'){const fast=(F.streak||0)>0,inc=fast?2:1;F.rating=Math.min(isBK(F)?18:28,me+inc);
+    /* training (owner, Nov 12, 2026): the points this win earns go, in order, to the primary program, the secondary program,
+       and (fast track, winning streak only) the third program the manager picked before the fight */
+    const slots=[F.train||'str',F.train2||F.train||'str',(fast&&F.train3)||F.train2||F.train||'str'];
+    const before=F.status||0;if(F.rating>before){const pts=[];for(let s=before+1;s<=F.rating;s++){pts.push(1);if(s>=6&&s%2===0)pts.push(1)}
+        pts.forEach((_,i)=>{const k=slots[Math.min(i,2)];F[k]=Math.min(MAX,F[k]+1);F.gains.push(k)});
       F.status=F.rating;F.streak=(F.streak||0)+1}else F.streak=0;
   }else{F.streak=0;if(out==='loss'){const split=/split|majority/i.test(r.type||'');
     const keep=opp>me||(split&&!(r.belt&&opp<=me));if(!keep)F.rating=Math.max(0,me-1)}}
+  if(!((F.streak||0)>0))delete F.train3; /* streak over: fast tracking and the third program are gone */
 }
 function applyResult(F,i,r,m){
   const how=r.how;let icon,res;
@@ -1788,9 +1794,10 @@ if endurance_percent < 50 then 1/1/10</pre>`,
   <li><b>Status</b> is the highest rating he has ever reached. Every point of status he gains is an ability point.</li>
   <li><b>Winning streak:</b> grows each time his status goes up. Any loss or draw ends it.</li>
   <li>A fighter is in his <b>prime</b> when rating and status are equal. The further apart they are, the further he is off his best.</li>
-  <li><b>Training</b> gives +1 in that ability for each fight. It becomes permanent only when a win raises his status: one point per status level gained.</li>
-  <li><b>Bonus points:</b> reaching status 6 and every even status after it adds a second point at random to STR, SPD, AGL or CND.</li>
-  <li><b>Injury points:</b> each fight, damage up to 5 times his CHN is free and the rest becomes injury points. A knockout loss counts as 25. Every 500 costs him an ability point (AP Loss).</li></ul>
+  <li><b>Training</b>: his primary program gives +1 in that ability for each fight. Points become permanent only when a win raises his status: one per status level gained, plus a bonus point at status 6 and every even status after it.</li>
+  <li><b>Primary and secondary:</b> the first point a win earns goes to his primary program, the second to his secondary program.</li>
+  <li><b>Fast track:</b> on a winning streak a win is worth two status levels, which can mean three points. Pick a third program before the fight; it only counts if he wins. A loss or draw ends the streak and the third program with it.</li>
+  <li><b>Injury points:</b> each fight, damage up to 5 times his CHN is free and the rest becomes injury points. A knockout loss counts as 10. Every 500 costs him an ability point (AP Loss).</li></ul>
   <p>Set training from the fighter's page: "train for something else."</p>`,
  schedule:()=>`<ul>
   <li><b>Each division fights on its own night every week:</b></li></ul>${SCHED_TABLE()}<ul>
@@ -1962,6 +1969,7 @@ document.addEventListener('change',e=>{
   if(el.id==='pfName'&&view==='pf:create'){window._easyName=el.value;return}
   if(el.dataset.train){state[el.dataset.train].train=el.value;save();return}
   if(el.dataset.train2){state[el.dataset.train2].train2=el.value;save();return}
+  if(el.dataset.train3){state[el.dataset.train3].train3=el.value;save();return}
   if(el.id==='trWho'){nav('train:'+el.value);return}
   const tb=el.closest('[data-side]');if(!tb)return;const F=tb.dataset.side==='D'?state.draft:FTR(tb.dataset.side);if(!F)return;
   if(el.dataset.f==='plan'){F.plan=el.value;save();render();return}

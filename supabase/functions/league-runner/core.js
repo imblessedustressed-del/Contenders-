@@ -453,12 +453,16 @@ function prepFighter(F,FA,FB,div){const c=JSON.parse(JSON.stringify(F));const wi
   c.k=12+(((FA.rating||0)+(FB.rating||0))/2)/3;c.bk=isBK(F);c.minW=minWeight(F);c.divLim=(DIVS.find(d=>d[0]===div)||[0,160])[1];return c}
 function ratingStatus(F,out,r){
   const me=F.rating||0,opp=r.oppRating!=null?r.oppRating:me;F.gains=[];
-  if(out==='win'){const inc=(F.streak||0)>0?2:1;F.rating=Math.min(isBK(F)?18:28,me+inc);
-    const before=F.status||0;if(F.rating>before){for(let s=before+1;s<=F.rating;s++){const k=F.train||'str';F[k]=Math.min(MAX,F[k]+1);F.gains.push(k);
-        if(s>=6&&s%2===0){const k2=pick(['str','spd','agl','cnd']);F[k2]=Math.min(MAX,F[k2]+1);F.gains.push(k2)}}
+  if(out==='win'){const fast=(F.streak||0)>0,inc=fast?2:1;F.rating=Math.min(isBK(F)?18:28,me+inc);
+    /* training (owner, Nov 12, 2026): the points this win earns go, in order, to the primary program, the secondary program,
+       and (fast track, winning streak only) the third program the manager picked before the fight */
+    const slots=[F.train||'str',F.train2||F.train||'str',(fast&&F.train3)||F.train2||F.train||'str'];
+    const before=F.status||0;if(F.rating>before){const pts=[];for(let s=before+1;s<=F.rating;s++){pts.push(1);if(s>=6&&s%2===0)pts.push(1)}
+        pts.forEach((_,i)=>{const k=slots[Math.min(i,2)];F[k]=Math.min(MAX,F[k]+1);F.gains.push(k)});
       F.status=F.rating;F.streak=(F.streak||0)+1}else F.streak=0;
   }else{F.streak=0;if(out==='loss'){const split=/split|majority/i.test(r.type||'');
     const keep=opp>me||(split&&!(r.belt&&opp<=me));if(!keep)F.rating=Math.max(0,me-1)}}
+  if(!((F.streak||0)>0))delete F.train3; /* streak over: fast tracking and the third program are gone */
 }
 function applyResult(F,i,r,m){
   const how=r.how;let icon,res;
