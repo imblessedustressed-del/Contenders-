@@ -106,6 +106,10 @@ pre.plan{font:14px 'Courier New',monospace;background:#fbf7ef;border:1px inset #
 .heroCta .btnMain{background:linear-gradient(180deg,#ff3b4f,#c8102e);color:#fff;box-shadow:0 6px 18px rgba(200,16,46,.45)}
 .heroCta .btnAlt{background:#fff;color:#141c2b}
 .heroCta .btnGhost{color:#fff;border:1px solid rgba(255,255,255,.4)}
+.heroApp{position:relative;margin:16px 0 0}.heroApp a,.heroApp a:hover{display:inline-block;padding:9px 16px;border-radius:12px;background:rgba(255,255,255,.1);border:1px dashed rgba(255,255,255,.35);color:#fff!important;font:500 14px system-ui,sans-serif;text-decoration:none!important;cursor:pointer}
+.heroApp a:hover{background:rgba(255,255,255,.16)}
+.heroAppTip{position:relative;max-width:460px;margin:10px auto 0;padding:10px 12px;border-radius:10px;background:rgba(0,0,0,.35);color:#e9eef5;font:14px/1.4 system-ui,sans-serif}
+.heroAppTip[hidden]{display:none}
 .tag2{text-align:center;margin:-4px 0 10px}.tag2 b{display:inline-block;margin:4px 6px;padding:5px 12px;border-radius:999px;background:#fff3f3;border:1px solid #f0c4c4;color:#b3122e;font-size:14px;white-space:nowrap}
 .cta{text-align:center;font-size:19px;font-weight:bold;line-height:1.7}
 table.champ{margin:0 auto}table.champ td.pw{text-align:center;vertical-align:middle;min-width:90px}
@@ -218,8 +222,8 @@ pre.plan{background:#fbfaf7;border:1px solid var(--line)}
     <path d="M42 34c6-6 18-7 26-3" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="5" stroke-linecap="round"/>
   </svg>
   <button id="menuBtn">Menu</button>
-  <button id="installBtn" hidden>&#128242; Install the App</button>
-  <div id="installTip" hidden>On iPhone: tap the Share button <b>&#11014;&#65039;</b> in Safari, then <b>Add to Home Screen</b>.</div>
+  <button id="installBtn" hidden>&#128242; Get the App</button>
+  <div id="installTip" hidden></div>
   <div id="boxes">
   <div class="box"><div class="hd">Main</div><a data-v="home">Home</a><a data-v="register">Register</a><a data-v="aup">Acceptable Use Policy</a></div>
   <div class="box"><div class="hd">Your Gym</div><a data-v="gym">Active Fighters</a><a data-v="plans">Fight Plans</a><a data-v="fight">Practice Fights</a><a data-v="create">Create a Fighter</a><a data-v="short">Short Gym</a><a data-v="changegym">Change Gym</a><a data-v="desc">Description</a><a data-v="login">Login</a><a data-v="logout">Logout</a></div>
@@ -740,7 +744,7 @@ function condText(x,after){
 /* ================= SHARED DATA (Supabase: accounts, forums, messages) ================= */
 cleanSlate();
 const SB_URL='https://ojsphhzgzbxmnfcbitqb.supabase.co',SB_KEY='sb_publishable_SWO9WhiSkoVhflY5CmY08A_hlqCEJSi';
-const BUILD='1794534932';
+const BUILD='1794535304';
 /* A tab left open on an older build must not save over newer data: if the site has been updated, reload before anything else is saved. */
 let staleBuild=false;
 async function checkBuild(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
@@ -857,10 +861,18 @@ $('#menuBtn').onclick=()=>$('#side').classList.toggle('open');
 let installEvt=null;
 if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));
 const standalone=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone;
-window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e;if(!standalone())$('#installBtn').hidden=false});
-window.addEventListener('appinstalled',()=>{$('#installBtn').hidden=true;$('#installTip').hidden=true});
-if(/iphone|ipad|ipod/i.test(navigator.userAgent)&&!standalone())$('#installBtn').hidden=false;
-$('#installBtn').onclick=async()=>{if(installEvt){installEvt.prompt();await installEvt.userChoice.catch(()=>{});installEvt=null;$('#installBtn').hidden=true}else $('#installTip').hidden=!$('#installTip').hidden};
+/* "Get the App": install right away where the browser allows it, otherwise show the steps for this device */
+const appSteps=()=>{const ua=navigator.userAgent;
+  if(/iphone|ipad|ipod/i.test(ua))return'On iPhone or iPad: open this site in <b>Safari</b>, tap the Share button <b>&#11014;&#65039;</b>, then <b>Add to Home Screen</b>.';
+  if(/android/i.test(ua))return'On Android: tap the browser menu <b>&#8942;</b>, then <b>Install app</b> or <b>Add to Home screen</b>.';
+  return'On your phone, open <b>contendersboxingleague.com</b> and tap <b>Get the App</b>. On this computer, Chrome or Edge can install it too: look for the install icon in the address bar.'};
+async function getApp(tip){if(installEvt){installEvt.prompt();await installEvt.userChoice.catch(()=>{});installEvt=null;return}
+  if(tip){tip.innerHTML=appSteps();tip.hidden=!tip.hidden}}
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e});
+window.addEventListener('appinstalled',()=>{$('#installBtn').hidden=true;$('#installTip').hidden=true;render()});
+if(!standalone())$('#installBtn').hidden=false;
+$('#installBtn').onclick=()=>getApp($('#installTip'));
+document.addEventListener('click',e=>{const a=e.target.closest('[data-app]');if(a){e.preventDefault();getApp($('#heroAppTip'))}});
 function refresh(){
   const a=document.activeElement;
   if(a&&(a.tagName==='TEXTAREA'||a.tagName==='INPUT')&&a.value)return;
@@ -1022,6 +1034,7 @@ function homeHTML(){
     <p class="heroTag">Build your fighter. Take him to the top. Outthink managers from everywhere.</p>
     <p class="heroPills"><span>&#129354; Fight every week</span><span>&#127942; Climb the rankings</span><span>&#128176; Purses &amp; PPV money</span><span>&#128074; Bare Knuckles</span></p>
     <p class="heroCta"><a class="btnMain" data-go="register">Sign Up to Play (Free!)</a><a class="btnAlt" data-go="${ME?'gym':'login'}">Enter Your Gym</a><a class="btnGhost" data-go="fight">Try it Out</a></p>
+    ${standalone()?'':`<p class="heroApp"><a data-app="1">&#128242; <b>Contenders is on your phone too.</b> Get the App &rarr;</a></p><p id="heroAppTip" class="heroAppTip" hidden></p>`}
   </section>
   <p class="small center">Three world titles in every division: the <b>WBC</b>, the <b>WBA</b> and the <b>WBO</b>. Check out the <a data-go="champs">reigning champs</a> and make your own mark.</p>
   <p class="center news">Contenders News: ${newsLine()}</p>
