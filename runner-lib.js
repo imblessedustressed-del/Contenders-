@@ -461,7 +461,7 @@ var RunnerLib = (() => {
           busy.add(pk(b.red_user, b.red_fid));
           busy.add(pk(b.blue_user, b.blue_fid));
         });
-        const pubs = await all(() => sb.from("gym_public").select("user_id,data").in("user_id", Object.keys(S).filter((u) => P[u]?.is_bot && GYMS[gk(u)])));
+        const pubs = await all(() => sb.from("gym_public").select("user_id,data").in("user_id", Object.keys(S).filter((u) => P[u]?.is_bot)));
         const PUB = Object.fromEntries(pubs.map((r) => [r.user_id, r.data || {}]));
         const taken = /* @__PURE__ */ new Set();
         Object.values(S).forEach((d) => (d.roster || []).forEach((k) => d[k]?.name && taken.add(nm(d[k]))));
@@ -473,9 +473,64 @@ var RunnerLib = (() => {
         let signed = 0, retiredN = 0;
         for (const [u, d] of Object.entries(S)) {
           const key2 = gk(u);
-          if (!P[u]?.is_bot || !GYMS[key2] || !PUB[u]) continue;
+          if (!P[u]?.is_bot || !PUB[u]) continue;
           let changed = false;
           const card = PUB[u];
+          if (!GYMS[key2]) {
+            for (const k of [...d.roster || []]) {
+              const F = d[k];
+              if (!F || busy.has(pk(u, k))) continue;
+              const why = shouldRetire(F);
+              if (!why) continue;
+              const di = C.DIVS.findIndex((x) => x[0] === F.div);
+              if (di < 0) continue;
+              d.roster = d.roster.filter((x) => x !== k);
+              delete d[k];
+              d.retired = [{ ...F, fid: k, retiredOn: today, why }, ...d.retired || []];
+              card.fighters = (card.fighters || []).filter((f) => f.id !== k);
+              card.retired = [{ id: "r0", name: F.name, div: F.div, region: F.region || null, rec: F.rec, rating: F.rating || 0, status: F.status || 0, earn: F.earn || 0, fans: F.fans || 0, ppv: F.ppv || 0, hgt: F.hgt, home: F.home || "", titles: [], active: false, hist: [] }, ...card.retired || []].map((x, i) => ({ ...x, id: "r" + i }));
+              retiredN++;
+              changed = true;
+              if (retiredN <= 3) mgmt.push(retireRelease(u, { N: nm(F), G: P[u].gym, rec: `${F.rec[0]}-${F.rec[1]}-${F.rec[2]}`, why, div: F.div }));
+              const t = typeOf(F) || (F.region === "bk" ? "BK Grinder" : "Slugger");
+              const NF = makeFighter(C, t, F.div, C.DIVS[di][1], di ? C.DIVS[di - 1][1] : 0, key2, taken, F.home || "", { a: rnd([-1, 0, 1]), d: rnd([-1, 0, 1]) });
+              if (!NF) continue;
+              NF.planName = F.planName || NF.planName;
+              const nk = "f" + Date.now().toString(36) + Math.floor(Math.random() * 1e4).toString(36);
+              d[nk] = NF;
+              d.roster = [...d.roster, nk];
+              card.fighters = [...card.fighters || [], {
+                id: nk,
+                region: NF.region || null,
+                name: NF.name,
+                nick: NF.nick,
+                home: NF.home,
+                div: NF.div,
+                hgt: NF.hgt,
+                w: C.natWeight(NF),
+                mw: C.minWeight(NF),
+                rec: [0, 0, 0, 0],
+                hist: [],
+                plan: NF.planName,
+                train: NF.train,
+                active: true,
+                rating: 0,
+                status: 0,
+                streak: 0,
+                titles: [],
+                earn: 0,
+                fans: 0,
+                ppv: 0
+              }];
+              signed++;
+            }
+            if (changed) {
+              const a = await sb.from("gym_state").update({ data: d }).eq("user_id", u);
+              const b = await sb.from("gym_public").update({ data: card }).eq("user_id", u);
+              if (a.error || b.error) log.push(`roster ${P[u].gym}: ${(a.error || b.error).message}`);
+            }
+            continue;
+          }
           for (const reg of ["", "bk"]) for (let di = 0; di < C.DIVS.length; di++) {
             const [div, lim] = C.DIVS[di], prev = di ? C.DIVS[di - 1][1] : 0;
             const mine = () => (d.roster || []).filter((k) => d[k] && d[k].div === div && (d[k].region === "bk" ? "bk" : "") === reg);

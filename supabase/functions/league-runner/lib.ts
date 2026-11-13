@@ -127,14 +127,43 @@ export async function handle(req: Request, client: any, C: any): Promise<Respons
       const open = await all(() => sb.from("bouts").select("red_user,red_fid,blue_user,blue_fid").neq("status", "done"));
       const busy = new Set<string>(); open.forEach((b) => { busy.add(pk(b.red_user, b.red_fid)); busy.add(pk(b.blue_user, b.blue_fid)); });
       // bot gyms keep PER_DIV active fighters per division in each region: retire the washed up, sign replacements
-      const pubs = await all(() => sb.from("gym_public").select("user_id,data").in("user_id", Object.keys(S).filter((u) => P[u]?.is_bot && GYMS[gk(u)])));
+      const pubs = await all(() => sb.from("gym_public").select("user_id,data").in("user_id", Object.keys(S).filter((u) => P[u]?.is_bot)));
       const PUB: Record<string, any> = Object.fromEntries(pubs.map((r) => [r.user_id, r.data || {}]));
       const taken = new Set<string>(); Object.values(S).forEach((d: any) => (d.roster || []).forEach((k: string) => d[k]?.name && taken.add(nm(d[k]))));
       const allBots: any[] = []; Object.entries(S).forEach(([u, d]: any) => { if (P[u]?.is_bot) (d.roster || []).forEach((k: string) => d[k] && allBots.push({ u, k, F: d[k] })); });
       const mgmt: Release[] = []; let signed = 0, retiredN = 0;
       for (const [u, d] of Object.entries(S) as any) {
-        const key = gk(u); if (!P[u]?.is_bot || !GYMS[key] || !PUB[u]) continue;
+        const key = gk(u); if (!P[u]?.is_bot || !PUB[u]) continue;
         let changed = false; const card = PUB[u];
+        if (!GYMS[key]) {
+          // small gyms keep their own size: a retiring fighter is replaced by a new one of the same style in the same division
+          for (const k of [...(d.roster || [])]) {
+            const F = d[k]; if (!F || busy.has(pk(u, k))) continue;
+            const why = shouldRetire(F); if (!why) continue;
+            const di = C.DIVS.findIndex((x: any) => x[0] === F.div); if (di < 0) continue;
+            d.roster = d.roster.filter((x: string) => x !== k); delete d[k];
+            d.retired = [{ ...F, fid: k, retiredOn: today, why }, ...(d.retired || [])];
+            card.fighters = (card.fighters || []).filter((f: any) => f.id !== k);
+            card.retired = [{ id: "r0", name: F.name, div: F.div, region: F.region || null, rec: F.rec, rating: F.rating || 0, status: F.status || 0, earn: F.earn || 0, fans: F.fans || 0, ppv: F.ppv || 0, hgt: F.hgt, home: F.home || "", titles: [], active: false, hist: [] }, ...(card.retired || [])].map((x: any, i: number) => ({ ...x, id: "r" + i }));
+            retiredN++; changed = true;
+            if (retiredN <= 3) mgmt.push(retireRelease(u, { N: nm(F), G: P[u].gym, rec: `${F.rec[0]}-${F.rec[1]}-${F.rec[2]}`, why, div: F.div }));
+            const t = typeOf(F) || (F.region === "bk" ? "BK Grinder" : "Slugger");
+            const NF = makeFighter(C, t, F.div, C.DIVS[di][1], di ? C.DIVS[di - 1][1] : 0, key, taken, F.home || "", { a: rnd([-1, 0, 1]), d: rnd([-1, 0, 1]) });
+            if (!NF) continue;
+            NF.planName = F.planName || NF.planName;
+            const nk = "f" + Date.now().toString(36) + Math.floor(Math.random() * 1e4).toString(36);
+            d[nk] = NF; d.roster = [...d.roster, nk];
+            card.fighters = [...(card.fighters || []), { id: nk, region: NF.region || null, name: NF.name, nick: NF.nick, home: NF.home, div: NF.div, hgt: NF.hgt, w: C.natWeight(NF), mw: C.minWeight(NF),
+              rec: [0, 0, 0, 0], hist: [], plan: NF.planName, train: NF.train, active: true, rating: 0, status: 0, streak: 0, titles: [], earn: 0, fans: 0, ppv: 0 }];
+            signed++;
+          }
+          if (changed) {
+            const a = await sb.from("gym_state").update({ data: d }).eq("user_id", u);
+            const b = await sb.from("gym_public").update({ data: card }).eq("user_id", u);
+            if (a.error || b.error) log.push(`roster ${P[u].gym}: ${(a.error || b.error)!.message}`);
+          }
+          continue;
+        }
         for (const reg of ["", "bk"]) for (let di = 0; di < C.DIVS.length; di++) {
           const [div, lim] = C.DIVS[di], prev = di ? C.DIVS[di - 1][1] : 0;
           const mine = () => (d.roster || []).filter((k: string) => d[k] && d[k].div === div && (d[k].region === "bk" ? "bk" : "") === reg);
