@@ -1114,11 +1114,11 @@ const prDate=ms=>{const d=new Date(ms);return d.toLocaleDateString('en-US',{week
 function pressFighter(e){const c=cards[e.by]||{};const n=String(e.title||'').trim();return(c.fighters||[]).find(f=>String(f.name||'').trim()===n)||(c.retired||[]).find(f=>String(f.name||'').trim()===n)||null}
 function pressHTML(){
   if(pressFeed===null){loadPress();return`<h1>Press Releases</h1>${needDB()}<p class="mute">Loading...</p>`}
-  const opts=[['','All divisions'],...[...DIVS].reverse().map(([d])=>[d,d+'weight']),...[...DIVS].reverse().map(([d])=>[d+'@bk','Bare Knuckles '+d+'weight'])];
-  const list=pressFeed.filter(e=>{if(!pressSel)return true;const f=pressFighter(e);if(!f)return false;const[d,r]=pressSel.split('@');return f.div===d&&((f.region==='bk')===(r==='bk'))});
+  const opts=[['','Contenders'],['bk','Bare Knuckles']];
+  const list=pressFeed.filter(e=>{const f=pressFighter(e);return pressSel==='bk'?!!f&&f.region==='bk':!(f&&f.region==='bk')});
   const mine=ME?ROSTER().map(k=>[k,state[k]]).filter(([,F])=>F):[];
   const form=dbState!=='on'?'':!ME?needLogin('post a press release'):sanctionOf('gag')?sanctionNote('gag'):mine.length?`<div class="prForm"><select id="prWho">${mine.map(([k,F])=>`<option value="${esc(k)}">${esc(F.name)}</option>`).join('')}</select> <input id="prText" data-keep maxlength="280" placeholder="Say something to the league..."> <button id="prPost">Press</button></div>`:'<p class="small mute">Create a fighter to post press releases.</p>';
-  return`<div class="center prTop"><p>Press releases for other divisions and regions:</p><select id="prSel">${opts.map(([v,l])=>`<option value="${esc(v)}"${v===pressSel?' selected':''}>${esc(l)}</option>`).join('')}</select> <button id="prGo">Press</button></div>
+  return`<div class="center prTop"><p>Press releases for other regions:</p><select id="prSel">${opts.map(([v,l])=>`<option value="${esc(v)}"${v===pressSel?' selected':''}>${esc(l)}</option>`).join('')}</select> <button id="prGo">Press</button></div>
   ${form}<hr>${needDB()}
   ${list.length?list.map(e=>{const f=pressFighter(e);const who=f&&f.id&&f.active!==false?`<a data-go="opub:${e.by}:${encN(f.id)}">${esc(f.name)}</a>`:`<b>${esc(e.title)}</b>`;
     return`<div class="pr"><div class="prHead">${who} <span class="prGym">(<a data-go="gympub:${e.by}">${esc(gymOf(e.by))}</a>)</span> <b class="prDate">(${prDate(e.at)})</b></div><p>${bodyHTML(e.body)}</p></div>`}).join(''):'<p class="center mute">No press releases here yet.</p>'}`;
