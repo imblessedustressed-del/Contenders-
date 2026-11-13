@@ -365,7 +365,7 @@ async function loadPublic(){
     /* sparring gyms: the gyms whose full records the database lets everyone read (which ones are computer-run is never sent to players) */
     {const bs=await SB.from('gym_state').select('user_id,data').neq('user_id',ME||'00000000-0000-0000-0000-000000000000');if(!bs.error){botF={};bs.data.forEach(r=>{if(r.user_id===ME)return;if(managers[r.user_id])managers[r.user_id].bot=true;const d=r.data||{};(d.roster||[]).forEach(k=>{if(d[k])botF['bot:'+r.user_id+':'+k]={...d[k],gymName:managers[r.user_id].gym}})})}}
     bouts=(bt&&!bt.error&&bt.data)||[];try{const vq=await SB.from('vacancies').select('div,belt,bout_id,vacated_at');if(!vq.error)vacancies=vq.data||[]}catch(e){}cards={};if(gc&&!gc.error)gc.data.forEach(r=>cards[r.user_id]=r.data||{});
-    topics=t.data.filter(r=>![23,29].includes(+r.id)).map(r=>({id:String(r.id),forum:r.forum,title:r.title,by:r.author,at:Date.parse(r.created_at),last:Date.parse(r.last_at),count:r.post_count}));
+    topics=t.data.map(r=>({id:String(r.id),forum:r.forum,title:r.title,by:r.author,at:Date.parse(r.created_at),last:Date.parse(r.last_at),count:r.post_count}));
     dbState='on';refresh();
   }catch(e){if(dbState!=='on'){dbState='slow';refresh()}}
 }
