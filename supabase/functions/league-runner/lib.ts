@@ -28,7 +28,7 @@ function nextNight(C: any, div: string, today: string) {
   return null;
 }
 const pk = (u: string, f: string) => u + ":" + f;
-const gk = (u: string) => "b" + u.slice(-2).replace(/^b/, ""); // bot gym key: ...00b4 -> b4
+const gk = (u: string) => (/^00000000-0000-0000-0000-0000000000b[0-9a-f]$/.test(u) ? u.slice(-2) : "small"); // big bot gym key: ...00b4 -> b4
 const nm = (F: any) => String(F?.name || "?").trim();
 async function postReleases(list: Release[], log: string[]) {
   for (const r of list) {
@@ -124,7 +124,7 @@ export async function handle(req: Request, client: any, C: any): Promise<Respons
 
     // 3) book next bouts at the midnight pass (only once every due fight is done)
     if (leftDue === 0 && (bookOnly || mins >= 23 * 60 + 50)) {
-      const open = await all(() => sb.from("bouts").select("red_user,red_fid,blue_user,blue_fid").neq("status", "done"));
+      const open = await all(() => sb.from("bouts").select("red_user,red_fid,blue_user,blue_fid").eq("status", "scheduled"));
       const busy = new Set<string>(); open.forEach((b) => { busy.add(pk(b.red_user, b.red_fid)); busy.add(pk(b.blue_user, b.blue_fid)); });
       // bot gyms keep PER_DIV active fighters per division in each region: retire the washed up, sign replacements
       const pubs = await all(() => sb.from("gym_public").select("user_id,data").in("user_id", Object.keys(S).filter((u) => P[u]?.is_bot)));

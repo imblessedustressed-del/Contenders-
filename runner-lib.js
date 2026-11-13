@@ -329,7 +329,7 @@ var RunnerLib = (() => {
     return null;
   }
   var pk = (u, f) => u + ":" + f;
-  var gk = (u) => "b" + u.slice(-2).replace(/^b/, "");
+  var gk = (u) => /^00000000-0000-0000-0000-0000000000b[0-9a-f]$/.test(u) ? u.slice(-2) : "small";
   var nm = (F) => String(F?.name || "?").trim();
   async function postReleases(list, log) {
     for (const r of list) {
@@ -455,7 +455,7 @@ var RunnerLib = (() => {
         await postReleases(rel, log);
       }
       if (leftDue === 0 && (bookOnly || mins >= 23 * 60 + 50)) {
-        const open = await all(() => sb.from("bouts").select("red_user,red_fid,blue_user,blue_fid").neq("status", "done"));
+        const open = await all(() => sb.from("bouts").select("red_user,red_fid,blue_user,blue_fid").eq("status", "scheduled"));
         const busy = /* @__PURE__ */ new Set();
         open.forEach((b) => {
           busy.add(pk(b.red_user, b.red_fid));
