@@ -88,6 +88,9 @@ Starting the week of Nov 16, Contenders moves away from WeBL and makes its own w
 ## Weight formula (owner, Nov 12, 2026)
 Keep our own formula; don't try to match WeBL's ("we're going to make it kind of our own").
 
+## Visitors (owner, Nov 12, 2026)
+Someone not logged in (no gym) who clicks any sidebar link is sent back to the home page. The home page buttons (Sign Up, Enter Your Gym, Try it Out) still work.
+
 ## Installable app (Nov 12, 2026)
 PWA: manifest.webmanifest, icons/, sw.js (network-first, never caches Supabase), "Install the App" button in the sidebar (iPhone shows Add to Home Screen steps). Google Play via Capacitor later, once players come; Apple App Store skipped ($99/yr).
 

@@ -723,7 +723,7 @@ function condText(x,after){
 /* ================= SHARED DATA (Supabase: accounts, forums, messages) ================= */
 cleanSlate();
 const SB_URL='https://ojsphhzgzbxmnfcbitqb.supabase.co',SB_KEY='sb_publishable_SWO9WhiSkoVhflY5CmY08A_hlqCEJSi';
-const BUILD='1794534275';
+const BUILD='1794534728';
 /* A tab left open on an older build must not save over newer data: if the site has been updated, reload before anything else is saved. */
 let staleBuild=false;
 async function checkBuild(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
@@ -1785,7 +1785,8 @@ function fundingHTML(){return`<h1>Contenders Funding</h1><p>Contenders is free t
 /* ---------- events ---------- */
 document.addEventListener('click',async e=>{
   const t=e.target.closest('[data-go],[data-v],[data-dm],[data-retire],[data-unretire-after],[data-activate],button');if(!t)return;
-  if(t.dataset.v){nav(t.dataset.v);return}
+  /* visitors without a gym: every sidebar link leads back to the home page (owner, Nov 12, 2026) */
+  if(t.dataset.v){if(!ME){$('#side').classList.remove('open');nav('home');return}nav(t.dataset.v);return}
   if(t.dataset.go){nav(t.dataset.go);return}
   if(t.dataset.dm){nav('msgs:'+t.dataset.dm);return}
   const side=(t.closest('[data-side]')||{dataset:{}}).dataset.side||t.dataset.reset;const FS=s=>s==='D'?state.draft:FTR(s);
