@@ -89,6 +89,23 @@ pre.plan{font:14px 'Courier New',monospace;background:#fbf7ef;border:1px inset #
 .center{text-align:center}
 .tag{text-align:center;font-size:18px;color:#555;word-spacing:2px}.tag b{margin:0 14px;white-space:nowrap}
 .bktag{display:inline-block;font:700 10px system-ui,sans-serif;background:#3a2a1a;color:#f2d29b;border-radius:4px;padding:1px 4px;vertical-align:middle;letter-spacing:.5px}
+.hero{position:relative;overflow:hidden;text-align:center;margin:0 0 18px;padding:34px 18px 28px;border-radius:18px;color:#fff;
+  background:radial-gradient(120% 90% at 50% 0%,#2b3c58 0%,#141c2b 55%,#0b0f18 100%);box-shadow:0 10px 30px rgba(10,15,25,.35);border:1px solid rgba(255,255,255,.06)}
+.heroGlow{position:absolute;inset:auto -20% -60% -20%;height:70%;background:radial-gradient(closest-side,rgba(200,16,46,.45),transparent);pointer-events:none}
+.heroGlove{width:84px;height:84px;filter:drop-shadow(0 6px 14px rgba(200,16,46,.5));animation:heroJab 3.2s ease-in-out infinite}
+@keyframes heroJab{0%,70%,100%{transform:translateX(0) rotate(0)}78%{transform:translateX(10px) rotate(-6deg)}86%{transform:translateX(-2px) rotate(2deg)}}
+.heroLogo{margin:6px 0 2px;font:900 clamp(40px,9vw,76px)/1 system-ui,'Arial Black',sans-serif;letter-spacing:.06em;
+  background:linear-gradient(180deg,#fff 0%,#ffe2a6 55%,#e0a63a 100%);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:0 2px 0 rgba(0,0,0,.15)}
+.heroSub{font:700 12px/1 system-ui,sans-serif;letter-spacing:.35em;color:#ff7a86;margin-bottom:14px}
+@media (max-width:520px){.heroSub{letter-spacing:.18em;font-size:11px}}
+.heroTag{position:relative;font:500 17px/1.4 system-ui,sans-serif;color:#dfe6f0;margin:0 auto 14px;max-width:560px}
+.heroPills{position:relative;margin:0 0 18px}.heroPills span{display:inline-block;margin:4px;padding:6px 12px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);font:600 13px system-ui,sans-serif;color:#fff}
+.heroCta{position:relative;display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin:0}
+.heroCta a{display:inline-block;padding:12px 22px;border-radius:999px;font:700 15px system-ui,sans-serif;text-decoration:none;cursor:pointer;transition:transform .12s,box-shadow .12s}
+.heroCta a:hover{transform:translateY(-1px)}
+.heroCta .btnMain{background:linear-gradient(180deg,#ff3b4f,#c8102e);color:#fff;box-shadow:0 6px 18px rgba(200,16,46,.45)}
+.heroCta .btnAlt{background:#fff;color:#141c2b}
+.heroCta .btnGhost{color:#fff;border:1px solid rgba(255,255,255,.4)}
 .tag2{text-align:center;margin:-4px 0 10px}.tag2 b{display:inline-block;margin:4px 6px;padding:5px 12px;border-radius:999px;background:#fff3f3;border:1px solid #f0c4c4;color:#b3122e;font-size:14px;white-space:nowrap}
 .cta{text-align:center;font-size:19px;font-weight:bold;line-height:1.7}
 table.champ{margin:0 auto}table.champ td.pw{text-align:center;vertical-align:middle;min-width:90px}
@@ -596,11 +613,19 @@ function titleFights(){return bouts.filter(b=>b.status==='done'&&b.belt&&b.summa
   return{id:b.id,div:b.div,belt:b.belt,draw:w==null,winner:fName(...W),wu:W[0],wf:W[1],wgym:gymOf(W[0]),loser:fName(...L),lu:L[0],lf:L[1],lgym:gymOf(L[0]),how:b.summary.how}})}
 function homeHTML(){
   const tf=titleFights();
-  return`<div class="home">${bannerSVG()}
-  <p class="tag"><b>Build your fighter.</b> <b>Take him to the top.</b> <b>Outthink managers from everywhere.</b></p>
-  <p class="tag2"><b>&#129354; Fight every week</b> <b>&#127942; Climb the rankings</b> <b>&#128176; Earn purses &amp; PPV money</b></p>
+  return`<div class="home"><section class="hero">
+    <div class="heroGlow"></div>
+    <svg class="heroGlove" viewBox="10 10 110 110" aria-hidden="true"><defs><linearGradient id="hg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff4d5e"/><stop offset="1" stop-color="#8e0d1f"/></linearGradient></defs>
+      <path d="M44 22c-14 2-22 14-21 30 1 14 6 24 6 34 0 8 4 13 12 13h36c8 0 12-5 12-12V72c9 0 15-6 15-16 0-11-8-17-17-15-2-11-11-19-24-19z" fill="url(#hg)" stroke="#2a0506" stroke-width="3"/>
+      <path d="M86 41c-6 2-9 8-8 15" fill="none" stroke="#2a0506" stroke-width="3"/><rect x="34" y="99" width="54" height="13" rx="3" fill="#f1e6c8" stroke="#2a0506" stroke-width="3"/>
+      <path d="M42 34c6-6 18-7 26-3" fill="none" stroke="#fff" stroke-opacity=".45" stroke-width="5" stroke-linecap="round"/></svg>
+    <h1 class="heroLogo">CONTENDERS</h1>
+    <div class="heroSub">THE CONTENDERS BOXING LEAGUE</div>
+    <p class="heroTag">Build your fighter. Take him to the top. Outthink managers from everywhere.</p>
+    <p class="heroPills"><span>&#129354; Fight every week</span><span>&#127942; Climb the rankings</span><span>&#128176; Purses &amp; PPV money</span><span>&#128074; Bare Knuckles</span></p>
+    <p class="heroCta"><a class="btnMain" data-go="register">Sign Up to Play (Free!)</a><a class="btnAlt" data-go="login">Enter Your Gym</a><a class="btnGhost" data-go="fight">Try it Out</a></p>
+  </section>
   <p class="small center">Three world titles in every division: the <b>WBC</b>, the <b>WBA</b> and the <b>WBO</b>. Check out the <a data-go="champs">reigning champs</a> and make your own mark.</p>
-  <p class="cta"><a data-go="register">Sign Up to Play (Free!)</a> or <a data-go="gym">Enter Your Gym</a><br><a data-go="fight">Try it Out</a></p>
   <p class="center news">Contenders News: ${newsLine()}</p>
   <h2 class="center">Latest Contenders World Championship Action</h2>
   ${tf.length?`<table class="grid champ">${tf.map(l=>`<tr><td rowspan="2" class="pw">${POW}<a data-go="champs">${esc(l.div)}</a><br><span class="small">${esc(l.belt)}</span></td><td><a data-go="opub:${l.wu}:${encN(l.wf)}">${esc(l.winner)}</a> (<a data-go="gympub:${l.wu}">${esc(l.wgym)}</a>)${l.draw?' drew':''}</td></tr>
@@ -1388,7 +1413,7 @@ function fundingHTML(){return`<h1>Contenders Funding</h1><p>Contenders is free t
 document.addEventListener('click',async e=>{
   const t=e.target.closest('[data-go],[data-v],[data-dm],[data-retire],[data-unretire-after],[data-activate],button');if(!t)return;
   /* visitors without a gym: every sidebar link leads back to the home page (owner, Nov 12, 2026) */
-  if(t.dataset.v){if(!ME){$('#side').classList.remove('open');nav('home');return}nav(t.dataset.v);return}
+  if(t.dataset.v){if(!ME&&t.dataset.v!=='login'){$('#side').classList.remove('open');nav('home');return}nav(t.dataset.v);return}
   if(t.dataset.go){nav(t.dataset.go);return}
   if(t.dataset.dm){nav('msgs:'+t.dataset.dm);return}
   const side=(t.closest('[data-side]')||{dataset:{}}).dataset.side||t.dataset.reset;const FS=s=>s==='D'?state.draft:FTR(s);
