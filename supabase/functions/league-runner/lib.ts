@@ -8,7 +8,7 @@
 // and the engine (/engine-core.js) on every run, so pushing the site updates the runner. No redeploy needed.
 import { fightOne } from "./fight.ts";
 import { BK_TYPES, GYMS, makeFighter, PER_DIV, REG_TYPES, rnd, scoutedPlan, shouldRetire, learn, typeOf, defaultGene } from "./botgen.ts";
-import { challengeRelease, Release, resultRelease, retireRelease, signRelease } from "./press.ts";
+import { challengeRelease, Release, resultRelease } from "./press.ts";
 
 let sb: any; // set by handle()
 const MAX_FIGHTS = 250; // per pass; the next pass picks up the rest
@@ -146,7 +146,6 @@ export async function handle(req: Request, client: any, C: any): Promise<Respons
             card.fighters = (card.fighters || []).filter((f: any) => f.id !== k);
             card.retired = [{ id: "r0", name: F.name, div: F.div, region: F.region || null, rec: F.rec, rating: F.rating || 0, status: F.status || 0, earn: F.earn || 0, fans: F.fans || 0, ppv: F.ppv || 0, hgt: F.hgt, home: F.home || "", titles: [], active: false, hist: [] }, ...(card.retired || [])].map((x: any, i: number) => ({ ...x, id: "r" + i }));
             retiredN++; changed = true;
-            if (retiredN <= 3) mgmt.push(retireRelease(u, { N: nm(F), G: P[u].gym, rec: `${F.rec[0]}-${F.rec[1]}-${F.rec[2]}`, why, div: F.div }));
             const t = typeOf(F) || (F.region === "bk" ? "BK Grinder" : "Slugger");
             const NF = makeFighter(C, t, F.div, C.DIVS[di][1], di ? C.DIVS[di - 1][1] : 0, key, taken, F.home || "", { a: rnd([-1, 0, 1]), d: rnd([-1, 0, 1]) });
             if (!NF) continue;
@@ -174,7 +173,6 @@ export async function handle(req: Request, client: any, C: any): Promise<Respons
             card.fighters = (card.fighters || []).filter((f: any) => f.id !== k);
             card.retired = [{ id: "r0", name: F.name, div, region: F.region || null, rec: F.rec, rating: F.rating || 0, status: F.status || 0, earn: F.earn || 0, fans: F.fans || 0, ppv: F.ppv || 0, hgt: F.hgt, home: F.home || "", titles: [], active: false, hist: [] }, ...(card.retired || [])].map((x: any, i: number) => ({ ...x, id: "r" + i }));
             changed = true; retiredN++;
-            if (retiredN <= 3) mgmt.push(retireRelease(u, { N: nm(F), G: P[u].gym, rec: `${F.rec[0]}-${F.rec[1]}-${F.rec[2]}`, why, div }));
           }
           const types = reg ? BK_TYPES : REG_TYPES;
           let guard = 0;
@@ -195,7 +193,6 @@ export async function handle(req: Request, client: any, C: any): Promise<Respons
               rec: [0, 0, 0, 0], hist: [], plan: NF.planName, train: NF.train, active: true, rating: 0, status: 0, streak: 0, titles: [], earn: 0, fans: 0, ppv: 0 }];
             allBots.push({ u, k: nk, F: NF });
             changed = true; signed++;
-            if (signed <= 3) mgmt.push(signRelease(u, { N: NF.name, G: P[u].gym, type: t.replace("BK ", ""), home, div, bk: reg ? " in the Bare Knuckles region" : "" }));
           }
         }
         if (changed) {

@@ -246,63 +246,49 @@ var RunnerLib = (() => {
 
   // ../supabase/functions/league-runner/press.ts
   var fill = (s, v) => s.replace(/\{(\w+)\}/g, (_, k) => v[k] ?? "");
-  var BEAT_HUMAN_T = ["{W} sends a message to {LG}", "{WG}: that's how it's done", "{W} spoils the night for {LG}", "Another one for {WG}"];
-  var BEAT_HUMAN_B = [
-    "{W} beat {L} by {how}. We told {LG} all week this was coming. Tell your fighter to keep his head up, he'll need it for the next one.",
-    "Nice try, {LG}. {W} did exactly what we trained him to do: {how}. We'll be here when you want a rematch.",
-    "{L} came in with a plan. {W} came in with a better one. {how}. Next.",
-    "Respect to {L} for showing up, but {W} was the better man tonight ({how}). {WG} doesn't lose to new gyms."
+  var BEAT_HUMAN = [
+    "Told you, {L}. Go back to the gym.",
+    "{L} was tougher than I thought. Still wasn't enough.",
+    "Next time bring a plan, {LG}.",
+    "{how}. Who's next?",
+    "Tell {LG} I said thanks for the work.",
+    "I don't lose to new gyms. Write that down."
   ];
-  var LOST_HUMAN_T = ["{WG} got the better of us", "Congratulations to {WG}", "{L} wants it back"];
-  var LOST_HUMAN_B = [
-    "Credit where it's due: {W} beat {L} by {how}. We'll go back to the gym, fix what went wrong, and we want him again.",
-    "{L} had an off night against {W} ({how}). It won't happen twice. {WG}, enjoy it while it lasts.",
-    "Good fight from {W}. {L} learned something tonight. Check back in a few weeks and see who's laughing."
+  var LOST_HUMAN = [
+    "Good fight, {W}. I want the rematch.",
+    "{W} got lucky. Run it back.",
+    "I needed one more round.",
+    "Back to the gym. {W}, enjoy it while it lasts.",
+    "Respect to {W}. Won't happen twice."
   ];
-  var KO_T = ["{W} puts {L} to sleep", "Lights out for {LG}", "{W} by knockout!", "Statement win for {WG}"];
-  var KO_B = [
-    "{W} stopped {L} by {how}. {LG}, send us someone who can take a punch.",
-    "Did anybody at {LG} see that coming? We did. {W} by {how}.",
-    "{W} said it would end early and it did: {how}. Who's next?"
+  var KO = [
+    "{L} didn't see that coming.",
+    "Lights out. Who else wants some?",
+    "I said it wouldn't go the distance. {how}.",
+    "{LG}, send me somebody who can take a punch."
   ];
-  var UPSET_T = ["Upset! {W} shocks {L}", "Nobody gave {W} a chance"];
-  var UPSET_B = [
-    "They had {W} as the underdog. {L} is rated higher, and it didn't matter: {how}. {WG} is coming up the rankings.",
-    "{LG} looked past {W}. Big mistake. {how}."
+  var UPSET = [
+    "Underdog? Not anymore.",
+    "Everybody picked {L}. Everybody was wrong.",
+    "Rankings don't fight. I do."
   ];
-  var CHALLENGE_T = ["{B} is coming for {H}", "{BG} accepts the fight with {H}", "{H}, we'll see you {day}"];
-  var CHALLENGE_B = [
-    "{B} will fight {H} of {HG} on {day} at {venue}. We've watched his fights. We know what he does. Bring a better plan.",
-    "{HG} thinks {H} is a contender. {B} thinks otherwise. {day}, {venue}. Don't be late.",
-    "Fight's signed: {B} vs {H}, {day}. {B} has been in camp all week. Hope {H} has too.",
-    "{B} doesn't know much about {H} except his record, and that's all he needs. See you {day} at {venue}."
-  ];
-  var RETIRE_T = ["{N} hangs up the gloves", "Farewell to {N}"];
-  var RETIRE_B = [
-    "{N} ({rec}) has retired from {G}. Reason: {why}. Thanks for every round.",
-    "After {rec}, {N} is done. {why}. {G} will have a new fighter in the {div} division right away."
-  ];
-  var SIGN_T = ["{G} signs {N}", "New blood at {G}: {N}"];
-  var SIGN_B = [
-    "{G} has signed {N}, a {type} out of {home}, to fight at {div}weight{bk}. The rest of the division has been warned.",
-    "Welcome {N} to {G}. {type}, {div}weight{bk}, out of {home}. First fight coming soon."
+  var CHALLENGE = [
+    "{H}, I've watched your fights. See you {day}.",
+    "{day} is going to be a long night for {H}.",
+    "{HG} can keep {H} home if they're scared.",
+    "Hope {H} has been in camp. I have.",
+    "{H} vs me, {day} at {venue}. Bring a better plan."
   ];
   function resultRelease(o) {
-    const v = { W: o.W, WG: o.WG, L: o.L, LG: o.LG, how: o.how };
-    if (o.vsHuman && o.botWon) return { author: o.authorWin, title: fill(rnd(BEAT_HUMAN_T), v), body: fill(rnd(BEAT_HUMAN_B), v) };
-    if (o.vsHuman && !o.botWon) return { author: o.authorLose, title: fill(rnd(LOST_HUMAN_T), v), body: fill(rnd(LOST_HUMAN_B), v) };
-    if (o.upset) return { author: o.authorWin, title: fill(rnd(UPSET_T), v), body: fill(rnd(UPSET_B), v) };
-    if (o.ko) return { author: o.authorWin, title: fill(rnd(KO_T), v), body: fill(rnd(KO_B), v) };
+    const v = { W: o.W, WG: o.WG, L: o.L, LG: o.LG, how: o.how.charAt(0).toUpperCase() + o.how.slice(1) };
+    if (o.vsHuman && o.botWon) return { author: o.authorWin, title: o.W, body: fill(rnd(BEAT_HUMAN), v) };
+    if (o.vsHuman && !o.botWon) return { author: o.authorLose, title: o.L, body: fill(rnd(LOST_HUMAN), v) };
+    if (o.upset) return { author: o.authorWin, title: o.W, body: fill(rnd(UPSET), v) };
+    if (o.ko) return { author: o.authorWin, title: o.W, body: fill(rnd(KO), v) };
     return null;
   }
   function challengeRelease(author, v) {
-    return { author, title: fill(rnd(CHALLENGE_T), v), body: fill(rnd(CHALLENGE_B), v) };
-  }
-  function retireRelease(author, v) {
-    return { author, title: fill(rnd(RETIRE_T), v), body: fill(rnd(RETIRE_B), v) };
-  }
-  function signRelease(author, v) {
-    return { author, title: fill(rnd(SIGN_T), v), body: fill(rnd(SIGN_B), v) };
+    return { author, title: v.B, body: fill(rnd(CHALLENGE), v) };
   }
 
   // ../supabase/functions/league-runner/lib.ts
@@ -491,7 +477,6 @@ var RunnerLib = (() => {
               card.retired = [{ id: "r0", name: F.name, div: F.div, region: F.region || null, rec: F.rec, rating: F.rating || 0, status: F.status || 0, earn: F.earn || 0, fans: F.fans || 0, ppv: F.ppv || 0, hgt: F.hgt, home: F.home || "", titles: [], active: false, hist: [] }, ...card.retired || []].map((x, i) => ({ ...x, id: "r" + i }));
               retiredN++;
               changed = true;
-              if (retiredN <= 3) mgmt.push(retireRelease(u, { N: nm(F), G: P[u].gym, rec: `${F.rec[0]}-${F.rec[1]}-${F.rec[2]}`, why, div: F.div }));
               const t = typeOf(F) || (F.region === "bk" ? "BK Grinder" : "Slugger");
               const NF = makeFighter(C, t, F.div, C.DIVS[di][1], di ? C.DIVS[di - 1][1] : 0, key2, taken, F.home || "", { a: rnd([-1, 0, 1]), d: rnd([-1, 0, 1]) });
               if (!NF) continue;
@@ -544,7 +529,6 @@ var RunnerLib = (() => {
               card.retired = [{ id: "r0", name: F.name, div, region: F.region || null, rec: F.rec, rating: F.rating || 0, status: F.status || 0, earn: F.earn || 0, fans: F.fans || 0, ppv: F.ppv || 0, hgt: F.hgt, home: F.home || "", titles: [], active: false, hist: [] }, ...card.retired || []].map((x, i) => ({ ...x, id: "r" + i }));
               changed = true;
               retiredN++;
-              if (retiredN <= 3) mgmt.push(retireRelease(u, { N: nm(F), G: P[u].gym, rec: `${F.rec[0]}-${F.rec[1]}-${F.rec[2]}`, why, div }));
             }
             const types = reg ? BK_TYPES : REG_TYPES;
             let guard = 0;
@@ -589,7 +573,6 @@ var RunnerLib = (() => {
               allBots.push({ u, k: nk, F: NF });
               changed = true;
               signed++;
-              if (signed <= 3) mgmt.push(signRelease(u, { N: NF.name, G: P[u].gym, type: t.replace("BK ", ""), home, div, bk: reg ? " in the Bare Knuckles region" : "" }));
             }
           }
           if (changed) {

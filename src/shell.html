@@ -110,6 +110,8 @@ pre.plan{font:14px 'Courier New',monospace;background:#fbf7ef;border:1px inset #
 .heroApp a:hover{background:rgba(255,255,255,.16)}
 .heroAppTip{position:relative;max-width:460px;margin:10px auto 0;padding:10px 12px;border-radius:10px;background:rgba(0,0,0,.35);color:#e9eef5;font:14px/1.4 system-ui,sans-serif}
 .heroAppTip[hidden]{display:none}
+.prTop p{margin:4px 0}.prForm{display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:center;margin:12px 0}.prForm input{flex:1;min-width:200px;max-width:520px}
+.pr{padding:10px 4px;border-bottom:1px solid rgba(0,0,0,.08)}.pr p{margin:6px 0 0}.prHead a{font-weight:700}.prGym{font-size:13px}.prDate{font-size:14px}
 .tag2{text-align:center;margin:-4px 0 10px}.tag2 b{display:inline-block;margin:4px 6px;padding:5px 12px;border-radius:999px;background:#fff3f3;border:1px solid #f0c4c4;color:#b3122e;font-size:14px;white-space:nowrap}
 .cta{text-align:center;font-size:19px;font-weight:bold;line-height:1.7}
 table.champ{margin:0 auto}table.champ td.pw{text-align:center;vertical-align:middle;min-width:90px}
@@ -1100,7 +1102,29 @@ function forumsHTML(){
   return`${forumNav()}<h1>The Contenders Forums</h1>${needDB()}<p class="sans">Posts in the wrong forum may be moved or deleted.</p>
   <dl class="forumlist sans">${FORUMS.map(f=>`<dt><a data-go="forum:${f[0]}">${f[1]}</a>${last(f[0])}</dt><dd>${f[2]}</dd>`).join('')}</dl>`;
 }
+/* ---------- Press releases: one fighter talking, newest first, filter by division and region (owner, Nov 12, 2026) ---------- */
+let pressFeed=null,pressLoading=false,pressSel='';
+async function loadPress(){if(!SB||pressLoading)return;pressLoading=true;
+  try{const t=await SB.from('topics').select('id,title,author,created_at').eq('forum','press').order('created_at',{ascending:false}).limit(150);
+    const ids=(t.data||[]).map(x=>x.id);const p=ids.length?await SB.from('posts').select('topic_id,body,created_at').in('topic_id',ids).order('created_at'):{data:[]};
+    const first={};(p.data||[]).forEach(x=>{if(!(x.topic_id in first))first[x.topic_id]=x.body});
+    pressFeed=(t.data||[]).map(x=>({id:x.id,title:x.title,by:x.author,at:Date.parse(x.created_at),body:first[x.id]||''}))}
+  catch(e){pressFeed=[]}pressLoading=false;if(view==='forum:press')render()}
+const prDate=ms=>{const d=new Date(ms);return d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})+' '+d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})};
+function pressFighter(e){const c=cards[e.by]||{};const n=String(e.title||'').trim();return(c.fighters||[]).find(f=>String(f.name||'').trim()===n)||(c.retired||[]).find(f=>String(f.name||'').trim()===n)||null}
+function pressHTML(){
+  if(pressFeed===null){loadPress();return`<h1>Press Releases</h1>${needDB()}<p class="mute">Loading...</p>`}
+  const opts=[['','All divisions'],...[...DIVS].reverse().map(([d])=>[d,d+'weight']),...[...DIVS].reverse().map(([d])=>[d+'@bk','Bare Knuckles '+d+'weight'])];
+  const list=pressFeed.filter(e=>{if(!pressSel)return true;const f=pressFighter(e);if(!f)return false;const[d,r]=pressSel.split('@');return f.div===d&&((f.region==='bk')===(r==='bk'))});
+  const mine=ME?ROSTER().map(k=>[k,state[k]]).filter(([,F])=>F):[];
+  const form=dbState!=='on'?'':!ME?needLogin('post a press release'):sanctionOf('gag')?sanctionNote('gag'):mine.length?`<div class="prForm"><select id="prWho">${mine.map(([k,F])=>`<option value="${esc(k)}">${esc(F.name)}</option>`).join('')}</select> <input id="prText" data-keep maxlength="280" placeholder="Say something to the league..."> <button id="prPost">Press</button></div>`:'<p class="small mute">Create a fighter to post press releases.</p>';
+  return`<div class="center prTop"><p>Press releases for other divisions and regions:</p><select id="prSel">${opts.map(([v,l])=>`<option value="${esc(v)}"${v===pressSel?' selected':''}>${esc(l)}</option>`).join('')}</select> <button id="prGo">Press</button></div>
+  ${form}<hr>${needDB()}
+  ${list.length?list.map(e=>{const f=pressFighter(e);const who=f&&f.id&&f.active!==false?`<a data-go="opub:${e.by}:${encN(f.id)}">${esc(f.name)}</a>`:`<b>${esc(e.title)}</b>`;
+    return`<div class="pr"><div class="prHead">${who} <span class="prGym">(<a data-go="gympub:${e.by}">${esc(gymOf(e.by))}</a>)</span> <b class="prDate">(${prDate(e.at)})</b></div><p>${bodyHTML(e.body)}</p></div>`}).join(''):'<p class="center mute">No press releases here yet.</p>'}`;
+}
 function forumHTML(fid){
+  if(fid==='press')return pressHTML();
   const f=FORUMS.find(x=>x[0]===fid)||FORUMS[0];
   const list=topics.filter(t=>t.forum===f[0]);
   return`${forumNav()}<h1>The ${esc(f[1])} Forum</h1><p class="sans">${esc(f[2])}</p>${needDB()}
@@ -1128,7 +1152,7 @@ function topicHTML(tid){
 function msgsHTML(arg){
   if(dbState!=='on')return`<h1>Messages</h1>${needDB()}`;
   if(!ME)return`<h1>Messages</h1>${needLogin('send and read messages')}`;
-  const others=Object.keys(managers).filter(id=>id!==ME&&!managers[id].bot).sort((x,y)=>gymOf(x).localeCompare(gymOf(y)));
+  const others=Object.keys(managers).filter(id=>id!==ME).sort((x,y)=>gymOf(x).localeCompare(gymOf(y)));
   const when=ms=>{const d=new Date(ms),n=new Date();return d.toDateString()===n.toDateString()?d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}):d.toLocaleDateString('en-US',{month:'short',day:'numeric'})};
   const gag=sanctionOf('gag');
   if(arg&&arg!=='new'){
@@ -1478,6 +1502,10 @@ document.addEventListener('click',async e=>{
   else if(t.id==='doRetireGym'){if($('#retireName').value.trim()!==myGym())return alertBox('The gym name does not match.');
     t.disabled=true;if(await safeWrite(()=>SB.rpc('retire_gym'))){await SB.auth.signOut().catch(()=>{});try{localStorage.removeItem('contenders_v6')}catch(e){}ME=null;alert0()}else t.disabled=false}
   else if(t.id==='doLogout'){await SB.auth.signOut();ME=null;ims=[];updateTop();nav('home')}
+  else if(t.id==='prGo'){pressSel=$('#prSel').value;render()}
+  else if(t.id==='prPost'){const k=$('#prWho').value,F=state[k],body=$('#prText').value.trim().slice(0,280);if(!F||!body)return alertBox('Pick a fighter and write something.');
+    t.disabled=true;const ok=await safeWrite(async()=>{const r=await SB.from('topics').insert({forum:'press',title:String(F.name).trim().slice(0,100)}).select('id').single();if(r.error)throw r.error;const p=await SB.from('posts').insert({topic_id:r.data.id,body});if(p.error)throw p.error});
+    if(ok){$('#prText').value='';pressFeed=null;await loadPublic();render()}else t.disabled=false}
   else if(t.id==='postTopic'){const title=$('#tTitle').value.trim().slice(0,100),body=$('#tBody').value.trim().slice(0,8000);if(!title||!body)return alertBox('Give your topic a title and a message.');
     t.disabled=true;let tid=null;
     const ok=await safeWrite(async()=>{const r=await SB.from('topics').insert({forum:t.dataset.forum,title}).select('id').single();if(r.error)throw r.error;tid=r.data.id;const p=await SB.from('posts').insert({topic_id:tid,body});if(p.error)throw p.error});
