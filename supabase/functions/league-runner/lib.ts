@@ -222,32 +222,42 @@ export async function handle(req: Request, client: any, C: any): Promise<Respons
         busy.add(pk(a.u, a.k)); busy.add(pk(b.u, b.k));
       };
       const bots = free(true);
-      // humans first: closest-rated bot in his division, preferring bots he hasn't fought and a different gym than last time
+      // Fair matchmaking (owner, Nov 12, 2026): never more than 1 ability point apart in total (STR+KP+SPD+AGL+CHN+CND+HGT+CUT);
+      // then the same status, closest rating (18/18 meets 18/18, then 17/18, 16/18...), then status 1 apart, and so on.
+      // Nobody fit? He waits for the next night's booking instead of getting an unfair fight.
+      const AP = (F: any) => ["str", "kp", "spd", "agl", "chn", "cnd", "hgt", "cut"].reduce((t, k) => t + (+F[k] || 0), 0);
+      const fair = (a: any, b: any) => Math.abs(AP(a.F) - AP(b.F)) <= 1;
+      const gap = (a: any, b: any) => Math.abs((a.F.status || 0) - (b.F.status || 0)) * 100 + Math.abs((a.F.rating || 0) - (b.F.rating || 0));
+      // humans first: the fairest bot in his division and region, preferring bots he hasn't fought and a different gym than last time
       for (const h of free(false)) {
         const date = nextNight(C, h.F.div, today); if (!date) continue;
         const seen = new Set((h.F.hist || []).filter((x: any) => x.bout).map((x: any) => x.opp + "|" + x.ogym));
         const lastGym = ((h.F.hist || []).find((x: any) => x.bout) || {}).ogym;
-        const cands = bots.filter((b) => b.F.div === h.F.div && b.reg === h.reg && !busy.has(pk(b.u, b.k))); // same division and region
-        if (!cands.length) { log.push(`no bot free for ${h.F.name} (${h.F.div})`); continue; }
-        const score = (b: any) => Math.abs((b.F.rating || 0) - (h.F.rating || 0)) + (seen.has(b.F.name + "|" + b.gym) ? 3 : 0) + (b.gym === lastGym ? 1 : 0) + Math.random() * 0.9;
+        const cands = bots.filter((b) => b.F.div === h.F.div && b.reg === h.reg && !busy.has(pk(b.u, b.k)) && fair(h, b));
+        if (!cands.length) { log.push(`no fair opponent free for ${nm(h.F)} (${h.F.div}, ${AP(h.F)} AP, ${h.F.rating || 0}/${h.F.status || 0})`); continue; }
+        const score = (b: any) => gap(h, b) * 10 + (seen.has(b.F.name + "|" + b.gym) ? 3 : 0) + (b.gym === lastGym ? 1 : 0) + Math.random() * 0.9;
         cands.sort((x, y) => score(x) - score(y));
         book(h, cands[0], date, false);
       }
-      // then the bots against each other: same division, different gyms, closest rating
+      // then the bots against each other, same rules: same division and region, different gyms
       const byDiv: Record<string, any[]> = {};
       bots.filter((b) => !busy.has(pk(b.u, b.k))).forEach((b) => (byDiv[b.F.div + "|" + b.reg] ||= []).push(b));
       for (const [dk, list] of Object.entries(byDiv)) {
         const div = dk.split("|")[0];
         const date = nextNight(C, div, today); if (!date) continue;
-        list.forEach((b) => (b.r = (b.F.rating || 0) + Math.random() * 0.9));
-        list.sort((x, y) => x.r - y.r);
+        list.forEach((b) => (b.r = Math.random()));
+        list.sort((x, y) => (y.F.status || 0) - (x.F.status || 0) || (y.F.rating || 0) - (x.F.rating || 0) || x.r - y.r);
         while (list.length > 1) {
           const a = list.shift();
           const recent = new Set((a.F.hist || []).slice(0, 3).map((x: any) => x.opp + "|" + x.ogym));
-          let j = list.findIndex((b) => b.gym !== a.gym && !recent.has(b.F.name + "|" + b.gym) && Math.abs(b.r - a.r) <= 3);
-          if (j < 0) j = list.findIndex((b) => b.gym !== a.gym);
-          if (j < 0) continue;
-          const [b] = list.splice(j, 1);
+          let best = -1, bs = Infinity;
+          list.forEach((b, j) => {
+            if (b.gym === a.gym || !fair(a, b)) return;
+            const sc = gap(a, b) * 10 + (recent.has(b.F.name + "|" + b.gym) ? 3 : 0) + Math.random() * 0.5;
+            if (sc < bs) { bs = sc; best = j; }
+          });
+          if (best < 0) continue; // nobody fair for him tonight
+          const [b] = list.splice(best, 1);
           book(a, b, date, true);
         }
       }

@@ -620,17 +620,20 @@ var RunnerLib = (() => {
           busy.add(pk(b.u, b.k));
         };
         const bots = free(true);
+        const AP = (F) => ["str", "kp", "spd", "agl", "chn", "cnd", "hgt", "cut"].reduce((t, k) => t + (+F[k] || 0), 0);
+        const fair = (a, b) => Math.abs(AP(a.F) - AP(b.F)) <= 1;
+        const gap = (a, b) => Math.abs((a.F.status || 0) - (b.F.status || 0)) * 100 + Math.abs((a.F.rating || 0) - (b.F.rating || 0));
         for (const h of free(false)) {
           const date = nextNight(C, h.F.div, today);
           if (!date) continue;
           const seen = new Set((h.F.hist || []).filter((x) => x.bout).map((x) => x.opp + "|" + x.ogym));
           const lastGym = ((h.F.hist || []).find((x) => x.bout) || {}).ogym;
-          const cands = bots.filter((b) => b.F.div === h.F.div && b.reg === h.reg && !busy.has(pk(b.u, b.k)));
+          const cands = bots.filter((b) => b.F.div === h.F.div && b.reg === h.reg && !busy.has(pk(b.u, b.k)) && fair(h, b));
           if (!cands.length) {
-            log.push(`no bot free for ${h.F.name} (${h.F.div})`);
+            log.push(`no fair opponent free for ${nm(h.F)} (${h.F.div}, ${AP(h.F)} AP, ${h.F.rating || 0}/${h.F.status || 0})`);
             continue;
           }
-          const score = (b) => Math.abs((b.F.rating || 0) - (h.F.rating || 0)) + (seen.has(b.F.name + "|" + b.gym) ? 3 : 0) + (b.gym === lastGym ? 1 : 0) + Math.random() * 0.9;
+          const score = (b) => gap(h, b) * 10 + (seen.has(b.F.name + "|" + b.gym) ? 3 : 0) + (b.gym === lastGym ? 1 : 0) + Math.random() * 0.9;
           cands.sort((x, y) => score(x) - score(y));
           book(h, cands[0], date, false);
         }
@@ -640,15 +643,22 @@ var RunnerLib = (() => {
           const div = dk.split("|")[0];
           const date = nextNight(C, div, today);
           if (!date) continue;
-          list.forEach((b) => b.r = (b.F.rating || 0) + Math.random() * 0.9);
-          list.sort((x, y) => x.r - y.r);
+          list.forEach((b) => b.r = Math.random());
+          list.sort((x, y) => (y.F.status || 0) - (x.F.status || 0) || (y.F.rating || 0) - (x.F.rating || 0) || x.r - y.r);
           while (list.length > 1) {
             const a = list.shift();
             const recent = new Set((a.F.hist || []).slice(0, 3).map((x) => x.opp + "|" + x.ogym));
-            let j = list.findIndex((b2) => b2.gym !== a.gym && !recent.has(b2.F.name + "|" + b2.gym) && Math.abs(b2.r - a.r) <= 3);
-            if (j < 0) j = list.findIndex((b2) => b2.gym !== a.gym);
-            if (j < 0) continue;
-            const [b] = list.splice(j, 1);
+            let best = -1, bs = Infinity;
+            list.forEach((b2, j) => {
+              if (b2.gym === a.gym || !fair(a, b2)) return;
+              const sc = gap(a, b2) * 10 + (recent.has(b2.F.name + "|" + b2.gym) ? 3 : 0) + Math.random() * 0.5;
+              if (sc < bs) {
+                bs = sc;
+                best = j;
+              }
+            });
+            if (best < 0) continue;
+            const [b] = list.splice(best, 1);
             book(a, b, date, true);
           }
         }

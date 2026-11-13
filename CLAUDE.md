@@ -57,6 +57,9 @@ Goal: every fighter type has a real chance; the better fight plan decides. Tune 
 - The old Claude scheduled task "Contenders league runner" (trig_018LL4x615reJ7yQKSdLR51z) is DISABLED; nightly fights no longer use Claude. tools/league.py is still the manual fallback.
 - Site loads all human/title bouts, all scheduled bouts and the latest 400 bot results. Fight Schedule page lists upcoming bouts by night and the latest results.
 
+## Fair matchmaking (owner, Nov 12, 2026)
+Never book two fighters whose total AP (str+kp+spd+agl+chn+cnd+hgt+cut) differ by more than 1. Among fair pairs: same status first, then closest rating (18/18 vs 18/18, then 17/18, 16/18...), then status 1 apart, etc. If no fair opponent is free he isn't booked (logged in league_runs.note). Applies to humans vs bots and bots vs bots (lib.ts booking).
+
 ## Self-managing bot gyms (owner, Nov 12, 2026: "we want the bots to evolve, try to win... five active fighters in all regions... posting press releases at each other and with me")
 - Runner code now lives in `supabase/functions/league-runner/lib.ts` (+ botgen.ts, press.ts, fight.ts). `build.sh` bundles it with esbuild into `/runner-lib.js` on the site; the deployed edge function `index.ts` is a tiny loader that downloads engine-core.js and runner-lib.js every run. So a site push updates the runner; redeploy only if index.ts changes. Test locally with a mock client (see git history: /tmp/mock.ts pattern).
 - Learning: each bot fighter has `bt` (type) and `gene` {a, d} (AGG/DEF offsets applied to his type's plan template, safety lines fixed). After a loss by stoppage: d+1, a-1; by decision: a+1, d-1; draw: a+1; win: unchanged. Plan text is regenerated from the gene (`planFor`).

@@ -744,7 +744,7 @@ function condText(x,after){
 /* ================= SHARED DATA (Supabase: accounts, forums, messages) ================= */
 cleanSlate();
 const SB_URL='https://ojsphhzgzbxmnfcbitqb.supabase.co',SB_KEY='sb_publishable_SWO9WhiSkoVhflY5CmY08A_hlqCEJSi';
-const BUILD='1794535304';
+const BUILD='1794536384';
 /* A tab left open on an older build must not save over newer data: if the site has been updated, reload before anything else is saved. */
 let staleBuild=false;
 async function checkBuild(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
@@ -1767,14 +1767,16 @@ if endurance_percent < 50 then 1/1/10</pre>`,
   <p>Set training from the fighter's page: "train for something else."</p>`,
  schedule:()=>`<ul>
   <li><b>Each division fights on its own night every week:</b></li></ul>${SCHED_TABLE()}<ul>
-  <li>Each week your fighters are matched against fighters from other gyms around their ranking. You don't book fights yourself.</li>
+  <li>Each week your fighters are matched against fighters from other gyms. You don't book fights yourself.</li>
+  <li><b>Fair fights only:</b> two fighters are never matched if their total ability points (all eight abilities, height and cut resistance included) are more than 1 apart. Among those, the matchmaker looks for the same status and the closest rating first: an 18/18 fighter meets another 18/18, then 17/18, 16/18, and so on. If nobody fair is free, he waits for the next night's booking instead of taking a lopsided fight.</li>
+  <li>Fights run at about 10:45 PM Central, and new fights are booked at midnight: tonight's fighters get next week's night, and a new fighter gets his division's next night that's at least 24 hours away.</li>
   <li>Get your fight plans and training in <b>before your division's fight night</b>. Whatever is saved when the fights run is what your fighter uses.</li>
   <li>You don't need to be online. Results, fight reports and new rankings are posted after the fights run.</li>
   <li>A fighter's page shows his next opponent once he's been matched, so you can scout him and write a plan for that matchup.</li>
   <li>Between fight nights, use <a data-go="fight">Practice Fights</a> and <a data-go="simbot">Simbot</a> as much as you like. They never count on your record.</li></ul>
-  <p class="note">Weekly fight nights are being switched on as managers sign up. Until then, practice fights and Simbot are open to everyone.</p>`,
+`,
  titles:()=>`<ul><li>Every division has three world titles: the <b>WBC</b>, the <b>WBA</b> and the <b>WBO</b>.</li>
-  <li>Divisions: ${DIVS.map(d=>d[0]+(d[1]<1000?' '+d[1]:' (no limit)')).join(', ')}.</li>
+  <li>Divisions: ${DIVS.map(d=>d[0]+' '+d[1]).join(', ')}.</li>
   <li>Fighters are ranked inside their division. The top contenders get title shots, and the latest title fights show on the home page.</li>
   <li>See the <a data-go="champs">Champions</a>, <a data-go="frank">Fighter Rankings</a> and <a data-go="grank">Gym Rankings</a>.</li></ul>`,
  community:()=>`<ul><li><a data-go="forums">Forums</a>: everyone can read them, and members can post and reply. Keep posts in the right board.</li>
