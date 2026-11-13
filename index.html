@@ -740,7 +740,7 @@ function condText(x,after){
 /* ================= SHARED DATA (Supabase: accounts, forums, messages) ================= */
 cleanSlate();
 const SB_URL='https://ojsphhzgzbxmnfcbitqb.supabase.co',SB_KEY='sb_publishable_SWO9WhiSkoVhflY5CmY08A_hlqCEJSi';
-const BUILD='1794534917';
+const BUILD='1794534932';
 /* A tab left open on an older build must not save over newer data: if the site has been updated, reload before anything else is saved. */
 let staleBuild=false;
 async function checkBuild(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
@@ -1021,7 +1021,7 @@ function homeHTML(){
     <div class="heroSub">THE CONTENDERS BOXING LEAGUE</div>
     <p class="heroTag">Build your fighter. Take him to the top. Outthink managers from everywhere.</p>
     <p class="heroPills"><span>&#129354; Fight every week</span><span>&#127942; Climb the rankings</span><span>&#128176; Purses &amp; PPV money</span><span>&#128074; Bare Knuckles</span></p>
-    <p class="heroCta"><a class="btnMain" data-go="register">Sign Up to Play (Free!)</a><a class="btnAlt" data-go="login">Enter Your Gym</a><a class="btnGhost" data-go="fight">Try it Out</a></p>
+    <p class="heroCta"><a class="btnMain" data-go="register">Sign Up to Play (Free!)</a><a class="btnAlt" data-go="${ME?'gym':'login'}">Enter Your Gym</a><a class="btnGhost" data-go="fight">Try it Out</a></p>
   </section>
   <p class="small center">Three world titles in every division: the <b>WBC</b>, the <b>WBA</b> and the <b>WBO</b>. Check out the <a data-go="champs">reigning champs</a> and make your own mark.</p>
   <p class="center news">Contenders News: ${newsLine()}</p>

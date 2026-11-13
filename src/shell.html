@@ -623,7 +623,7 @@ function homeHTML(){
     <div class="heroSub">THE CONTENDERS BOXING LEAGUE</div>
     <p class="heroTag">Build your fighter. Take him to the top. Outthink managers from everywhere.</p>
     <p class="heroPills"><span>&#129354; Fight every week</span><span>&#127942; Climb the rankings</span><span>&#128176; Purses &amp; PPV money</span><span>&#128074; Bare Knuckles</span></p>
-    <p class="heroCta"><a class="btnMain" data-go="register">Sign Up to Play (Free!)</a><a class="btnAlt" data-go="login">Enter Your Gym</a><a class="btnGhost" data-go="fight">Try it Out</a></p>
+    <p class="heroCta"><a class="btnMain" data-go="register">Sign Up to Play (Free!)</a><a class="btnAlt" data-go="${ME?'gym':'login'}">Enter Your Gym</a><a class="btnGhost" data-go="fight">Try it Out</a></p>
   </section>
   <p class="small center">Three world titles in every division: the <b>WBC</b>, the <b>WBA</b> and the <b>WBO</b>. Check out the <a data-go="champs">reigning champs</a> and make your own mark.</p>
   <p class="center news">Contenders News: ${newsLine()}</p>
