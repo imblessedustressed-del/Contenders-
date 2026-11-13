@@ -229,7 +229,7 @@ const STYLE_NAMES=[['None','None'],['Inside','Inside'],['Counter','Counter-punch
 const TARGETS=[['Opp','Opportunistic'],['Head','Head'],['Body','Body'],['Cut','Go after the cut']];
 const mkPlan=(agg,pow,def,tgt,style)=>`${agg}${{Head:'H',Body:'B',Cut:'C'}[tgt]||''}/${pow}/${def}${style&&style!=='None'?` (${style.toLowerCase()})`:''}`;
 const JUDGES=[{name:'Alvarez',pw:2.6,act:.03},{name:'Whitfield',pw:1.9,act:.12},{name:'Moreau',pw:2.2,act:.07}];
-const DIVS=[['Straw',105],['Junior Fly',108],['Fly',112],['Super Fly',115],['Bantam',118],['Super Bantam',122],['Feather',126],['Super Feather',130],['Light',135],['Welter',147],['Super Welter',154],['Middle',160],['Super Middle',168],['Light Heavy',175],['Cruiser',200],['Heavy',1000]];
+const DIVS=[['Straw',105],['Junior Fly',108],['Fly',112],['Super Fly',115],['Bantam',118],['Super Bantam',122],['Feather',126],['Super Feather',130],['Light',135],['Welter',147],['Super Welter',154],['Middle',160],['Super Middle',168],['Light Heavy',175],['Cruiser',200],['Heavy',280]];
 const FIGHT_NIGHT={'Straw':'Sunday','Junior Fly':'Sunday','Fly':'Sunday','Super Fly':'Monday','Bantam':'Monday','Super Bantam':'Monday','Feather':'Tuesday','Super Feather':'Tuesday','Light':'Wednesday','Welter':'Wednesday','Super Welter':'Wednesday','Super Middle':'Thursday','Middle':'Thursday','Cruiser':'Friday','Light Heavy':'Friday','Heavy':'Saturday'};
 const nightOf=div=>FIGHT_NIGHT[div]||null;
 const SCHED_TABLE=()=>`<table class="grid"><tr><th>Fight night</th><th>Divisions</th></tr>${['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'].map(n=>`<tr><td><b>${n}</b></td><td>${DIVS.filter(d=>FIGHT_NIGHT[d[0]]===n).map(d=>d[0]+'weight').join(', ')}${n==='Saturday'?' (alone)':''}</td></tr>`).join('')}</table>`;
@@ -945,7 +945,7 @@ function planErr(){for(const s of corners()){const F=getF(s);if(!F)return'Pick t
 function weightOf(div){const l=(DIVS.find(d=>d[0]===div)||[0,160])[1];return l>=1000?225:l}
 function reportHTML(f,b,upto){
   const S=f.S,W=weightOf(b.div);
-  const intro=S.map((x,i)=>{const Wx=(x.F.fightW&&weightOf(b.div)===225)?x.F.fightW:W;return`<p>In this corner, standing ${ht(HT(x.F))} (${cm(HT(x.F))} centimeters) tall weighing in at ${Wx} pounds (${Math.round(Wx*.4536)} kilograms) with a record of ${b.recs[i][0]} wins, ${b.recs[i][2]} draws, and ${b.recs[i][1]} losses fighting for ${esc((b.gyms&&b.gyms[i])||b.gym)} out of ${esc(x.F.home||'parts unknown')} is <b>${esc(x.F.name)}</b>!!</p><div class="gap"></div>`}).join('');
+  const intro=S.map((x,i)=>{const Wx=(x.F.fightW&&b.div==='Heavy')?x.F.fightW:W;return`<p>In this corner, standing ${ht(HT(x.F))} (${cm(HT(x.F))} centimeters) tall weighing in at ${Wx} pounds (${Math.round(Wx*.4536)} kilograms) with a record of ${b.recs[i][0]} wins, ${b.recs[i][2]} draws, and ${b.recs[i][1]} losses fighting for ${esc((b.gyms&&b.gyms[i])||b.gym)} out of ${esc(x.F.home||'parts unknown')} is <b>${esc(x.F.name)}</b>!!</p><div class="gap"></div>`}).join('');
   let h=`<h1 class="date">${esc(b.date)}</h1>${b.venue?`<p>${b.tv&&b.tv.tier==='ppv'?'Live on pay-per-view from':b.tv&&b.tv.tier==='undercard'?'On the pay-per-view undercard, live from':b.tv&&b.tv.tier==='tv'?'Live on TV from':'Live from'} <b>${esc(b.venue.name)}</b> in ${esc(b.venue.city)}${b.att?`. Attendance: ${crowdText(b.venue,b.att)}`:''}.${b.tv&&b.tv.buys?` Pay-per-view buys: <b>${b.tv.buys.toLocaleString('en-US')}</b> worldwide (${Object.entries(b.tv.regions||{}).filter(([,v])=>v).map(([r,v])=>`${esc(r)} ${v.toLocaleString('en-US')}`).join(', ')}).`:b.tv&&b.tv.viewers?` Viewers: <b>${b.tv.viewers.toLocaleString('en-US')}</b>.`:''}</p><div class="gap"></div>`:''}${intro}<p>This bout is scheduled for ${b.rounds} rounds${f.bk?' under <b>bare-knuckle rules</b>: no ringside doctor, and if it goes the distance the man who scored more knockdowns wins (then more stuns)':''}.${b.belt?` It is for the <b>${f.bk?'Bare Knuckles ':''}${esc(b.belt)} ${esc(b.div)}weight Championship of the World</b>.`:''}</p>`;
   const end=f.result,last=f.rounds.length;
   f.rounds.slice(0,upto).forEach((R,ri)=>{
@@ -1311,10 +1311,12 @@ if endurance_percent < 50 then 1/1/10</pre>`,
   <li><b>Punches:</b> about 9 thrown per AGG point. The first 3 per POW point are power punches, the next 3 per POW are rights, and the rest are jabs. SPD against the other man's AGL decides how many land.</li>
   <li><b>Fatigue</b> each round is AGG plus half of POW. Half his CND is absorbed free. He recovers 10% of lost endurance between rounds, plus 2% for each energy point spent resting.</li>
   <li><b>Injuries:</b> hard rounds cause cuts, swelling and nose or jaw damage. The ringside doctor stops fights with serious injuries.</li>
-  <li><b>Styles:</b> inside adds STR, clinching adds AGL and smothers punches, feinting adds SPD, counter-punching punishes a slower man, ring and ropes play with AGL, outside uses height, and all-out doubles damage dealt but quadruples damage taken.</li>
+  <li><b>Styles:</b> inside adds STR, clinching adds AGL and smothers punches, feinting adds SPD, counter-punching punishes a slower man, ring and ropes play with AGL, outside uses height, and all-out doubles damage dealt but nearly triples damage taken.</li>
+  <li><b>Size:</b> the heavier man gets 1 STR for every 10% he outweighs the other (never counting weight sweated off). The taller man gets half an inch's worth of SPD and AGL per inch. Big men tire faster: a fighter whose minimum weight is over 200 pounds loses half a point of endurance per round for every 10 pounds over.</li>
+  <li><b>Tyson Fury rule:</b> no fighter can be taller than 6'9", and the heavyweight limit is 280 pounds. A heavyweight over 280 has to sweat down like any other division.</li>
   <li><b>Length:</b> every Contenders bout is scheduled for 12 three-minute rounds, title fight or not.</li>
   <li><b>Judges:</b> three judges score each round on the 10-point must system. Stuns and knockdowns win rounds. Otherwise the most punches landed wins, with power punches counting most.</li></ul>
-  <p class="small mute">A few numbers are still being tuned with veteran managers: the exact value of each energy point and the experience rating.</p>`,
+  <p class="small mute">The numbers are tuned so every style (slugger, KO puncher, dancer, counterpuncher, clincher, flasher) has a real chance. Changes are always posted in Contenders News.</p>`,
  training:()=>`<ul>
   <li><b>Rating</b> starts at 0. A win adds 1, or 2 if he's already on a winning streak. A loss takes 1 away (never below 0), but not when he's beaten by a higher-rated fighter, and not on a split or majority decision unless it's a title fight against an equal or lower-rated opponent. Maximum 28.</li>
   <li><b>Status</b> is the highest rating he has ever reached. Every point of status he gains is an ability point.</li>
@@ -1386,7 +1388,7 @@ document.addEventListener('click',async e=>{
   if(t.dataset.go){nav(t.dataset.go);return}
   if(t.dataset.dm){nav('msgs:'+t.dataset.dm);return}
   const side=(t.closest('[data-side]')||{dataset:{}}).dataset.side||t.dataset.reset;const FS=s=>s==='D'?state.draft:FTR(s);
-  if(t.dataset.s){const F=FS(side),k=t.dataset.s,d=+t.dataset.d,nv=F[k]+d;if(nv<MINS[k]||nv>(k==='hgt'?25:MAX))return;
+  if(t.dataset.s){const F=FS(side),k=t.dataset.s,d=+t.dataset.d,nv=F[k]+d;if(nv<MINS[k]||nv>(k==='hgt'?21:MAX))return;
     if(k==='kp'&&nv>Math.floor(F.str/3))return alertBox(`He needs ${nv*3} Strength for ${nv} KO Punch Bonus.`);
     if(k==='str'&&F.kp>Math.floor(nv/3))return alertBox(`Lower his KO Punch Bonus first. ${F.kp} KP needs ${F.kp*3} Strength.`);F[k]=nv;save();render()}
   else if(t.dataset.pre){const[st,pl]=PRESETS[t.dataset.pre];ensurePlans();if(state.plans[t.dataset.pre]==null)state.plans[t.dataset.pre]=pl;Object.assign(FS(side),st,{plan:state.plans[t.dataset.pre],planName:t.dataset.pre});save();render()}
@@ -1482,7 +1484,7 @@ document.addEventListener('change',e=>{
   if(el.id==='trWho'){nav('train:'+el.value);return}
   const tb=el.closest('[data-side]');if(!tb)return;const F=tb.dataset.side==='D'?state.draft:FTR(tb.dataset.side);if(!F)return;
   if(el.dataset.f==='plan'){F.plan=el.value;save();render();return}
-  if(el.dataset.st){const k=el.dataset.st;F[k]=clamp(parseInt(el.value)||0,MINS[k],k==='hgt'?25:MAX);if(k==='kp')F.kp=Math.min(F.kp,Math.floor(F.str/3));if(k==='str')F.kp=Math.min(F.kp,Math.floor(F.str/3));save();render();return}
+  if(el.dataset.st){const k=el.dataset.st;F[k]=clamp(parseInt(el.value)||0,MINS[k],k==='hgt'?21:MAX);if(k==='kp')F.kp=Math.min(F.kp,Math.floor(F.str/3));if(k==='str')F.kp=Math.min(F.kp,Math.floor(F.str/3));save();render();return}
   if(el.dataset.f){const f=el.dataset.f;F[f]=f==='cut'?+el.value:el.value;save();if(f==='cut'||f==='build'||f==='div'||f==='region')render();return}
   if(el.dataset.p){const p=F.plan[+el.dataset.p],k=el.dataset.k;p[k]=(k==='style'||k==='tgt')?el.value:+el.value;save();if(k!=='style'&&k!=='tgt')render()}
 });

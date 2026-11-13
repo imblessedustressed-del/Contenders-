@@ -129,6 +129,9 @@ const NUMS=['ONE','TWO','THREE','FOUR','FIVE','SIX','SEVEN','EIGHT','NINE','TEN'
 const INJ_LOCS=[['cut','above right eye',1],['cut','above left eye',1],['cut','below right eye',1],['cut','below left eye',1],['swell','right eye',2],['swell','left eye',2],['nose','nose',1],['jaw','jaw',1]];
 const CUTRES={1:1.5,2:1,3:.5};
 const K_RATING=12;
+/* Simulator update 2 (owner-approved Nov 12, 2026): balanced so every style has a chance (engine tests: each type wins about 36-45%
+   against the others, the rest draws); heavyweights capped at 6'9" and 280 lb ("Tyson Fury rule"); WeBL's heavyweight edges replaced. */
+const BAL={counterDiv:6,counterStr:0,counterAgg:.8,counterFloor:.5,alloutGive:2,alloutTake:2.75,kpMul:3.75,wtPct:10,giantPer10:.5,smallMan:false,ringBase:1.75,ringFat:.4,clinchBase:1.75,clinchAggLoss:.12,insideBase:1};
 
 function newSev(){const r=rand();return r<2/3?1:r<8/9?2:r<26/27?3:4}
 function promote(l){if(l>=3)return 4;if(l===2)return rand()<2/3?3:4;const r=rand();return r<2/3?2:r<8/9?3:4}
@@ -146,7 +149,7 @@ function prep(F,c){
   return{F,c,n:escS(lastName(F.name)),str:str*pm,kp,spd:F.spd*pm,agl:F.agl*pm,chn:F.chn,cnd:F.cnd,hgt:F.hgt,cutres:F.cut,E0:10*F.cnd,E:10*F.cnd*(F.endMul||1),inj:[],fw:F.fightW||0,
     parsed,perc:0,won:0,lost:0,stuns:0,kds:0,warn:0,endFrac:1,ipDmg:0,
     fights:(F.rec||[0,0,0]).slice(0,3).reduce((a,b)=>a+b,0),
-    giant:(F.divLim||0)>=200&&(F.minW||0)>200?((F.minW-200)/10):0};
+    giant:BAL.giantPer10&&(F.divLim||0)>=200&&(F.minW||0)>200?((F.minW-200)/10)*BAL.giantPer10:0};
 }
 const oppState=f=>f>=2/3?0:f>=1/3?1:2;
 function ctxFor(S,i,r){const x=S[i],y=S[1-i];
@@ -160,9 +163,9 @@ function simulate(FA,FB,rounds){
   const S=[prep(FA,'red'),prep(FB,'blue')];
   const out={rounds:[],result:null,S};
   /* weight advantage: heavier man gets +1 STR per 5% (fractions kept), nothing above 300 lb */
-  if(S[0].fw&&S[1].fw){const w0=Math.min(300,S[0].fw),w1=Math.min(300,S[1].fw),h=w0>=w1?0:1,lo=Math.min(w0,w1);if(lo>0&&w0!==w1)S[h].str+=(Math.abs(w0-w1)/lo*100)/5}
+  if(S[0].fw&&S[1].fw){const w0=Math.min(300,S[0].fw),w1=Math.min(300,S[1].fw),h=w0>=w1?0:1,lo=Math.min(w0,w1);if(lo>0&&w0!==w1)S[h].str+=(Math.abs(w0-w1)/lo*100)/BAL.wtPct}
   /* heavyweight small-man edge (owner rule, Nov 9, 2026): the shorter man gets +0.5 SPD per inch, the lighter man +1 AGL per 5% (300 lb cap) */
-  if((FA.divLim||0)>=1000){const hd=S[0].hgt-S[1].hgt;if(hd)S[hd>0?1:0].spd+=Math.abs(hd)*.5;
+  if(BAL.smallMan&&(FA.divLim||0)>=1000){const hd=S[0].hgt-S[1].hgt;if(hd)S[hd>0?1:0].spd+=Math.abs(hd)*.5;
     if(S[0].fw&&S[1].fw){const w0=Math.min(300,S[0].fw),w1=Math.min(300,S[1].fw),lo=Math.min(w0,w1);if(lo>0&&w0!==w1)S[w0<w1?0:1].agl+=(Math.abs(w0-w1)/lo*100)/5}}
   /* Bare Knuckles region (both fighters BK): 25 rounds, 5% recovery, no doctor, eyes shut = forced clinch, decided by knockdowns then stuns */
   const BK=!!(FA.bk&&FB.bk);out.bk=BK;S.forEach(x=>x.ded=0);
@@ -183,16 +186,16 @@ function simulate(FA,FB,rounds){
     const A=base.map(b=>({...b}));
     for(let i=0;i<2;i++){const j=1-i,me=P[i],op=P[j],e=eff[i],o=eff[j],b=base[i],ob=base[j],a=A[i],oa=A[j];
       switch(me.style){
-        case'inside':a.str+=1+Math.max(0,b.str-ob.str)/2;o.dmgMul*=1.1;e.notes.push('His STR is increased by fighting inside.');break;
-        case'clinch':{a.agl+=1+(b.str>ob.str?(b.str-ob.str)/2:0);const lost=Math.min(e.agg,.15*op.agg);e.agg-=lost;e.rest+=lost;e.notes.push('His AGG is reduced by clinching.');break}
+        case'inside':a.str+=BAL.insideBase+Math.max(0,b.str-ob.str)/2;o.dmgMul*=1.1;e.notes.push('His STR is increased by fighting inside.');break;
+        case'clinch':{a.agl+=BAL.clinchBase+(b.str>ob.str?(b.str-ob.str)/2:0);const lost=Math.min(e.agg,BAL.clinchAggLoss*op.agg);e.agg-=lost;e.rest+=lost;e.notes.push('His AGG is reduced by clinching.');break}
         case'feint':a.spd+=1+Math.max(0,b.spd-ob.spd)/2;e.fat+=1;e.notes.push('His SPD is increased by feinting.');break;
-        case'counter':{a.str+=1;const adv=(b.spd+S[i].hgt)-(ob.spd+S[j].hgt);
-          if(adv>0){a.agl+=adv/3;oa.agl=Math.max(ob.agl*.5,oa.agl-adv/3)}else if(adv<0){oa.agl+=-adv/3;a.agl=Math.max(b.agl*.5,a.agl-(-adv)/3);e.notes.push('His counter-punching backfires!')}
-          e.agg*=.85;e.notes.push('His AGG is reduced by counter-punching.');break}
-        case'ring':a.agl+=1+Math.max(0,b.agl-ob.agl)/2;e.fat+=1;e.notes.push('His AGL is increased by using the ring.');break;
+        case'counter':{a.str+=BAL.counterStr;const adv=(b.spd+S[i].hgt)-(ob.spd+S[j].hgt),q=BAL.counterDiv;
+          if(adv>0){a.agl+=adv/q;oa.agl=Math.max(ob.agl*BAL.counterFloor,oa.agl-adv/q)}else if(adv<0){oa.agl+=-adv/q;a.agl=Math.max(b.agl*BAL.counterFloor,a.agl-(-adv)/q);e.notes.push('His counter-punching backfires!')}
+          e.agg*=BAL.counterAgg;e.notes.push('His AGG is reduced by counter-punching.');break}
+        case'ring':a.agl+=BAL.ringBase+Math.max(0,b.agl-ob.agl)/2;e.fat+=BAL.ringFat;e.notes.push('His AGL is increased by using the ring.');break;
         case'ropes':if(b.agl>ob.agl&&ob.agl>8)oa.agl=Math.max(8,oa.agl-(2/3)*(b.agl-ob.agl));a.agl-=1;e.notes.push('He is laying on the ropes.');break;
         case'outside':a.agl+=.5;a.spd+=.5;e.pow*=.85;e.notes.push('His POW is reduced by fighting outside.');break;
-        case'allout':e.dmgMul*=2;o.dmgMul*=4;e.notes.push('He is punching all out!');break;
+        case'allout':e.dmgMul*=BAL.alloutGive;o.dmgMul*=BAL.alloutTake;e.notes.push('He is punching all out!');break;
       }
     }
     /* dirty fighting */
@@ -231,7 +234,7 @@ function simulate(FA,FB,rounds){
       const raw=a.str*off/(od*o.agl);
       const tE={Head:.8,Body:1.2,Cut:.9,Opp:1}[e.tgt],tS={Head:1.2,Body:.8,Cut:.9,Opp:1}[e.tgt];
       const sDef=Math.max(1,o.agl+(S[j].chn-10)*(o.f||1));
-      const stun=(a.str+3*S[i].kp)*off/(od*sDef)*tS;
+      const stun=(a.str+BAL.kpMul*S[i].kp)*off/(od*sDef)*tS;
       return{base:raw/lk/e.dmgMul,end:raw*tE,stun,ratio:stun/S[j].chn,agg,lk};
     });
     let D=calc();
@@ -397,7 +400,7 @@ function condText(x,after){
 }
 
 const POOL=70,MAX=30,MINS={str:1,kp:0,spd:1,agl:1,chn:1,cnd:1,hgt:0};
-const DIVS=[['Straw',105],['Junior Fly',108],['Fly',112],['Super Fly',115],['Bantam',118],['Super Bantam',122],['Feather',126],['Super Feather',130],['Light',135],['Welter',147],['Super Welter',154],['Middle',160],['Super Middle',168],['Light Heavy',175],['Cruiser',200],['Heavy',1000]];
+const DIVS=[['Straw',105],['Junior Fly',108],['Fly',112],['Super Fly',115],['Bantam',118],['Super Bantam',122],['Feather',126],['Super Feather',130],['Light',135],['Welter',147],['Super Welter',154],['Middle',160],['Super Middle',168],['Light Heavy',175],['Cruiser',200],['Heavy',280]];
 const FIGHT_NIGHT={'Straw':'Sunday','Junior Fly':'Sunday','Fly':'Sunday','Super Fly':'Monday','Bantam':'Monday','Super Bantam':'Monday','Feather':'Tuesday','Super Feather':'Tuesday','Light':'Wednesday','Welter':'Wednesday','Super Welter':'Wednesday','Super Middle':'Thursday','Middle':'Thursday','Cruiser':'Friday','Light Heavy':'Friday','Heavy':'Saturday'};
 const isBK=F=>!!F&&F.region==='bk';
 const HT=F=>60+F.hgt;

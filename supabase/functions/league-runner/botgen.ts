@@ -96,16 +96,17 @@ function bkStats(t: string, pool: number) {
 export function makeFighter(C: any, t: string, div: string, lim: number, prevLim: number, gymKey: string, taken: Set<string>, home: string, gene: Gene) {
   const bk = t.startsWith("BK "), builds = ["very heavy", "heavy", "normal", "light", "very light"];
   let best: any = null;
-  for (let h = 60; h <= 85; h++) {
+  const heavy = div === "Heavy", target = bk ? 204 : 210 + Math.floor(Math.random() * 66); // heavyweights: a spread of sizes up to the 280 limit
+  for (let h = 60; h <= 81; h++) { // Tyson Fury rule: 6'9" max
     const cut = bk ? 1 : rnd([1, 2, 2, 3]);
     const st: any = bk ? bkStats(t, 70 - (h - 60) - cut) : regStats(t, h - 60, cut);
     if (st.spd < 1 || K.reduce((a, k) => a + st[k], 0) + (h - 60) + cut !== 70) continue;
     for (const b of builds) {
       const F = { ...st, hgt: h - 60, cut, build: b };
       const m = C.minWeight(F);
-      const ok = lim >= 1000 ? (bk ? m >= 196 && m <= 212 : m >= 200 && m <= 250) : m <= lim && m > prevLim - 2;
+      const ok = heavy ? (bk ? m >= 196 && m <= 212 : m >= 200 && m <= 280) : m <= lim && m > prevLim - 2;
       if (!ok) continue;
-      const sc = (lim < 1000 ? lim - m : Math.abs(m - (bk ? 205 : 225))) + (bk && b !== "very heavy" ? 3 : 0) + Math.random();
+      const sc = (heavy ? Math.abs(m - target) : lim - m) + (bk && b !== "very heavy" ? 3 : 0) + Math.random();
       if (!best || sc < best.sc) best = { sc, F };
     }
   }

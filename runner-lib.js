@@ -195,16 +195,17 @@ var RunnerLib = (() => {
   function makeFighter(C, t, div, lim, prevLim, gymKey, taken, home, gene) {
     const bk = t.startsWith("BK "), builds = ["very heavy", "heavy", "normal", "light", "very light"];
     let best = null;
-    for (let h = 60; h <= 85; h++) {
+    const heavy = div === "Heavy", target = bk ? 204 : 210 + Math.floor(Math.random() * 66);
+    for (let h = 60; h <= 81; h++) {
       const cut = bk ? 1 : rnd([1, 2, 2, 3]);
       const st = bk ? bkStats(t, 70 - (h - 60) - cut) : regStats(t, h - 60, cut);
       if (st.spd < 1 || K.reduce((a, k) => a + st[k], 0) + (h - 60) + cut !== 70) continue;
       for (const b of builds) {
         const F = { ...st, hgt: h - 60, cut, build: b };
         const m = C.minWeight(F);
-        const ok = lim >= 1e3 ? bk ? m >= 196 && m <= 212 : m >= 200 && m <= 250 : m <= lim && m > prevLim - 2;
+        const ok = heavy ? bk ? m >= 196 && m <= 212 : m >= 200 && m <= 280 : m <= lim && m > prevLim - 2;
         if (!ok) continue;
-        const sc = (lim < 1e3 ? lim - m : Math.abs(m - (bk ? 205 : 225))) + (bk && b !== "very heavy" ? 3 : 0) + Math.random();
+        const sc = (heavy ? Math.abs(m - target) : lim - m) + (bk && b !== "very heavy" ? 3 : 0) + Math.random();
         if (!best || sc < best.sc) best = { sc, F };
       }
     }
