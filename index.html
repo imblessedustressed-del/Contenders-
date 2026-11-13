@@ -236,6 +236,9 @@ const SCHED_TABLE=()=>`<table class="grid"><tr><th>Fight night</th><th>Divisions
 const BELTS=['WBC','WBA','WBO'];
 /* Regions: the regular Contenders region and the Bare Knuckles region (25 rounds, decided by knockdowns, rating/status cap 18). */
 const isBK=F=>!!F&&F.region==='bk';
+/* Only the owner sees which gyms are computer-run (owner, Nov 12, 2026: "keep em wondering"). */
+const OWNER='65fa7d27-200f-46d0-9788-85ea5dead857';
+const seeBots=()=>ME===OWNER;
 const REG_NAME=r=>r==='bk'?'Bare Knuckles':'Contenders';
 const bkTag=F=>isBK(F)?' <span class="bktag">BK</span>':'';
 const ckey=b=>(b.region==='bk'?'BK ':'')+b.div;
@@ -720,7 +723,7 @@ function condText(x,after){
 /* ================= SHARED DATA (Supabase: accounts, forums, messages) ================= */
 cleanSlate();
 const SB_URL='https://ojsphhzgzbxmnfcbitqb.supabase.co',SB_KEY='sb_publishable_SWO9WhiSkoVhflY5CmY08A_hlqCEJSi';
-const BUILD='1794533014';
+const BUILD='1794533582';
 /* A tab left open on an older build must not save over newer data: if the site has been updated, reload before anything else is saved. */
 let staleBuild=false;
 async function checkBuild(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
@@ -749,18 +752,18 @@ async function initDB(){
 }
 async function loadPublic(){
   try{
-    const[p,t,gc,bt]=await Promise.all([SB.from('profiles').select('id,gym,description,location,is_bot,created_at'),SB.from('topics').select('*').order('last_at',{ascending:false}).limit(500),SB.from('gym_public').select('user_id,data,updated_at'),(async()=>{const C='id,fight_date,div,red_user,red_fid,blue_user,blue_fid,belt,purse,status,summary,venue,bot_only,region,rounds';
+    const[p,t,gc,bt]=await Promise.all([SB.from('profiles').select('id,gym,description,location,created_at'),SB.from('topics').select('*').order('last_at',{ascending:false}).limit(500),SB.from('gym_public').select('user_id,data,updated_at'),(async()=>{const C='id,fight_date,div,red_user,red_fid,blue_user,blue_fid,belt,purse,status,summary,venue,bot_only,region,rounds';
       const q=await Promise.all([SB.from('bouts').select(C).or('bot_only.eq.false,belt.not.is.null').order('fight_date',{ascending:false}).limit(2000),
         SB.from('bouts').select(C).eq('bot_only',true).eq('status','scheduled').limit(1000),
         SB.from('bouts').select(C).eq('bot_only',true).eq('status','done').is('belt',null).order('fight_date',{ascending:false}).limit(400)]);
       const e=q.find(x=>x.error);if(e)return e;const seen=new Set(),data=[];q.forEach(x=>x.data.forEach(b=>{if(!seen.has(b.id)){seen.add(b.id);data.push(b)}}));
       data.sort((a,b)=>a.fight_date<b.fight_date?1:a.fight_date>b.fight_date?-1:b.id-a.id);return{data,error:null}})()]);
     if(p.error||t.error)throw p.error||t.error;
-    managers={};p.data.forEach(r=>managers[r.id]={gym:r.gym,desc:r.description,loc:r.location||'',bot:!!r.is_bot,at:Date.parse(r.created_at)});
-    const bids=p.data.filter(r=>r.is_bot).map(r=>r.id);
-    if(bids.length){const bs=await SB.from('gym_state').select('user_id,data').in('user_id',bids);if(!bs.error){botF={};bs.data.forEach(r=>{const d=r.data||{};(d.roster||[]).forEach(k=>{if(d[k])botF['bot:'+r.user_id+':'+k]={...d[k],gymName:managers[r.user_id].gym}})})}}
+    managers={};p.data.forEach(r=>managers[r.id]={gym:r.gym,desc:r.description,loc:r.location||'',bot:false,at:Date.parse(r.created_at)});
+    /* sparring gyms: the gyms whose full records the database lets everyone read (which ones are computer-run is never sent to players) */
+    {const bs=await SB.from('gym_state').select('user_id,data').neq('user_id',ME||'00000000-0000-0000-0000-000000000000');if(!bs.error){botF={};bs.data.forEach(r=>{if(r.user_id===ME)return;if(managers[r.user_id])managers[r.user_id].bot=true;const d=r.data||{};(d.roster||[]).forEach(k=>{if(d[k])botF['bot:'+r.user_id+':'+k]={...d[k],gymName:managers[r.user_id].gym}})})}}
     bouts=(bt&&!bt.error&&bt.data)||[];try{const vq=await SB.from('vacancies').select('div,belt,bout_id,vacated_at');if(!vq.error)vacancies=vq.data||[]}catch(e){}cards={};if(gc&&!gc.error)gc.data.forEach(r=>cards[r.user_id]=r.data||{});
-    topics=t.data.map(r=>({id:String(r.id),forum:r.forum,title:r.title,by:r.author,at:Date.parse(r.created_at),last:Date.parse(r.last_at),count:r.post_count}));
+    topics=t.data.filter(r=>![23,29].includes(+r.id)).map(r=>({id:String(r.id),forum:r.forum,title:r.title,by:r.author,at:Date.parse(r.created_at),last:Date.parse(r.last_at),count:r.post_count}));
     dbState='on';refresh();
   }catch(e){if(dbState!=='on'){dbState='slow';refresh()}}
 }
@@ -993,7 +996,7 @@ function homeHTML(){
   const tf=titleFights();
   return`<div class="home">${bannerSVG()}
   <p class="tag"><b>Build your fighter.</b> <b>Take him to the top.</b> <b>Outthink managers from everywhere.</b></p>
-  <p class="tag2"><b>&#129354; Fight 12 AI bot gyms</b> <b>&#127942; Climb the rankings</b> <b>&#128176; Earn purses &amp; PPV money</b></p>
+  <p class="tag2"><b>&#129354; Fight every week</b> <b>&#127942; Climb the rankings</b> <b>&#128176; Earn purses &amp; PPV money</b></p>
   <p class="small center">Three world titles in every division: the <b>WBC</b>, the <b>WBA</b> and the <b>WBO</b>. Check out the <a data-go="champs">reigning champs</a> and make your own mark.</p>
   <p class="cta"><a data-go="register">Sign Up to Play (Free!)</a> or <a data-go="gym">Enter Your Gym</a><br><a data-go="fight">Try it Out</a></p>
   <p class="center news">Contenders News: ${newsLine()}</p>
@@ -1325,7 +1328,7 @@ function fightHTML(){
   const opt=(arr,v)=>arr.map(([val,lab])=>`<option value="${val}"${val===v?' selected':''}>${lab}</option>`).join('');
   const R0=ROSTER(),BK=Object.keys(botF);if(!R0.length||(R0.length<2&&!BK.length))return`<h1>Practice Fights</h1><p>You need an active fighter for a practice fight. <a data-go="create">Create a fighter</a>.</p>`;
   const[rc,bc]=corners(),o=(k,F,v)=>`<option value="${k}"${k===v?' selected':''}>${esc(F.name)} ${recStr(F)} - ${esc(divOf(F))}</option>`;
-  const fsel=(id,v,bots)=>`<select id="${id}"><optgroup label="Your gym">${R0.map(k=>o(k,state[k],v)).join('')}</optgroup>${bots&&BK.length?[...new Set(BK.map(k=>botF[k].gymName))].map(g=>`<optgroup label="${esc(g)} (bot gym)">${BK.filter(k=>botF[k].gymName===g).sort((a,b)=>DIVS.findIndex(d=>d[0]===divOf(botF[b]))-DIVS.findIndex(d=>d[0]===divOf(botF[a]))).map(k=>o(k,botF[k],v)).join('')}</optgroup>`).join(''):''}</select>`;
+  const fsel=(id,v,bots)=>`<select id="${id}"><optgroup label="Your gym">${R0.map(k=>o(k,state[k],v)).join('')}</optgroup>${bots&&BK.length?[...new Set(BK.map(k=>botF[k].gymName))].map(g=>`<optgroup label="${esc(g)}${seeBots()?' (bot gym)':''}">${BK.filter(k=>botF[k].gymName===g).sort((a,b)=>DIVS.findIndex(d=>d[0]===divOf(botF[b]))-DIVS.findIndex(d=>d[0]===divOf(botF[a]))).map(k=>o(k,botF[k],v)).join('')}</optgroup>`).join(''):''}</select>`;
   let h=`<h1>Practice Fights</h1>
   <table class="grid"><tr><td class="red">Red corner</td><td>${fsel('redSel',rc,false)}</td></tr>
   <tr><td class="navy">Blue corner</td><td>${fsel('blueSel',bc,true)}</td></tr>
@@ -1387,7 +1390,7 @@ function leagueReportHTML(id){
   const r=lrep[id];
   if(!r){if(SB&&r!==null){lrep[id]=null;SB.from('bouts').select('*').eq('id',id).maybeSingle().then(({data})=>{lrep[id]=data||false;if(view==='lreport:'+id)render()})}return'<p>Loading fight report...</p>'}
   if(!r.result&&r.status==='done'&&r.summary){const n=k=>{const c=cards[r[k+'_user']]||{};const f=(c.fighters||[]).concat(c.retired||[]).find(x=>x.id===r[k+'_fid']);return f?f.name:'?'};const w=r.summary.w;
-    return`<h1>${esc(n('red'))} vs ${esc(n('blue'))}</h1><p>${w==null?'Draw':esc(n(w===0?'red':'blue'))+' won'} by ${esc(r.summary.how)}${r.summary.decision?` (${esc(r.summary.score)})`:''}.</p><p class="small mute">Computer-vs-computer bouts keep the result only, no round-by-round report.</p><p class="small"><a data-go="results">Recent Results</a> | <a data-go="fcards">Recent Fight Cards</a></p>`}
+    return`<h1>${esc(n('red'))} vs ${esc(n('blue'))}</h1><p>${w==null?'Draw':esc(n(w===0?'red':'blue'))+' won'} by ${esc(r.summary.how)}${r.summary.decision?` (${esc(r.summary.score)})`:''}.</p><p class="small mute">No round-by-round report was kept for this bout.</p><p class="small"><a data-go="results">Recent Results</a> | <a data-go="fcards">Recent Fight Cards</a></p>`}
   if(!r.result)return`<p>That fight hasn't been fought yet. <a data-go="fcards">Back to Fight Cards</a></p>`;
   if(r.mine===undefined&&SB&&ME){r.mine=null;SB.from('bout_private').select('mgr').eq('bout_id',id).maybeSingle().then(({data})=>{r.mine=data?data.mgr:[];if(view==='lreport:'+id)render()})}
   const side=r.red_user===ME?0:r.blue_user===ME?1:-1,f={...r.result.f,rounds:r.result.f.rounds.map((R,i)=>({...R,mgr:side>=0&&Array.isArray(r.mine)&&r.mine[i]?(side===0?[r.mine[i],'']:['',r.mine[i]]):null}))};
@@ -1545,7 +1548,7 @@ function frankHTML(arg){
   <button id="rkGo">Rankings</button></div><hr>
   <h1 class="center rkh">${esc(div)}weight Rankings in ${REG_NAME(reg)} after Week ${wk}</h1>${needDB()}
   ${rows.length?`<table class="wranks"><tr><th>Rank</th><th>Fighter</th><th>Location</th><th>Record</th><th>KOs</th><th>Rating (Status)</th><th>Manager</th></tr>
-  ${rows.map((x,i)=>`<tr><td>${i+1}.</td><td>${x.t?BELT_ICON+'<br>':''}<a data-go="opub:${x.uid}:${encN(x.f.id)}">${esc(x.f.name)}</a>${STAR(x.t>0)}</td><td>${esc(x.f.home||x.m.loc||'')}</td><td>${x.r[0]}-${x.r[1]}-${x.r[2]}</td><td>${x.r[3]}</td><td>${x.f.rating||0} (${x.f.status||0})</td><td><a data-go="gympub:${x.uid}">${esc(x.m.gym)}</a>${x.m.bot?' <span class="small mute">(bot)</span>':''}</td></tr>`).join('')}</table>`:
+  ${rows.map((x,i)=>`<tr><td>${i+1}.</td><td>${x.t?BELT_ICON+'<br>':''}<a data-go="opub:${x.uid}:${encN(x.f.id)}">${esc(x.f.name)}</a>${STAR(x.t>0)}</td><td>${esc(x.f.home||x.m.loc||'')}</td><td>${x.r[0]}-${x.r[1]}-${x.r[2]}</td><td>${x.r[3]}</td><td>${x.f.rating||0} (${x.f.status||0})</td><td><a data-go="gympub:${x.uid}">${esc(x.m.gym)}</a>${x.m.bot&&seeBots()?' <span class="small mute">(bot)</span>':''}</td></tr>`).join('')}</table>`:
   `<p class="center mute">No active fighters in this division yet.</p>`}
   <p class="small mute center">Champions first, then ranked by rating, then status, then winning streak, then win percentage.</p>`;
 }
@@ -1558,8 +1561,8 @@ function gymPubHTML(uid){
     return`<p class="fl">${act?`<a data-go="opub:${uid}:${encN(f.id)}">${esc(f.name)}</a>`:esc(f.name)}${(f.titles||[]).length?' <span style="color:#e8a400">&#9733;</span>':''} ${r[0]} wins (${r[3]} by knock out), ${r[1]} losses, and ${r[2]} draws. Rating ${f.rating||0}. Status ${f.status||0}.${(()=>{const t=act?[reignLine(uid,f.id),champLine(uid,f.id)].filter(Boolean).join(', '):'';return t?` <b class="r">${esc(cap(t))}!!</b>`:(f.titles||[]).length?` <b class="r">Winner of ${f.titles.length} world title${f.titles.length>1?'s':''}!!</b>`:''})()}${act&&rk[f.div+(f.region||'')]?(()=>{const n=rk[f.div+(f.region||'')].findIndex(x=>x.uid===uid&&x.f.id===f.id)+1;return n?` Rank #${n} in <a data-go="frank:${encN(f.div)}${f.region==='bk'?'@bk':''}">${REG_NAME(f.region)}</a>.`:''})():''} Career earnings ${money(f.earn)}.</p>`};
   const rg=f=>f.region==='bk'?'bk':'';
   const byDiv=(L,act)=>['','bk'].flatMap(R=>[...DIVS].reverse().map(([d])=>[d,R])).filter(([d,R])=>L.some(f=>f.div===d&&rg(f)===R)).map(([d,R])=>`<h3 class="divh">${R?'Bare Knuckles ':''}${esc(d)}weights</h3>${L.map((f,i)=>[f,i]).filter(([f])=>f.div===d&&rg(f)===R).sort((x,y)=>{const r=f=>{const n=act&&rk[d+R]?rk[d+R].findIndex(z=>z.uid===uid&&z.f.id===f.id):-1;return n<0?1e9:n};return r(x[0])-r(y[0])}).map(([f,i])=>fl(f,i,act)).join('')}`).join('');
-  return`<h1 class="pubname">${esc(m.gym)}${m.bot?' <span class="small mute">(bot gym)</span>':''}</h1>${m.bot?'<p class="small mute">A computer-run gym that fills out the rankings. Spar with its fighters in Practice Fights.</p>':''}
-  <p>${esc(m.gym)} trains fighters${m.loc?` in ${esc(m.loc)}`:''}. Managing since ${m.at?dt(m.at).slice(0,10):'recently'}.${uid!==ME&&!m.bot?` <a data-dm="${esc(uid)}">Send a message</a>`:''}</p>
+  return`<h1 class="pubname">${esc(m.gym)}${m.bot&&seeBots()?' <span class="small mute">(bot gym)</span>':''}</h1>${m.bot&&seeBots()?'<p class="small mute">A computer-run gym that fills out the rankings. Spar with its fighters in Practice Fights.</p>':''}
+  <p>${esc(m.gym)} trains fighters${m.loc?` in ${esc(m.loc)}`:''}. Managing since ${m.at?dt(m.at).slice(0,10):'recently'}.${uid!==ME&&!(m.bot&&seeBots())?` <a data-dm="${esc(uid)}">Send a message</a>`:''}</p>
   ${m.desc?`<div class="note" style="white-space:pre-wrap">${esc(m.desc)}</div>`:''}
   <table class="plain" style="margin-top:12px"><tr><th>Region</th><th>Earnings</th><th>Record</th><th>Titles</th></tr>
   <tr><td><b>Contenders</b></td><td>${money(g.earn)}</td><td>${g.rec[0]}-${g.rec[1]}-${g.rec[2]}</td><td class="cr">${g.titles}</td></tr></table>
@@ -1610,7 +1613,7 @@ function grankHTML(){
   const rows=ids.map(id=>({id,...gymStats(id)})).sort((a,b)=>b.titles-a.titles||b.diff-a.diff||b.pct-a.pct||gymOf(a.id).localeCompare(gymOf(b.id)));
   return`<h1 class="center">Gym Rankings for Contenders</h1>${needDB()}
   <table class="grid granks"><tr><th>Rank</th><th>Manager</th><th>Location</th><th>Titles</th><th>Record</th><th>+/-</th><th>Win %</th><th>Earnings</th><th>Fighters</th></tr>
-  ${rows.map((r,i)=>`<tr><td class="n">${i+1}</td><td><a data-go="gympub:${r.id}">${esc(gymOf(r.id))}</a>${managers[r.id].bot?' <span class="small mute">(bot gym)</span>':''}${r.id===ME?' <span class="small mute">(you)</span>':''}</td><td>${esc(managers[r.id].loc||'')}</td><td class="n">${r.titles}</td><td class="n">${r.rec[0]}-${r.rec[1]}-${r.rec[2]}</td><td class="n">${r.diff}</td><td class="n">${r.pct}%</td><td class="n">${money(r.earn)}</td><td class="n">${r.active}</td></tr>`).join('')}</table>
+  ${rows.map((r,i)=>`<tr><td class="n">${i+1}</td><td><a data-go="gympub:${r.id}">${esc(gymOf(r.id))}</a>${managers[r.id].bot&&seeBots()?' <span class="small mute">(bot gym)</span>':''}${r.id===ME?' <span class="small mute">(you)</span>':''}</td><td>${esc(managers[r.id].loc||'')}</td><td class="n">${r.titles}</td><td class="n">${r.rec[0]}-${r.rec[1]}-${r.rec[2]}</td><td class="n">${r.diff}</td><td class="n">${r.pct}%</td><td class="n">${money(r.earn)}</td><td class="n">${r.active}</td></tr>`).join('')}</table>
   <p class="small mute">Gyms are ranked by titles, then wins minus losses. A gym's numbers update when its manager is logged in. </p>`;
 }
 function leagueFights(){
