@@ -85,8 +85,8 @@ Everything runs on Central time: the runner computes the date/time in America/Ch
 ## Direction (owner, Nov 12, 2026)
 Starting the week of Nov 16, Contenders moves away from WeBL and makes its own way ("no one's going to play from that game"). WeBL is no longer the source of truth for new work; the owner decides new rules.
 
-## Pending
-- The other human gym, "The Small Gym On The Corner..." (0 fighters, signed up Nov 9, last sign-in Nov 11): owner said on Nov 12 to give it a few more days, then it can probably be deleted. Ask him before deleting.
+## Managers
+- The owner's gym (Mike Tyson's PunchOut) is the only human gym. The other sign-up, "The Small Gym On The Corner...", was deleted on the owner's order Nov 12, 2026 (account and gym removed the same way retire_gym() does it).
 
 ## Weight formula (owner, Nov 12, 2026)
 Keep our own formula; don't try to match WeBL's ("we're going to make it kind of our own").
