@@ -282,7 +282,7 @@ const FORUMS=[
  ['press','Press Releases','Managers call out rivals, hype fights and talk big.']
 ];
 const PRESETS={
-  'Slugger':[{str:17,kp:2,spd:10,agl:10,chn:10,cnd:13,hgt:6,cut:2},`# Slugger: steady pressure, empty the tank late
+  'Slugger':[{str:18,kp:0,spd:10,agl:10,chn:11,cnd:13,hgt:6,cut:2},`# Slugger: steady pressure, empty the tank late
 6/6/8
 if opponent = tired then 7/7/6
 10) 8/7/5
@@ -292,28 +292,28 @@ if score >= 4 and round >= 10 then 3/3/14`],
 6H/7/7
 if hisstuns > 0 then 7H/9/4
 if endurance_percent < 50 then 5/5/10 (clinch)`],
-  'Agile Slugger':[{str:15,kp:2,spd:9,agl:13,chn:10,cnd:13,hgt:6,cut:2},`6/6/8 (inside)
+  'Agile Slugger':[{str:16,kp:0,spd:9,agl:14,chn:10,cnd:13,hgt:6,cut:2},`6/6/8 (inside)
 if score < 0 and round >= 6 then 7/7/6 (inside)
 if endurance_percent < 45 then 4/4/12`],
-  'Balanced':[{str:12,kp:2,spd:12,agl:12,chn:11,cnd:13,hgt:6,cut:2},`# Balanced boxer
+  'Balanced':[{str:13,kp:0,spd:12,agl:12,chn:12,cnd:13,hgt:6,cut:2},`# Balanced boxer
 6/5/9
 if score + 12 - round < 0 then 8/6/6
 if score > 2*(1 + 12 - round) then 2/2/16`],
-  'Dancer':[{str:9,kp:1,spd:13,agl:17,chn:9,cnd:13,hgt:6,cut:2},`# Dancer: box from range and stay safe
+  'Dancer':[{str:9,kp:0,spd:14,agl:17,chn:9,cnd:13,hgt:6,cut:2},`# Dancer: box from range and stay safe
 4H/3/13 (ring)
 if endurance_percent < 50 then 3/3/12
 if score < 0 and round >= 7 then 5H/4/11 (ring)`],
-  'Counterpuncher':[{str:11,kp:2,spd:15,agl:12,chn:9,cnd:13,hgt:6,cut:2},`1) 5/4/11 (counter)
+  'Counterpuncher':[{str:11,kp:0,spd:16,agl:13,chn:9,cnd:13,hgt:6,cut:2},`1) 5/4/11 (counter)
 2) if score < 1 then 6/5/9 (counter)
 3) 5/4/11 (counter)
 if endurance_percent < 100 - (round - 1) * 4 then 5/4/11 (counter)
 if score < 2 and endurance_percent > 100 - (round - 1) * 4 then 6/5/9 (counter)
 if score < 0 and round <= 7 then 8/4/8 (counter)`],
-  'Clincher':[{str:13,kp:2,spd:10,agl:10,chn:13,cnd:14,hgt:6,cut:2},`# Clincher: grind him down
+  'Clincher':[{str:14,kp:0,spd:10,agl:10,chn:14,cnd:14,hgt:6,cut:2},`# Clincher: grind him down
 4B/4/12 (clinch)
 if opponent >= tired then 6B/6/8
 if endurance_percent < 40 then 2/2/12 (clinch)`],
-  'Flasher':[{str:18,kp:6,spd:12,agl:8,chn:12,cnd:6,hgt:6,cut:2},`# Flasher: everything into the first round
+  'Flasher':[{str:21,kp:0,spd:13,agl:8,chn:14,cnd:6,hgt:6,cut:2},`# Flasher: everything into the first round
 1) 8H/9/3
 2) 6/7/7
 if hisstuns > 0 then 8H/10/2
@@ -747,7 +747,7 @@ function condText(x,after){
 /* ================= SHARED DATA (Supabase: accounts, forums, messages) ================= */
 cleanSlate();
 const SB_URL='https://ojsphhzgzbxmnfcbitqb.supabase.co',SB_KEY='sb_publishable_SWO9WhiSkoVhflY5CmY08A_hlqCEJSi';
-const BUILD='1794616097';
+const BUILD='1794616402';
 /* A tab left open on an older build must not save over newer data: if the site has been updated, reload before anything else is saved. */
 let staleBuild=false;
 async function checkBuild(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
