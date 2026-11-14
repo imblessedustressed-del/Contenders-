@@ -65,6 +65,12 @@ Contenders is a text-based boxing strategy game modeled on the old Web Boxing Le
 - The Contenders News post about these two fixes (topic 39) was deleted on the owner's order the same night ("if they read that they're going to think it's all bugged"). Plan-parser bug fixes like these stay quiet unless the owner asks for a post.
 - Fight report intros now show each fighter's real weigh-in weight (`F.fightW`, his natural weight or the division limit if he sweats down) instead of the division limit. Simbot cards show a Weight row that flashes when height, build, strength or agility change it, plus "Can make" with his lightest division.
 
+## Bug check, Nov 13, 2026 (owner: "big and small bug check, everything must roll smooth")
+- Clean: scheduled bouts (no stale, double-booked, wrong-night, wrong-division, same-gym, missing-fighter or bad-rounds bouts); all 15 managers' fighters booked; runner calls every 15 min return 200 with the new code; all 1,176 bot plan variants, 8 templates and the owner's custom plans parse and simulate with 0 errors (regular and BK); live site: 29 routes render with no errors/undefined/NaN as a visitor; Simbot fight, report, 100-run and chat plan block work live.
+- Fixed: Slugger template's rest line only applied from round 10 (now a "1)" global line at the bottom); FK indexes on bouts/bout_private/lab_chat/sanctions.
+- No Friday (Light Heavy/Cruiser) bouts on Nov 13: they were booked for Nov 20 under the old "tomorrow skips a week" rule. One-time first-week gap, not a bug.
+- OPEN (needs owner OK, gameplay): Create Fighter templates are lopsided (average win % vs the other templates: Counterpuncher 78, Balanced 73, KP Slugger 58, Agile Slugger 51, Dancer 46, Slugger 42, Clincher 27, Flasher 0). Proposed: retune template plans/stats toward 40-60%.
+
 ## Balance (owner, Nov 9, 2026)
 Goal: every fighter type has a real chance; the better fight plan decides. Tune the sim after launch from player feedback (Simulator Design forum), every change posted to Contenders News. Known issues from pre-launch engine tests, to revisit with real data:
 - Fixed in simulator update 2 (Nov 12, 2026): counterpunchers were winning ~74%, KO punchers ~27%, all-out was suicide, and size rules made heavyweights lopsided. See `BAL` above.

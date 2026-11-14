@@ -317,8 +317,8 @@ const PRESETS={
 6/6/8
 if opponent = tired then 7/7/6
 10) 8/7/5
-if endurance_percent < 40 then 4/4/10 (clinch)
-if score >= 4 and round >= 10 then 3/3/14`],
+if score >= 4 then 3/3/14
+1) if endurance_percent < 40 then 4/4/10 (clinch)`],
   'KP Slugger':[{str:15,kp:5,spd:9,agl:10,chn:11,cnd:12,hgt:6,cut:2},`# KP Slugger: hunt the knockout
 6H/7/7
 if hisstuns > 0 then 7H/9/4
@@ -782,7 +782,7 @@ function condText(x,after){
 /* ================= SHARED DATA (Supabase: accounts, forums, messages) ================= */
 cleanSlate();
 const SB_URL='https://ojsphhzgzbxmnfcbitqb.supabase.co',SB_KEY='sb_publishable_SWO9WhiSkoVhflY5CmY08A_hlqCEJSi';
-const BUILD='1794624059';
+const BUILD='1794624213';
 /* A tab left open on an older build must not save over newer data: if the site has been updated, reload before anything else is saved. */
 let staleBuild=false;
 async function checkBuild(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
