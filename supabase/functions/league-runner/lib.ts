@@ -77,7 +77,7 @@ async function postReleases(list: Release[], log: string[]) {
 }
 const cardEntry = (F: any) => ({
   region: F.region || null, rec: F.rec, rating: F.rating || 0, status: F.status || 0, streak: F.streak || 0, earn: F.earn || 0, fans: F.fans || 0, ppv: F.ppv || 0,
-  hist: (F.hist || []).slice(0, 25).map((h: any) => Object.fromEntries(["opp", "oh", "div", "belt", "date", "week", "res", "score", "icon", "plan", "ogym", "bout", "earned"].map((k) => [k, h[k] ?? null]))),
+  hist: (F.hist || []).slice(0, 25).map((h: any) => Object.fromEntries(["opp", "oh", "div", "belt", "date", "week", "res", "score", "icon", "ogym", "bout", "earned"].map((k) => [k, h[k] ?? null]))),
 });
 async function all(q: () => any) { // page through a select
   const out: any[] = [];
@@ -209,7 +209,7 @@ export async function handle(req: Request, client: any, C: any): Promise<Respons
             const nk = "f" + Date.now().toString(36) + Math.floor(Math.random() * 1e4).toString(36);
             d[nk] = NF; d.roster = [...d.roster, nk];
             card.fighters = [...(card.fighters || []), { id: nk, region: NF.region || null, name: NF.name, nick: NF.nick, home: NF.home, div: NF.div, hgt: NF.hgt, w: C.natWeight(NF), mw: C.minWeight(NF),
-              rec: [0, 0, 0, 0], hist: [], plan: NF.planName, train: NF.train, active: true, rating: 0, status: 0, streak: 0, titles: [], earn: 0, fans: 0, ppv: 0 }];
+              rec: [0, 0, 0, 0], hist: [], train: NF.train, active: true, rating: 0, status: 0, streak: 0, titles: [], earn: 0, fans: 0, ppv: 0 }];
             signed++;
           }
           if (changed) {
@@ -246,7 +246,7 @@ export async function handle(req: Request, client: any, C: any): Promise<Respons
             const nk = "n" + Date.now().toString(36) + Math.floor(Math.random() * 1e4).toString(36);
             d[nk] = NF; d.roster = [...(d.roster || []), nk];
             card.fighters = [...(card.fighters || []), { id: nk, region: NF.region || null, name: NF.name, nick: NF.nick, home, div, hgt: NF.hgt, w: C.natWeight ? C.natWeight(NF) : 0, mw: C.minWeight(NF),
-              rec: [0, 0, 0, 0], hist: [], plan: NF.planName, train: NF.train, active: true, rating: 0, status: 0, streak: 0, titles: [], earn: 0, fans: 0, ppv: 0 }];
+              rec: [0, 0, 0, 0], hist: [], train: NF.train, active: true, rating: 0, status: 0, streak: 0, titles: [], earn: 0, fans: 0, ppv: 0 }];
             allBots.push({ u, k: nk, F: NF });
             changed = true; signed++;
           }

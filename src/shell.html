@@ -449,8 +449,8 @@ async function afterLogin(){
 function syncGym(){if(!SB||!ME||!loadedGym)return;clearTimeout(syncTimer);syncTimer=setTimeout(pushGym,1500)}
 function publicCard(){
   const pubF=(F,id,active)=>({id,region:F.region||null,name:F.name,nick:F.nick||'',home:F.home||'',div:divOf(F),hgt:F.hgt,w:natWeight(F),mw:minWeight(F),earn:F.earn||0,fans:F.fans||0,ppv:F.ppv||0,rec:F.rec,rating:F.rating||0,status:F.status||0,streak:F.streak||0,active,
-    plan:F.planName||'Basic',train:F.train||'str',titles:Object.entries(state.champs||{}).flatMap(([d,b])=>Object.entries(b).filter(([,n])=>n===F.name).map(([bl])=>d+' '+bl)),
-    hist:(F.hist||[]).slice(0,25).map(h=>({opp:h.opp,oh:h.oh,div:h.div,belt:h.belt,date:h.date,week:h.week,res:h.res,score:h.score,icon:h.icon,plan:h.plan,ogym:h.ogym,bout:h.bout,earned:h.earned||0}))});
+    train:F.train||'str',titles:Object.entries(state.champs||{}).flatMap(([d,b])=>Object.entries(b).filter(([,n])=>n===F.name).map(([bl])=>d+' '+bl)),
+    hist:(F.hist||[]).slice(0,25).map(h=>({opp:h.opp,oh:h.oh,div:h.div,belt:h.belt,date:h.date,week:h.week,res:h.res,score:h.score,icon:h.icon,ogym:h.ogym,bout:h.bout,earned:h.earned||0}))});
   return{fighters:ROSTER().map(k=>pubF(state[k],k,true)),retired:(state.retired||[]).filter(f=>f.rec).slice(0,40).map((f,i)=>pubF(f,'r'+i,false)),
     titlesWon:(state.log||[]).filter(l=>l.belt).length};
 }
@@ -1685,7 +1685,7 @@ function retFighterHTML(arg){
   <hr><h2>${n}'s Record</h2>
   <p>${n}'s final record is ${r[0]}-${r[1]}-${r[2]} (${r[3]}/${r[1]})${tw?` <b class="r">Winner of ${tw} world title${tw>1?'s':''}!!</b>`:''}<br>
   His final rating was ${f.rating||0} and his status was ${f.status||0}.<br>His career earnings are ${money(f.earn)}.<br>${fanLine(f)}</p>
-  ${(f.hist||[]).length?`<p>Select any icon for a detailed account of a fight.</p><table class="hist">${f.hist.map(h=>`<tr><td>${h.bout?`<a data-go="lreport:${h.bout}">${resultIcon(h)}</a>`:resultIcon(h)}</td><td>vs ${esc(h.opp)}${h.ogym?` (${esc(h.ogym)})`:''} - ${h.oh?esc(h.oh)+' - ':''}${esc(h.div)}weight ${h.belt?esc(h.belt)+' title ':''}bout on ${esc(h.date)}: ${esc(h.res)}.${h.earned?` Earned ${money(h.earned)}.`:''} Score: ${esc(h.score)}${h.bout?` <a data-go="lreport:${h.bout}">highlights</a>`:''}${h.plan?`. Fight Plan: ${esc(h.plan)}`:''}</td></tr>`).join('')}</table>`:'<p class="mute">No fight history on file.</p>'}
+  ${(f.hist||[]).length?`<p>Select any icon for a detailed account of a fight.</p><table class="hist">${f.hist.map(h=>`<tr><td>${h.bout?`<a data-go="lreport:${h.bout}">${resultIcon(h)}</a>`:resultIcon(h)}</td><td>vs ${esc(h.opp)}${h.ogym?` (${esc(h.ogym)})`:''} - ${h.oh?esc(h.oh)+' - ':''}${esc(h.div)}weight ${h.belt?esc(h.belt)+' title ':''}bout on ${esc(h.date)}: ${esc(h.res)}.${h.earned?` Earned ${money(h.earned)}.`:''} Score: ${esc(h.score)}${h.bout?` <a data-go="lreport:${h.bout}">highlights</a>`:''}${mine&&h.plan?`. Fight Plan: ${esc(h.plan)}`:''}</td></tr>`).join('')}</table>`:'<p class="mute">No fight history on file.</p>'}
   <p class="small"><a data-go="${mine?'retired':'gymret:'+uid}">Back to the retired fighters</a></p>`;
 }
 function oFighterHTML(arg){
@@ -1697,7 +1697,7 @@ function oFighterHTML(arg){
   <p>${n} stands ${ht(60+f.hgt)} (${cm(60+f.hgt)} centimeters) tall. He fights for the <a data-go="gympub:${uid}">${esc(m.gym)}</a> gym${f.home?` out of ${esc(f.home)}`:''} in the ${esc(f.div)}weight division (Contenders).</p>
   <p>${boutFor(uid,fid)?`${n}'s next bout: ${boutLine(boutFor(uid,fid))}`:`${n} has no bouts scheduled.`}</p><p>${(()=>{const bf=botF['bot:'+uid+':'+fid],r=f.rec||[0,0,0];return weightNote(n,f.div,f.w,f.mw!=null?f.mw:(bf?minWeight(bf):f.w),r[0]+r[1]+r[2])})()}</p>
   <hr><h2>${n}'s Record</h2><p>${n}'s record is ${r[0]}-${r[1]}-${r[2]} (${r[3]}/${r[1]})${recTitles(uid,fid)}<br>His current rating is ${f.rating} and his status is ${f.status}.<br>His career earnings are ${money(f.earn)}.<br>${fanLine(f)}</p>
-  ${(f.hist||[]).length?`<p>${n} ${TR[f.train]||TR.str}.</p><table class="hist">${f.hist.map(h=>`<tr><td>${resultIcon(h)}</td><td>vs ${esc(h.opp)} - ${h.oh?esc(h.oh)+' - ':''}${esc(h.div)}weight ${h.belt?esc(h.belt)+' title ':''}bout on ${esc(h.date)}, week ${h.week}: ${esc(h.res)}. Score: ${esc(h.score)}${h.plan?`. Fight Plan: ${esc(h.plan)}`:''}</td></tr>`).join('')}</table>`:'<p class="mute">No fights yet.</p>'}
+  ${(f.hist||[]).length?`<p>${n} ${TR[f.train]||TR.str}.</p><table class="hist">${f.hist.map(h=>`<tr><td>${resultIcon(h)}</td><td>vs ${esc(h.opp)} - ${h.oh?esc(h.oh)+' - ':''}${esc(h.div)}weight ${h.belt?esc(h.belt)+' title ':''}bout on ${esc(h.date)}, week ${h.week}: ${esc(h.res)}. Score: ${esc(h.score)}</td></tr>`).join('')}</table>`:'<p class="mute">No fights yet.</p>'}
   <p class="small"><a data-go="gympub:${uid}">Back to ${esc(m.gym)}</a></p>`;
 }
 function grankHTML(){

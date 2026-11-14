@@ -374,7 +374,7 @@ var RunnerLib = (() => {
     earn: F.earn || 0,
     fans: F.fans || 0,
     ppv: F.ppv || 0,
-    hist: (F.hist || []).slice(0, 25).map((h) => Object.fromEntries(["opp", "oh", "div", "belt", "date", "week", "res", "score", "icon", "plan", "ogym", "bout", "earned"].map((k) => [k, h[k] ?? null])))
+    hist: (F.hist || []).slice(0, 25).map((h) => Object.fromEntries(["opp", "oh", "div", "belt", "date", "week", "res", "score", "icon", "ogym", "bout", "earned"].map((k) => [k, h[k] ?? null])))
   });
   async function all(q) {
     const out = [];
@@ -553,7 +553,6 @@ var RunnerLib = (() => {
                 mw: C.minWeight(NF),
                 rec: [0, 0, 0, 0],
                 hist: [],
-                plan: NF.planName,
                 train: NF.train,
                 active: true,
                 rating: 0,
@@ -616,7 +615,6 @@ var RunnerLib = (() => {
                 mw: C.minWeight(NF),
                 rec: [0, 0, 0, 0],
                 hist: [],
-                plan: NF.planName,
                 train: NF.train,
                 active: true,
                 rating: 0,
