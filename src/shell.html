@@ -252,7 +252,7 @@ pre.plan{background:#fbfaf7;border:1px solid var(--line)}
   <div id="boxes">
   <div class="box"><div class="hd">Main</div><a data-v="home">Home</a><a data-v="register">Register</a><a data-v="aup">Acceptable Use Policy</a></div>
   <div class="box"><div class="hd">Your Gym</div><a data-v="gym">Active Fighters</a><a data-v="plans">Fight Plans</a><a data-v="fight">Practice Fights</a><a data-v="create">Create a Fighter</a><a data-v="short">Short Gym</a><a data-v="changegym">Change Gym</a><a data-v="desc">Description</a><a data-v="login">Login</a><a data-v="logout">Logout</a></div>
-  <div class="box"><div class="hd">Community</div><a data-v="forums">Contenders Forums</a><a data-v="msgs" id="msgLink">Messages</a><a data-v="forum:press">Press Releases</a><a data-v="lab">🥊 Fight Lab</a></div>
+  <div class="box"><div class="hd">Community</div><a data-v="forums">Contenders Forums</a><a data-v="msgs" id="msgLink">Messages</a><a data-v="forum:press">Press Releases</a><a data-v="simbot">🥊 Simbot</a></div>
   <div class="box"><div class="hd">Hall of Records</div><a data-v="champs">Champions</a><a data-v="frank">Fighter Rankings</a><a data-v="grank">Gym Rankings</a><a data-v="ppv">Pay-Per-View</a><a data-v="results">Fight Results</a><a data-v="fcards">Fight Cards</a><a data-v="sched">Fight Schedule</a><a data-v="discarded">Discarded Fighters</a><a data-v="search">Search Contenders</a></div>
   <div class="box"><div class="hd">Contenders Help &amp; Tools</div><a data-v="help">Help Pages</a><a data-v="newbie">Newbie Files</a></div>
   <div class="box"><div class="hd">Other Stuff</div><a data-v="forgot">Forgotten Password</a><a data-v="changepw">Change Email/Passwd.</a></div>
@@ -559,18 +559,18 @@ function labBarHTML(){const L=labState(),o=(arr,v)=>arr.map(([a,b])=>`<option va
   <label>Bout <select data-lset="rounds">${o([['3','3 rounds'],['6','6 rounds'],['12','12 rounds'],['bk','Bare Knuckles, 25 rounds']],L.rounds)}</select></label>
   <label>Highlight <select data-lset="speed">${o([[30,'30 seconds'],[60,'1 minute'],[120,'2 minutes']],L.speed)}</select></label>`}
 function labHTML(){const L=labState();
-  return`<div id="lab"><h1>Fight Lab</h1>
+  return`<div id="lab"><h1>Simbot</h1>
   <p class="labIntro">Build two fighters with ${POOL} points each, give them fight plans, and watch them fight it out. Test a plan, settle an argument, or just have fun. Nothing here counts on any record.</p>
   <div class="labGrid">${labCornerHTML('A')}<div class="labVs">VS</div>${labCornerHTML('B')}</div>
   <div class="labBar" id="labBar">${labBarHTML()}</div>
   <p class="labBtns"><button class="labGo" data-lab="fight">🥊 FIGHT!</button> <button data-lab="sim">Run it 100 times</button> <span class="cr" id="labErr"></span></p>
   <div id="labStage"${L.fight?'':' style="display:none"'}><div class="labCvWrap"><canvas id="labCv" width="960" height="540"></canvas></div>
   <div id="labTick" class="labTick"></div>
-  <p class="labCtl"><button data-lab="pause" id="labPause">Pause</button> <button data-lab="skip">Skip to the end</button> <button data-lab="replay">Watch again</button> <button data-lab="report">Full report</button>${ME?' <button data-lab="share">Share to Lab Chat</button>':''}</p>
+  <p class="labCtl"><button data-lab="pause" id="labPause">Pause</button> <button data-lab="skip">Skip to the end</button> <button data-lab="replay">Watch again</button> <button data-lab="report">Full report</button>${ME?' <button data-lab="share">Share to Simbot Chat</button>':''}</p>
   <div id="labRep"></div></div>
   <div id="labSim"></div>
-  <h2>Lab Chat</h2><div id="labChat" class="labChat"><p class="mute">Loading...</p></div>
-  ${ME?`<div class="labSay"><input id="labMsg" maxlength="280" placeholder="Say something to the Lab..." autocomplete="off"><button data-lab="send">Send</button></div>`:`<p class="small"><a data-go="register">Sign up</a> or <a data-go="login">log in</a> to chat.</p>`}
+  <h2>Simbot Chat</h2><div id="labChat" class="labChat"><p class="mute">Loading...</p></div>
+  ${ME?`<div class="labSay"><input id="labMsg" maxlength="280" placeholder="Say something to Simbot..." autocomplete="off"><button data-lab="send">Send</button></div>`:`<p class="small"><a data-go="register">Sign up</a> or <a data-go="login">log in</a> to chat.</p>`}
   </div>`}
 function labRefresh(c){const el=$('#labCard'+c);if(el)el.outerHTML=labCornerHTML(c);const b=$('#labBar');if(b)b.innerHTML=labBarHTML()}
 function labMount(){const root=$('#lab');if(!root)return;
@@ -609,7 +609,7 @@ function labClick(e){const t=e.target.closest('button');if(!t)return;const L=lab
 function labFight(){const L=labState(),err=labErr();$('#labErr').textContent=err;if(err)return;
   const[A,B]=labFighters(),div=labDiv(),bk=L.rounds==='bk',rounds=bk?25:+L.rounds;
   const d=new Date();
-  L.bout={rounds,belt:null,div,done:true,gym:'Fight Lab',gyms:['Fight Lab','Fight Lab'],ids:['labA','labB'],recs:[[0,0,0,0],[0,0,0,0]],
+  L.bout={rounds,belt:null,div,done:true,gym:'Simbot',gyms:['Simbot','Simbot'],ids:['labA','labB'],recs:[[0,0,0,0],[0,0,0,0]],
     date:d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'}).replace(/,/g,'').replace(/(\d+) (\d{4})$/,'$1, $2')};
   L.fight=simulate(prepFighter(A,A,B,div),prepFighter(B,A,B,div),rounds);
   L.names=[A.name,B.name];L.plans=[A.planName,B.planName];
@@ -762,12 +762,12 @@ async function labLoadChat(){if(!SB||labChatBusy)return;labChatBusy=true;
 // Lab Chat is public: never let a fight plan (or a piece of one) get posted there by accident
 const labLooksLikePlan=t=>/\d{1,2}\s*\/\s*\d{1,2}\s*\/\s*\d{1,2}/.test(t)||/\((inside|counter|clinch|ring|feint|ropes|outside|all-?out)\)/i.test(t)||/\b(endurance_percent|opp_endurance|score\s*[<>])/i.test(t);
 async function labPost(body){if(!SB||!ME)return;body=body.trim().slice(0,280);if(!body)return;
-  if(labLooksLikePlan(body)){$('#labErr').textContent="That looks like part of a fight plan. Lab Chat is public, so plans can't be posted there.";return false}
+  if(labLooksLikePlan(body)){$('#labErr').textContent="That looks like part of a fight plan. Simbot Chat is public, so plans can't be posted there.";return false}
   const{error}=await SB.from('lab_chat').insert({author:ME,body});if(error){$('#labErr').textContent='Chat: '+(/row-level/.test(error.message)?"you can't post right now.":error.message);return false}
   labLoadChat();return true}
 async function labSend(){const m=$('#labMsg');if(!m)return;if(await labPost(m.value))m.value=''}
 function labShare(){const L=labState(),f=L.fight;if(!f)return;const r=f.result,[a,b]=L.names,[pa,pb]=L.plans;
-  const txt=r.w==null?`🥊 ${a} and ${b} fought to a ${r.type.toLowerCase()} in the Lab.`:`🥊 ${L.names[r.w]} beat ${L.names[1-r.w]} by ${r.decision?r.type.toLowerCase():r.type+' in round '+r.round} in the Lab.`;
+  const txt=r.w==null?`🥊 ${a} and ${b} fought to a ${r.type.toLowerCase()} in Simbot.`:`🥊 ${L.names[r.w]} beat ${L.names[1-r.w]} by ${r.decision?r.type.toLowerCase():r.type+' in round '+r.round} in Simbot.`;
   labPost(txt)}
 
 /* ---------- Main ---------- */
@@ -911,7 +911,7 @@ function homeHTML(){
     <div class="heroSub">THE CONTENDERS BOXING LEAGUE</div>
     <p class="heroTag">Build your fighter. Take him to the top. Outthink managers from everywhere.</p>
     <p class="heroPills"><span>&#129354; Fight every week</span><span>&#127942; Climb the rankings</span><span>&#128176; Purses &amp; PPV money</span><span>&#128074; Bare Knuckles</span></p>
-    <p class="heroCta"><a class="btnMain" data-go="register">Sign Up to Play (Free!)</a><a class="btnAlt" data-go="${ME?'gym':'login'}">Enter Your Gym</a><a class="btnGhost" data-go="lab">Try it Out</a></p>
+    <p class="heroCta"><a class="btnMain" data-go="register">Sign Up to Play (Free!)</a><a class="btnAlt" data-go="${ME?'gym':'login'}">Enter Your Gym</a><a class="btnGhost" data-go="simbot">Try it Out</a></p>
     ${standalone()?'':`<p class="heroApp"><a data-app="1">&#128242; <b>Contenders is on your phone too.</b> Get the App &rarr;</a></p><p id="heroAppTip" class="heroAppTip" hidden></p>`}
   </section>
   <p class="small center">Three world titles in every division: the <b>WBC</b>, the <b>WBA</b> and the <b>WBO</b>. Check out the <a data-go="champs">reigning champs</a> and make your own mark.</p>
@@ -1199,7 +1199,7 @@ function recordHTML(side){
   <li><a data-go="pf:create">create a new fight plan</a></li>
   <li>or <a data-go="pf:edit:${encN(F.planName||'Basic')}">edit</a> your ${esc(F.planName||'Basic')} plan.</li>
   <li>Experts can use the <a data-go="pf:adv">advanced fight plan form</a>.</li>
-  <li>Beginners might want to get into the ring in the <a data-go="lab">Fight Lab</a>.</li>
+  <li>Beginners might want to get into the ring in <a data-go="simbot">Simbot</a>.</li>
   <li>Go to <a data-go="fight">practice fights</a>.</li></ul>
   <p>${n} may also do any of the following:</p>
   <ul><li><a data-go="forum:press">issue a press release</a>.</li><li>${state[side]&&state[side].retireAfter?`<span class="cr">He retires right after his next fight.</span> <a data-unretire-after="${side}">Cancel his retirement</a>.`:`<a data-retire="${side}">retire</a>.`}</li></ul>
@@ -1263,7 +1263,7 @@ function fightHTML(){
   if(!fight)return h;
   h+=`<hr><div class="rep">${reportHTML(fight,bout,shown)}</div>`;
   if(shown<fight.rounds.length)h+=`<p style="margin-top:14px"><button id="next">Next Round</button> <button id="skip">Skip to the End</button></p>`;
-  else h+=`<p style="margin-top:16px"><button id="go2">Rematch</button> <button data-go="lab">Try it in the Fight Lab</button></p>`;
+  else h+=`<p style="margin-top:16px"><button id="go2">Rematch</button> <button data-go="simbot">Try it in Simbot</button></p>`;
   return h;
 }
 function planErr(){corners();for(const c of['red','blue']){const F=prFighter(c);if(!F)return'Pick two fighters.';if(parsePlan(F.plan).errors.length)return prPlan[c]?`The plan "${F.planName}" has lines the parser didn't recognize. Fix it on the Fight Plans page.`:`${F.name}'s fight plan has lines the parser didn't recognize. Fix them on his page.`}return''}
@@ -1603,7 +1603,7 @@ function helpHTML(arg){
 }
 const HELP_BODY={
  start:()=>`<p>Contenders is a boxing strategy game. You're the manager: you build fighters, train them, write their fight plans, and watch every bout play out round by round. You never throw a punch yourself. Your decisions win or lose the fight.</p>
-  <ol><li><a data-go="register">Sign up</a> and name your gym.</li><li><a data-go="create">Create a fighter</a> by spending his 70 points.</li><li>Write his <a data-go="help:plans">fight plan</a>.</li><li>Test it in the <a data-go="lab">Fight Lab</a> or a <a data-go="fight">practice fight</a>.</li><li>Fight on his division's <a data-go="help:schedule">fight night</a>, read the report, adjust, repeat.</li></ol>
+  <ol><li><a data-go="register">Sign up</a> and name your gym.</li><li><a data-go="create">Create a fighter</a> by spending his 70 points.</li><li>Write his <a data-go="help:plans">fight plan</a>.</li><li>Test it in <a data-go="simbot">Simbot</a> or a <a data-go="fight">practice fight</a>.</li><li>Fight on his division's <a data-go="help:schedule">fight night</a>, read the report, adjust, repeat.</li></ol>
   <p>There are two regions: <b>Contenders</b> (the regular game) and <b><a data-go="help:bk">Bare Knuckles</a></b>. You pick a fighter's region when you create him, and it can't be changed. Each region has its own rankings and its own WBC, WBA and WBO world titles in every division.</p>`,
  bk:()=>`<p>Bare Knuckles is a second region with its own rankings and champions. Pick it on the <a data-go="create">Create a Fighter</a> page. A fighter's region is set for life.</p>
   <ul><li><b>25 rounds</b> every fight.</li>
@@ -1673,7 +1673,7 @@ if endurance_percent < 50 then 1/1/10</pre>`,
   <li>Get your fight plans and training in <b>before your division's fight night</b>. Whatever is saved when the fights run is what your fighter uses.</li>
   <li>You don't need to be online. Results, fight reports and new rankings are posted after the fights run.</li>
   <li>A fighter's page shows his next opponent once he's been matched, so you can scout him and write a plan for that matchup.</li>
-  <li>Between fight nights, use <a data-go="fight">Practice Fights</a> and the <a data-go="lab">Fight Lab</a> as much as you like. They never count on your record.</li></ul>
+  <li>Between fight nights, use <a data-go="fight">Practice Fights</a> and <a data-go="simbot">Simbot</a> as much as you like. They never count on your record.</li></ul>
 `,
  titles:()=>`<ul><li>Every division has three world titles: the <b>WBC</b>, the <b>WBA</b> and the <b>WBO</b>.</li>
   <li>Divisions: ${DIVS.map(d=>d[0]+' '+d[1]).join(', ')}.</li>
@@ -1706,7 +1706,7 @@ if endurance_percent < 50 then 4/4/10
 if score < 0 and round >= 8 then 8/7/5</pre>
   <p>Defense matters a lot. Fighters with very low DEF get stunned and knocked out. Full details are in <a data-go="help:plans">Writing Fight Plans</a>.</p>
   <h2>3. Test it</h2>
-  <p>Build his twin in the <a data-go="lab">Fight Lab</a> and run it 100 times against any style to see how the plan holds up, then read a full <a data-go="fight">practice fight</a> report to see why.</p>
+  <p>Build his twin in <a data-go="simbot">Simbot</a> and run it 100 times against any style to see how the plan holds up, then read a full <a data-go="fight">practice fight</a> report to see why.</p>
   <h2>4. Training</h2>
   <p>On the fighter's page, pick what he trains. Wins raise his status and add ability points. From status 6 on, every second status level is worth two points.</p>
   <h2>5. Fight night</h2>
@@ -1726,7 +1726,7 @@ function fundingHTML(){return`<h1>Contenders Funding</h1><p>Contenders is free t
 document.addEventListener('click',async e=>{
   const t=e.target.closest('[data-go],[data-v],[data-dm],[data-retire],[data-unretire-after],[data-activate],button');if(!t)return;
   /* visitors without a gym: every sidebar link leads back to the home page (owner, Nov 12, 2026) */
-  if(t.dataset.v){if(!ME&&t.dataset.v!=='login'&&t.dataset.v!=='lab'){$('#side').classList.remove('open');nav('home');return}nav(t.dataset.v);return}
+  if(t.dataset.v){if(!ME&&t.dataset.v!=='login'&&t.dataset.v!=='simbot'&&t.dataset.v!=='lab'){$('#side').classList.remove('open');nav('home');return}nav(t.dataset.v);return}
   if(t.dataset.go){nav(t.dataset.go);return}
   if(t.dataset.dm){nav('msgs:'+t.dataset.dm);return}
   const side=(t.closest('[data-side]')||{dataset:{}}).dataset.side||t.dataset.reset;const FS=s=>s==='D'?state.draft:FTR(s);
