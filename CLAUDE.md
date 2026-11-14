@@ -2,6 +2,12 @@
 
 Contenders is a text-based boxing strategy game modeled on the old Web Boxing League (WeBL, webl.vivi.com). The owner is the GitHub user imblessedustressed-del. Claude acts as league commissioner and maintainer.
 
+## Owner's computer (owner, Nov 13, 2026: "use as little as possible of my PC's memory... I need it clear for my trading system")
+Everything for Contenders runs in the cloud: the site on GitHub Pages, the database, fights and booking on Supabase, building and testing in Claude's cloud workspace, the commissioner check as a cloud task. Never store files, run jobs or leave browser tabs open on the owner's computer; if the built-in browser is needed for a live check, close the tab when done. The site keeps only a small amount in the visitor's browser (login, last 5 practice reports, settings).
+
+## Style report (owner, Nov 13, 2026: "KO rate, draw rate, decision rate")
+`public.style_report(days)` (commissioner only): per region and fighter style, fights, win/loss/draw %, KO-win %, KO-loss %, decision %. Bots use their real style (`bt`, or their plan name for the original bots); managers' fighters are classified from stats only (`private.style_of`). The commissioner check gives a top-line after every fight night (12:12 AM run) and the full table on Mondays at 12:12 PM, flagging styles under 35% or over 60% wins and draw rates over 25%.
+
 ## Where things live
 - **Live site:** https://contendersboxingleague.com (custom domain since Nov 10, 2026, registered at Porkbun by the owner; DNS: 4 GitHub A + 4 AAAA records and www CNAME to imblessedustressed-del.github.io; repo `CNAME` file). The old https://imblessedustressed-del.github.io/Contenders-/ redirects there. GitHub Pages, served from the `main` branch root.
 - **Google Search Console:** verified Nov 10, 2026 (URL-prefix property https://contendersboxingleague.com/, owner's Google account) by the `google-site-verification` meta tag in `src/shell.html`. Never remove that tag. robots.txt and sitemap.xml are in the repo root.
