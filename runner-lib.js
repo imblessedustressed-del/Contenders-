@@ -306,19 +306,10 @@ var RunnerLib = (() => {
     return t.toISOString().slice(0, 10);
   };
   var weekday = (d) => DAYS[(/* @__PURE__ */ new Date(d + "T12:00:00Z")).getUTCDay()];
-  function nextNight(C, div, today) {
-    const night = C.FIGHT_NIGHT[div];
-    if (!night) return null;
-    for (let n = 1; n <= 7; n++) {
-      const d = addDays(today, n);
-      if (weekday(d) === night) return n === 1 ? addDays(d, 7) : d;
-    }
-    return null;
-  }
   function humanNight(C, div, today, mins) {
     const night = C.FIGHT_NIGHT[div];
     if (!night) return null;
-    for (let n = 1; n <= 8; n++) {
+    for (let n = 1; n <= 14; n++) {
       const d = addDays(today, n);
       if (weekday(d) === night && n * 1440 + 22 * 60 + 45 - mins >= HUMAN_LEAD) return d;
     }
@@ -709,10 +700,11 @@ var RunnerLib = (() => {
           lastDate.set(pk(h.u, h.k), date);
         }
         const byDiv = {};
+        const left = [];
         if (midnight) free(true).filter((b) => !busy.has(pk(b.u, b.k))).forEach((b) => (byDiv[b.F.div + "|" + b.reg] ||= []).push(b));
         for (const [dk, list] of Object.entries(byDiv)) {
           const div = dk.split("|")[0];
-          const date = nextNight(C, div, today);
+          const date = humanNight(C, div, today, mins);
           if (!date) continue;
           list.forEach((b) => b.r = Math.random());
           list.sort((x, y) => (y.F.status || 0) - (x.F.status || 0) || (y.F.rating || 0) - (x.F.rating || 0) || x.r - y.r);
@@ -728,10 +720,29 @@ var RunnerLib = (() => {
                 best = j;
               }
             });
-            if (best < 0) continue;
+            if (best < 0) {
+              left.push({ a, date });
+              continue;
+            }
             const [b] = list.splice(best, 1);
             book(a, b, date, true);
+            lastDate.set(pk(a.u, a.k), date);
+            lastDate.set(pk(b.u, b.k), date);
           }
+          if (list.length) left.push({ a: list[0], date });
+        }
+        for (const { a, date } of left) {
+          if (busy.has(pk(a.u, a.k))) continue;
+          const before = (b) => (lastDate.get(pk(b.u, b.k)) || "9999") <= addDays(date, -3);
+          const c = allBotList.filter((b) => b.F.div === a.F.div && b.reg === a.reg && b.gym !== a.gym && fair(a, b) && (!busy.has(pk(b.u, b.k)) || before(b)));
+          if (!c.length) {
+            log.push(`no fair opponent for ${nm(a.F)} (${P[a.u]?.gym}, ${a.F.div}${a.reg ? " BK" : ""})`);
+            continue;
+          }
+          c.sort((x, y) => gap(a, x) - gap(a, y) || Math.random() - 0.5);
+          book(a, c[0], date, true);
+          lastDate.set(pk(a.u, a.k), date);
+          lastDate.set(pk(c[0].u, c[0].k), date);
         }
         if (cancelIds.length) {
           const { error } = await sb.from("bouts").update({ status: "cancelled" }).in("id", cancelIds).eq("status", "scheduled").eq("bot_only", true);

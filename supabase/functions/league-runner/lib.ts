@@ -36,7 +36,7 @@ function nextNight(C: any, div: string, today: string) {
 function humanNight(C: any, div: string, today: string, mins: number) {
   const night = (C.FIGHT_NIGHT as Record<string, string>)[div];
   if (!night) return null;
-  for (let n = 1; n <= 8; n++) { const d = addDays(today, n); if (weekday(d) === night && n * 1440 + 22 * 60 + 45 - mins >= HUMAN_LEAD) return d; }
+  for (let n = 1; n <= 14; n++) { const d = addDays(today, n); if (weekday(d) === night && n * 1440 + 22 * 60 + 45 - mins >= HUMAN_LEAD) return d; }
   return null;
 }
 const pk = (u: string, f: string) => u + ":" + f;
@@ -300,12 +300,13 @@ export async function handle(req: Request, client: any, C: any): Promise<Respons
         }
         book(h, opp, date, false); lastDate.set(pk(opp.u, opp.k), date); lastDate.set(pk(h.u, h.k), date);
       }
-      // then the bots against each other, same rules: same division and region, different gyms
-      const byDiv: Record<string, any[]> = {};
+      // then the other gyms against each other (owner, Nov 13: "treat the bot gyms like humans, they get fights every week"):
+      // same booking rules as managers (24-hour wait, soonest night at least 3 days away), same division and region, different gyms
+      const byDiv: Record<string, any[]> = {};const left: any[] = [];
       if (midnight) free(true).filter((b) => !busy.has(pk(b.u, b.k))).forEach((b) => (byDiv[b.F.div + "|" + b.reg] ||= []).push(b));
       for (const [dk, list] of Object.entries(byDiv)) {
         const div = dk.split("|")[0];
-        const date = nextNight(C, div, today); if (!date) continue;
+        const date = humanNight(C, div, today, mins); if (!date) continue;
         list.forEach((b) => (b.r = Math.random()));
         list.sort((x, y) => (y.F.status || 0) - (x.F.status || 0) || (y.F.rating || 0) - (x.F.rating || 0) || x.r - y.r);
         while (list.length > 1) {
@@ -317,10 +318,20 @@ export async function handle(req: Request, client: any, C: any): Promise<Respons
             const sc = gap(a, b) * 10 + (recent.has(b.F.name + "|" + b.gym) ? 3 : 0) + Math.random() * 0.5;
             if (sc < bs) { bs = sc; best = j; }
           });
-          if (best < 0) continue; // nobody fair for him tonight
+          if (best < 0) { left.push({ a, date }); continue; } // nobody free and fair: second chance below
           const [b] = list.splice(best, 1);
-          book(a, b, date, true);
+          book(a, b, date, true); lastDate.set(pk(a.u, a.k), date); lastDate.set(pk(b.u, b.k), date);
         }
+        if (list.length) left.push({ a: list[0], date });
+      }
+      // second chance, so nobody sits out a week: a fair fighter from another gym who already has an earlier fight (3+ days before) takes him on too
+      for (const { a, date } of left) {
+        if (busy.has(pk(a.u, a.k))) continue;
+        const before = (b: any) => (lastDate.get(pk(b.u, b.k)) || "9999") <= addDays(date, -3);
+        const c = allBotList.filter((b) => b.F.div === a.F.div && b.reg === a.reg && b.gym !== a.gym && fair(a, b) && (!busy.has(pk(b.u, b.k)) || before(b)));
+        if (!c.length) { log.push(`no fair opponent for ${nm(a.F)} (${P[a.u]?.gym}, ${a.F.div}${a.reg ? " BK" : ""})`); continue; }
+        c.sort((x, y) => gap(a, x) - gap(a, y) || Math.random() - .5);
+        book(a, c[0], date, true); lastDate.set(pk(a.u, a.k), date); lastDate.set(pk(c[0].u, c[0].k), date);
       }
       if (cancelIds.length) {
         const { error } = await sb.from("bouts").update({ status: "cancelled" }).in("id", cancelIds).eq("status", "scheduled").eq("bot_only", true);
