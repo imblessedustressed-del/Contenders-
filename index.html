@@ -223,7 +223,7 @@ pre.plan{background:#fbfaf7;border:1px solid var(--line)}
 .labRow{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}.labRow select{flex:1;min-width:140px}
 .labStats{width:100%;border-collapse:collapse}.labStats td{padding:2px 4px;border-bottom:1px solid #eee5d3}.labStats td:last-child{text-align:right;white-space:nowrap}
 .labStats b{display:inline-block;min-width:26px;text-align:center}
-.labTot{font-weight:bold;margin:6px 0 2px}.labTot.ok{color:#2e7d32}
+.labTot{font-weight:bold;margin:6px 0 2px}.labW td{background:#fff5d6}.labWt{font-size:16px;transition:background .3s,color .3s;padding:0 4px;border-radius:4px}.labWt.flash{background:#ffd23f;color:#000}.labTot.ok{color:#2e7d32}
 .labCard select[data-lp]{width:100%;margin-top:6px}
 .labPlan{width:100%;box-sizing:border-box;font:13px/1.35 Consolas,Menlo,monospace;margin-top:6px}
 .labBar{display:flex;gap:14px;flex-wrap:wrap;margin:14px 0 6px}.labBar label{white-space:nowrap}
@@ -333,7 +333,7 @@ if score < 2 and endurance_percent > 100 - (round - 1) * 4 then 6/5/9 (counter)
 if score < 0 and round <= 7 then 8/4/8 (counter)`],
   'Clincher':[{str:14,kp:0,spd:10,agl:10,chn:14,cnd:14,hgt:6,cut:2},`# Clincher: grind him down
 4B/4/12 (clinch)
-if opponent >= tired then 6B/6/8
+if opponent <= tired then 6B/6/8
 if endurance_percent < 40 then 2/2/12 (clinch)`],
   'Flasher':[{str:21,kp:0,spd:13,agl:8,chn:14,cnd:6,hgt:6,cut:2},`# Flasher: everything into the first round
 1) 8H/9/3
@@ -368,7 +368,7 @@ const save=()=>{if(typeof syncGym==='function')syncGym();try{localStorage.setIte
 
 /* ================= WeBL FIGHT PLAN LANGUAGE ================= */
 const PLAN_STYLES=['inside','clinch','feint','counter','ring','ropes','outside','allout'];
-const OPP_STATES={strong:0,tired:1,exhausted:2,weak:2,hurt:2};
+const OPP_STATES={strong:2,tired:1,exhausted:0,weak:0,hurt:0}; // WeBL scale: 2 strong, 1 tired, 0 weak/exhausted
 function tokenize(src){
   const toks=[];let i=0;
   while(i<src.length){
@@ -466,9 +466,12 @@ function parsePlan(src){
   }
   return{stmts,errors};
 }
-/* Choose this round's instructions. Last true line wins; numbered blocks sorted by round. */
+/* Choose this round's instructions (WeBL rule): read the plan top to bottom and use the last true line.
+   A numbered line "N)" and the unnumbered lines under it only count from round N on, but their place in
+   the file decides priority, not the round number (so "1)" lines at the bottom are checked every round
+   and win over everything above them). Fixed Nov 13, 2026: lines used to be sorted by round number. */
 function choosePlan(parsed,ctx){
-  const list=parsed.stmts.filter(s=>s.from<=ctx.round).sort((a,b)=>a.from-b.from||a.idx-b.idx);
+  const list=parsed.stmts.filter(s=>s.from<=ctx.round);
   let tactic=null,towel=false;const msgs={};
   for(const s of list){
     let ok=true;if(s.cond){try{ok=!!s.cond(ctx)}catch(e){ok=false}}
@@ -517,7 +520,7 @@ function prep(F,c){
     fights:(F.rec||[0,0,0]).slice(0,3).reduce((a,b)=>a+b,0),
     giant:BAL.giantPer10&&(F.divLim||0)>=200&&(F.minW||0)>200?((F.minW-200)/10)*BAL.giantPer10:0};
 }
-const oppState=f=>f>=2/3?0:f>=1/3?1:2;
+const oppState=f=>f>=2/3?2:f>=1/3?1:0; // 2 strong, 1 tired, 0 exhausted (WeBL: opp = 2 means strong)
 function ctxFor(S,i,r){const x=S[i],y=S[1-i];
   const cuts=z=>z.inj.reduce((a,j)=>a+j.lvl,0);
   return{endurance:Math.round(x.E),endurance_percent:Math.round(100*x.E/x.E0),score:x.perc,round:r,roundswon:x.won,roundslost:x.lost,
@@ -770,7 +773,7 @@ function condText(x,after){
 /* ================= SHARED DATA (Supabase: accounts, forums, messages) ================= */
 cleanSlate();
 const SB_URL='https://ojsphhzgzbxmnfcbitqb.supabase.co',SB_KEY='sb_publishable_SWO9WhiSkoVhflY5CmY08A_hlqCEJSi';
-const BUILD='1794619014';
+const BUILD='1794620007';
 /* A tab left open on an older build must not save over newer data: if the site has been updated, reload before anything else is saved. */
 let staleBuild=false;
 async function checkBuild(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
@@ -946,9 +949,11 @@ function labCornerHTML(c){const L=labState(),F=L[c],u=used(F);
   ${ME&&ROSTER().length?`<select data-lmine="${c}"><option value="">Copy one of my fighters...</option>${ROSTER().map(k=>`<option value="${k}">${esc(state[k].name)}</option>`).join('')}</select>`:''}</div>
   <table class="labStats">${LAB_ST.map(([k,lab])=>`<tr><td>${lab}</td><td><button class="pm" data-lpm="${k}" data-c="${c}" data-d="-1">-</button><b>${F[k]}</b><button class="pm" data-lpm="${k}" data-c="${c}" data-d="1">+</button>${k==='hgt'?` <span class="small mute">${Math.floor(HT(F)/12)}'${HT(F)%12}"</span>`:''}</td></tr>`).join('')}
   <tr><td>Cut Resistance</td><td><select data-lf="cut" data-c="${c}">${[1,2,3].map(v=>`<option${+F.cut===v?' selected':''}>${v}</option>`).join('')}</select></td></tr>
-  <tr><td>Build</td><td><select data-lf="build" data-c="${c}">${Object.keys(BUILDS).map(b=>`<option${(F.build||'normal')===b?' selected':''}>${b}</option>`).join('')}</select></td></tr></table>
+  <tr><td>Build</td><td><select data-lf="build" data-c="${c}">${Object.keys(BUILDS).map(b=>`<option${(F.build||'normal')===b?' selected':''}>${b}</option>`).join('')}</select></td></tr>
+  <tr class="labW"><td>Weight</td><td><b class="labWt" id="labWt${c}">${natWeight(F)} lb</b> <span class="small mute">(${Math.round(natWeight(F)*.4536)} kg)</span></td></tr>
+  <tr><td>Can make</td><td>${minWeight(F)} lb <span class="small mute">${esc(labDivFor(F))}</span></td></tr></table>
   <p class="labTot ${u===POOL?'ok':'cr'}">${u} / ${POOL} points ${u===POOL?'✓':u<POOL?`(${POOL-u} left)`:`(${u-POOL} too many)`}</p>
-  <p class="small mute">${natWeight(F)} lb, can make ${minWeight(F)} lb. KO Punch needs 3 Strength per point.</p>
+  <p class="small mute">Height, Build, Strength and Agility change his weight. KO Punch needs 3 Strength per point.</p>
   <select data-lp="${c}"><option value="">Load a fight plan...</option>${plans.map(([v,l])=>`<option value="${esc(v)}">${esc(l)}</option>`).join('')}</select>
   <textarea class="labPlan" data-lf="plan" data-c="${c}" rows="7" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off" data-gramm="false" data-gramm_editor="false" data-enable-grammarly="false" aria-label="Fight plan">${esc(F.plan)}</textarea>
   <p class="small">🔒 Private: this plan stays on your device. It is never saved or sent anywhere. <a data-go="help:plans">How fight plans work</a></p>
@@ -972,7 +977,9 @@ function labHTML(){const L=labState();
   ${ME?'':`<p class="small labGuest">Chatting as a guest: <input id="labNick" maxlength="20" placeholder="Pick a Simbot nickname" value="${esc(labNick())}" autocomplete="off"> <span class="mute">or <a data-go="register">sign up</a> to chat as your gym.</span></p>`}
   <div class="labSay"><input id="labMsg" maxlength="280" placeholder="Talk some trash..." autocomplete="off"><button data-lab="send">Send</button></div>
   </div>`}
-function labRefresh(c){const el=$('#labCard'+c);if(el)el.outerHTML=labCornerHTML(c);const b=$('#labBar');if(b)b.innerHTML=labBarHTML()}
+const labDivFor=F=>{const d=DIVS.find(x=>x[1]>=minWeight(F));return d?d[0]+'weight':'Heavyweight'};
+function labRefresh(c){const el=$('#labCard'+c),old=el&&el.querySelector('.labWt')?.textContent;if(el)el.outerHTML=labCornerHTML(c);const b=$('#labBar');if(b)b.innerHTML=labBarHTML();
+  const w=$('#labWt'+c);if(w&&old&&w.textContent!==old){w.classList.add('flash');setTimeout(()=>w.classList.remove('flash'),700)}}
 function labMount(){const root=$('#lab');if(!root)return;
   root.addEventListener('click',labClick);root.addEventListener('change',labChange);root.addEventListener('input',labInput);
   const m=$('#labMsg');if(m)m.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();labSend()}});
@@ -1774,7 +1781,7 @@ function planErr(){corners();for(const c of['red','blue']){const F=prFighter(c);
 function weightOf(div){const l=(DIVS.find(d=>d[0]===div)||[0,160])[1];return l>=1000?225:l}
 function reportHTML(f,b,upto){
   const S=f.S,W=weightOf(b.div);
-  const intro=S.map((x,i)=>{const Wx=(x.F.fightW&&b.div==='Heavy')?x.F.fightW:W;return`<p>In this corner, standing ${ht(HT(x.F))} (${cm(HT(x.F))} centimeters) tall weighing in at ${Wx} pounds (${Math.round(Wx*.4536)} kilograms) with a record of ${b.recs[i][0]} wins, ${b.recs[i][2]} draws, and ${b.recs[i][1]} losses fighting for ${esc((b.gyms&&b.gyms[i])||b.gym)} out of ${esc(x.F.home||'parts unknown')} is <b>${esc(x.F.name)}</b>!!</p><div class="gap"></div>`}).join('');
+  const intro=S.map((x,i)=>{const Wx=x.F.fightW||W;return`<p>In this corner, standing ${ht(HT(x.F))} (${cm(HT(x.F))} centimeters) tall weighing in at ${Wx} pounds (${Math.round(Wx*.4536)} kilograms) with a record of ${b.recs[i][0]} wins, ${b.recs[i][2]} draws, and ${b.recs[i][1]} losses fighting for ${esc((b.gyms&&b.gyms[i])||b.gym)} out of ${esc(x.F.home||'parts unknown')} is <b>${esc(x.F.name)}</b>!!</p><div class="gap"></div>`}).join('');
   let h=`<h1 class="date">${esc(b.date)}</h1>${b.venue?`<p>${b.tv&&b.tv.tier==='ppv'?'Live on pay-per-view from':b.tv&&b.tv.tier==='undercard'?'On the pay-per-view undercard, live from':b.tv&&b.tv.tier==='tv'?'Live on TV from':'Live from'} <b>${esc(b.venue.name)}</b> in ${esc(b.venue.city)}${b.att?`. Attendance: ${crowdText(b.venue,b.att)}`:''}.${b.tv&&b.tv.buys?` Pay-per-view buys: <b>${b.tv.buys.toLocaleString('en-US')}</b> worldwide (${Object.entries(b.tv.regions||{}).filter(([,v])=>v).map(([r,v])=>`${esc(r)} ${v.toLocaleString('en-US')}`).join(', ')}).`:b.tv&&b.tv.viewers?` Viewers: <b>${b.tv.viewers.toLocaleString('en-US')}</b>.`:''}</p><div class="gap"></div>`:''}${intro}<p>This bout is scheduled for ${b.rounds} rounds${f.bk?' under <b>bare-knuckle rules</b>: no ringside doctor, and if it goes the distance the man who scored more knockdowns wins (then more stuns)':''}.${b.belt?` It is for the <b>${f.bk?'Bare Knuckles ':''}${esc(b.belt)} ${esc(b.div)}weight Championship of the World</b>.`:''}</p>`;
   const end=f.result,last=f.rounds.length;
   f.rounds.slice(0,upto).forEach((R,ri)=>{
@@ -2135,7 +2142,7 @@ const HELP_BODY={
   <li><b>Style</b> in parentheses at the end: <tt>(inside)</tt>, <tt>(clinch)</tt>, <tt>(feint)</tt>, <tt>(counter)</tt>, <tt>(ring)</tt>, <tt>(ropes)</tt>, <tt>(outside)</tt>, <tt>(allout)</tt>.</li>
   <li><b>Rounds:</b> <tt>4) 6/6/8</tt> starts a tactic in round 4 that lasts until another numbered line takes over.</li>
   <li><b>Conditions:</b> <tt>if score &lt; 0 and round &gt;= 8 then 8/7/5</tt>. Checked at the start of every round. The <b>last true line wins</b>.</li>
-  <li><b>You can test:</b> <tt>round</tt>, <tt>score</tt>, <tt>endurance</tt>, <tt>endurance_percent</tt>, <tt>roundswon</tt>, <tt>roundslost</tt>, <tt>decision_won</tt>, <tt>decision_lost</tt>, <tt>opponent</tt>/<tt>opp</tt> <tt>is strong / tired / exhausted</tt>, <tt>opptiring</tt>, <tt>mycuts</tt>, <tt>hiscuts</tt>, <tt>mystuns</tt>, <tt>hisstuns</tt>, <tt>myknockdowns</tt>, <tt>hisknockdowns</tt>, <tt>warnings</tt>.</li>
+  <li><b>You can test:</b> <tt>round</tt>, <tt>score</tt>, <tt>endurance</tt>, <tt>endurance_percent</tt>, <tt>roundswon</tt>, <tt>roundslost</tt>, <tt>decision_won</tt>, <tt>decision_lost</tt>, <tt>opponent</tt>/<tt>opp</tt> <tt>is strong / tired / exhausted</tt> (as numbers: 2 = strong, over 2/3 of his endurance left; 1 = tired; 0 = weak or exhausted, under 1/3. So <tt>opp = 0</tt> means he's nearly done and <tt>opponent &lt;= tired</tt> means tired or worse), <tt>opptiring</tt>, <tt>mycuts</tt>, <tt>hiscuts</tt>, <tt>mystuns</tt>, <tt>hisstuns</tt>, <tt>myknockdowns</tt>, <tt>hisknockdowns</tt>, <tt>warnings</tt>.</li>
   <li><b>Math and logic:</b> <tt>+ - *</tt>, parentheses, <tt>&lt; &gt; = &lt;= &gt;=</tt>, <tt>and</tt>, <tt>or</tt>, <tt>not</tt>.</li>
   <li><b>Stop:</b> <tt>stop</tt> on its own line means ignore everything below it. <tt>if ... then stop</tt> does the same only when the condition is true.</li>
   <li><b>Extras:</b> <tt>towel</tt>, and <tt>say "..."</tt>, <tt>taunt "..."</tt>, <tt>sneer "..."</tt>, <tt>gloat "..."</tt>, <tt>tko "..."</tt> to add your own lines to the fight report.</li>

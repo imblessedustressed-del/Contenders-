@@ -37,7 +37,7 @@ function prep(F,c){
     fights:(F.rec||[0,0,0]).slice(0,3).reduce((a,b)=>a+b,0),
     giant:BAL.giantPer10&&(F.divLim||0)>=200&&(F.minW||0)>200?((F.minW-200)/10)*BAL.giantPer10:0};
 }
-const oppState=f=>f>=2/3?0:f>=1/3?1:2;
+const oppState=f=>f>=2/3?2:f>=1/3?1:0; // 2 strong, 1 tired, 0 exhausted (WeBL: opp = 2 means strong)
 function ctxFor(S,i,r){const x=S[i],y=S[1-i];
   const cuts=z=>z.inj.reduce((a,j)=>a+j.lvl,0);
   return{endurance:Math.round(x.E),endurance_percent:Math.round(100*x.E/x.E0),score:x.perc,round:r,roundswon:x.won,roundslost:x.lost,

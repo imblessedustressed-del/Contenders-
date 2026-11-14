@@ -16,9 +16,9 @@ def nm():
     if n not in taken: taken.add(n);return n
 BKT=['Grinder','Clincher','Flasher']
 PLANS={
- 'Grinder':["# BK Grinder: win the endurance war, then open up","3B/9/8 (ropes)","if round >= 6 and opponent >= tired then 3B/10/7 (ropes)","if round >= 12 and opponent >= tired then 4B/10/6 (ropes)","if round >= 18 and opponent = exhausted then 4/11/5 (ropes)","if round = 25 then 4H/11/5 (ropes)","if endurance_percent < 35 then 2/4/14 (clinch)"],
- 'Clincher':["# BK Clincher: lean on him for 25 rounds","4B/8/8 (clinch)","if opponent >= tired then 4B/9/7 (clinch)","if opponent = exhausted then 4B/10/6 (clinch)","if round >= 20 and opponent = exhausted then 5B/10/5 (clinch)","if round = 25 then 5H/10/5 (clinch)","if endurance_percent < 30 then 2/3/15 (clinch)"],
- 'Flasher':["# BK Flasher: one big shot can end a long night","3/8/9","if round <= 2 then 4H/9/7","if hisstuns > 0 then 6H/10/4","if round >= 20 and opponent >= tired then 4H/10/6","if endurance_percent < 40 then 2/4/14 (clinch)"],
+ 'Grinder':["# BK Grinder: win the endurance war, then open up","3B/9/8 (ropes)","if round >= 6 and opponent <= tired then 3B/10/7 (ropes)","if round >= 12 and opponent <= tired then 4B/10/6 (ropes)","if round >= 18 and opponent = exhausted then 4/11/5 (ropes)","if round = 25 then 4H/11/5 (ropes)","if endurance_percent < 35 then 2/4/14 (clinch)"],
+ 'Clincher':["# BK Clincher: lean on him for 25 rounds","4B/8/8 (clinch)","if opponent <= tired then 4B/9/7 (clinch)","if opponent = exhausted then 4B/10/6 (clinch)","if round >= 20 and opponent = exhausted then 5B/10/5 (clinch)","if round = 25 then 5H/10/5 (clinch)","if endurance_percent < 30 then 2/3/15 (clinch)"],
+ 'Flasher':["# BK Flasher: one big shot can end a long night","3/8/9","if round <= 2 then 4H/9/7","if hisstuns > 0 then 6H/10/4","if round >= 20 and opponent <= tired then 4H/10/6","if endurance_percent < 40 then 2/4/14 (clinch)"],
 }
 def build_stats(t,pool):
   # returns dict str,kp,spd,agl,chn,cnd summing to pool

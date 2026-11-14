@@ -1,6 +1,6 @@
 /* ================= WeBL FIGHT PLAN LANGUAGE ================= */
 const PLAN_STYLES=['inside','clinch','feint','counter','ring','ropes','outside','allout'];
-const OPP_STATES={strong:0,tired:1,exhausted:2,weak:2,hurt:2};
+const OPP_STATES={strong:2,tired:1,exhausted:0,weak:0,hurt:0}; // WeBL scale: 2 strong, 1 tired, 0 weak/exhausted
 function tokenize(src){
   const toks=[];let i=0;
   while(i<src.length){
@@ -98,9 +98,12 @@ function parsePlan(src){
   }
   return{stmts,errors};
 }
-/* Choose this round's instructions. Last true line wins; numbered blocks sorted by round. */
+/* Choose this round's instructions (WeBL rule): read the plan top to bottom and use the last true line.
+   A numbered line "N)" and the unnumbered lines under it only count from round N on, but their place in
+   the file decides priority, not the round number (so "1)" lines at the bottom are checked every round
+   and win over everything above them). Fixed Nov 13, 2026: lines used to be sorted by round number. */
 function choosePlan(parsed,ctx){
-  const list=parsed.stmts.filter(s=>s.from<=ctx.round).sort((a,b)=>a.from-b.from||a.idx-b.idx);
+  const list=parsed.stmts.filter(s=>s.from<=ctx.round);
   let tactic=null,towel=false;const msgs={};
   for(const s of list){
     let ok=true;if(s.cond){try{ok=!!s.cond(ctx)}catch(e){ok=false}}
