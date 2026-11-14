@@ -789,7 +789,7 @@ function condText(x,after){
 /* ================= SHARED DATA (Supabase: accounts, forums, messages) ================= */
 cleanSlate();
 const SB_URL='https://ojsphhzgzbxmnfcbitqb.supabase.co',SB_KEY='sb_publishable_SWO9WhiSkoVhflY5CmY08A_hlqCEJSi';
-const BUILD='1794699344';
+const BUILD='1794699715';
 /* A tab left open on an older build must not save over newer data: if the site has been updated, reload before anything else is saved. */
 let staleBuild=false;
 async function checkBuild(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
@@ -828,7 +828,9 @@ async function loadPublic(){
     if(p.error||t.error)throw p.error||t.error;
     managers={};p.data.forEach(r=>managers[r.id]={gym:r.gym,desc:r.description,loc:r.location||'',bot:false,at:Date.parse(r.created_at),descBlocked:!!r.desc_blocked});
     /* sparring gyms: the gyms whose full records the database lets everyone read (which ones are computer-run is never sent to players) */
-    {const bs=await SB.from('gym_state').select('user_id,data').neq('user_id',ME||'00000000-0000-0000-0000-000000000000');if(!bs.error){botF={};bs.data.forEach(r=>{if(r.user_id===ME)return;if(managers[r.user_id])managers[r.user_id].bot=true;const d=r.data||{};(d.roster||[]).forEach(k=>{if(d[k])botF['bot:'+r.user_id+':'+k]={...d[k],gymName:managers[r.user_id].gym}})})}}
+    /* sparring gyms (owner, Nov 14, 2026: nobody sees anyone else's plans): the spar edge function sends only names, records and weights;
+       other gyms' abilities and plans stay on the server, and practice fights against them run there */
+    if(ME){try{const{data:sp,error:se}=await SB.functions.invoke('spar',{body:{action:'list'}});if(!se&&sp&&sp.fighters){botF={};sp.fighters.forEach(x=>{const u=x.k.split(':')[1];if(managers[u])managers[u].bot=true;botF[x.k]=x})}}catch(e){}}
     bouts=(bt&&!bt.error&&bt.data)||[];try{const vq=await SB.from('vacancies').select('div,belt,bout_id,vacated_at');if(!vq.error)vacancies=vq.data||[]}catch(e){}cards={};if(gc&&!gc.error)gc.data.forEach(r=>cards[r.user_id]=r.data||{});
     topics=t.data.map(r=>({id:String(r.id),forum:r.forum,title:r.title,by:r.author,at:Date.parse(r.created_at),last:Date.parse(r.last_at),count:r.post_count}));
     dbState='on';refresh();
@@ -1830,7 +1832,7 @@ function fightHTML(){
   else h+=`<p style="margin-top:16px"><button id="go2">Rematch</button> <button data-go="simbot">Try it in Simbot</button></p>`;
   return h;
 }
-function planErr(){corners();for(const c of['red','blue']){const F=prFighter(c);if(!F)return'Pick two fighters.';if(parsePlan(F.plan).errors.length)return prPlan[c]?`The plan "${F.planName}" has lines the parser didn't recognize. Fix it on the Fight Plans page.`:`${F.name}'s fight plan has lines the parser didn't recognize. Fix them on his page.`}return''}
+function planErr(){corners();for(const c of['red','blue']){const F=prFighter(c);if(!F)return'Pick two fighters.';if(F.plan==null)continue;if(parsePlan(F.plan).errors.length)return prPlan[c]?`The plan "${F.planName}" has lines the parser didn't recognize. Fix it on the Fight Plans page.`:`${F.name}'s fight plan has lines the parser didn't recognize. Fix them on his page.`}return''}
 function weightOf(div){const l=(DIVS.find(d=>d[0]===div)||[0,160])[1];return l>=1000?225:l}
 function reportHTML(f,b,upto){
   const S=f.S,W=weightOf(b.div);
@@ -1898,6 +1900,13 @@ function startFight(){
     date:d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'}).replace(/,/g,'').replace(/(\d+) (\d{4})$/,'$1, $2')};
   const prepF=F=>prepFighter(F,FA,FB,state.div);
   if(boutRounds(FA,FB)===25)bout.rounds=25;
+  if(RC.startsWith('bot:')||BC.startsWith('bot:')){ /* another gym's fighter: the fight runs on the server, which never sends his stats or plan */
+    const side=(k,c,F)=>k.startsWith('bot:')?{k,plan:prPlan[c]&&state.plans[prPlan[c]]!=null?state.plans[prPlan[c]]:null}:{F};
+    $('#err').textContent='Fighting...';const go=$('#go')||$('#go2');if(go)go.disabled=true;
+    SB.functions.invoke('spar',{body:{action:'fight',red:side(RC,'red',FA),blue:side(BC,'blue',FB),div:state.div}}).then(({data,error})=>{
+      if(error||!data||!data.f){let m='The practice fight could not run. Try again in a moment.';try{if(data&&data.error)m=data.error}catch(e){}$('#err').textContent=m;if(go)go.disabled=false;return}
+      fight=data.f;shown=1;if(shown>=fight.rounds.length)finish();render()},()=>{$('#err').textContent='The practice fight could not run. Try again in a moment.';if(go)go.disabled=false});
+    return}
   fight=simulate(prepF(FA),prepF(FB),bout.rounds);shown=1;
   if(shown>=fight.rounds.length)finish();render();
 }
@@ -2103,7 +2112,7 @@ function oFighterHTML(arg){
   const n=esc(f.name),r=f.rec||[0,0,0,0],TR={str:'has been lifting weights every chance he gets (STR)',kp:'has been pounding the heavy bag until it splits (KP)',spd:'has been working the speed bag every morning (SPD)',agl:'has been skipping rope for hours at a time (AGL)',chn:'has been taking shots in sparring to toughen up (CHN)',cnd:'has been running miles before sunrise (CND)'};
   return`<h1 class="pubname">${n}</h1>
   <p>${n} stands ${ht(60+f.hgt)} (${cm(60+f.hgt)} centimeters) tall. He fights for the <a data-go="gympub:${uid}">${esc(m.gym)}</a> gym${f.home?` out of ${esc(f.home)}`:''} in the ${esc(f.div)}weight division (Contenders).</p>
-  <p>${boutFor(uid,fid)?`${n}'s next bout: ${boutLine(boutFor(uid,fid))}`:`${n} has no bouts scheduled.`}</p><p>${(()=>{const bf=botF['bot:'+uid+':'+fid],r=f.rec||[0,0,0];return weightNote(n,f.div,f.w,f.mw!=null?f.mw:(bf?minWeight(bf):f.w),r[0]+r[1]+r[2])})()}</p>
+  <p>${boutFor(uid,fid)?`${n}'s next bout: ${boutLine(boutFor(uid,fid))}`:`${n} has no bouts scheduled.`}</p><p>${(()=>{const bf=botF['bot:'+uid+':'+fid],r=f.rec||[0,0,0];return weightNote(n,f.div,f.w,f.mw!=null?f.mw:(bf&&bf.mw!=null?bf.mw:f.w),r[0]+r[1]+r[2])})()}</p>
   <hr><h2>${n}'s Record</h2><p>${n}'s record is ${r[0]}-${r[1]}-${r[2]} (${r[3]}/${r[1]})${recTitles(uid,fid)}<br>His current rating is ${f.rating} and his status is ${f.status}.<br>His career earnings are ${money(f.earn)}.<br>${fanLine(f)}</p>
   ${(f.hist||[]).length?`<p>${n} ${TR[f.train]||TR.str}.</p><table class="hist">${f.hist.map(h=>`<tr><td>${resultIcon(h)}</td><td>vs ${esc(h.opp)} - ${h.oh?esc(h.oh)+' - ':''}${esc(h.div)}weight ${h.belt?esc(h.belt)+' title ':''}bout on ${esc(h.date)}, week ${h.week}: ${esc(h.res)}. Score: ${esc(h.score)}</td></tr>`).join('')}</table>`:'<p class="mute">No fights yet.</p>'}
   <p class="small"><a data-go="gympub:${uid}">Back to ${esc(m.gym)}</a></p>`;
