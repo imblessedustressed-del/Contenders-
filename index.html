@@ -782,7 +782,7 @@ function condText(x,after){
 /* ================= SHARED DATA (Supabase: accounts, forums, messages) ================= */
 cleanSlate();
 const SB_URL='https://ojsphhzgzbxmnfcbitqb.supabase.co',SB_KEY='sb_publishable_SWO9WhiSkoVhflY5CmY08A_hlqCEJSi';
-const BUILD='1794623635';
+const BUILD='1794623732';
 /* A tab left open on an older build must not save over newer data: if the site has been updated, reload before anything else is saved. */
 let staleBuild=false;
 async function checkBuild(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
@@ -873,6 +873,8 @@ const sanctionOf=k=>mySanctions.find(x=>x.kind==='ban')||mySanctions.find(x=>x.k
 function sanctionNote(k){const x=sanctionOf(k);if(!x)return'';const until=x.ends?`until ${new Date(x.ends).toLocaleString('en-US',{weekday:'long',month:'long',day:'numeric',hour:'numeric',minute:'2-digit'})}`:'until the commissioner lifts it';
   return`<p class="note cr"><b>${x.kind==='ban'?'Your gym is banned':'You are gagged'}</b> ${until} (strike ${x.strike}${x.reason?`: ${esc(x.reason)}`:''}). ${x.kind==='ban'?'You can read the site, but you can\'t play, post or send messages.':'You can keep playing, but you can\'t post in the forums or send messages.'}</p>`}
 function needLogin(what){return ME?'':`<p class="note">You need to <a data-go="login">log in</a> or <a data-go="register">sign up</a> to ${what}.</p>`}
+// anti-impersonation (owner, Nov 13, 2026): the database refuses gym names and Simbot nicknames that copy another gym or a reserved name
+async function gymNameProblem(name,self){if(!SB)return null;try{const{data,error}=await SB.rpc('gym_name_problem',{p_name:name,p_self:self||null});return error?null:data}catch(e){return null}}
 async function safeWrite(fn){try{const r=await fn();if(r&&r.error)throw r.error;return true}catch(e){alertBox("That didn't go through: "+((e&&e.message)||'unknown error'));return false}}
 function alert0(){$('#view').innerHTML='<h1>Your gym has retired.</h1><p>Thanks for fighting in Contenders. You can <a data-go="register">sign up again</a> any time.</p>';updateTop()}
 function alertBox(t){const v=$('#flash');if(v){v.textContent=t;v.style.display='block';v.scrollIntoView({block:'nearest'})}}
@@ -2321,6 +2323,7 @@ document.addEventListener('click',async e=>{
   else if(t.id==='cdivGo'){const sd=t.dataset.side,F=FTR(sd);if(F&&!myBout(sd)){F.div=$('#cdivSel').value;save();alertBox(`${F.name} now fights at ${F.div}weight.`);nav('gym')}}
   else if(t.id==='cleanPlans'){ensurePlans();if(state.plans['Basic']==null)state.plans['Basic']='6/6/8';ROSTER().forEach(s=>usePlan(s,'Basic'));save();alertBox('All fight plans have been cleaned.')}
   else if(t.id==='saveGym'){const v=$('#gymIn').value.trim().slice(0,40);if(v.length<2)return alertBox('Gym names need at least 2 characters.');
+    {const bad=await gymNameProblem(v,ME);if(bad)return alertBox(bad)}
     if(await safeWrite(()=>SB.from('profiles').update({gym:v}).eq('id',ME))){managers[ME]=Object.assign(managers[ME]||{},{gym:v});state.gymName=v;save();updateTop();alertBox('Gym name saved.')}}
   else if(t.id==='prevDesc'){$('#descPrev').innerHTML=gymDescBox($('#descIn').value.slice(0,5000),{preview:true});return}
   else if(t.dataset.descplain){gymDescPlain[t.dataset.descplain]=!gymDescPlain[t.dataset.descplain];render();return}
@@ -2363,8 +2366,9 @@ document.addEventListener('submit',async e=>{
   if(f.id==='regForm'){const gym=$('#rGym').value.trim(),email=$('#rEmail').value.trim(),p1=$('#rPass').value,p2=$('#rPass2').value;
     if(gym.length<2)return alertBox('Gym names need at least 2 characters.');if(p1!==p2)return alertBox("The passwords don't match.");
     if(Object.values(managers).some(m=>m.gym.toLowerCase()===gym.toLowerCase()))return alertBox('That gym name is taken. Pick another.');
+    {const bad=await gymNameProblem(gym);if(bad)return alertBox(bad)}
     const{data,error}=await SB.auth.signUp({email,password:p1,options:{data:{gym},emailRedirectTo:SITE_URL}});
-    if(error)return alertBox(error.message);
+    if(error)return alertBox(/database error/i.test(error.message)?'That gym name is too close to an existing or reserved name. Pick another one.':error.message);
     if(!data.session){$('#view').innerHTML='<h1>Almost there!</h1><p>We sent a confirmation link to <b>'+esc(email)+'</b>. Click it, then <a data-go="login">log in</a>.</p>'}
     else{state.gymName=gym;save();nav('gym')}}
   if(f.id==='loginForm'){const{error}=await SB.auth.signInWithPassword({email:$('#lEmail').value.trim(),password:$('#lPass').value});
