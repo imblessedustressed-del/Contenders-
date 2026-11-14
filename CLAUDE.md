@@ -49,6 +49,7 @@ Contenders is a text-based boxing strategy game modeled on the old Web Boxing Le
 ## Fight plan fixes (owner-reported, Nov 13, 2026)
 - **Opponent scale now matches WeBL:** `opponent`/`opp` = 2 strong (over 2/3 endurance), 1 tired, 0 weak/exhausted (under 1/3) (`OPP_STATES` in plan.js, `oppState` in sim4.js). It was backwards (strong = 0). Our own templates and bot plans said `opponent >= tired` meaning "tired or worse"; all were rewritten to `opponent <= tired` (bot gym_state, botgen.ts, bots/*.py/json, the Clincher template, and managers' auto-added "Clincher" plan line only).
 - **Plan order now matches WeBL:** `choosePlan` reads lines in file order and the last true line wins; a numbered line "N)" (and the unnumbered lines under it) only counts from round N on, but position decides priority (lines used to be sorted by round number, so "1)" global lines at the bottom lost to everything). Only 1 manager plan and no bot plans had out-of-order numbers.
+- The Contenders News post about these two fixes (topic 39) was deleted on the owner's order the same night ("if they read that they're going to think it's all bugged"). Plan-parser bug fixes like these stay quiet unless the owner asks for a post.
 - Fight report intros now show each fighter's real weigh-in weight (`F.fightW`, his natural weight or the division limit if he sweats down) instead of the division limit. Simbot cards show a Weight row that flashes when height, build, strength or agility change it, plus "Can make" with his lightest division.
 
 ## Balance (owner, Nov 9, 2026)
