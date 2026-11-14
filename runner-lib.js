@@ -294,7 +294,7 @@ var RunnerLib = (() => {
   // ../supabase/functions/league-runner/lib.ts
   var sb;
   var MAX_FIGHTS = 250;
-  var HUMAN_LEAD = 12 * 60;
+  var HUMAN_LEAD = 3 * 24 * 60;
   var DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
   var chicago = () => {
     const p = Object.fromEntries(new Intl.DateTimeFormat("en-US", { timeZone: "America/Chicago", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(/* @__PURE__ */ new Date()).map((x) => [x.type, x.value]));
@@ -482,10 +482,16 @@ var RunnerLib = (() => {
           busy.add(pk(b.blue_user, b.blue_fid));
         });
         const bump = /* @__PURE__ */ new Map();
+        const lastDate = /* @__PURE__ */ new Map();
+        open.forEach((b) => {
+          [pk(b.red_user, b.red_fid), pk(b.blue_user, b.blue_fid)].forEach((k) => {
+            if (!lastDate.has(k) || lastDate.get(k) < b.fight_date) lastDate.set(k, b.fight_date);
+          });
+        });
         open.forEach((b) => {
           if (b.bot_only && b.fight_date > today) {
-            bump.set(pk(b.red_user, b.red_fid), { id: b.id, partner: pk(b.blue_user, b.blue_fid) });
-            bump.set(pk(b.blue_user, b.blue_fid), { id: b.id, partner: pk(b.red_user, b.red_fid) });
+            bump.set(pk(b.red_user, b.red_fid), { id: b.id, partner: pk(b.blue_user, b.blue_fid), date: b.fight_date });
+            bump.set(pk(b.blue_user, b.blue_fid), { id: b.id, partner: pk(b.red_user, b.red_fid), date: b.fight_date });
           }
         });
         const cancelIds = [];
@@ -659,16 +665,21 @@ var RunnerLib = (() => {
           if (!date) continue;
           const seen = new Set((h.F.hist || []).filter((x) => x.bout).map((x) => x.opp + "|" + x.ogym));
           const lastGym = ((h.F.hist || []).find((x) => x.bout) || {}).ogym;
-          const open2 = (b) => !busy.has(pk(b.u, b.k)) || bump.has(pk(b.u, b.k));
+          const before = (b) => busy.has(pk(b.u, b.k)) && (lastDate.get(pk(b.u, b.k)) || "9999") <= addDays(date, -3);
+          const bumpable = (b) => {
+            const x = bump.get(pk(b.u, b.k));
+            return !!x && x.date >= date && !before(b);
+          };
+          const open2 = (b) => !busy.has(pk(b.u, b.k)) || before(b) || bumpable(b);
           const cands = allBotList.filter((b) => b.F.div === h.F.div && b.reg === h.reg && open2(b) && fair(h, b));
           if (!cands.length) {
             unmatched.push(pk(h.u, h.k));
             log.push(`no fair opponent free for ${nm(h.F)} (${h.F.div}, ${AP(h.F)} AP, ${h.F.rating || 0}/${h.F.status || 0})`);
             continue;
           }
-          const score = (b) => gap(h, b) * 10 + (bump.has(pk(b.u, b.k)) ? 5 : 0) + (seen.has(b.F.name + "|" + b.gym) ? 3 : 0) + (b.gym === lastGym ? 1 : 0) + Math.random() * 0.9;
+          const score = (b) => gap(h, b) * 10 + (bumpable(b) ? 5 : before(b) ? 2 : 0) + (seen.has(b.F.name + "|" + b.gym) ? 3 : 0) + (b.gym === lastGym ? 1 : 0) + Math.random() * 0.9;
           cands.sort((x, y) => score(x) - score(y));
-          const opp = cands[0], bm = bump.get(pk(opp.u, opp.k));
+          const opp = cands[0], bm = bumpable(opp) ? bump.get(pk(opp.u, opp.k)) : void 0;
           if (bm) {
             cancelIds.push(bm.id);
             bump.delete(pk(opp.u, opp.k));
@@ -677,6 +688,8 @@ var RunnerLib = (() => {
             log.push(`bout ${bm.id} (bot vs bot) cancelled to make room for ${nm(h.F)}`);
           }
           book(h, opp, date, false);
+          lastDate.set(pk(opp.u, opp.k), date);
+          lastDate.set(pk(h.u, h.k), date);
         }
         const byDiv = {};
         if (midnight) free(true).filter((b) => !busy.has(pk(b.u, b.k))).forEach((b) => (byDiv[b.F.div + "|" + b.reg] ||= []).push(b));

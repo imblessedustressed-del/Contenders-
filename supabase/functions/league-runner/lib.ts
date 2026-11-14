@@ -5,7 +5,8 @@
 // 3) book next bouts: each human fighter vs a bot in his division and region (Contenders or Bare Knuckles, 25 rounds), and the remaining bots against each other,
 // on the division's next fight night: tonight's fighters get next week's night; for bots a night less than 24 hours away (tomorrow) skips to the week after.
 // Managers' fighters (owner, Nov 13: "that has to run completely smooth"): every pass, all day, books any manager's fighter without a scheduled bout
-// on his division's soonest night at least HUMAN_LEAD hours away. If every fair bot is booked, a later bot-vs-bot bout is cancelled to make room.
+// on his division's soonest night at least HUMAN_LEAD (3 days) away. A bot who already has an earlier bout (3+ days before) can take him too;
+// if every fair bot is booked for that night or later, a bot-vs-bot bout on or after that night is cancelled to make room.
 // This file is bundled by build.sh into /runner-lib.js on the site; the deployed edge function (index.ts) downloads it
 // and the engine (/engine-core.js) on every run, so pushing the site updates the runner. No redeploy needed.
 import { fightOne } from "./fight.ts";
@@ -14,7 +15,7 @@ import { challengeRelease, Release, resultRelease } from "./press.ts";
 
 let sb: any; // set by handle()
 const MAX_FIGHTS = 250; // per pass; the next pass picks up the rest
-const HUMAN_LEAD = 12 * 60; // minutes of notice a manager gets before his fight (fights start 10:45 PM)
+const HUMAN_LEAD = 3 * 24 * 60; // minutes of notice a manager gets before his fight (owner, Nov 13: at least 3 days so he can put a plan in; fights start 10:45 PM)
 const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
 const chicago = () => {
@@ -156,8 +157,10 @@ export async function handle(req: Request, client: any, C: any): Promise<Respons
       const open = await all(() => sb.from("bouts").select("id,red_user,red_fid,blue_user,blue_fid,bot_only,fight_date").eq("status", "scheduled"));
       const busy = new Set<string>(); open.forEach((b) => { busy.add(pk(b.red_user, b.red_fid)); busy.add(pk(b.blue_user, b.blue_fid)); });
       // bot-vs-bot bouts after tonight can be broken up to give a manager's fighter an opponent
-      const bump = new Map<string, { id: number; partner: string }>();
-      open.forEach((b) => { if (b.bot_only && b.fight_date > today) { bump.set(pk(b.red_user, b.red_fid), { id: b.id, partner: pk(b.blue_user, b.blue_fid) }); bump.set(pk(b.blue_user, b.blue_fid), { id: b.id, partner: pk(b.red_user, b.red_fid) }); } });
+      const bump = new Map<string, { id: number; partner: string; date: string }>();
+      const lastDate = new Map<string, string>(); // latest scheduled fight date per fighter
+      open.forEach((b) => { [pk(b.red_user, b.red_fid), pk(b.blue_user, b.blue_fid)].forEach((k) => { if (!lastDate.has(k) || lastDate.get(k)! < b.fight_date) lastDate.set(k, b.fight_date); }); });
+      open.forEach((b) => { if (b.bot_only && b.fight_date > today) { bump.set(pk(b.red_user, b.red_fid), { id: b.id, partner: pk(b.blue_user, b.blue_fid), date: b.fight_date }); bump.set(pk(b.blue_user, b.blue_fid), { id: b.id, partner: pk(b.red_user, b.red_fid), date: b.fight_date }); } });
       const cancelIds: number[] = [];
       // bot gyms keep PER_DIV active fighters per division in each region: retire the washed up, sign replacements
       const pubs = await all(() => sb.from("gym_public").select("user_id,data").in("user_id", Object.keys(S).filter((u) => P[u]?.is_bot)));
@@ -266,17 +269,20 @@ export async function handle(req: Request, client: any, C: any): Promise<Respons
         const date = humanNight(C, h.F.div, today, mins); if (!date) continue;
         const seen = new Set((h.F.hist || []).filter((x: any) => x.bout).map((x: any) => x.opp + "|" + x.ogym));
         const lastGym = ((h.F.hist || []).find((x: any) => x.bout) || {}).ogym;
-        const open2 = (b: any) => !busy.has(pk(b.u, b.k)) || bump.has(pk(b.u, b.k));
+        // a bot is open if he's free, or his last booked fight is 3+ days before this one, or his bot-vs-bot bout is on/after this night (it gets cancelled)
+        const before = (b: any) => busy.has(pk(b.u, b.k)) && (lastDate.get(pk(b.u, b.k)) || "9999") <= addDays(date, -3);
+        const bumpable = (b: any) => { const x = bump.get(pk(b.u, b.k)); return !!x && x.date >= date && !before(b); };
+        const open2 = (b: any) => !busy.has(pk(b.u, b.k)) || before(b) || bumpable(b);
         const cands = allBotList.filter((b) => b.F.div === h.F.div && b.reg === h.reg && open2(b) && fair(h, b));
         if (!cands.length) { unmatched.push(pk(h.u, h.k)); log.push(`no fair opponent free for ${nm(h.F)} (${h.F.div}, ${AP(h.F)} AP, ${h.F.rating || 0}/${h.F.status || 0})`); continue; }
-        const score = (b: any) => gap(h, b) * 10 + (bump.has(pk(b.u, b.k)) ? 5 : 0) + (seen.has(b.F.name + "|" + b.gym) ? 3 : 0) + (b.gym === lastGym ? 1 : 0) + Math.random() * 0.9;
+        const score = (b: any) => gap(h, b) * 10 + (bumpable(b) ? 5 : before(b) ? 2 : 0) + (seen.has(b.F.name + "|" + b.gym) ? 3 : 0) + (b.gym === lastGym ? 1 : 0) + Math.random() * 0.9;
         cands.sort((x, y) => score(x) - score(y));
-        const opp = cands[0], bm = bump.get(pk(opp.u, opp.k));
+        const opp = cands[0], bm = bumpable(opp) ? bump.get(pk(opp.u, opp.k)) : undefined;
         if (bm) { // break up his bot-vs-bot bout; the other bot is free again
           cancelIds.push(bm.id); bump.delete(pk(opp.u, opp.k)); bump.delete(bm.partner); busy.delete(bm.partner);
           log.push(`bout ${bm.id} (bot vs bot) cancelled to make room for ${nm(h.F)}`);
         }
-        book(h, opp, date, false);
+        book(h, opp, date, false); lastDate.set(pk(opp.u, opp.k), date); lastDate.set(pk(h.u, h.k), date);
       }
       // then the bots against each other, same rules: same division and region, different gyms
       const byDiv: Record<string, any[]> = {};
