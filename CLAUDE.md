@@ -68,6 +68,9 @@ Goal: every fighter type has a real chance; the better fight plan decides. Tune 
 - Bot fighters book under the same rules as managers' fighters: 24-hour wait after a fight, soonest division night at least 3 days away (`humanNight`, which looks up to 14 days ahead; an 8-day limit was a bug fixed the same night), same division/region, different gyms, fair 1-AP rule. Leftovers (odd numbers, no free fair opponent) get a second chance against a fair fighter from another gym whose last booked fight is 3+ days earlier, so nobody sits out a week. Managers' fighters still book first.
 - Bot gyms are eligible for every title, the same as managers' gyms, once title fights start (still waiting on the owner's go-ahead).
 
+## Fight-wait watchdog (owner, Nov 13, 2026: "scan for stuff like this... so a player never has to wait 2 weeks to play")
+- The runner books any unbooked manager's fighter within 15 minutes (every pass, all day). As a safety net, `public.waiting_managers()` (commissioner only) lists managers' fighters with no scheduled bout or a next bout more than 10 days away (with created, next_fight, days_away, last_fight). The commissioner check (trig_01PzwEEfv6ThZTSpwUEG5UMi, 4x a day) runs it first and reports any real case as URGENT with a proposed booking. A fighter with no bout whose last fight was today or yesterday is normal (24-hour wait).
+
 ## Fair matchmaking (owner, Nov 12, 2026)
 Never book two fighters whose total AP (str+kp+spd+agl+chn+cnd+hgt+cut) differ by more than 1. Among fair pairs: same status first, then closest rating (18/18 vs 18/18, then 17/18, 16/18...), then status 1 apart, etc. If no fair opponent is free he isn't booked (logged in league_runs.note). Applies to humans vs bots and bots vs bots (lib.ts booking).
 
