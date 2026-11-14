@@ -77,7 +77,7 @@ Never book two fighters whose total AP (str+kp+spd+agl+chn+cnd+hgt+cut) differ b
 ## Bare Knuckles region (live Nov 12, 2026, owner-approved)
 - Fighter field `region: 'bk'` (absent = regular Contenders region), chosen at creation; trigger `gym_state_region_lock` makes it permanent. `bouts.region` ('bk' or null), `bouts.rounds` 25 for BK.
 - Engine (`simulate`, BK when both prepped fighters have `bk`): 25 rounds; recovery 5% of lost endurance (10% normally) plus the usual rest bonus; no ringside doctor stoppage; both eyes swollen shut = forced clinch; going the distance: more knockdowns scored wins (a point deducted from the opponent counts as a knockdown), then more stuns, else Draw (`out.bkScore`). Rating/status cap 18 for BK fighters (28 regular).
-- Separate rankings (`frank:Div@bk`), champions (`champs:bk`; currentChamps keys BK belts as 'BK '+div), help page `help:bk`. Practice/Simbot: two BK fighters always go 25 rounds under BK rules.
+- Separate rankings (`frank:Div@bk`), champions (`champs:bk`; currentChamps keys BK belts as 'BK '+div), help page `help:bk`. Practice/Fight Lab: two BK fighters always go 25 rounds under BK rules.
 - BK bots: started as 128 (one per division in each of b4-bb, keys k0-k15), topped up to 5 per division per gym by the runner, from `bots/gen_bk.py 1225 <taken.json>` -> `bots/bots_bk.json` (loaded through pg_net from the site). Types rotate Grinder (ropes), Clincher, Flasher. Engine tests: Grinder beats Flasher, Clincher beats Grinder, Flasher about even with Clincher; Grinder mirrors draw often. Revisit with real data.
 
 ## Time zone (owner, Nov 12, 2026: "make sure everything's central time")
@@ -94,6 +94,9 @@ Keep our own formula; don't try to match WeBL's ("we're going to make it kind of
 
 ## Visitors (owner, Nov 12, 2026)
 Someone not logged in (no gym) who clicks any sidebar link is sent back to the home page. The home page buttons (Sign Up, Enter Your Gym, Try it Out) still work.
+
+## Fight Lab (owner, Nov 13, 2026: replaces Simbot)
+Route `lab` (old `simbot` links open it; sidebar "🥊 Fight Lab"; home "Try it Out"; visitors may use it). Two quick 70-point fighters (templates, copy one of your own fighters trimmed to 70, plan templates or your saved plans), division auto or picked, 3/6/12 rounds or BK 25. FIGHT! runs the real engine and plays a canvas highlight (30 s, 1 min or 2 min) driven by the play-by-play: engine events carry `a` (who did it) and `k` (p power, r regular, j jab, m miss, c counter, cl clinch, i injury, kd knockdown, st stun, ko, stop) and each round has `R.en` (endurance left); these tags don't touch the random stream (results verified identical). Also: full report, Run it 100 times, Share to Lab Chat. Lab Chat = table `lab_chat` (anyone reads, members post 280 chars unless gagged, authors delete), polled every 15 s. Code: the "Fight Lab" section of shell.html (labHTML, labDraw, labBeats).
 
 ## Installable app (Nov 12, 2026)
 PWA: manifest.webmanifest, icons/, sw.js (network-first, never caches Supabase), "Install the App" button in the sidebar (iPhone shows Add to Home Screen steps). Google Play via Capacitor later, once players come; Apple App Store skipped ($99/yr).

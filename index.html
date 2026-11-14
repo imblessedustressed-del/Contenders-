@@ -212,6 +212,28 @@ pre.plan{background:#fbfaf7;border:1px solid var(--line)}
  #side.open #boxes{display:grid!important;grid-template-columns:1fr 1fr;gap:4px 10px}
  #mast{justify-content:center}#mast .t{text-align:center}
 #main{padding:10px 14px 40px}#side{box-shadow:none}.box .hd{padding:0 6px 4px}.box a{padding:5px 6px}#mast .t1{font-size:28px}h1{font-size:24px}}
+
+#lab .labIntro{font-size:15px}
+.labGrid{display:grid;grid-template-columns:1fr 46px 1fr;gap:10px;align-items:start}
+.labVs{align-self:center;text-align:center;font:900 26px Impact,'Arial Black',sans-serif;color:#b31d1d}
+.labCard{border:2px solid var(--line);border-radius:10px;padding:10px 12px;background:#fffdf8}
+.labRed{border-color:#d9534f;box-shadow:inset 0 4px 0 #c62828}.labBlue{border-color:#5b7fe0;box-shadow:inset 0 4px 0 #1e4fd8}
+.labHd{font:900 14px Verdana,sans-serif;letter-spacing:2px;margin-bottom:6px}.labRed .labHd{color:#c62828}.labBlue .labHd{color:#1e4fd8}
+.labName{width:100%;box-sizing:border-box;font-size:17px;font-weight:bold;margin-bottom:6px}
+.labRow{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}.labRow select{flex:1;min-width:140px}
+.labStats{width:100%;border-collapse:collapse}.labStats td{padding:2px 4px;border-bottom:1px solid #eee5d3}.labStats td:last-child{text-align:right;white-space:nowrap}
+.labStats b{display:inline-block;min-width:26px;text-align:center}
+.labTot{font-weight:bold;margin:6px 0 2px}.labTot.ok{color:#2e7d32}
+.labCard select[data-lp]{width:100%;margin-top:6px}
+.labPlan{width:100%;box-sizing:border-box;font:13px/1.35 Consolas,Menlo,monospace;margin-top:6px}
+.labBar{display:flex;gap:14px;flex-wrap:wrap;margin:14px 0 6px}.labBar label{white-space:nowrap}
+.labGo{font-size:20px!important;padding:10px 28px!important;background:#b31d1d!important;color:#fff!important;border-radius:8px}
+.labCvWrap{background:#000;border-radius:10px;overflow:hidden;box-shadow:0 6px 24px rgba(0,0,0,.35)}#labCv{width:100%;height:auto;display:block}
+.labTick{min-height:120px;margin-top:8px;font-family:Verdana,sans-serif}.labTick .lt{margin:3px 0;opacity:.55}.labTick .lt:first-child{opacity:1;font-size:16px}
+.ltR{color:#b71c1c}.ltBl{color:#1a3fb0}.ltBig{color:#d35400;font-weight:bold}.ltB{color:#555;font-style:italic}.ltF{color:#000;font-weight:bold;font-size:18px!important}
+.labChat{max-height:320px;overflow-y:auto;border:1px solid var(--line);border-radius:8px;padding:6px 10px;background:#fffdf8}.labChat .lc{margin:6px 0;border-bottom:1px dotted #e3d6bf;padding-bottom:5px}
+.labSay{display:flex;gap:6px;margin-top:6px}.labSay input{flex:1}
+@media(max-width:760px){.labGrid{grid-template-columns:1fr}.labVs{font-size:22px}.labTick .lt:first-child{font-size:14px}}
 </style>
 </head>
 <body>
@@ -230,7 +252,7 @@ pre.plan{background:#fbfaf7;border:1px solid var(--line)}
   <div id="boxes">
   <div class="box"><div class="hd">Main</div><a data-v="home">Home</a><a data-v="register">Register</a><a data-v="aup">Acceptable Use Policy</a></div>
   <div class="box"><div class="hd">Your Gym</div><a data-v="gym">Active Fighters</a><a data-v="plans">Fight Plans</a><a data-v="fight">Practice Fights</a><a data-v="create">Create a Fighter</a><a data-v="short">Short Gym</a><a data-v="changegym">Change Gym</a><a data-v="desc">Description</a><a data-v="login">Login</a><a data-v="logout">Logout</a></div>
-  <div class="box"><div class="hd">Community</div><a data-v="forums">Contenders Forums</a><a data-v="msgs" id="msgLink">Messages</a><a data-v="forum:press">Press Releases</a><a data-v="simbot">Simbot</a></div>
+  <div class="box"><div class="hd">Community</div><a data-v="forums">Contenders Forums</a><a data-v="msgs" id="msgLink">Messages</a><a data-v="forum:press">Press Releases</a><a data-v="lab">🥊 Fight Lab</a></div>
   <div class="box"><div class="hd">Hall of Records</div><a data-v="champs">Champions</a><a data-v="frank">Fighter Rankings</a><a data-v="grank">Gym Rankings</a><a data-v="ppv">Pay-Per-View</a><a data-v="results">Fight Results</a><a data-v="fcards">Fight Cards</a><a data-v="sched">Fight Schedule</a><a data-v="discarded">Discarded Fighters</a><a data-v="search">Search Contenders</a></div>
   <div class="box"><div class="hd">Contenders Help &amp; Tools</div><a data-v="help">Help Pages</a><a data-v="newbie">Newbie Files</a></div>
   <div class="box"><div class="hd">Other Stuff</div><a data-v="forgot">Forgotten Password</a><a data-v="changepw">Change Email/Passwd.</a></div>
@@ -651,6 +673,7 @@ function simulate(FA,FB,rounds){
       }
     }
     R.cond=S.map(x=>condText(x));
+    R.en=S.map(x=>Math.max(0,+(x.E/x.E0).toFixed(3))); // endurance left this round (for the Fight Lab arena)
     /* recovery */
     S.forEach((x,i)=>{x.endFrac=x.E/x.E0;const lost=x.E0-x.E;x.E=Math.min(x.E0,x.E+(BK?.05:.1)*lost+.02*eff[i].rest*lost)});
     out.rounds.push(R);
@@ -704,29 +727,29 @@ function pbp(S,PU,eff,st,kd,injNews,ended){
   const at=()=>Math.floor(rand()*end);
   for(let i=0;i<2;i++){const X=S[i],Y=S[1-i],p=PU[i],e=eff[i],o=eff[1-i];
     const tg=()=>e.tgt==='Body'||(e.tgt==='Opp'&&rand()<.35)?pick(TGT_B):pick(TGT_H);
-    for(let k=0;k<p.pl;k++){const pd=`${pick(PW)} to the ${tg()}`;evs.push({t:at(),html:rand()<.25?`<b>${X.n} hammers ${Y.n} with a nasty ${pd}!</b>`:pick([`<b>${X.n} lands ${an(pd)}.</b>`,`<b>${X.n} connects with ${an(pd)}.</b>`,`<b>${X.n} scores with ${an(pd)}.</b>`])})}
-    for(let k=0;k<p.rl;k++){const pd=`${pick(RT)} to the ${tg()}`;evs.push({t:at(),html:pick([`<b>${X.n} lands ${an(pd)}.</b>`,`<b>${X.n} gets through with ${an(pd)}.</b>`])+(rand()<.3?` ${Y.n} walks through it.`+(Y.msgs&&Y.msgs.sneer?` ${Y.n} sneers, "${escS(Y.msgs.sneer)}"`:''):'')})}
-    for(let k=0;k<p.jl;k++)if(rand()<.3)evs.push({t:at(),html:pick([`<b>${X.n} snaps a jab into ${Y.n}'s face.</b>`,`<b>${X.n} pops ${Y.n} with a stiff jab.</b>`,`<b>${X.n} lands a sharp jab.</b>`])});
+    for(let k=0;k<p.pl;k++){const pd=`${pick(PW)} to the ${tg()}`;evs.push({a:i,k:'p',t:at(),html:rand()<.25?`<b>${X.n} hammers ${Y.n} with a nasty ${pd}!</b>`:pick([`<b>${X.n} lands ${an(pd)}.</b>`,`<b>${X.n} connects with ${an(pd)}.</b>`,`<b>${X.n} scores with ${an(pd)}.</b>`])})}
+    for(let k=0;k<p.rl;k++){const pd=`${pick(RT)} to the ${tg()}`;evs.push({a:i,k:'r',t:at(),html:pick([`<b>${X.n} lands ${an(pd)}.</b>`,`<b>${X.n} gets through with ${an(pd)}.</b>`])+(rand()<.3?` ${Y.n} walks through it.`+(Y.msgs&&Y.msgs.sneer?` ${Y.n} sneers, "${escS(Y.msgs.sneer)}"`:''):'')})}
+    for(let k=0;k<p.jl;k++)if(rand()<.3)evs.push({a:i,k:'j',t:at(),html:pick([`<b>${X.n} snaps a jab into ${Y.n}'s face.</b>`,`<b>${X.n} pops ${Y.n} with a stiff jab.</b>`,`<b>${X.n} lands a sharp jab.</b>`])});
     const miss=(p.pt-p.pl)+(p.rt-p.rl);
     for(let k=0;k<miss;k++)if(rand()<.3){const pd=`${pick(rand()<.5?PW:RT)} to the ${tg()}`;
-      if(o.style==='clinch'&&rand()<.5)evs.push({t:at(),html:pick([`${X.n} tries to attack, but ${Y.n} ties him up until the referee separates them.`,`${X.n} throws ${an(pd)}, but ${Y.n} grabs on until the referee breaks them up.`])});
-      else if(o.style==='counter'&&rand()<.4){const cd=`${pick(RT)} to the ${pick(TGT_H)}`;evs.push({t:at(),html:`${X.n} throws ${an(pd)} but <b>${Y.n} slips it and fires back with ${an(cd)}.</b>`})}
-      else evs.push({t:at(),html:pick([`${X.n} throws ${an(pd)}, but ${Y.n} slips it.`,`${X.n} reaches with ${an(pd)}, but it falls short.`,`${X.n} tries ${an(pd)}, but it's blocked.`,`${X.n} swings ${an(pd)} and misses badly.`,`${X.n} launches ${an(pd)}, but there's nothing on it.`])})}
-    for(const n of injNews[1-i]){evs.push({t:at(),html:`<span class="r">${n.agg?`The damage gets worse: ${Y.n} now has ${injText(n.inj)}!`:`${Y.n} now has ${injText(n.inj)}!`}</span>`})}
+      if(o.style==='clinch'&&rand()<.5)evs.push({a:i,k:'cl',t:at(),html:pick([`${X.n} tries to attack, but ${Y.n} ties him up until the referee separates them.`,`${X.n} throws ${an(pd)}, but ${Y.n} grabs on until the referee breaks them up.`])});
+      else if(o.style==='counter'&&rand()<.4){const cd=`${pick(RT)} to the ${pick(TGT_H)}`;evs.push({a:1-i,k:'c',t:at(),html:`${X.n} throws ${an(pd)} but <b>${Y.n} slips it and fires back with ${an(cd)}.</b>`})}
+      else evs.push({a:i,k:'m',t:at(),html:pick([`${X.n} throws ${an(pd)}, but ${Y.n} slips it.`,`${X.n} reaches with ${an(pd)}, but it falls short.`,`${X.n} tries ${an(pd)}, but it's blocked.`,`${X.n} swings ${an(pd)} and misses badly.`,`${X.n} launches ${an(pd)}, but there's nothing on it.`])})}
+    for(const n of injNews[1-i]){evs.push({a:i,k:'i',t:at(),html:`<span class="r">${n.agg?`The damage gets worse: ${Y.n} now has ${injText(n.inj)}!`:`${Y.n} now has ${injText(n.inj)}!`}</span>`})}
     /* stuns suffered by Y come from X's damage: st[1-i] */
     const sY=st[i];
     if(sY>0&&sY<99){
-      for(let k=0;k<kd[i];k++){const n=3+Math.floor(rand()*6);evs.push({t:at(),html:`<p class="r b">${X.n} lands a tremendous ${pick(PW)} to the head and ${Y.n} goes down!!</p>${NUMS.slice(0,n).map(w=>`<p class="r">${w}!</p>`).join('')}<p>${Y.n} is back on his feet at ${n}.</p>${X.msgs&&X.msgs.taunt?`<p>${X.n} taunts, "${escS(X.msgs.taunt)}"</p>`:''}`})}
-      if(sY%2)evs.push({t:at(),html:`<b>${X.n} wallops ${Y.n} with a big ${pick(PW)} to the ${pick(TGT_H)}!! The crowd is on its feet!!</b> <span class="r">${Y.n} ${pick(['staggers into the ropes!!','is wobbled!!','is badly hurt!!'])}</span>`});
+      for(let k=0;k<kd[i];k++){const n=3+Math.floor(rand()*6);evs.push({a:i,k:'kd',t:at(),html:`<p class="r b">${X.n} lands a tremendous ${pick(PW)} to the head and ${Y.n} goes down!!</p>${NUMS.slice(0,n).map(w=>`<p class="r">${w}!</p>`).join('')}<p>${Y.n} is back on his feet at ${n}.</p>${X.msgs&&X.msgs.taunt?`<p>${X.n} taunts, "${escS(X.msgs.taunt)}"</p>`:''}`})}
+      if(sY%2)evs.push({a:i,k:'st',t:at(),html:`<b>${X.n} wallops ${Y.n} with a big ${pick(PW)} to the ${pick(TGT_H)}!! The crowd is on its feet!!</b> <span class="r">${Y.n} ${pick(['staggers into the ropes!!','is wobbled!!','is badly hurt!!'])}</span>`});
     }
   }
   evs.sort((a,b)=>a.t-b.t);
   if(ended){const W=S[ended.w],L=S[1-ended.w];
-    if(ended.type==='KO')evs.push({t:ended.t,html:`<p class="r b">${W.n} lands a tremendous ${pick(['right','left hook','uppercut','overhand right'])} blow to the head and ${L.n} collapses!!</p>${NUMS.map(w=>`<p class="r">${w}!</p>`).join('')}<p class="r b">He's out!!!</p>${W.msgs&&W.msgs.gloat?`<p>${W.n} gloats, "${escS(W.msgs.gloat)}"</p>`:''}`});
-    else if(ended.why==='the referee stopped it')evs.push({t:ended.t,html:`<p class="r b">${L.n} is taking a beating and the referee steps in to stop it!!</p>${W.msgs&&W.msgs.tko?`<p>${W.n}: "${escS(W.msgs.tko)}"</p>`:''}`});
-    else if(ended.dq)evs.push({t:ended.t,html:`<p class="r b">The referee has seen enough fouling. ${L.n} is disqualified!!</p>`});
-    else if(/exhausted/.test(ended.why))evs.push({t:ended.t,html:`<p class="r b">${L.n} can barely lift his arms. He's too exhausted to go on and the referee waves it off!!</p>`});
-    else evs.push({t:ended.t,html:`<p class="r b">The referee stops the fight! ${escS(ended.why)}.</p>`});
+    if(ended.type==='KO')evs.push({a:ended.w,k:'ko',t:ended.t,html:`<p class="r b">${W.n} lands a tremendous ${pick(['right','left hook','uppercut','overhand right'])} blow to the head and ${L.n} collapses!!</p>${NUMS.map(w=>`<p class="r">${w}!</p>`).join('')}<p class="r b">He's out!!!</p>${W.msgs&&W.msgs.gloat?`<p>${W.n} gloats, "${escS(W.msgs.gloat)}"</p>`:''}`});
+    else if(ended.why==='the referee stopped it')evs.push({a:ended.w,k:'stop',t:ended.t,html:`<p class="r b">${L.n} is taking a beating and the referee steps in to stop it!!</p>${W.msgs&&W.msgs.tko?`<p>${W.n}: "${escS(W.msgs.tko)}"</p>`:''}`});
+    else if(ended.dq)evs.push({a:ended.w,k:'stop',t:ended.t,html:`<p class="r b">The referee has seen enough fouling. ${L.n} is disqualified!!</p>`});
+    else if(/exhausted/.test(ended.why))evs.push({a:ended.w,k:'stop',t:ended.t,html:`<p class="r b">${L.n} can barely lift his arms. He's too exhausted to go on and the referee waves it off!!</p>`});
+    else evs.push({a:ended.w,k:'stop',t:ended.t,html:`<p class="r b">The referee stops the fight! ${escS(ended.why)}.</p>`});
   }
   /* idle gaps */
   const lines=[];let last=0;
@@ -747,7 +770,7 @@ function condText(x,after){
 /* ================= SHARED DATA (Supabase: accounts, forums, messages) ================= */
 cleanSlate();
 const SB_URL='https://ojsphhzgzbxmnfcbitqb.supabase.co',SB_KEY='sb_publishable_SWO9WhiSkoVhflY5CmY08A_hlqCEJSi';
-const BUILD='1794616528';
+const BUILD='1794617064';
 /* A tab left open on an older build must not save over newer data: if the site has been updated, reload before anything else is saved. */
 let staleBuild=false;
 async function checkBuild(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
@@ -889,11 +912,258 @@ function render(){
   const P={home:homeHTML,register:registerHTML,aup:aupHTML,gym:gymHTML,plans:plansHTML,fight:fightHTML,create:createHTML,cards:cardsHTML,
     retired:retiredHTML,clean:cleanHTML,short:shortHTML,changegym:changeGymHTML,desc:descHTML,
     login:loginHTML,logout:logoutHTML,forgot:forgotHTML,newpass:newPassHTML,changepw:changePwHTML,forums:forumsHTML,forum:()=>forumHTML(arg),topic:()=>topicHTML(arg),newtopic:()=>newTopicHTML(arg),msgs:()=>msgsHTML(arg),
-    simbot:simbotHTML,champs:()=>champsHTML(arg),frank:()=>frankHTML(arg),grank:grankHTML,results:resultsHTML,fcards:fightCardsHTML,sched:schedHTML,
+    simbot:labHTML,lab:labHTML,champs:()=>champsHTML(arg),frank:()=>frankHTML(arg),grank:grankHTML,results:resultsHTML,fcards:fightCardsHTML,sched:schedHTML,
     discarded:()=>`<h1>Discarded Fighters</h1><p>No fighters have been discarded.</p>`,search:searchHTML,help:()=>helpHTML(arg),newbie:newbieHTML,funding:fundingHTML,retiregym:retireGymHTML,
     edit:()=>planEditHTML(arg),plan:()=>planEditHTML(arg),pf:()=>planFormHTML(arg),rec:()=>recordHTML(arg),gympub:()=>gymPubHTML(arg),gymret:()=>gymRetHTML(arg),opub:()=>oFighterHTML(arg),rpub:()=>retFighterHTML(arg),cdiv:()=>cdivHTML(arg),pub:()=>pubHTML(arg),train:()=>trainHTML(arg),report:()=>savedReportHTML(arg),lreport:()=>leagueReportHTML(arg),ppv:ppvHTML};
   $('#view').innerHTML=`<div id="flash" class="note cr" style="display:none;margin-bottom:10px"></div>`+(P[base]||homeHTML)();
+  if(base==='lab'||base==='simbot')setTimeout(labMount,0);else if(labAnim){labAnim.stop=true;labAnim=null}
 }
+
+/* ---------- Fight Lab (owner, Nov 13, 2026: replaces Simbot) ----------
+   Anyone (even a visitor) builds two 70-point fighters, writes their plans and watches an animated
+   highlight of the fight, driven by the real engine's play-by-play. Nothing here touches any record. */
+const LAB_ST=[['str','Strength'],['kp','KO Punch'],['spd','Speed'],['agl','Agility'],['chn','Chin'],['cnd','Conditioning'],['hgt','Height']];
+let LAB=null,labChat=null,labChatBusy=false,labPoll=null,labAnim=null;
+function labMk(name,pre,home){const[st,pl]=PRESETS[pre];return{name,nick:'',home,build:'normal',...st,plan:pl,planName:pre,rec:[0,0,0,0],hist:[],rating:0,status:0}}
+function labState(){if(!LAB)LAB={A:labMk('Red Rocket','Slugger','Detroit, Michigan'),B:labMk('Blue Thunder','Dancer','Philadelphia, Pennsylvania'),div:'',rounds:'12',speed:30,fight:null,bout:null};return LAB}
+const labDiv=()=>{const L=labState();if(L.div)return L.div;const need=Math.max(minWeight(L.A),minWeight(L.B));return(DIVS.find(d=>d[1]>=need)||DIVS[DIVS.length-1])[0]};
+function labErr(){const L=labState();
+  for(const c of['A','B']){const F=L[c],n=F.name.trim()||(c==='A'?'The red corner':'The blue corner'),u=used(F);
+    if(u!==POOL)return`${n} has ${u} points. He needs exactly ${POOL}.`;
+    if(F.kp>Math.floor(F.str/3))return`${n} has too much KO Punch for his Strength (3 Strength per point).`;
+    const e=parsePlan(F.plan).errors;if(e.length)return`${n}'s fight plan, line ${e[0].line}: ${e[0].msg}`}
+  return''}
+function labFighters(){const L=labState(),bk=L.rounds==='bk';
+  return['A','B'].map(c=>({...L[c],name:L[c].name.trim()||(c==='A'?'Red Rocket':'Blue Thunder'),region:bk?'bk':undefined}))}
+function labCornerHTML(c){const L=labState(),F=L[c],u=used(F);
+  const plans=[...Object.keys(PRESETS).map(k=>['t:'+k,k+' (template)'])];
+  if(ME){ensurePlans();Object.keys(state.plans).sort().forEach(k=>{if(!PRESETS[k]||state.plans[k]!==PRESETS[k][1])plans.push(['m:'+k,k+' (my plan)'])})}
+  return`<div class="labCard ${c==='A'?'labRed':'labBlue'}" id="labCard${c}">
+  <div class="labHd">${c==='A'?'RED CORNER':'BLUE CORNER'}</div>
+  <input class="labName" data-lf="name" data-c="${c}" maxlength="40" value="${esc(F.name)}" aria-label="Name">
+  <div class="labRow"><select data-lq="${c}"><option value="">Quick build...</option>${Object.keys(PRESETS).map(k=>`<option>${esc(k)}</option>`).join('')}</select>
+  ${ME&&ROSTER().length?`<select data-lmine="${c}"><option value="">Copy one of my fighters...</option>${ROSTER().map(k=>`<option value="${k}">${esc(state[k].name)}</option>`).join('')}</select>`:''}</div>
+  <table class="labStats">${LAB_ST.map(([k,lab])=>`<tr><td>${lab}</td><td><button class="pm" data-lpm="${k}" data-c="${c}" data-d="-1">-</button><b>${F[k]}</b><button class="pm" data-lpm="${k}" data-c="${c}" data-d="1">+</button>${k==='hgt'?` <span class="small mute">${Math.floor(HT(F)/12)}'${HT(F)%12}"</span>`:''}</td></tr>`).join('')}
+  <tr><td>Cut Resistance</td><td><select data-lf="cut" data-c="${c}">${[1,2,3].map(v=>`<option${+F.cut===v?' selected':''}>${v}</option>`).join('')}</select></td></tr>
+  <tr><td>Build</td><td><select data-lf="build" data-c="${c}">${Object.keys(BUILDS).map(b=>`<option${(F.build||'normal')===b?' selected':''}>${b}</option>`).join('')}</select></td></tr></table>
+  <p class="labTot ${u===POOL?'ok':'cr'}">${u} / ${POOL} points ${u===POOL?'✓':u<POOL?`(${POOL-u} left)`:`(${u-POOL} too many)`}</p>
+  <p class="small mute">${natWeight(F)} lb, can make ${minWeight(F)} lb. KO Punch needs 3 Strength per point.</p>
+  <select data-lp="${c}"><option value="">Load a fight plan...</option>${plans.map(([v,l])=>`<option value="${esc(v)}">${esc(l)}</option>`).join('')}</select>
+  <textarea class="labPlan" data-lf="plan" data-c="${c}" rows="7" spellcheck="false" aria-label="Fight plan">${esc(F.plan)}</textarea>
+  <p class="small"><a data-go="help:plans">How fight plans work</a></p>
+  </div>`}
+function labBarHTML(){const L=labState(),o=(arr,v)=>arr.map(([a,b])=>`<option value="${a}"${String(a)===String(v)?' selected':''}>${b}</option>`).join('');
+  return`<label>Division <select data-lset="div"><option value="">Auto (${esc(labDiv())})</option>${o(DIVS.map(([d,l])=>[d,`${d} (${l})`]),L.div)}</select></label>
+  <label>Bout <select data-lset="rounds">${o([['3','3 rounds'],['6','6 rounds'],['12','12 rounds'],['bk','Bare Knuckles, 25 rounds']],L.rounds)}</select></label>
+  <label>Highlight <select data-lset="speed">${o([[30,'30 seconds'],[60,'1 minute'],[120,'2 minutes']],L.speed)}</select></label>`}
+function labHTML(){const L=labState();
+  return`<div id="lab"><h1>Fight Lab</h1>
+  <p class="labIntro">Build two fighters with ${POOL} points each, give them fight plans, and watch them fight it out. Test a plan, settle an argument, or just have fun. Nothing here counts on any record.</p>
+  <div class="labGrid">${labCornerHTML('A')}<div class="labVs">VS</div>${labCornerHTML('B')}</div>
+  <div class="labBar" id="labBar">${labBarHTML()}</div>
+  <p class="labBtns"><button class="labGo" data-lab="fight">🥊 FIGHT!</button> <button data-lab="sim">Run it 100 times</button> <span class="cr" id="labErr"></span></p>
+  <div id="labStage"${L.fight?'':' style="display:none"'}><div class="labCvWrap"><canvas id="labCv" width="960" height="540"></canvas></div>
+  <div id="labTick" class="labTick"></div>
+  <p class="labCtl"><button data-lab="pause" id="labPause">Pause</button> <button data-lab="skip">Skip to the end</button> <button data-lab="replay">Watch again</button> <button data-lab="report">Full report</button>${ME?' <button data-lab="share">Share to Lab Chat</button>':''}</p>
+  <div id="labRep"></div></div>
+  <div id="labSim"></div>
+  <h2>Lab Chat</h2><div id="labChat" class="labChat"><p class="mute">Loading...</p></div>
+  ${ME?`<div class="labSay"><input id="labMsg" maxlength="280" placeholder="Say something to the Lab..." autocomplete="off"><button data-lab="send">Send</button></div>`:`<p class="small"><a data-go="register">Sign up</a> or <a data-go="login">log in</a> to chat.</p>`}
+  </div>`}
+function labRefresh(c){const el=$('#labCard'+c);if(el)el.outerHTML=labCornerHTML(c);const b=$('#labBar');if(b)b.innerHTML=labBarHTML()}
+function labMount(){const root=$('#lab');if(!root)return;
+  root.addEventListener('click',labClick);root.addEventListener('change',labChange);root.addEventListener('input',labInput);
+  const m=$('#labMsg');if(m)m.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();labSend()}});
+  labLoadChat();if(!labPoll)labPoll=setInterval(()=>{if(view==='lab')labLoadChat();else{clearInterval(labPoll);labPoll=null}},15000);
+  const L=labState();if(L.fight&&!labAnim)labDraw(1e9);
+}
+function labInput(e){const el=e.target,c=el.dataset.c;if(el.dataset.lf==='name'||el.dataset.lf==='plan'){labState()[c][el.dataset.lf]=el.value;if(el.dataset.lf==='plan')labState()[c].planName='Custom'}}
+function labChange(e){const el=e.target,L=labState(),c=el.dataset.c;
+  if(el.dataset.lf==='cut'||el.dataset.lf==='build'){L[c][el.dataset.lf]=el.dataset.lf==='cut'?+el.value:el.value;labRefresh(c);return}
+  if(el.dataset.lq){const k=el.value;if(!k)return;const[st,pl]=PRESETS[k];Object.assign(L[el.dataset.lq],st,{plan:pl,planName:k});labRefresh(el.dataset.lq);return}
+  if(el.dataset.lmine){const F=state[el.value];if(!F)return;const t=L[el.dataset.lmine];
+    ['str','kp','spd','agl','chn','cnd','hgt','cut','build','name','home'].forEach(k=>t[k]=F[k]);t.plan=F.plan;t.planName=F.planName;
+    // trained fighters can have more than 70 points; the Lab is a 70-point game, so trim the extras off his best stats
+    let over=used(t)-POOL;while(over>0){const k=['str','spd','agl','chn','cnd','kp'].sort((a,b)=>t[b]-t[a])[0];t[k]--;over--}
+    if(t.kp>Math.floor(t.str/3))t.kp=Math.floor(t.str/3);labRefresh(el.dataset.lmine);return}
+  if(el.dataset.lp){const v=el.value,c2=el.dataset.lp;if(!v)return;const n=v.slice(2);L[c2].plan=v[0]==='t'?PRESETS[n][1]:state.plans[n];L[c2].planName=n;labRefresh(c2);return}
+  if(el.dataset.lset){const k=el.dataset.lset;L[k]=k==='speed'?+el.value:el.value;const b=$('#labBar');if(b)b.innerHTML=labBarHTML()}
+}
+function labClick(e){const t=e.target.closest('button');if(!t)return;const L=labState();
+  if(t.dataset.lpm){const c=t.dataset.c,k=t.dataset.lpm,F=L[c],d=+t.dataset.d;
+    const lo=MINS[k]??0,hi=k==='hgt'?21:MAX;F[k]=Math.max(lo,Math.min(hi,F[k]+d));
+    if(k==='str'&&F.kp>Math.floor(F.str/3))F.kp=Math.floor(F.str/3);if(k==='kp'&&F.kp>Math.floor(F.str/3))F.kp=Math.floor(F.str/3);
+    labRefresh(c);return}
+  const a=t.dataset.lab;if(!a)return;
+  if(a==='fight'||a==='replay'&&!L.fight)return labFight();
+  if(a==='replay')return labPlay();
+  if(a==='pause'){if(!labAnim)return;labAnim.paused=!labAnim.paused;if(!labAnim.paused)labAnim.t0=performance.now()-labAnim.at*1000;t.textContent=labAnim.paused?'Play':'Pause';return}
+  if(a==='skip'){if(labAnim){labAnim.stop=true;labAnim=null}labDraw(1e9);labTickAll();return}
+  if(a==='report'){const r=$('#labRep');if(r.innerHTML){r.innerHTML='';return}r.innerHTML=`<div class="rep">${reportHTML(L.fight,L.bout,L.fight.rounds.length)}</div>`;return}
+  if(a==='sim')return labSim();
+  if(a==='send')return labSend();
+  if(a==='share')return labShare();
+}
+function labFight(){const L=labState(),err=labErr();$('#labErr').textContent=err;if(err)return;
+  const[A,B]=labFighters(),div=labDiv(),bk=L.rounds==='bk',rounds=bk?25:+L.rounds;
+  const d=new Date();
+  L.bout={rounds,belt:null,div,done:true,gym:'Fight Lab',gyms:['Fight Lab','Fight Lab'],ids:['labA','labB'],recs:[[0,0,0,0],[0,0,0,0]],
+    date:d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'}).replace(/,/g,'').replace(/(\d+) (\d{4})$/,'$1, $2')};
+  L.fight=simulate(prepFighter(A,A,B,div),prepFighter(B,A,B,div),rounds);
+  L.names=[A.name,B.name];L.plans=[A.planName,B.planName];
+  $('#labStage').style.display='';$('#labRep').innerHTML='';$('#labSim').innerHTML='';
+  $('#labStage').scrollIntoView({behavior:'smooth',block:'start'});labPlay();
+}
+function labSim(){const L=labState(),err=labErr();$('#labErr').textContent=err;if(err)return;
+  const[A,B]=labFighters(),div=labDiv(),rounds=L.rounds==='bk'?25:+L.rounds,PA=prepFighter(A,A,B,div),PB=prepFighter(B,A,B,div),c={w0:0,k0:0,w1:0,k1:0,d:0};
+  for(let i=0;i<100;i++){const r=simulate(PA,PB,rounds).result;if(r.w==null)c.d++;else{c['w'+r.w]++;if(!r.decision)c['k'+r.w]++}}
+  $('#labSim').innerHTML=`<h2>100 fights</h2><table class="grid"><tr><th></th><th>Wins</th><th>By stoppage</th><th>By decision</th></tr>
+  <tr><td class="red">${esc(A.name)}</td><td class="n">${c.w0}</td><td class="n">${c.k0}</td><td class="n">${c.w0-c.k0}</td></tr>
+  <tr><td class="navy">${esc(B.name)}</td><td class="n">${c.w1}</td><td class="n">${c.k1}</td><td class="n">${c.w1-c.k1}</td></tr>
+  <tr><td>Draws</td><td class="n">${c.d}</td><td></td><td></td></tr></table>`;
+  $('#labSim').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+/* --- the highlight reel --- */
+const labTxt=h=>String(h).replace(/<\/p>\s*<p[^>]*>/g,' ').replace(/<[^>]+>/g,'').replace(/&amp;/g,'&').replace(/&quot;/g,'"').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/\s+/g,' ').trim();
+function labBeats(f){const L=labState(),sched=f.rounds.length&&L.bout?L.bout.rounds:12,per=Math.max(1.8,L.speed/sched);
+  const beats=[],rounds=[];let t=.6;
+  f.rounds.forEach((R,ri)=>{const last=ri===f.rounds.length-1,end=last&&f.result&&!f.result.decision?f.result.t:180;
+    const ev=(R.lines||[]).filter(x=>x.k);
+    const must=ev.filter(x=>['kd','st','ko','stop','c'].includes(x.k)),inj=ev.filter(x=>x.k==='i').slice(0,1);
+    const room=Math.max(2,Math.round(per*2.4)-must.length-inj.length);
+    const pool=ev.filter(x=>['p','r','j','m','cl'].includes(x.k)).map(x=>({x,s:(x.k==='p'?3:x.k==='r'?2:1)*Math.random()+Math.random()})).sort((a,b)=>b.s-a.s).slice(0,room).map(o=>o.x);
+    const pick=[...must,...inj,...pool].sort((a,b)=>a.t-b.t);
+    const start=t;let extra=0;
+    pick.forEach(x=>{const at=start+.25+(Math.min(x.t,end)/Math.max(end,1))*(per-.5)+extra;
+      beats.push({at,k:x.k,a:x.a,txt:labTxt(x.html),round:R.n});
+      if(x.k==='kd')extra+=1.6;else if(x.k==='st')extra+=.5});
+    const dur=per+extra;rounds.push({n:R.n,start,end:start+dur,R,last,clockEnd:end});t=start+dur;
+    if(!last||f.result.decision){beats.push({at:t,k:'bell',round:R.n,txt:R.cc?`End of round ${R.n}. The judges: ${R.cards.map(c=>c.join('-')).join(', ')}.`:`End of round ${R.n}.`});t+=1}
+  });
+  const r=f.result,W=r.w==null?null:L.names[r.w];
+  beats.push({at:t+.2,k:'final',txt:W?`${W} wins by ${r.type}${r.decision?'':' in round '+r.round}!`:`It's a ${r.type.toLowerCase()}!`});
+  return{beats,rounds,total:t+4};
+}
+function labPlay(){const L=labState();if(!L.fight)return;if(labAnim)labAnim.stop=true;
+  $('#labTick').innerHTML='';$('#labPause').textContent='Pause';
+  const tl=labBeats(L.fight);labAnim={tl,t0:performance.now(),at:0,shown:0,paused:false,stop:false};const me=labAnim;
+  const step=now=>{if(me.stop)return;if(!me.paused)me.at=(now-me.t0)/1000;
+    while(me.shown<tl.beats.length&&tl.beats[me.shown].at<=me.at)labTick(tl.beats[me.shown++]);
+    labDraw(me.at,tl);if(me.at<tl.total)requestAnimationFrame(step);else if(labAnim===me)labAnim=null};
+  requestAnimationFrame(step);
+}
+function labTick(b){const el=$('#labTick');if(!el||!b.txt)return;const p=document.createElement('p');
+  p.className='lt '+(b.k==='final'?'ltF':b.k==='bell'?'ltB':['kd','ko','stop','st'].includes(b.k)?'ltBig':b.a===0?'ltR':b.a===1?'ltBl':'');
+  p.textContent=b.txt;el.prepend(p);while(el.children.length>5)el.lastChild.remove()}
+function labTickAll(){const L=labState();if(!L.fight)return;const tl=labBeats(L.fight),el=$('#labTick');el.innerHTML='';
+  tl.beats.filter(b=>['kd','ko','stop','final'].includes(b.k)).slice(-5).forEach(labTick)}
+// stable crowd
+const LAB_CROWD=(()=>{let s=7;const r=()=>(s=(s*16807)%2147483647)/2147483647;return Array.from({length:260},()=>({x:r()*960,y:40+r()*170,c:Math.floor(r()*5),f:r()}))})();
+function labDraw(at,tl){const cv=$('#labCv');if(!cv)return;const g=cv.getContext('2d'),L=labState(),f=L.fight;if(!f)return;
+  tl=tl||labBeats(f);at=Math.min(at,tl.total);
+  const W=960,H=540,cx=W/2,floor=430;
+  const cur=tl.rounds.find(r=>at>=r.start&&at<r.end)||(at<tl.rounds[0].start?tl.rounds[0]:tl.rounds[tl.rounds.length-1]);
+  const recent=k=>tl.beats.filter(b=>b.k===k&&b.at<=at&&at-b.at<3);
+  const fin=at>=tl.beats[tl.beats.length-1].at;
+  const flash=tl.beats.some(b=>(b.k==='kd'||b.k==='ko')&&at>=b.at&&at-b.at<1.2);
+  // arena
+  const bg=g.createLinearGradient(0,0,0,H);bg.addColorStop(0,'#07090f');bg.addColorStop(.55,'#1a1410');bg.addColorStop(1,'#0c0a08');g.fillStyle=bg;g.fillRect(0,0,W,H);
+  const sp=g.createRadialGradient(cx,120,20,cx,260,520);sp.addColorStop(0,'rgba(255,240,200,.22)');sp.addColorStop(1,'rgba(255,240,200,0)');g.fillStyle=sp;g.fillRect(0,0,W,H);
+  const cc=['#3a3330','#4a3f38','#2d2a30','#463a2e','#38302b'];
+  LAB_CROWD.forEach(p=>{g.fillStyle=cc[p.c];g.beginPath();g.arc(p.x,p.y+Math.sin(at*(flash?9:2)+p.f*9)*(flash?3:1),6,0,7);g.fill();
+    if(flash&&p.f<.06){g.fillStyle='#fff';g.beginPath();g.arc(p.x+3,p.y-4,3,0,7);g.fill()}});
+  // ring
+  g.fillStyle='#2b1d14';g.fillRect(60,floor+8,W-120,60);
+  g.fillStyle='#e9e3d4';g.beginPath();g.moveTo(140,250);g.lineTo(W-140,250);g.lineTo(W-40,floor+10);g.lineTo(40,floor+10);g.closePath();g.fill();
+  g.fillStyle='rgba(180,30,40,.10)';g.font='bold 54px Georgia, serif';g.textAlign='center';g.fillText('CONTENDERS',cx,370);
+  const post=(x,y,h,c)=>{g.fillStyle=c;g.fillRect(x-6,y-h,12,h)};
+  post(140,250,110,'#b22');post(W-140,250,110,'#1e4fd8');
+  ['#c33','#eee','#2a5be0'].forEach((c,i)=>{g.strokeStyle=c;g.lineWidth=4;g.beginPath();g.moveTo(140,165+i*28);g.lineTo(W-140,165+i*28);g.stroke()});
+  // fighters
+  const pose=i=>{const o={ext:0,ext2:0,body:false,snap:0,lean:0,fall:0,wob:0,hug:0,cut:0};
+    tl.beats.forEach(b=>{const d=at-b.at;if(d<0||d>2.4)return;const att=b.a===i,def=b.a===1-i;const pk=d<.4?Math.sin(Math.PI*d/.4):0;
+      if(['p','r','j','m','c'].includes(b.k)){if(att){if(b.k==='j')o.ext=Math.max(o.ext,pk);else{o.ext2=Math.max(o.ext2,pk);o.body=b.txt.includes('body')||b.txt.includes('ribs')||b.txt.includes('stomach')}}
+        if(def&&b.k!=='m'&&d>.15&&d<.55)o.snap=Math.max(o.snap,Math.sin(Math.PI*(d-.15)/.4));if(def&&b.k==='m'&&d<.45)o.lean=-Math.sin(Math.PI*d/.45)}
+      if(b.k==='cl'&&d<.8)o.hug=Math.max(o.hug,Math.sin(Math.PI*d/.8));
+      if(b.k==='i'&&def&&d<1)o.cut=1-d;
+      if(b.k==='st'&&def&&d<1.4){o.wob=Math.max(o.wob,1-d/1.4);if(d<.4)o.snap=Math.max(o.snap,1)}
+      if(b.k==='st'&&att&&d<.4)o.ext2=Math.max(o.ext2,pk);
+      if(b.k==='kd'&&att&&d<.4)o.ext2=Math.max(o.ext2,pk);
+      if(b.k==='kd'&&def){if(d<.25)o.snap=1;o.fall=Math.max(o.fall,d<.35?d/.35:d<1.5?1:d<1.9?1-(d-1.5)/.4:0)}});
+    const end=f.result;if(end&&!end.decision&&end.w===1-i){const kb=tl.beats.find(b=>b.k==='ko'||b.k==='stop');if(kb&&at>=kb.at){const d=at-kb.at;
+      if(end.type==='KO')o.fall=Math.min(1,d/.4);else o.wob=Math.max(o.wob,.6)}}
+    if(f.result&&!f.result.decision&&end.w===i){const kb=tl.beats.find(b=>b.k==='ko'||b.k==='stop');if(kb&&at>=kb.at&&at-kb.at<.4)o.ext2=Math.sin(Math.PI*(at-kb.at)/.4)}
+    return o};
+  const P=[pose(0),pose(1)];
+  const foot=Math.sin(at*1.1)*20+Math.sin(at*.37)*14,gap=96+foot-(P[0].hug+P[1].hug)*30;
+  const X=[cx-gap+Math.sin(at*.6)*10,cx+gap+Math.sin(at*.6)*10];
+  const end=cur.R.en||[1,1];const prev=tl.rounds[tl.rounds.indexOf(cur)-1];const en0=prev&&prev.R.en?prev.R.en:[1,1];
+  const prog=Math.max(0,Math.min(1,(at-cur.start)/(cur.end-cur.start)));const EN=[0,1].map(i=>en0[i]+(end[i]-en0[i])*prog);
+  const COL=[{tr:'#c62828',gl:'#e53935',sk:'#e0ac69',hr:'#2b1b10'},{tr:'#1e4fd8',gl:'#2f6bff',sk:'#8d5524',hr:'#120b06'}];
+  const boxer=(i)=>{const p=P[i],c=COL[i],dir=i===0?1:-1,bob=Math.sin(at*6+i*2)*3*(1-p.fall),tired=1-EN[i];
+    g.save();g.translate(X[i]+p.wob*Math.sin(at*14)*7,floor);g.scale(dir,1);
+    if(p.fall){g.rotate(-p.fall*1.3);g.translate(-p.fall*30,0)}
+    const lean=p.lean*10+p.hug*14-p.snap*6+tired*6;
+    g.lineCap='round';g.strokeStyle=c.sk;g.lineWidth=15;
+    g.beginPath();g.moveTo(-6,-92);g.lineTo(-24,-2);g.moveTo(8,-92);g.lineTo(26,-2);g.stroke();
+    g.fillStyle='#222';g.fillRect(-36,-8,24,9);g.fillRect(16,-8,26,9);
+    g.fillStyle=c.tr;g.beginPath();g.roundRect(-24,-118+bob,48,34,6);g.fill();g.fillStyle='#fff';g.fillRect(-24,-118+bob,48,5);
+    g.fillStyle=c.sk;g.beginPath();g.roundRect(-21+lean*.5,-176+bob,42,62,12);g.fill();
+    const hx=6+lean-p.snap*14,hy=-196+bob+tired*5;
+    g.beginPath();g.arc(hx,hy,18,0,7);g.fill();g.fillStyle=c.hr;g.beginPath();g.arc(hx-3,hy-5,17,Math.PI*.95,Math.PI*2.05);g.fill();
+    if(p.cut){g.fillStyle=`rgba(200,0,0,${p.cut})`;g.fillRect(hx+6,hy-6,6,10)}
+    const sh=[8+lean*.6,-164+bob];
+    const glove=(gx,gy)=>{g.strokeStyle=c.sk;g.lineWidth=11;g.beginPath();g.moveTo(sh[0],sh[1]);g.lineTo(gx,gy);g.stroke();
+      g.fillStyle=c.gl;g.beginPath();g.arc(gx,gy,14,0,7);g.fill();g.fillStyle='rgba(255,255,255,.35)';g.beginPath();g.arc(gx-4,gy-5,5,0,7);g.fill()};
+    const reach=gap*2-70,guardDrop=tired*14;
+    glove(26+p.ext2*reach*.92+lean*.6,(p.body?-150:-188)*(p.ext2>.1?1:0)+(p.ext2>.1?0:-170+guardDrop)+bob);
+    glove(34+p.ext*reach+lean*.6,-190+bob+guardDrop*(1-p.ext));
+    g.restore()};
+  // the man falling is drawn first
+  (P[0].fall>P[1].fall?[0,1]:[1,0]).forEach(boxer);
+  // impact stars
+  tl.beats.forEach(b=>{const d=at-b.at;if(d<.12||d>.45||b.a==null||!['p','r','j','c','st','kd'].includes(b.k))return;
+    const i=1-b.a,big=b.k==='p'||b.k==='st'||b.k==='kd'?1.4:b.k==='j'?.7:1,sx=X[i]+(i===0?8:-8),sy=floor-(b.txt.includes('body')||b.txt.includes('ribs')?150:196);
+    g.save();g.translate(sx,sy);g.scale(big*(1-d),big*(1-d));g.fillStyle='#ffd23f';g.strokeStyle='#b31d1d';g.lineWidth=3;g.beginPath();
+    for(let k=0;k<16;k++){const r=k%2?14:34,a=k*Math.PI/8;g.lineTo(Math.cos(a)*r,Math.sin(a)*r)}g.closePath();g.fill();g.stroke();g.restore()});
+  // front ropes
+  ['#c33','#eee','#2a5be0'].forEach((c,i)=>{g.strokeStyle=c;g.globalAlpha=.75;g.lineWidth=5;g.beginPath();g.moveTo(40,floor-150+i*40);g.lineTo(W-40,floor-150+i*40);g.stroke()});g.globalAlpha=1;
+  post(40,floor+10,175,'#b22');post(W-40,floor+10,175,'#1e4fd8');
+  // HUD
+  const bar=(x,al,i)=>{g.fillStyle='rgba(0,0,0,.6)';g.fillRect(x,14,330,54);g.fillStyle=i?'#7fa6ff':'#ff8a80';g.font='bold 20px Verdana, sans-serif';g.textAlign=al;
+    g.fillText(L.names[i].slice(0,24),al==='left'?x+12:x+318,38);g.fillStyle='#333';g.fillRect(x+12,46,306,12);
+    const e=Math.max(0,Math.min(1,EN[i]));g.fillStyle=e>.5?'#4caf50':e>.25?'#f4c430':'#e53935';const w=306*e;g.fillRect(al==='left'?x+12:x+318-w,46,w,12)};
+  bar(12,'left',0);bar(W-342,'right',1);
+  const rd=cur.n,clockT=Math.max(0,Math.min(1,(at-cur.start)/(cur.end-cur.start)))*(cur.last&&!f.result.decision?cur.clockEnd:180),sec=Math.max(0,180-Math.floor(clockT));
+  g.fillStyle='rgba(0,0,0,.7)';g.fillRect(cx-70,10,140,62);g.fillStyle='#f4c430';g.textAlign='center';g.font='bold 15px Verdana, sans-serif';g.fillText(`ROUND ${rd}`,cx,32);
+  g.fillStyle='#fff';g.font='bold 26px Verdana, sans-serif';g.fillText(`${Math.floor(sec/60)}:${String(sec%60).padStart(2,'0')}`,cx,62);
+  if(cur.R.run&&at>=cur.end-.05){g.fillStyle='rgba(0,0,0,.65)';g.fillRect(cx-110,78,220,30);g.fillStyle='#fff';g.font='15px Verdana, sans-serif';g.fillText(`Scorecard: ${cur.R.run[0]} - ${cur.R.run[1]}`,cx,99)}
+  // big calls
+  const big=(txt,col,size)=>{g.font=`bold ${size}px Impact, Arial Black, sans-serif`;g.textAlign='center';g.lineWidth=8;g.strokeStyle='#000';g.strokeText(txt,cx,230);g.fillStyle=col;g.fillText(txt,cx,230)};
+  const kd=recent('kd').filter(b=>at-b.at<1.6).pop(),st=recent('st').filter(b=>at-b.at<1).pop(),bell=recent('bell').filter(b=>at-b.at<.9).pop();
+  if(!fin){if(kd){big('KNOCKDOWN!','#ffd23f',64);const n=Math.min(8,Math.floor((at-kd.at)/.18)+1);g.font='bold 40px Impact, sans-serif';g.fillStyle='#fff';g.fillText(String(n),cx,285)}
+    else if(st)big('STUNNED!','#ff7043',52);else if(bell)big('🔔 DING!','#fff',44)}
+  if(fin){const r=f.result;g.fillStyle='rgba(0,0,0,.72)';g.fillRect(0,180,W,120);
+    big(r.w==null?'DRAW':!r.decision?(r.type==='KO'?'K.O.!':'T.K.O.!'):'DECISION','#ffd23f',58);
+    g.font='bold 24px Verdana, sans-serif';g.fillStyle=r.w===0?'#ff8a80':r.w===1?'#7fa6ff':'#fff';
+    g.fillText(r.w==null?r.type:`${L.names[r.w]} wins${r.decision?' by '+r.type.toLowerCase():' in round '+r.round}`,cx,280)}
+}
+/* --- Lab Chat --- */
+async function labLoadChat(){if(!SB||labChatBusy)return;labChatBusy=true;
+  try{const{data,error}=await SB.from('lab_chat').select('id,author,body,created_at').order('created_at',{ascending:false}).limit(40);if(!error)labChat=data.reverse()}finally{labChatBusy=false}
+  const el=$('#labChat');if(!el)return;const atBottom=el.scrollHeight-el.scrollTop-el.clientHeight<40;
+  el.innerHTML=!labChat?needDB():labChat.length?labChat.map(m=>{const gm=managers[m.author];const when=new Date(m.created_at);
+    return`<p class="lc"><b>${m.author&&gm?`<a data-go="gympub:${m.author}">${esc(gm.gym)}</a>`:'A retired gym'}</b> <span class="small mute">${when.toLocaleDateString('en-US',{month:'short',day:'numeric'})} ${when.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}</span>${m.author===ME?` <a class="small" data-labdel="${m.id}">delete</a>`:''}<br>${esc(m.body)}</p>`}).join(''):'<p class="mute">No messages yet. Say something!</p>';
+  if(atBottom||!el.dataset.seen){el.scrollTop=el.scrollHeight;el.dataset.seen=1}
+  el.querySelectorAll('[data-labdel]').forEach(a=>a.onclick=async()=>{await SB.from('lab_chat').delete().eq('id',+a.dataset.labdel);labLoadChat()});
+}
+async function labPost(body){if(!SB||!ME)return;body=body.trim().slice(0,280);if(!body)return;
+  const{error}=await SB.from('lab_chat').insert({author:ME,body});if(error){$('#labErr').textContent='Chat: '+(/row-level/.test(error.message)?"you can't post right now.":error.message);return false}
+  labLoadChat();return true}
+async function labSend(){const m=$('#labMsg');if(!m)return;if(await labPost(m.value))m.value=''}
+function labShare(){const L=labState(),f=L.fight;if(!f)return;const r=f.result,[a,b]=L.names,[pa,pb]=L.plans;
+  const txt=r.w==null?`🥊 ${a} (${pa}) and ${b} (${pb}) fought to a ${r.type.toLowerCase()} in the Lab.`:`🥊 ${L.names[r.w]} (${L.plans[r.w]}) beat ${L.names[1-r.w]} (${L.plans[1-r.w]}) by ${r.decision?r.type.toLowerCase():r.type+' in round '+r.round} in the Lab.`;
+  labPost(txt)}
 
 /* ---------- Main ---------- */
 const POW=`<svg class="pow" viewBox="0 0 60 50"><polygon points="30,2 35,14 48,6 43,19 58,20 45,28 54,40 39,35 34,48 28,36 16,46 18,32 3,34 14,24 4,12 19,15 22,2" fill="#f4c430" stroke="#a33" stroke-width="2"/><text x="30" y="30" text-anchor="middle" font-family="Impact,Arial Black,sans-serif" font-size="13" fill="#c22" transform="rotate(-12 30 28)">BAM!</text></svg>`;
@@ -1036,7 +1306,7 @@ function homeHTML(){
     <div class="heroSub">THE CONTENDERS BOXING LEAGUE</div>
     <p class="heroTag">Build your fighter. Take him to the top. Outthink managers from everywhere.</p>
     <p class="heroPills"><span>&#129354; Fight every week</span><span>&#127942; Climb the rankings</span><span>&#128176; Purses &amp; PPV money</span><span>&#128074; Bare Knuckles</span></p>
-    <p class="heroCta"><a class="btnMain" data-go="register">Sign Up to Play (Free!)</a><a class="btnAlt" data-go="${ME?'gym':'login'}">Enter Your Gym</a><a class="btnGhost" data-go="fight">Try it Out</a></p>
+    <p class="heroCta"><a class="btnMain" data-go="register">Sign Up to Play (Free!)</a><a class="btnAlt" data-go="${ME?'gym':'login'}">Enter Your Gym</a><a class="btnGhost" data-go="lab">Try it Out</a></p>
     ${standalone()?'':`<p class="heroApp"><a data-app="1">&#128242; <b>Contenders is on your phone too.</b> Get the App &rarr;</a></p><p id="heroAppTip" class="heroAppTip" hidden></p>`}
   </section>
   <p class="small center">Three world titles in every division: the <b>WBC</b>, the <b>WBA</b> and the <b>WBO</b>. Check out the <a data-go="champs">reigning champs</a> and make your own mark.</p>
@@ -1324,7 +1594,7 @@ function recordHTML(side){
   <li><a data-go="pf:create">create a new fight plan</a></li>
   <li>or <a data-go="pf:edit:${encN(F.planName||'Basic')}">edit</a> your ${esc(F.planName||'Basic')} plan.</li>
   <li>Experts can use the <a data-go="pf:adv">advanced fight plan form</a>.</li>
-  <li>Beginners might want to get into the ring with a <a data-go="simbot">sparring partner</a>.</li>
+  <li>Beginners might want to get into the ring in the <a data-go="lab">Fight Lab</a>.</li>
   <li>Go to <a data-go="fight">practice fights</a>.</li></ul>
   <p>${n} may also do any of the following:</p>
   <ul><li><a data-go="forum:press">issue a press release</a>.</li><li>${state[side]&&state[side].retireAfter?`<span class="cr">He retires right after his next fight.</span> <a data-unretire-after="${side}">Cancel his retirement</a>.`:`<a data-retire="${side}">retire</a>.`}</li></ul>
@@ -1388,7 +1658,7 @@ function fightHTML(){
   if(!fight)return h;
   h+=`<hr><div class="rep">${reportHTML(fight,bout,shown)}</div>`;
   if(shown<fight.rounds.length)h+=`<p style="margin-top:14px"><button id="next">Next Round</button> <button id="skip">Skip to the End</button></p>`;
-  else h+=`<p style="margin-top:16px"><button id="go2">Rematch</button> <button data-go="simbot">Run it 100 times in Simbot</button></p>`;
+  else h+=`<p style="margin-top:16px"><button id="go2">Rematch</button> <button data-go="lab">Try it in the Fight Lab</button></p>`;
   return h;
 }
 function planErr(){corners();for(const c of['red','blue']){const F=prFighter(c);if(!F)return'Pick two fighters.';if(parsePlan(F.plan).errors.length)return prPlan[c]?`The plan "${F.planName}" has lines the parser didn't recognize. Fix it on the Fight Plans page.`:`${F.name}'s fight plan has lines the parser didn't recognize. Fix them on his page.`}return''}
@@ -1587,21 +1857,6 @@ async function markRead(){
   if(!ims.some(m=>m.to===ME&&m.from===who&&!m.read))return;
   try{await SB.rpc('mark_thread_read',{from_id:who});ims.forEach(m=>{if(m.to===ME&&m.from===who)m.read=true});updateMsgLink()}catch(e){}
 }
-function simbotHTML(){
-  return`<h1>Simbot</h1><p>Simbot runs the current matchup many times so you can see how a fight plan holds up before fight night.</p>
-  ${!getF(corners()[0])||!getF(corners()[1])?'<p>You need an active fighter and an opponent.</p>':`<p><b class="red">${esc(getF(corners()[0]).name)}</b> vs <b class="navy">${esc(getF(corners()[1]).name)}</b>, ${esc(state.div)}weight, ${state.bout.split('|')[0]} rounds. <a data-go="fight">Change the matchup</a></p>`}
-  <p><select id="simN"><option>100</option><option>500</option><option>1000</option></select> <button id="runSim">Run Simbot</button></p><div id="simOut"></div>`;
-}
-function runSimbot(n){
-  const bad=planErr();if(bad){$('#simOut').innerHTML=`<p class="cr">${bad}</p>`;return}
-  const rs=+state.bout.split('|')[0],c={w0:0,k0:0,w1:0,k1:0,d:0};let rounds=0;
-  const[RC,BC]=corners();if(!RC||!BC)return;const FA=prFighter('red'),FB=prFighter('blue'),PA=prepFighter(FA,FA,FB,state.div),PB=prepFighter(FB,FA,FB,state.div),RS=boutRounds(FA,FB)===25?25:rs;for(let i=0;i<n;i++){const f=simulate(PA,PB,RS),r=f.result;if(r.w===null)c.d++;else{c['w'+r.w]++;if(!r.decision)c['k'+r.w]++}rounds+=f.rounds.length}
-  const p=x=>(100*x/n).toFixed(1)+'%';
-  $('#simOut').innerHTML=`<table class="grid"><tr><th></th><th>Wins</th><th>By stoppage</th><th>By decision</th></tr>
-  <tr><td class="red">${esc(getF(RC).name)}</td><td class="n">${p(c.w0)}</td><td class="n">${p(c.k0)}</td><td class="n">${p(c.w0-c.k0)}</td></tr>
-  <tr><td class="navy">${esc(getF(BC).name)}</td><td class="n">${p(c.w1)}</td><td class="n">${p(c.k1)}</td><td class="n">${p(c.w1-c.k1)}</td></tr>
-  <tr><td>Draws</td><td class="n">${p(c.d)}</td><td colspan="2">Average length: ${(rounds/n).toFixed(1)} rounds</td></tr></table>`;
-}
 /* ---------- Hall of Records ---------- */
 function champsHTML(arg){const reg=arg==='bk'?'bk':'',P=reg?'BK ':'';
   return`<h1>${reg?'Bare Knuckles ':''}Champions</h1><p class="small">Region: ${reg?'<a data-go="champs">Contenders</a> | <b>Bare Knuckles</b>':'<b>Contenders</b> | <a data-go="champs:bk">Bare Knuckles</a>'}</p><table class="grid"><tr><th>Division</th>${BELTS.map(b=>`<th>${b}</th>`).join('')}</tr>
@@ -1743,7 +1998,7 @@ function helpHTML(arg){
 }
 const HELP_BODY={
  start:()=>`<p>Contenders is a boxing strategy game. You're the manager: you build fighters, train them, write their fight plans, and watch every bout play out round by round. You never throw a punch yourself. Your decisions win or lose the fight.</p>
-  <ol><li><a data-go="register">Sign up</a> and name your gym.</li><li><a data-go="create">Create a fighter</a> by spending his 70 points.</li><li>Write his <a data-go="help:plans">fight plan</a>.</li><li>Test it with <a data-go="simbot">Simbot</a> or a <a data-go="fight">practice fight</a>.</li><li>Fight on his division's <a data-go="help:schedule">fight night</a>, read the report, adjust, repeat.</li></ol>
+  <ol><li><a data-go="register">Sign up</a> and name your gym.</li><li><a data-go="create">Create a fighter</a> by spending his 70 points.</li><li>Write his <a data-go="help:plans">fight plan</a>.</li><li>Test it in the <a data-go="lab">Fight Lab</a> or a <a data-go="fight">practice fight</a>.</li><li>Fight on his division's <a data-go="help:schedule">fight night</a>, read the report, adjust, repeat.</li></ol>
   <p>There are two regions: <b>Contenders</b> (the regular game) and <b><a data-go="help:bk">Bare Knuckles</a></b>. You pick a fighter's region when you create him, and it can't be changed. Each region has its own rankings and its own WBC, WBA and WBO world titles in every division.</p>`,
  bk:()=>`<p>Bare Knuckles is a second region with its own rankings and champions. Pick it on the <a data-go="create">Create a Fighter</a> page. A fighter's region is set for life.</p>
   <ul><li><b>25 rounds</b> every fight.</li>
@@ -1813,7 +2068,7 @@ if endurance_percent < 50 then 1/1/10</pre>`,
   <li>Get your fight plans and training in <b>before your division's fight night</b>. Whatever is saved when the fights run is what your fighter uses.</li>
   <li>You don't need to be online. Results, fight reports and new rankings are posted after the fights run.</li>
   <li>A fighter's page shows his next opponent once he's been matched, so you can scout him and write a plan for that matchup.</li>
-  <li>Between fight nights, use <a data-go="fight">Practice Fights</a> and <a data-go="simbot">Simbot</a> as much as you like. They never count on your record.</li></ul>
+  <li>Between fight nights, use <a data-go="fight">Practice Fights</a> and the <a data-go="lab">Fight Lab</a> as much as you like. They never count on your record.</li></ul>
 `,
  titles:()=>`<ul><li>Every division has three world titles: the <b>WBC</b>, the <b>WBA</b> and the <b>WBO</b>.</li>
   <li>Divisions: ${DIVS.map(d=>d[0]+' '+d[1]).join(', ')}.</li>
@@ -1846,7 +2101,7 @@ if endurance_percent < 50 then 4/4/10
 if score < 0 and round >= 8 then 8/7/5</pre>
   <p>Defense matters a lot. Fighters with very low DEF get stunned and knocked out. Full details are in <a data-go="help:plans">Writing Fight Plans</a>.</p>
   <h2>3. Test it</h2>
-  <p>Run <a data-go="simbot">Simbot</a> 100 times against your other fighter to see how the plan holds up, then read a full <a data-go="fight">practice fight</a> report to see why.</p>
+  <p>Build his twin in the <a data-go="lab">Fight Lab</a> and run it 100 times against any style to see how the plan holds up, then read a full <a data-go="fight">practice fight</a> report to see why.</p>
   <h2>4. Training</h2>
   <p>On the fighter's page, pick what he trains. Wins raise his status and add ability points. From status 6 on, every second status level is worth two points.</p>
   <h2>5. Fight night</h2>
@@ -1866,7 +2121,7 @@ function fundingHTML(){return`<h1>Contenders Funding</h1><p>Contenders is free t
 document.addEventListener('click',async e=>{
   const t=e.target.closest('[data-go],[data-v],[data-dm],[data-retire],[data-unretire-after],[data-activate],button');if(!t)return;
   /* visitors without a gym: every sidebar link leads back to the home page (owner, Nov 12, 2026) */
-  if(t.dataset.v){if(!ME&&t.dataset.v!=='login'){$('#side').classList.remove('open');nav('home');return}nav(t.dataset.v);return}
+  if(t.dataset.v){if(!ME&&t.dataset.v!=='login'&&t.dataset.v!=='lab'){$('#side').classList.remove('open');nav('home');return}nav(t.dataset.v);return}
   if(t.dataset.go){nav(t.dataset.go);return}
   if(t.dataset.dm){nav('msgs:'+t.dataset.dm);return}
   const side=(t.closest('[data-side]')||{dataset:{}}).dataset.side||t.dataset.reset;const FS=s=>s==='D'?state.draft:FTR(s);
@@ -1938,7 +2193,6 @@ document.addEventListener('click',async e=>{
   else if(t.id==='sendDm'){const to=$('#dmTo').value,body=$('#dmBody').value.trim().slice(0,4000);if(!to||!body)return;t.disabled=true;
     const ok=await safeWrite(()=>SB.from('messages').insert({recipient:to,body}));
     if(ok){$('#dmBody').value='';await loadIms();nav('msgs:'+to)}t.disabled=false}
-  else if(t.id==='runSim'){t.disabled=true;$('#simOut').innerHTML='<p class="mute">Running...</p>';setTimeout(()=>{runSimbot(+$('#simN').value);t.disabled=false},30)}
   else if(t.id==='doSearch')doSearch($('#q').value);
 });
 document.addEventListener('submit',async e=>{

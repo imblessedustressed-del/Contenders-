@@ -193,6 +193,7 @@ function simulate(FA,FB,rounds){
       }
     }
     R.cond=S.map(x=>condText(x));
+    R.en=S.map(x=>Math.max(0,+(x.E/x.E0).toFixed(3))); // endurance left this round (for the Fight Lab arena)
     /* recovery */
     S.forEach((x,i)=>{x.endFrac=x.E/x.E0;const lost=x.E0-x.E;x.E=Math.min(x.E0,x.E+(BK?.05:.1)*lost+.02*eff[i].rest*lost)});
     out.rounds.push(R);
@@ -246,29 +247,29 @@ function pbp(S,PU,eff,st,kd,injNews,ended){
   const at=()=>Math.floor(rand()*end);
   for(let i=0;i<2;i++){const X=S[i],Y=S[1-i],p=PU[i],e=eff[i],o=eff[1-i];
     const tg=()=>e.tgt==='Body'||(e.tgt==='Opp'&&rand()<.35)?pick(TGT_B):pick(TGT_H);
-    for(let k=0;k<p.pl;k++){const pd=`${pick(PW)} to the ${tg()}`;evs.push({t:at(),html:rand()<.25?`<b>${X.n} hammers ${Y.n} with a nasty ${pd}!</b>`:pick([`<b>${X.n} lands ${an(pd)}.</b>`,`<b>${X.n} connects with ${an(pd)}.</b>`,`<b>${X.n} scores with ${an(pd)}.</b>`])})}
-    for(let k=0;k<p.rl;k++){const pd=`${pick(RT)} to the ${tg()}`;evs.push({t:at(),html:pick([`<b>${X.n} lands ${an(pd)}.</b>`,`<b>${X.n} gets through with ${an(pd)}.</b>`])+(rand()<.3?` ${Y.n} walks through it.`+(Y.msgs&&Y.msgs.sneer?` ${Y.n} sneers, "${escS(Y.msgs.sneer)}"`:''):'')})}
-    for(let k=0;k<p.jl;k++)if(rand()<.3)evs.push({t:at(),html:pick([`<b>${X.n} snaps a jab into ${Y.n}'s face.</b>`,`<b>${X.n} pops ${Y.n} with a stiff jab.</b>`,`<b>${X.n} lands a sharp jab.</b>`])});
+    for(let k=0;k<p.pl;k++){const pd=`${pick(PW)} to the ${tg()}`;evs.push({a:i,k:'p',t:at(),html:rand()<.25?`<b>${X.n} hammers ${Y.n} with a nasty ${pd}!</b>`:pick([`<b>${X.n} lands ${an(pd)}.</b>`,`<b>${X.n} connects with ${an(pd)}.</b>`,`<b>${X.n} scores with ${an(pd)}.</b>`])})}
+    for(let k=0;k<p.rl;k++){const pd=`${pick(RT)} to the ${tg()}`;evs.push({a:i,k:'r',t:at(),html:pick([`<b>${X.n} lands ${an(pd)}.</b>`,`<b>${X.n} gets through with ${an(pd)}.</b>`])+(rand()<.3?` ${Y.n} walks through it.`+(Y.msgs&&Y.msgs.sneer?` ${Y.n} sneers, "${escS(Y.msgs.sneer)}"`:''):'')})}
+    for(let k=0;k<p.jl;k++)if(rand()<.3)evs.push({a:i,k:'j',t:at(),html:pick([`<b>${X.n} snaps a jab into ${Y.n}'s face.</b>`,`<b>${X.n} pops ${Y.n} with a stiff jab.</b>`,`<b>${X.n} lands a sharp jab.</b>`])});
     const miss=(p.pt-p.pl)+(p.rt-p.rl);
     for(let k=0;k<miss;k++)if(rand()<.3){const pd=`${pick(rand()<.5?PW:RT)} to the ${tg()}`;
-      if(o.style==='clinch'&&rand()<.5)evs.push({t:at(),html:pick([`${X.n} tries to attack, but ${Y.n} ties him up until the referee separates them.`,`${X.n} throws ${an(pd)}, but ${Y.n} grabs on until the referee breaks them up.`])});
-      else if(o.style==='counter'&&rand()<.4){const cd=`${pick(RT)} to the ${pick(TGT_H)}`;evs.push({t:at(),html:`${X.n} throws ${an(pd)} but <b>${Y.n} slips it and fires back with ${an(cd)}.</b>`})}
-      else evs.push({t:at(),html:pick([`${X.n} throws ${an(pd)}, but ${Y.n} slips it.`,`${X.n} reaches with ${an(pd)}, but it falls short.`,`${X.n} tries ${an(pd)}, but it's blocked.`,`${X.n} swings ${an(pd)} and misses badly.`,`${X.n} launches ${an(pd)}, but there's nothing on it.`])})}
-    for(const n of injNews[1-i]){evs.push({t:at(),html:`<span class="r">${n.agg?`The damage gets worse: ${Y.n} now has ${injText(n.inj)}!`:`${Y.n} now has ${injText(n.inj)}!`}</span>`})}
+      if(o.style==='clinch'&&rand()<.5)evs.push({a:i,k:'cl',t:at(),html:pick([`${X.n} tries to attack, but ${Y.n} ties him up until the referee separates them.`,`${X.n} throws ${an(pd)}, but ${Y.n} grabs on until the referee breaks them up.`])});
+      else if(o.style==='counter'&&rand()<.4){const cd=`${pick(RT)} to the ${pick(TGT_H)}`;evs.push({a:1-i,k:'c',t:at(),html:`${X.n} throws ${an(pd)} but <b>${Y.n} slips it and fires back with ${an(cd)}.</b>`})}
+      else evs.push({a:i,k:'m',t:at(),html:pick([`${X.n} throws ${an(pd)}, but ${Y.n} slips it.`,`${X.n} reaches with ${an(pd)}, but it falls short.`,`${X.n} tries ${an(pd)}, but it's blocked.`,`${X.n} swings ${an(pd)} and misses badly.`,`${X.n} launches ${an(pd)}, but there's nothing on it.`])})}
+    for(const n of injNews[1-i]){evs.push({a:i,k:'i',t:at(),html:`<span class="r">${n.agg?`The damage gets worse: ${Y.n} now has ${injText(n.inj)}!`:`${Y.n} now has ${injText(n.inj)}!`}</span>`})}
     /* stuns suffered by Y come from X's damage: st[1-i] */
     const sY=st[i];
     if(sY>0&&sY<99){
-      for(let k=0;k<kd[i];k++){const n=3+Math.floor(rand()*6);evs.push({t:at(),html:`<p class="r b">${X.n} lands a tremendous ${pick(PW)} to the head and ${Y.n} goes down!!</p>${NUMS.slice(0,n).map(w=>`<p class="r">${w}!</p>`).join('')}<p>${Y.n} is back on his feet at ${n}.</p>${X.msgs&&X.msgs.taunt?`<p>${X.n} taunts, "${escS(X.msgs.taunt)}"</p>`:''}`})}
-      if(sY%2)evs.push({t:at(),html:`<b>${X.n} wallops ${Y.n} with a big ${pick(PW)} to the ${pick(TGT_H)}!! The crowd is on its feet!!</b> <span class="r">${Y.n} ${pick(['staggers into the ropes!!','is wobbled!!','is badly hurt!!'])}</span>`});
+      for(let k=0;k<kd[i];k++){const n=3+Math.floor(rand()*6);evs.push({a:i,k:'kd',t:at(),html:`<p class="r b">${X.n} lands a tremendous ${pick(PW)} to the head and ${Y.n} goes down!!</p>${NUMS.slice(0,n).map(w=>`<p class="r">${w}!</p>`).join('')}<p>${Y.n} is back on his feet at ${n}.</p>${X.msgs&&X.msgs.taunt?`<p>${X.n} taunts, "${escS(X.msgs.taunt)}"</p>`:''}`})}
+      if(sY%2)evs.push({a:i,k:'st',t:at(),html:`<b>${X.n} wallops ${Y.n} with a big ${pick(PW)} to the ${pick(TGT_H)}!! The crowd is on its feet!!</b> <span class="r">${Y.n} ${pick(['staggers into the ropes!!','is wobbled!!','is badly hurt!!'])}</span>`});
     }
   }
   evs.sort((a,b)=>a.t-b.t);
   if(ended){const W=S[ended.w],L=S[1-ended.w];
-    if(ended.type==='KO')evs.push({t:ended.t,html:`<p class="r b">${W.n} lands a tremendous ${pick(['right','left hook','uppercut','overhand right'])} blow to the head and ${L.n} collapses!!</p>${NUMS.map(w=>`<p class="r">${w}!</p>`).join('')}<p class="r b">He's out!!!</p>${W.msgs&&W.msgs.gloat?`<p>${W.n} gloats, "${escS(W.msgs.gloat)}"</p>`:''}`});
-    else if(ended.why==='the referee stopped it')evs.push({t:ended.t,html:`<p class="r b">${L.n} is taking a beating and the referee steps in to stop it!!</p>${W.msgs&&W.msgs.tko?`<p>${W.n}: "${escS(W.msgs.tko)}"</p>`:''}`});
-    else if(ended.dq)evs.push({t:ended.t,html:`<p class="r b">The referee has seen enough fouling. ${L.n} is disqualified!!</p>`});
-    else if(/exhausted/.test(ended.why))evs.push({t:ended.t,html:`<p class="r b">${L.n} can barely lift his arms. He's too exhausted to go on and the referee waves it off!!</p>`});
-    else evs.push({t:ended.t,html:`<p class="r b">The referee stops the fight! ${escS(ended.why)}.</p>`});
+    if(ended.type==='KO')evs.push({a:ended.w,k:'ko',t:ended.t,html:`<p class="r b">${W.n} lands a tremendous ${pick(['right','left hook','uppercut','overhand right'])} blow to the head and ${L.n} collapses!!</p>${NUMS.map(w=>`<p class="r">${w}!</p>`).join('')}<p class="r b">He's out!!!</p>${W.msgs&&W.msgs.gloat?`<p>${W.n} gloats, "${escS(W.msgs.gloat)}"</p>`:''}`});
+    else if(ended.why==='the referee stopped it')evs.push({a:ended.w,k:'stop',t:ended.t,html:`<p class="r b">${L.n} is taking a beating and the referee steps in to stop it!!</p>${W.msgs&&W.msgs.tko?`<p>${W.n}: "${escS(W.msgs.tko)}"</p>`:''}`});
+    else if(ended.dq)evs.push({a:ended.w,k:'stop',t:ended.t,html:`<p class="r b">The referee has seen enough fouling. ${L.n} is disqualified!!</p>`});
+    else if(/exhausted/.test(ended.why))evs.push({a:ended.w,k:'stop',t:ended.t,html:`<p class="r b">${L.n} can barely lift his arms. He's too exhausted to go on and the referee waves it off!!</p>`});
+    else evs.push({a:ended.w,k:'stop',t:ended.t,html:`<p class="r b">The referee stops the fight! ${escS(ended.why)}.</p>`});
   }
   /* idle gaps */
   const lines=[];let last=0;
