@@ -294,6 +294,7 @@ var RunnerLib = (() => {
   // ../supabase/functions/league-runner/lib.ts
   var sb;
   var MAX_FIGHTS = 250;
+  var HUMAN_LEAD = 12 * 60;
   var DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
   var chicago = () => {
     const p = Object.fromEntries(new Intl.DateTimeFormat("en-US", { timeZone: "America/Chicago", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(/* @__PURE__ */ new Date()).map((x) => [x.type, x.value]));
@@ -314,7 +315,33 @@ var RunnerLib = (() => {
     }
     return null;
   }
+  function humanNight(C, div, today, mins) {
+    const night = C.FIGHT_NIGHT[div];
+    if (!night) return null;
+    for (let n = 1; n <= 8; n++) {
+      const d = addDays(today, n);
+      if (weekday(d) === night && n * 1440 + 22 * 60 + 45 - mins >= HUMAN_LEAD) return d;
+    }
+    return null;
+  }
   var pk = (u, f) => u + ":" + f;
+  async function freeHumans() {
+    const hs = (await sb.from("profiles").select("id").eq("is_bot", false)).data || [];
+    if (!hs.length) return [];
+    const st = (await sb.from("gym_state").select("user_id,data").in("user_id", hs.map((h) => h.id))).data || [];
+    const open = (await sb.from("bouts").select("red_user,red_fid,blue_user,blue_fid").eq("status", "scheduled").eq("bot_only", false)).data || [];
+    const busy = /* @__PURE__ */ new Set();
+    open.forEach((b) => {
+      busy.add(pk(b.red_user, b.red_fid));
+      busy.add(pk(b.blue_user, b.blue_fid));
+    });
+    const out = [];
+    st.forEach((r) => (r.data?.roster || []).forEach((k) => {
+      const F = r.data[k];
+      if (F && F.div && !F.deleteAfter && !busy.has(pk(r.user_id, k))) out.push(pk(r.user_id, k));
+    }));
+    return out;
+  }
   var gk = (u) => /^00000000-0000-0000-0000-0000000000b[0-9a-f]$/.test(u) ? u.slice(-2) : "small";
   var nm = (F) => String(F?.name || "?").trim();
   async function postReleases(list, log) {
@@ -359,11 +386,17 @@ var RunnerLib = (() => {
     const { date: today, mins } = chicago();
     const force = url.searchParams.get("force") === "1";
     const bookOnly = url.searchParams.get("book") === "1";
-    if (!force && mins < 22 * 60 + 40) return Response.json({ skipped: "not fight time", today });
+    const quick = !force && mins < 22 * 60 + 40;
+    if (quick) {
+      const fh = await freeHumans();
+      const last = (await sb.from("league_runs").select("unmatched").not("unmatched", "is", null).order("id", { ascending: false }).limit(1).maybeSingle()).data;
+      const known = new Set(last?.unmatched || []);
+      if (!fh.some((x) => !known.has(x))) return Response.json({ skipped: "not fight time, every manager's fighter is booked", today });
+    }
     const { data: rid } = await sb.rpc("runner_begin");
     if (!rid) return Response.json({ skipped: "another pass is running" });
     const log = [];
-    let ran = 0, booked = 0, vacated = 0, leftDue = 0;
+    let ran = 0, booked = 0, vacated = 0, leftDue = 0, unmatched = null;
     const tonight = [];
     try {
       const vac = await sb.rpc("vacate_retired_champs");
@@ -373,7 +406,7 @@ var RunnerLib = (() => {
       const P = Object.fromEntries(profs.map((p) => [p.id, p]));
       const states = await all(() => sb.from("gym_state").select("user_id,data"));
       const S = Object.fromEntries(states.map((s) => [s.user_id, s.data || {}]));
-      if (!bookOnly) {
+      if (!bookOnly && !quick) {
         const due = await all(() => sb.from("bouts").select("*").eq("status", "scheduled").lte("fight_date", today).order("fight_date").order("id"));
         for (const B of due) {
           if (ran >= MAX_FIGHTS) {
@@ -440,13 +473,22 @@ var RunnerLib = (() => {
         }
         await postReleases(rel, log);
       }
-      if (leftDue === 0 && (bookOnly || mins >= 23 * 60 + 50)) {
-        const open = await all(() => sb.from("bouts").select("red_user,red_fid,blue_user,blue_fid").eq("status", "scheduled"));
+      if (leftDue === 0 && (quick || bookOnly || mins >= 23 * 60 + 50)) {
+        const midnight = !quick;
+        const open = await all(() => sb.from("bouts").select("id,red_user,red_fid,blue_user,blue_fid,bot_only,fight_date").eq("status", "scheduled"));
         const busy = /* @__PURE__ */ new Set();
         open.forEach((b) => {
           busy.add(pk(b.red_user, b.red_fid));
           busy.add(pk(b.blue_user, b.blue_fid));
         });
+        const bump = /* @__PURE__ */ new Map();
+        open.forEach((b) => {
+          if (b.bot_only && b.fight_date > today) {
+            bump.set(pk(b.red_user, b.red_fid), { id: b.id, partner: pk(b.blue_user, b.blue_fid) });
+            bump.set(pk(b.blue_user, b.blue_fid), { id: b.id, partner: pk(b.red_user, b.red_fid) });
+          }
+        });
+        const cancelIds = [];
         const pubs = await all(() => sb.from("gym_public").select("user_id,data").in("user_id", Object.keys(S).filter((u) => P[u]?.is_bot)));
         const PUB = Object.fromEntries(pubs.map((r) => [r.user_id, r.data || {}]));
         const taken = /* @__PURE__ */ new Set();
@@ -459,7 +501,7 @@ var RunnerLib = (() => {
         let signed = 0, retiredN = 0;
         for (const [u, d] of Object.entries(S)) {
           const key2 = gk(u);
-          if (!P[u]?.is_bot || !PUB[u]) continue;
+          if (!midnight || !P[u]?.is_bot || !PUB[u]) continue;
           let changed = false;
           const card = PUB[u];
           if (!GYMS[key2]) {
@@ -602,26 +644,42 @@ var RunnerLib = (() => {
           busy.add(pk(a.u, a.k));
           busy.add(pk(b.u, b.k));
         };
-        const bots = free(true);
+        const allBotList = [];
+        for (const [u, d] of Object.entries(S)) if (P[u]?.is_bot) for (const k of d.roster || []) {
+          const F = d[k];
+          if (F && F.div) allBotList.push({ u, k, F, gym: P[u].gym, reg: F.region === "bk" ? "bk" : "" });
+        }
         const AP = (F) => ["str", "kp", "spd", "agl", "chn", "cnd", "hgt", "cut"].reduce((t, k) => t + (+F[k] || 0), 0);
         const fair = (a, b) => Math.abs(AP(a.F) - AP(b.F)) <= 1;
         const gap = (a, b) => Math.abs((a.F.status || 0) - (b.F.status || 0)) * 100 + Math.abs((a.F.rating || 0) - (b.F.rating || 0));
+        unmatched = [];
         for (const h of free(false)) {
-          const date = nextNight(C, h.F.div, today);
+          if (h.F.deleteAfter) continue;
+          const date = humanNight(C, h.F.div, today, mins);
           if (!date) continue;
           const seen = new Set((h.F.hist || []).filter((x) => x.bout).map((x) => x.opp + "|" + x.ogym));
           const lastGym = ((h.F.hist || []).find((x) => x.bout) || {}).ogym;
-          const cands = bots.filter((b) => b.F.div === h.F.div && b.reg === h.reg && !busy.has(pk(b.u, b.k)) && fair(h, b));
+          const open2 = (b) => !busy.has(pk(b.u, b.k)) || bump.has(pk(b.u, b.k));
+          const cands = allBotList.filter((b) => b.F.div === h.F.div && b.reg === h.reg && open2(b) && fair(h, b));
           if (!cands.length) {
+            unmatched.push(pk(h.u, h.k));
             log.push(`no fair opponent free for ${nm(h.F)} (${h.F.div}, ${AP(h.F)} AP, ${h.F.rating || 0}/${h.F.status || 0})`);
             continue;
           }
-          const score = (b) => gap(h, b) * 10 + (seen.has(b.F.name + "|" + b.gym) ? 3 : 0) + (b.gym === lastGym ? 1 : 0) + Math.random() * 0.9;
+          const score = (b) => gap(h, b) * 10 + (bump.has(pk(b.u, b.k)) ? 5 : 0) + (seen.has(b.F.name + "|" + b.gym) ? 3 : 0) + (b.gym === lastGym ? 1 : 0) + Math.random() * 0.9;
           cands.sort((x, y) => score(x) - score(y));
-          book(h, cands[0], date, false);
+          const opp = cands[0], bm = bump.get(pk(opp.u, opp.k));
+          if (bm) {
+            cancelIds.push(bm.id);
+            bump.delete(pk(opp.u, opp.k));
+            bump.delete(bm.partner);
+            busy.delete(bm.partner);
+            log.push(`bout ${bm.id} (bot vs bot) cancelled to make room for ${nm(h.F)}`);
+          }
+          book(h, opp, date, false);
         }
         const byDiv = {};
-        bots.filter((b) => !busy.has(pk(b.u, b.k))).forEach((b) => (byDiv[b.F.div + "|" + b.reg] ||= []).push(b));
+        if (midnight) free(true).filter((b) => !busy.has(pk(b.u, b.k))).forEach((b) => (byDiv[b.F.div + "|" + b.reg] ||= []).push(b));
         for (const [dk, list] of Object.entries(byDiv)) {
           const div = dk.split("|")[0];
           const date = nextNight(C, div, today);
@@ -645,6 +703,10 @@ var RunnerLib = (() => {
             book(a, b, date, true);
           }
         }
+        if (cancelIds.length) {
+          const { error } = await sb.from("bouts").update({ status: "cancelled" }).in("id", cancelIds).eq("status", "scheduled").eq("bot_only", true);
+          if (error) log.push("cancel: " + error.message);
+        }
         for (let i = 0; i < rows.length; i += 200) {
           const { error } = await sb.from("bouts").insert(rows.slice(i, i + 200));
           if (error) {
@@ -662,7 +724,7 @@ var RunnerLib = (() => {
     } catch (e) {
       log.push("error: " + e.message);
     }
-    await sb.from("league_runs").update({ finished_at: (/* @__PURE__ */ new Date()).toISOString(), ran, booked, vacated, left_due: leftDue, note: log.join("\n").slice(0, 4e3) || null }).eq("id", rid);
+    await sb.from("league_runs").update({ finished_at: (/* @__PURE__ */ new Date()).toISOString(), ran, booked, vacated, left_due: leftDue, unmatched, note: log.join("\n").slice(0, 4e3) || null }).eq("id", rid);
     return Response.json({ today, ran, booked, vacated, leftDue, log });
   }
   return __toCommonJS(lib_exports);

@@ -3,7 +3,9 @@
 // Fights run from 10:40 PM; booking happens at the midnight pass (11:50 PM on), after that night's fights (owner, Nov 12).
 // Each pass: 1) vacate belts of retired champions, 2) fight every scheduled bout dated today or earlier,
 // 3) book next bouts: each human fighter vs a bot in his division and region (Contenders or Bare Knuckles, 25 rounds), and the remaining bots against each other,
-// on the division's next fight night: tonight's fighters get next week's night; a night less than 24 hours away (tomorrow) skips to the week after.
+// on the division's next fight night: tonight's fighters get next week's night; for bots a night less than 24 hours away (tomorrow) skips to the week after.
+// Managers' fighters (owner, Nov 13: "that has to run completely smooth"): every pass, all day, books any manager's fighter without a scheduled bout
+// on his division's soonest night at least HUMAN_LEAD hours away. If every fair bot is booked, a later bot-vs-bot bout is cancelled to make room.
 // This file is bundled by build.sh into /runner-lib.js on the site; the deployed edge function (index.ts) downloads it
 // and the engine (/engine-core.js) on every run, so pushing the site updates the runner. No redeploy needed.
 import { fightOne } from "./fight.ts";
@@ -12,6 +14,7 @@ import { challengeRelease, Release, resultRelease } from "./press.ts";
 
 let sb: any; // set by handle()
 const MAX_FIGHTS = 250; // per pass; the next pass picks up the rest
+const HUMAN_LEAD = 12 * 60; // minutes of notice a manager gets before his fight (fights start 10:45 PM)
 const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
 const chicago = () => {
@@ -27,7 +30,25 @@ function nextNight(C: any, div: string, today: string) {
   for (let n = 1; n <= 7; n++) { const d = addDays(today, n); if (weekday(d) === night) return n === 1 ? addDays(d, 7) : d; }
   return null;
 }
+// soonest fight night for a manager's fighter with at least HUMAN_LEAD minutes of notice (never tonight)
+function humanNight(C: any, div: string, today: string, mins: number) {
+  const night = (C.FIGHT_NIGHT as Record<string, string>)[div];
+  if (!night) return null;
+  for (let n = 1; n <= 8; n++) { const d = addDays(today, n); if (weekday(d) === night && n * 1440 + 22 * 60 + 45 - mins >= HUMAN_LEAD) return d; }
+  return null;
+}
 const pk = (u: string, f: string) => u + ":" + f;
+// cheap check for the daytime passes: managers' fighters with no scheduled bout (skipping ones we already know can't be matched)
+async function freeHumans() {
+  const hs = (await sb.from("profiles").select("id").eq("is_bot", false)).data || [];
+  if (!hs.length) return [] as string[];
+  const st = (await sb.from("gym_state").select("user_id,data").in("user_id", hs.map((h: any) => h.id))).data || [];
+  const open = (await sb.from("bouts").select("red_user,red_fid,blue_user,blue_fid").eq("status", "scheduled").eq("bot_only", false)).data || [];
+  const busy = new Set<string>(); open.forEach((b: any) => { busy.add(pk(b.red_user, b.red_fid)); busy.add(pk(b.blue_user, b.blue_fid)); });
+  const out: string[] = [];
+  st.forEach((r: any) => (r.data?.roster || []).forEach((k: string) => { const F = r.data[k]; if (F && F.div && !F.deleteAfter && !busy.has(pk(r.user_id, k))) out.push(pk(r.user_id, k)); }));
+  return out;
+}
 const gk = (u: string) => (/^00000000-0000-0000-0000-0000000000b[0-9a-f]$/.test(u) ? u.slice(-2) : "small"); // big bot gym key: ...00b4 -> b4
 const nm = (F: any) => String(F?.name || "?").trim();
 async function postReleases(list: Release[], log: string[]) {
@@ -56,11 +77,18 @@ export async function handle(req: Request, client: any, C: any): Promise<Respons
   const { date: today, mins } = chicago();
   const force = url.searchParams.get("force") === "1";
   const bookOnly = url.searchParams.get("book") === "1";
-  if (!force && mins < 22 * 60 + 40) return Response.json({ skipped: "not fight time", today });
+  // daytime: only book managers' fighters who have no bout yet
+  const quick = !force && mins < 22 * 60 + 40;
+  if (quick) {
+    const fh = await freeHumans();
+    const last = (await sb.from("league_runs").select("unmatched").not("unmatched", "is", null).order("id", { ascending: false }).limit(1).maybeSingle()).data;
+    const known = new Set<string>(last?.unmatched || []);
+    if (!fh.some((x) => !known.has(x))) return Response.json({ skipped: "not fight time, every manager's fighter is booked", today });
+  }
   const { data: rid } = await sb.rpc("runner_begin");
   if (!rid) return Response.json({ skipped: "another pass is running" });
   const log: string[] = [];
-  let ran = 0, booked = 0, vacated = 0, leftDue = 0;
+  let ran = 0, booked = 0, vacated = 0, leftDue = 0, unmatched: string[] | null = null;
   const tonight: any[] = [];
   try {
     // 1) retired champions lose their belts
@@ -74,7 +102,7 @@ export async function handle(req: Request, client: any, C: any): Promise<Respons
     const S: Record<string, any> = Object.fromEntries(states.map((s) => [s.user_id, s.data || {}]));
 
     // 2) fight due bouts
-    if (!bookOnly) {
+    if (!bookOnly && !quick) {
       const due = await all(() => sb.from("bouts").select("*").eq("status", "scheduled").lte("fight_date", today).order("fight_date").order("id"));
       for (const B of due) {
         if (ran >= MAX_FIGHTS) { leftDue++; continue; }
@@ -123,9 +151,14 @@ export async function handle(req: Request, client: any, C: any): Promise<Respons
     }
 
     // 3) book next bouts at the midnight pass (only once every due fight is done)
-    if (leftDue === 0 && (bookOnly || mins >= 23 * 60 + 50)) {
-      const open = await all(() => sb.from("bouts").select("red_user,red_fid,blue_user,blue_fid").eq("status", "scheduled"));
+    if (leftDue === 0 && (quick || bookOnly || mins >= 23 * 60 + 50)) {
+      const midnight = !quick;
+      const open = await all(() => sb.from("bouts").select("id,red_user,red_fid,blue_user,blue_fid,bot_only,fight_date").eq("status", "scheduled"));
       const busy = new Set<string>(); open.forEach((b) => { busy.add(pk(b.red_user, b.red_fid)); busy.add(pk(b.blue_user, b.blue_fid)); });
+      // bot-vs-bot bouts after tonight can be broken up to give a manager's fighter an opponent
+      const bump = new Map<string, { id: number; partner: string }>();
+      open.forEach((b) => { if (b.bot_only && b.fight_date > today) { bump.set(pk(b.red_user, b.red_fid), { id: b.id, partner: pk(b.blue_user, b.blue_fid) }); bump.set(pk(b.blue_user, b.blue_fid), { id: b.id, partner: pk(b.red_user, b.red_fid) }); } });
+      const cancelIds: number[] = [];
       // bot gyms keep PER_DIV active fighters per division in each region: retire the washed up, sign replacements
       const pubs = await all(() => sb.from("gym_public").select("user_id,data").in("user_id", Object.keys(S).filter((u) => P[u]?.is_bot)));
       const PUB: Record<string, any> = Object.fromEntries(pubs.map((r) => [r.user_id, r.data || {}]));
@@ -133,7 +166,7 @@ export async function handle(req: Request, client: any, C: any): Promise<Respons
       const allBots: any[] = []; Object.entries(S).forEach(([u, d]: any) => { if (P[u]?.is_bot) (d.roster || []).forEach((k: string) => d[k] && allBots.push({ u, k, F: d[k] })); });
       const mgmt: Release[] = []; let signed = 0, retiredN = 0;
       for (const [u, d] of Object.entries(S) as any) {
-        const key = gk(u); if (!P[u]?.is_bot || !PUB[u]) continue;
+        const key = gk(u); if (!midnight || !P[u]?.is_bot || !PUB[u]) continue;
         let changed = false; const card = PUB[u];
         if (!GYMS[key]) {
           // small gyms keep their own size: a retiring fighter is replaced by a new one of the same style in the same division
@@ -218,7 +251,8 @@ export async function handle(req: Request, client: any, C: any): Promise<Respons
         rows.push({ fight_date: date, div: a.F.div, red_user: a.u, red_fid: a.k, blue_user: b.u, blue_fid: b.k, belt: null, rounds: a.reg === "bk" ? 25 : 12, region: a.reg || null, status: "scheduled", venue: v, bot_only: botOnly });
         busy.add(pk(a.u, a.k)); busy.add(pk(b.u, b.k));
       };
-      const bots = free(true);
+      const allBotList: any[] = [];
+      for (const [u, d] of Object.entries(S) as any) if (P[u]?.is_bot) for (const k of (d.roster || [])) { const F = d[k]; if (F && F.div) allBotList.push({ u, k, F, gym: P[u].gym, reg: F.region === "bk" ? "bk" : "" }); }
       // Fair matchmaking (owner, Nov 12, 2026): never more than 1 ability point apart in total (STR+KP+SPD+AGL+CHN+CND+HGT+CUT);
       // then the same status, closest rating (18/18 meets 18/18, then 17/18, 16/18...), then status 1 apart, and so on.
       // Nobody fit? He waits for the next night's booking instead of getting an unfair fight.
@@ -226,19 +260,27 @@ export async function handle(req: Request, client: any, C: any): Promise<Respons
       const fair = (a: any, b: any) => Math.abs(AP(a.F) - AP(b.F)) <= 1;
       const gap = (a: any, b: any) => Math.abs((a.F.status || 0) - (b.F.status || 0)) * 100 + Math.abs((a.F.rating || 0) - (b.F.rating || 0));
       // humans first: the fairest bot in his division and region, preferring bots he hasn't fought and a different gym than last time
+      unmatched = [];
       for (const h of free(false)) {
-        const date = nextNight(C, h.F.div, today); if (!date) continue;
+        if (h.F.deleteAfter) continue;
+        const date = humanNight(C, h.F.div, today, mins); if (!date) continue;
         const seen = new Set((h.F.hist || []).filter((x: any) => x.bout).map((x: any) => x.opp + "|" + x.ogym));
         const lastGym = ((h.F.hist || []).find((x: any) => x.bout) || {}).ogym;
-        const cands = bots.filter((b) => b.F.div === h.F.div && b.reg === h.reg && !busy.has(pk(b.u, b.k)) && fair(h, b));
-        if (!cands.length) { log.push(`no fair opponent free for ${nm(h.F)} (${h.F.div}, ${AP(h.F)} AP, ${h.F.rating || 0}/${h.F.status || 0})`); continue; }
-        const score = (b: any) => gap(h, b) * 10 + (seen.has(b.F.name + "|" + b.gym) ? 3 : 0) + (b.gym === lastGym ? 1 : 0) + Math.random() * 0.9;
+        const open2 = (b: any) => !busy.has(pk(b.u, b.k)) || bump.has(pk(b.u, b.k));
+        const cands = allBotList.filter((b) => b.F.div === h.F.div && b.reg === h.reg && open2(b) && fair(h, b));
+        if (!cands.length) { unmatched.push(pk(h.u, h.k)); log.push(`no fair opponent free for ${nm(h.F)} (${h.F.div}, ${AP(h.F)} AP, ${h.F.rating || 0}/${h.F.status || 0})`); continue; }
+        const score = (b: any) => gap(h, b) * 10 + (bump.has(pk(b.u, b.k)) ? 5 : 0) + (seen.has(b.F.name + "|" + b.gym) ? 3 : 0) + (b.gym === lastGym ? 1 : 0) + Math.random() * 0.9;
         cands.sort((x, y) => score(x) - score(y));
-        book(h, cands[0], date, false);
+        const opp = cands[0], bm = bump.get(pk(opp.u, opp.k));
+        if (bm) { // break up his bot-vs-bot bout; the other bot is free again
+          cancelIds.push(bm.id); bump.delete(pk(opp.u, opp.k)); bump.delete(bm.partner); busy.delete(bm.partner);
+          log.push(`bout ${bm.id} (bot vs bot) cancelled to make room for ${nm(h.F)}`);
+        }
+        book(h, opp, date, false);
       }
       // then the bots against each other, same rules: same division and region, different gyms
       const byDiv: Record<string, any[]> = {};
-      bots.filter((b) => !busy.has(pk(b.u, b.k))).forEach((b) => (byDiv[b.F.div + "|" + b.reg] ||= []).push(b));
+      if (midnight) free(true).filter((b) => !busy.has(pk(b.u, b.k))).forEach((b) => (byDiv[b.F.div + "|" + b.reg] ||= []).push(b));
       for (const [dk, list] of Object.entries(byDiv)) {
         const div = dk.split("|")[0];
         const date = nextNight(C, div, today); if (!date) continue;
@@ -258,6 +300,10 @@ export async function handle(req: Request, client: any, C: any): Promise<Respons
           book(a, b, date, true);
         }
       }
+      if (cancelIds.length) {
+        const { error } = await sb.from("bouts").update({ status: "cancelled" }).in("id", cancelIds).eq("status", "scheduled").eq("bot_only", true);
+        if (error) log.push("cancel: " + error.message);
+      }
       for (let i = 0; i < rows.length; i += 200) {
         const { error } = await sb.from("bouts").insert(rows.slice(i, i + 200));
         if (error) { log.push("booking: " + error.message); break; } else booked += Math.min(200, rows.length - i);
@@ -273,6 +319,6 @@ export async function handle(req: Request, client: any, C: any): Promise<Respons
   } catch (e) {
     log.push("error: " + (e as Error).message);
   }
-  await sb.from("league_runs").update({ finished_at: new Date().toISOString(), ran, booked, vacated, left_due: leftDue, note: log.join("\n").slice(0, 4000) || null }).eq("id", rid);
+  await sb.from("league_runs").update({ finished_at: new Date().toISOString(), ran, booked, vacated, left_due: leftDue, unmatched, note: log.join("\n").slice(0, 4000) || null }).eq("id", rid);
   return Response.json({ today, ran, booked, vacated, leftDue, log });
 }
