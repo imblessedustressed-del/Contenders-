@@ -429,6 +429,7 @@ async function loadPosts(tid){
   if(!error&&postsTopic===tid){posts=data.map(p=>({id:p.id,by:p.author,at:Date.parse(p.created_at),text:p.body}));refresh()}
 }
 async function afterLogin(){
+  try{SB.rpc('touch_seen').then(()=>{},()=>{})}catch(e){} // ban-evasion watch: a one-way network fingerprint, never the address
   await checkBuild();if(staleBuild)return;
   await loadPublic();loadIms();
   try{
@@ -1115,7 +1116,10 @@ function aupHTML(){
   <li>Trash talk is part of boxing. Threats and harassment are not.</li>
   <li>Don't use bugs to gain an edge. Report them in the Bug Reports forum.</li>
   <li>The commissioner can rename, retire or remove anything that breaks these rules.</li>
-  <li>No stealing: don't try to get into another manager's account, read his fight plans, or copy his gym. Fighters, records and money can only change through real fights.</li></ol>
+  <li>No stealing: don't try to get into another manager's account, read his fight plans, or copy his gym. Fighters, records and money can only change through real fights.</li>
+  <li>No impersonation: don't pretend to be another manager, another gym, the commissioner or the league's owner, in a gym name, a Simbot nickname, a description, a post or a message. Names that copy or closely mimic an existing gym or a league title are refused automatically.</li>
+  <li>Gym descriptions may use old-school HTML to dress up your page, but nothing misleading: no fake records, titles, rankings or site messages. Misleading descriptions are removed.</li></ol>
+  <h2>Account safety</h2><p>Use a strong password you don't use anywhere else, and never share it. Nobody from Contenders will ever ask for your password. To catch banned players who come back under new names, the site keeps a one-way scrambled fingerprint of the network you play from. It can't be turned back into your address and is only used to protect the league.</p>
   <h2>Penalties</h2><p>Breaking the rules earns a strike. A <b>gag</b> stops you from posting in the forums or sending messages. A <b>ban</b> stops you from playing, posting and messaging. You can still read the site either way.</p>
   <ol><li><b>First strike:</b> 2 days.</li><li><b>Second strike:</b> 2 weeks.</li><li><b>Third strike:</b> permanent, until the league lifts it.</li></ol>
   <p>Cheating or stealing goes straight to a ban. Your own page tells you if you're gagged or banned, why, and until when.</p>`;
