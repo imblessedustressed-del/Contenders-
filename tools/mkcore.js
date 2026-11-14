@@ -3,7 +3,7 @@
 // build.sh runs this. Run by hand after any engine or league-rule change:  (cd tools && npm i acorn acorn-walk) ; node tools/mkcore.js
 const acorn=require('acorn'),walk=require('acorn-walk'),fs=require('fs'),path=require('path');
 const R=p=>path.join(__dirname,'..',p);
-const sh=fs.readFileSync(R('src/shell.html'),'utf8');const i=sh.indexOf('<script>',sh.indexOf('supabase-js@2'))+8;const code=sh.slice(i,sh.indexOf('</script>',i)).replace('%%SIM%%','');
+const sh=fs.readFileSync(R('src/shell.html'),'utf8');const i=sh.indexOf('<script>',Math.max(sh.indexOf('supabase-js@2'),sh.indexOf('%%PURIFY%%</script>')))+8;const code=sh.slice(i,sh.indexOf('</script>',i)).replace('%%SIM%%','');
 const ast=acorn.parse(code,{ecmaVersion:'latest'});const decl={};
 for(const n of ast.body){let names=[];if(n.type==='FunctionDeclaration')names=[n.id.name];else if(n.type==='VariableDeclaration')names=n.declarations.flatMap(d=>d.id.type==='Identifier'?[d.id.name]:[]);names.forEach(x=>decl[x]=n)}
 const roots=['minWeight','natWeight','prepFighter','applyResult','boutPurses','attendanceFor','fightFans','broadcastResult','venueTier','pickVenue','broadcastTier','ht','DIVS','FIGHT_NIGHT'];

@@ -6,8 +6,9 @@ python3 - <<'PY'
 import time
 s=open('src/shell.html').read()
 eng=open('src/plan.js').read()+open('src/sim4.js').read()
+pur=open('src/vendor/purify.min.js').read()
 b=str(int(time.time()))
-open('index.html','w').write(s.replace('%%SIM%%',eng).replace('%%BUILD%%',b))
+open('index.html','w').write(s.replace('%%PURIFY%%',pur).replace('%%SIM%%',eng).replace('%%BUILD%%',b))
 open('version.txt','w').write(b)
 print('index.html rebuilt, build',b)
 PY

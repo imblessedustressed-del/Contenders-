@@ -234,6 +234,8 @@ pre.plan{background:#fbfaf7;border:1px solid var(--line)}
 .labChat{max-height:320px;overflow-y:auto;border:1px solid var(--line);border-radius:8px;padding:6px 10px;background:#fffdf8}.labChat .lc{margin:6px 0;border-bottom:1px dotted #e3d6bf;padding-bottom:5px}
 .labSay{display:flex;gap:6px;margin-top:6px}.labGuest input{width:190px}.labSay input{flex:1}
 @media(max-width:760px){.labGrid{grid-template-columns:1fr}.labVs{font-size:22px}.labTick .lt:first-child{font-size:14px}}
+.gymDescWrap{margin:12px 0}.gymDesc{border:1px solid var(--line);border-radius:8px;padding:12px 14px;max-height:900px;overflow:auto;position:relative;isolation:isolate;contain:layout paint;background:#fffdf8;word-wrap:break-word;overflow-wrap:anywhere}
+.gymDesc img{max-width:100%;height:auto}.gymDesc table{max-width:100%}.gymDesc a::after{content:" \2197";font-size:.85em}.gymDescCtl{margin-top:4px}
 </style>
 </head>
 <body>
@@ -268,6 +270,7 @@ pre.plan{background:#fbfaf7;border:1px solid var(--line)}
 </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>%%PURIFY%%</script>
 <script>
 const STATS=[['str','Strength'],['kp','KO Punch Bonus'],['spd','Speed'],['agl','Agility'],['chn','Chin'],['cnd','Conditioning']];
 const POOL=70,MAX=30,MINS={str:1,kp:0,spd:1,agl:1,chn:1,cnd:1,hgt:0};
@@ -401,14 +404,14 @@ async function initDB(){
 }
 async function loadPublic(){
   try{
-    const[p,t,gc,bt]=await Promise.all([SB.from('profiles').select('id,gym,description,location,created_at'),SB.from('topics').select('*').order('last_at',{ascending:false}).limit(500),SB.from('gym_public').select('user_id,data,updated_at'),(async()=>{const C='id,fight_date,div,red_user,red_fid,blue_user,blue_fid,belt,purse,status,summary,venue,bot_only,region,rounds';
+    const[p,t,gc,bt]=await Promise.all([SB.from('profiles').select('id,gym,description,location,created_at,desc_blocked'),SB.from('topics').select('*').order('last_at',{ascending:false}).limit(500),SB.from('gym_public').select('user_id,data,updated_at'),(async()=>{const C='id,fight_date,div,red_user,red_fid,blue_user,blue_fid,belt,purse,status,summary,venue,bot_only,region,rounds';
       const q=await Promise.all([SB.from('bouts').select(C).or('bot_only.eq.false,belt.not.is.null').order('fight_date',{ascending:false}).limit(2000),
         SB.from('bouts').select(C).eq('bot_only',true).eq('status','scheduled').limit(1000),
         SB.from('bouts').select(C).eq('bot_only',true).eq('status','done').is('belt',null).order('fight_date',{ascending:false}).limit(400)]);
       const e=q.find(x=>x.error);if(e)return e;const seen=new Set(),data=[];q.forEach(x=>x.data.forEach(b=>{if(!seen.has(b.id)){seen.add(b.id);data.push(b)}}));
       data.sort((a,b)=>a.fight_date<b.fight_date?1:a.fight_date>b.fight_date?-1:b.id-a.id);return{data,error:null}})()]);
     if(p.error||t.error)throw p.error||t.error;
-    managers={};p.data.forEach(r=>managers[r.id]={gym:r.gym,desc:r.description,loc:r.location||'',bot:false,at:Date.parse(r.created_at)});
+    managers={};p.data.forEach(r=>managers[r.id]={gym:r.gym,desc:r.description,loc:r.location||'',bot:false,at:Date.parse(r.created_at),descBlocked:!!r.desc_blocked});
     /* sparring gyms: the gyms whose full records the database lets everyone read (which ones are computer-run is never sent to players) */
     {const bs=await SB.from('gym_state').select('user_id,data').neq('user_id',ME||'00000000-0000-0000-0000-000000000000');if(!bs.error){botF={};bs.data.forEach(r=>{if(r.user_id===ME)return;if(managers[r.user_id])managers[r.user_id].bot=true;const d=r.data||{};(d.roster||[]).forEach(k=>{if(d[k])botF['bot:'+r.user_id+':'+k]={...d[k],gymName:managers[r.user_id].gym}})})}}
     bouts=(bt&&!bt.error&&bt.data)||[];try{const vq=await SB.from('vacancies').select('div,belt,bout_id,vacated_at');if(!vq.error)vacancies=vq.data||[]}catch(e){}cards={};if(gc&&!gc.error)gc.data.forEach(r=>cards[r.user_id]=r.data||{});
@@ -879,6 +882,36 @@ function labShare(){const L=labState(),f=L.fight;if(!f)return;const r=f.result,[
   const txt=r.w==null?`🥊 ${a} and ${b} fought to a ${r.type.toLowerCase()} in Simbot.`:`🥊 ${L.names[r.w]} beat ${L.names[1-r.w]} by ${r.decision?r.type.toLowerCase():r.type+' in round '+r.round} in Simbot.`;
   labPost(txt)}
 
+/* ---------- Gym descriptions: old-school HTML, made safe (owner, Nov 13, 2026) ---------- */
+const GD_TAGS=['a','b','i','u','s','strike','em','strong','br','p','div','span','center','font','big','small','sub','sup','h1','h2','h3','h4','h5','h6','hr','blockquote','pre','tt','code','ul','ol','li','dl','dt','dd','table','thead','tbody','tfoot','tr','td','th','caption','img','marquee'];
+const GD_ATTR=['href','title','src','alt','width','height','align','valign','color','face','size','bgcolor','border','cellpadding','cellspacing','colspan','rowspan','style','behavior','direction','scrollamount','loop','nowrap'];
+const GD_CSS=/^(color|background-color|font-family|font-size|font-weight|font-style|text-align|text-decoration|text-transform|letter-spacing|line-height|border(-(top|right|bottom|left))?(-(width|style|color))?|border-radius|padding(-(top|right|bottom|left))?|margin(-(top|right|bottom|left))?|width|max-width|height|max-height|vertical-align|white-space)$/;
+let gdHooked=false;const gymDescPlain={};
+function gdClean(raw){
+  if(typeof DOMPurify==='undefined'||!DOMPurify.isSupported)return null;
+  if(!gdHooked){gdHooked=true;
+    DOMPurify.addHook('uponSanitizeAttribute',(node,d)=>{
+      if(d.attrName==='style'){ // keep only harmless CSS: no positioning, overlays, transforms or outside images
+        d.attrValue=String(d.attrValue).split(';').map(x=>x.trim()).filter(x=>{const i=x.indexOf(':');if(i<1)return false;const k=x.slice(0,i).trim().toLowerCase(),v=x.slice(i+1).toLowerCase();
+          return GD_CSS.test(k)&&!/url\(|expression|javascript|@|\\|fixed|absolute|sticky|!important|var\(|calc\(|vh|vw/.test(v)&&!/^-/.test(v.trim())}).join('; ');
+        if(!d.attrValue)d.keepAttr=false}
+      if(d.attrName==='href'&&!/^https?:\/\//i.test(d.attrValue))d.keepAttr=false;
+      if(d.attrName==='src'&&!/^https:\/\//i.test(d.attrValue))d.keepAttr=false;
+      if((d.attrName==='width'||d.attrName==='height')&&parseInt(d.attrValue)>2000)d.keepAttr=false;
+      if(d.attrName==='size'&&node.nodeName==='FONT'&&Math.abs(parseInt(d.attrValue)||0)>7)d.keepAttr=false});
+    DOMPurify.addHook('afterSanitizeAttributes',node=>{if(node.nodeName==='A'){node.setAttribute('target','_blank');node.setAttribute('rel','noopener noreferrer nofollow ugc');if(node.getAttribute('href'))node.setAttribute('title','Leaves Contenders: '+node.getAttribute('href'))}
+      if(node.nodeName==='IMG'){node.setAttribute('loading','lazy');node.setAttribute('referrerpolicy','no-referrer')}});
+  }
+  return DOMPurify.sanitize(String(raw||''),{ALLOWED_TAGS:GD_TAGS,ALLOWED_ATTR:GD_ATTR,ALLOW_DATA_ATTR:false,ALLOW_ARIA_ATTR:false,ALLOW_UNKNOWN_PROTOCOLS:false,KEEP_CONTENT:true,FORBID_TAGS:['style','script','iframe','form','input','button','link','meta','base','object','embed','svg','math','body','html','head','title'],FORBID_ATTR:['id','class','name','target']});
+}
+function gymDescBox(raw,o={}){
+  let blockAll=false;try{blockAll=localStorage.getItem('contenders_block_html')==='1'}catch(e){}
+  const plain=blockAll||(o.uid&&gymDescPlain[o.uid]),clean=plain?null:gdClean(raw);
+  const body=clean==null?`<div style="white-space:pre-wrap">${esc(raw)}</div>`:clean;
+  const ctl=o.preview?'<span>Preview: this is how your gym page will show it.</span>':`<span>Written by the gym's manager.</span> ${blockAll?'':`<a data-descplain="${esc(o.uid)}">${plain?'Show with HTML':'View without HTML'}</a> · `}<a data-descblockall="1">${blockAll?'Allow HTML in gym descriptions':'Block HTML in all gym descriptions'}</a>`;
+  return`<div class="gymDescWrap"><div class="gymDesc">${body}</div><p class="gymDescCtl small mute">${ctl}</p></div>`;
+}
+
 /* ---------- Main ---------- */
 const POW=`<svg class="pow" viewBox="0 0 60 50"><polygon points="30,2 35,14 48,6 43,19 58,20 45,28 54,40 39,35 34,48 28,36 16,46 18,32 3,34 14,24 4,12 19,15 22,2" fill="#f4c430" stroke="#a33" stroke-width="2"/><text x="30" y="30" text-anchor="middle" font-family="Impact,Arial Black,sans-serif" font-size="13" fill="#c22" transform="rotate(-12 30 28)">BAM!</text></svg>`;
 const FLAGS=[['#b22','#fff','#226'],['#d22','#fff','#d22'],['#063','#fff','#c22'],['#000','#d00','#fc0'],['#039','#fff','#039'],['#c00','#fff','#00a'],['#fc0','#06c','#fc0'],['#090','#fff','#f60'],['#d00','#fff','#d00'],['#00a','#fd0','#00a'],['#c00','#fd0','#c00'],['#fff','#d00','#fff'],['#06c','#fff','#c00'],['#f80','#fff','#090']];
@@ -1231,7 +1264,7 @@ function shortHTML(){
   ${ROSTER().map(s=>{const F=state[s];return`<tr><td><a data-go="rec:${s}">${esc(F.name)}</a></td><td>${recStr(F)}</td>${STATS.map(([k])=>`<td class="n">${F[k]}</td>`).join('')}<td>${Math.floor(HT(F)/12)}'${HT(F)%12}"</td></tr>`}).join('')}</table>`;
 }
 function changeGymHTML(){return`<h1>Change Gym</h1>${needLogin('name your gym')}${ME?gymForm():''}`}
-function descHTML(){if(!ME)return`<h1>Description</h1>${needLogin('describe your gym')}`;return`<h1>Description</h1><p>Where is your gym? <input id="locIn" data-keep maxlength="60" style="width:240px" placeholder="City, State or Country" value="${esc((managers[ME]&&managers[ME].loc)||'')}"></p><p>Tell other managers about your gym. Plain text only.</p><textarea id="descIn" data-keep rows="6">${esc((ME&&managers[ME]&&managers[ME].desc)||state.gymDesc||'')}</textarea><p><button id="saveDesc">Save Description</button></p>`}
+function descHTML(){if(!ME)return`<h1>Description</h1>${needLogin('describe your gym')}`;return`<h1>Description</h1><p>Where is your gym? <input id="locIn" data-keep maxlength="60" style="width:240px" placeholder="City, State or Country" value="${esc((managers[ME]&&managers[ME].loc)||'')}"></p><p>Tell other managers about your gym. You can dress it up with old-school HTML: <tt>&lt;center&gt;</tt>, <tt>&lt;font color="red" face="Georgia" size="4"&gt;</tt>, <tt>&lt;b&gt;</tt>, <tt>&lt;i&gt;</tt>, <tt>&lt;br&gt;</tt>, <tt>&lt;hr&gt;</tt>, tables, <tt>&lt;img src="https://..."&gt;</tt>, links and even <tt>&lt;marquee&gt;</tt>. Scripts, forms and anything that would change the rest of the site are removed. Anything misleading (fake records, fake site messages, pretending to be another gym or the commissioner) gets your description blocked. Up to 5,000 characters.</p><textarea id="descIn" data-keep rows="12" spellcheck="false">${esc((ME&&managers[ME]&&managers[ME].desc)||state.gymDesc||'')}</textarea><p><button id="saveDesc">Save Description</button> <button id="prevDesc">Preview</button></p><div id="descPrev"></div>`}
 /* ---------- Fighter editor ---------- */
 function cornerHTML(side){
   const F=state.draft||(state.draft=newDraft()),left=POOL-used(F);
@@ -1609,7 +1642,7 @@ function gymPubHTML(uid){
   const byDiv=(L,act)=>['','bk'].flatMap(R=>[...DIVS].reverse().map(([d])=>[d,R])).filter(([d,R])=>L.some(f=>f.div===d&&rg(f)===R)).map(([d,R])=>`<h3 class="divh">${R?'Bare Knuckles ':''}${esc(d)}weights</h3>${L.map((f,i)=>[f,i]).filter(([f])=>f.div===d&&rg(f)===R).sort((x,y)=>{const r=f=>{const n=act&&rk[d+R]?rk[d+R].findIndex(z=>z.uid===uid&&z.f.id===f.id):-1;return n<0?1e9:n};return r(x[0])-r(y[0])}).map(([f,i])=>fl(f,i,act)).join('')}`).join('');
   return`<h1 class="pubname">${esc(m.gym)}${m.bot&&seeBots()?' <span class="small mute">(bot gym)</span>':''}</h1>${m.bot&&seeBots()?'<p class="small mute">A computer-run gym that fills out the rankings. Spar with its fighters in Practice Fights.</p>':''}
   <p>${esc(m.gym)} trains fighters${m.loc?` in ${esc(m.loc)}`:''}. Managing since ${m.at?dt(m.at).slice(0,10):'recently'}.${uid!==ME&&!(m.bot&&seeBots())?` <a data-dm="${esc(uid)}">Send a message</a>`:''}</p>
-  ${m.desc?`<div class="note" style="white-space:pre-wrap">${esc(m.desc)}</div>`:''}
+  ${m.descBlocked?'<p class="small mute">This gym\'s description was removed by the Commissioner.</p>':m.desc?gymDescBox(m.desc,{uid}):''}
   <table class="plain" style="margin-top:12px"><tr><th>Region</th><th>Earnings</th><th>Record</th><th>Titles</th></tr>
   <tr><td><b>Contenders</b></td><td>${money(g.earn)}</td><td>${g.rec[0]}-${g.rec[1]}-${g.rec[2]}</td><td class="cr">${g.titles}</td></tr></table>
   <h2>Fighters Managed by ${esc(m.gym)}</h2>${(c.fighters||[]).length?byDiv(c.fighters,true):'<p class="mute">No active fighters.</p>'}
@@ -1833,7 +1866,8 @@ function fundingHTML(){return`<h1>Contenders Funding</h1><p>Contenders is free t
 
 /* ---------- events ---------- */
 document.addEventListener('click',async e=>{
-  const t=e.target.closest('[data-go],[data-v],[data-dm],[data-retire],[data-unretire-after],[data-activate],button');if(!t)return;
+  const t=e.target.closest('[data-go],[data-v],[data-dm],[data-retire],[data-unretire-after],[data-activate],[data-descplain],[data-descblockall],button');if(!t)return;
+  if(t.closest('.gymDesc'))return; // nothing inside a manager's description can trigger site actions
   /* visitors without a gym: every sidebar link leads back to the home page (owner, Nov 12, 2026) */
   if(t.dataset.v){if(!ME&&t.dataset.v!=='login'&&t.dataset.v!=='simbot'&&t.dataset.v!=='lab'){$('#side').classList.remove('open');nav('home');return}nav(t.dataset.v);return}
   if(t.dataset.go){nav(t.dataset.go);return}
@@ -1880,7 +1914,10 @@ document.addEventListener('click',async e=>{
   else if(t.id==='cleanPlans'){ensurePlans();if(state.plans['Basic']==null)state.plans['Basic']='6/6/8';ROSTER().forEach(s=>usePlan(s,'Basic'));save();alertBox('All fight plans have been cleaned.')}
   else if(t.id==='saveGym'){const v=$('#gymIn').value.trim().slice(0,40);if(v.length<2)return alertBox('Gym names need at least 2 characters.');
     if(await safeWrite(()=>SB.from('profiles').update({gym:v}).eq('id',ME))){managers[ME]=Object.assign(managers[ME]||{},{gym:v});state.gymName=v;save();updateTop();alertBox('Gym name saved.')}}
-  else if(t.id==='saveDesc'){const v=$('#descIn').value.slice(0,1000),loc=$('#locIn').value.trim().slice(0,60);
+  else if(t.id==='prevDesc'){$('#descPrev').innerHTML=gymDescBox($('#descIn').value.slice(0,5000),{preview:true});return}
+  else if(t.dataset.descplain){gymDescPlain[t.dataset.descplain]=!gymDescPlain[t.dataset.descplain];render();return}
+  else if(t.dataset.descblockall){try{localStorage.setItem('contenders_block_html',localStorage.getItem('contenders_block_html')==='1'?'0':'1')}catch(e){}render();return}
+  else if(t.id==='saveDesc'){const v=$('#descIn').value.slice(0,5000),loc=$('#locIn').value.trim().slice(0,60);
     if(await safeWrite(()=>SB.from('profiles').update({description:v,location:loc}).eq('id',ME))){managers[ME]=Object.assign(managers[ME]||{},{desc:v,loc});alertBox('Description saved.')}}
   else if(t.id==='doRetireGym'){if($('#retireName').value.trim()!==myGym())return alertBox('The gym name does not match.');
     t.disabled=true;if(await safeWrite(()=>SB.rpc('retire_gym'))){await SB.auth.signOut().catch(()=>{});try{localStorage.removeItem('contenders_v6')}catch(e){}ME=null;alert0()}else t.disabled=false}
