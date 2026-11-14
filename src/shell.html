@@ -1447,7 +1447,7 @@ function reportHTML(f,b,upto){
     ${S.map((x,i)=>{const s=R.st[i];return`<p>${x.n} landed ${s.jl+s.pl+s.rl} of ${s.jt+s.pt+s.rt} punches -- ${s.pl} power punches, ${s.jl} jabs, ${s.rl} rights. (${s.pl*4+s.rl*3+s.jl*2} points)</p>`}).join('')}<div class="gap"></div>
     <p>${R.cc[0]===R.cc[1]?`This round was a ${R.cc[0]}-${R.cc[1]} tie.`:`${S[R.cc[0]>R.cc[1]?0:1].n} won the round ${Math.max(...R.cc)}-${Math.min(...R.cc)}.`}</p>
     <p>${Math.abs(R.run[0]-R.run[1])<=1?'The fight is too close to call at this point.':`${S[R.run[0]>R.run[1]?0:1].n} is ahead ${Math.max(...R.run)}-${Math.min(...R.run)} on the commentators' card.`}</p>
-    ${R.post.join('')}<div class="gap"></div>`;
+    ${R.post.join('')}<div class="gap"></div>${(R.dmg||[]).map((d,i)=>d&&(!b.mine||b.mine[i])?`<p class="mgr">${b.mine?'Your fighter':esc(S[i].n)} lost ${d.d.toFixed(1)} points of endurance this round due to damage, and ${d.f.toFixed(1)} points due to fatigue. He took ${d.s.toFixed(1)} points of stun damage this round. He has accumulated ${d.a} point${d.a===1?'':'s'} of damage in the fight.</p>`:'').join('')}`;
     if(isLast&&end&&!end.decision){h+=`<p class="r b">${S[end.w].n} wins by a Technical Knockout!!</p><p class="b">Time: 3:00 of round ${R.n}</p>`+afterFight(f,end);return}
     if(isLast&&end&&end.decision){
       if(f.bk){const k=f.bkScore||{kd:[0,0],stuns:[0,0]};h+=`<p>The fight goes the distance. Under bare-knuckle rules it comes down to knockdowns${k.kd[0]===k.kd[1]?', then stuns':''}.</p>${S.map((x,i)=>`<p>${x.n}: ${k.kd[i]} knockdown${k.kd[i]===1?'':'s'} scored, ${k.stuns[i]} stun${k.stuns[i]===1?'':'s'}.</p>`).join('')}
@@ -1475,7 +1475,8 @@ function leagueReportHTML(id){
     return`<h1>${esc(n('red'))} vs ${esc(n('blue'))}</h1><p>${w==null?'Draw':esc(n(w===0?'red':'blue'))+' won'} by ${esc(r.summary.how)}${r.summary.decision?` (${esc(r.summary.score)})`:''}.</p><p class="small mute">No round-by-round report was kept for this bout.</p><p class="small"><a data-go="results">Recent Results</a> | <a data-go="fcards">Recent Fight Cards</a></p>`}
   if(!r.result)return`<p>That fight hasn't been fought yet. <a data-go="fcards">Back to Fight Cards</a></p>`;
   if(r.mine===undefined&&SB&&ME){r.mine=null;SB.from('bout_private').select('mgr').eq('bout_id',id).maybeSingle().then(({data})=>{r.mine=data?data.mgr:[];if(view==='lreport:'+id)render()})}
-  const side=r.red_user===ME?0:r.blue_user===ME?1:-1,f={...r.result.f,rounds:r.result.f.rounds.map((R,i)=>({...R,mgr:side>=0&&Array.isArray(r.mine)&&r.mine[i]?(side===0?[r.mine[i],'']:['',r.mine[i]]):null}))};
+  const side=r.red_user===ME?0:r.blue_user===ME?1:-1,f={...r.result.f,rounds:r.result.f.rounds.map((R,i)=>{const m=side>=0&&Array.isArray(r.mine)?r.mine[i]:null,pre=m&&typeof m==='object'?m.pre:m,post=m&&typeof m==='object'?m.post:null;
+    return{...R,mgr:pre?(side===0?[pre,'']:['',pre]):null,dmg:post?(side===0?[post,null]:[null,post]):null}})};
   const b={...r.result.b,mine:[r.red_user===ME,r.blue_user===ME],venue:r.venue,att:r.summary&&r.summary.att,tv:r.summary&&r.summary.tv};
   return`<div class="rep">${reportHTML(f,b,f.rounds.length)}</div><p class="small"><a data-go="results">Recent Results</a> | <a data-go="fcards">Recent Fight Cards</a></p>`;
 }
@@ -1731,8 +1732,10 @@ function resultsHTML(){
 }
 function fightCardsHTML(){
   const C=[];if(ME)bouts.forEach(b=>[[b.red_user,b.red_fid],[b.blue_user,b.blue_fid]].forEach(([u,f])=>{if(u===ME&&(FTR(f)||b.status==='done'))C.push({b,k:f,F:FTR(f),x:boutInfo(b,u,f)})}));
+  /* fought bouts first (newest on top, each ? opens its report), then the coming bouts in date order */
+  C.sort((p,q)=>{const dp=p.b.status==='done',dq=q.b.status==='done';if(dp!==dq)return dp?-1:1;return dp?(q.b.fight_date.localeCompare(p.b.fight_date)||q.b.id-p.b.id):(p.b.fight_date.localeCompare(q.b.fight_date)||p.b.id-q.b.id)});
   return`<h1>Recent Fight Cards for ${esc(myGym())}</h1><p>Select the <b>?</b> on a fought bout to read its report.</p>
-  ${C.length?`<table class="hist">${C.slice(0,50).map(({b,k,F,x})=>`<tr><td>${b.status==='done'?`<a data-go="lreport:${b.id}">${ICON.q}</a>`:ICON.q}</td><td>${F?`<a data-go="pub:${k}">${esc(F.name)}</a>`:'A retired fighter'} vs <a data-go="opub:${x.ou}:${encN(x.of)}">${esc(x.o.name)}</a> (<a data-go="gympub:${x.ou}">${esc(x.gym)}</a>) Contenders ${esc(b.div)}weight ${b.belt?esc(b.belt)+' title ':''}bout on ${esc(x.date)}${venueAt(b)}${tvAt(b)}. Purse ${money(pursePart(b,x.red))}${b.summary&&b.summary.tv&&b.summary.tv.pay&&b.summary.tv.pay[x.red?0:1]?` + ${b.summary.tv.tier==='ppv'?'PPV':'TV'} ${money(b.summary.tv.pay[x.red?0:1])}`:''}.${F?` Fight Plan: ${esc((b.status==='done'&&((F.hist||[]).find(h=>h.bout===b.id)||{}).plan)||F.planName||'Basic')}`:''}</td></tr>`).join('')}</table>`:
+  ${C.length?`<table class="hist">${C.slice(0,50).map(({b,k,F,x})=>`<tr><td>${b.status==='done'?`<a data-go="lreport:${b.id}" title="Read the fight report">${ICON.q}</a>`:`<span class="mute" title="Not fought yet">${ICON.q}</span>`}</td><td>${F?`<a data-go="pub:${k}">${esc(F.name)}</a>`:'A retired fighter'} vs <a data-go="opub:${x.ou}:${encN(x.of)}">${esc(x.o.name)}</a> (<a data-go="gympub:${x.ou}">${esc(x.gym)}</a>) Contenders ${esc(b.div)}weight ${b.belt?esc(b.belt)+' title ':''}bout on ${esc(x.date)}${venueAt(b)}${tvAt(b)}. Purse ${money(pursePart(b,x.red))}${b.summary&&b.summary.tv&&b.summary.tv.pay&&b.summary.tv.pay[x.red?0:1]?` + ${b.summary.tv.tier==='ppv'?'PPV':'TV'} ${money(b.summary.tv.pay[x.red?0:1])}`:''}.${F?` Fight Plan: ${esc((b.status==='done'&&((F.hist||[]).find(h=>h.bout===b.id)||{}).plan)||F.planName||'Basic')}`:''}</td></tr>`).join('')}</table>`:
   `<p class="mute">None of your fighters have bouts scheduled yet.</p>`}`;
 }
 function schedHTML(){

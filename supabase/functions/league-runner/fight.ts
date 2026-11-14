@@ -15,8 +15,9 @@ export function fightOne(C: any, B: any, red: any, blue: any) {
   const d = new Date(B.fight_date + "T12:00:00");
   const date = d.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
   const sdate = d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
-  const mgr = [f.rounds.map((R: any) => (R.mgr || [])[0] || ""), f.rounds.map((R: any) => (R.mgr || [])[1] || "")];
-  f.rounds.forEach((R: any) => { delete R.mgr; });
+  // private to each manager: his tactics line at the start of each round and his damage line at the end (bout_private)
+  const mgr = [0, 1].map((i) => f.rounds.map((R: any) => ({ pre: (R.mgr || [])[i] || "", post: (R.dmg || [])[i] || null })));
+  f.rounds.forEach((R: any) => { delete R.mgr; delete R.dmg; });
   f.S = f.S.map((x: any) => ({ n: x.n, F: { name: x.F.name, nick: x.F.nick, home: x.F.home, hgt: x.F.hgt } }));
   const after = [structuredClone(FA), structuredClone(FB)];
   [0, 1].forEach((i) => {

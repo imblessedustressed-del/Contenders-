@@ -39,9 +39,10 @@ var RunnerLib = (() => {
     const d = /* @__PURE__ */ new Date(B.fight_date + "T12:00:00");
     const date = d.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
     const sdate = d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
-    const mgr = [f.rounds.map((R) => (R.mgr || [])[0] || ""), f.rounds.map((R) => (R.mgr || [])[1] || "")];
+    const mgr = [0, 1].map((i) => f.rounds.map((R) => ({ pre: (R.mgr || [])[i] || "", post: (R.dmg || [])[i] || null })));
     f.rounds.forEach((R) => {
       delete R.mgr;
+      delete R.dmg;
     });
     f.S = f.S.map((x) => ({ n: x.n, F: { name: x.F.name, nick: x.F.nick, home: x.F.home, hgt: x.F.hgt } }));
     const after = [structuredClone(FA), structuredClone(FB)];

@@ -140,6 +140,7 @@ function simulate(FA,FB,rounds){
       return{pt,pl:land(pt,pP),rt,rl:land(rt,pP),jt,jl:land(jt,pJ)};
     });
     /* --- endurance damage, injuries, fatigue --- */
+    const e0=S.map(x=>x.E); // bookkeeping only (no random numbers): the manager's end-of-round damage line
     const injNews=[[],[]];
     for(let i=0;i<2;i++){const j=1-i,X=S[i],Y=S[j],e=eff[i];
       Y.E-=D[i].end;Y.ipDmg+=D[i].base;
@@ -161,8 +162,12 @@ function simulate(FA,FB,rounds){
         else{const z={type:L[0],loc:L[1],lvl:L[0]==='swell'?1:newSev(),dmg:0};const ed=injEnd(z);Y.E-=ed;z.dmg=ed;if(z.type==='jaw'&&z.lvl>=4)z.wasBroken=true;Y.inj.push(z);injNews[j].push({inj:z,agg:false})}
       }
     }
+    const eD=S.map((x,i)=>e0[i]-x.E),fatV=[0,0];
     for(let i=0;i<2;i++){const X=S[i],e=eff[i];
-      const fat=e.agg+.5*e.pow+e.fat+A[i].pen.fat+X.giant;X.E-=Math.max(0,fat-X.cnd/2)}
+      const fat=e.agg+.5*e.pow+e.fat+A[i].pen.fat+X.giant;fatV[i]=Math.max(0,fat-X.cnd/2);X.E-=fatV[i]}
+    /* private to each manager, like the tactics line: endurance lost to damage and to fatigue, stun damage taken, damage so far */
+    S.forEach((x,i)=>{x.dmgTot=(x.dmgTot||0)+eD[i]});
+    R.dmg=S.map((x,i)=>({d:+eD[i].toFixed(1),f:+fatV[i].toFixed(1),s:+D[1-i].stun.toFixed(1),a:Math.round(x.dmgTot)}));
     /* --- stoppages --- */
     const ko=[0,1].filter(i=>st[i]>=99);
     if(!ended&&ko.length){const w=ko.length===2?(D[0].ratio>=D[1].ratio?0:1):ko[0];const rr=D[w].ratio/2.5;ended={type:'KO',w,why:'counted out',t:clamp(180*rand()/rr,8,178)}}

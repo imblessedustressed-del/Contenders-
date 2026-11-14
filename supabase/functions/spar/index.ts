@@ -79,7 +79,7 @@ Deno.serve(async (req) => {
       if (!s.hidden) return;
       const x = f.S[i];
       f.S[i] = { n: x.n, F: { name: x.F.name, nick: x.F.nick, home: x.F.home, hgt: x.F.hgt, fightW: x.F.fightW } };
-      f.rounds.forEach((R: any) => { if (R.mgr) R.mgr[i] = ""; });
+      f.rounds.forEach((R: any) => { if (R.mgr) R.mgr[i] = ""; if (R.dmg) R.dmg[i] = null; });
     });
     return out({ f });
   } catch (e) {
