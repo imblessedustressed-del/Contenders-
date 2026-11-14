@@ -426,7 +426,7 @@ async function loadIms(){
 }
 async function loadPosts(tid){
   const{data,error}=await SB.from('posts').select('*').eq('topic_id',tid).order('created_at').limit(1000);
-  if(!error&&postsTopic===tid){posts=data.map(p=>({id:p.id,by:p.author,at:Date.parse(p.created_at),text:p.body}));refresh()}
+  if(!error&&postsTopic===tid){posts=data.map(p=>({id:p.id,by:p.author,at:Date.parse(p.created_at),text:p.body,hidden:!!p.hidden}));refresh()}
 }
 async function afterLogin(){
   try{SB.rpc('touch_seen').then(()=>{},()=>{})}catch(e){} // ban-evasion watch: a one-way network fingerprint, never the address
@@ -863,10 +863,10 @@ function labDraw(at,tl){const cv=$('#labCv');if(!cv)return;const g=cv.getContext
 /* --- Lab Chat --- */
 const labNick=()=>{try{return localStorage.getItem('contenders_simbot_nick')||''}catch(e){return''}};
 async function labLoadChat(){if(!SB||labChatBusy)return;labChatBusy=true;
-  try{const{data,error}=await SB.from('lab_chat').select('id,author,nick,body,created_at').order('created_at',{ascending:false}).limit(40);if(!error)labChat=data.reverse()}finally{labChatBusy=false}
+  try{const{data,error}=await SB.from('lab_chat').select('id,author,nick,body,created_at,hidden').order('created_at',{ascending:false}).limit(40);if(!error)labChat=data.reverse()}finally{labChatBusy=false}
   const el=$('#labChat');if(!el)return;const atBottom=el.scrollHeight-el.scrollTop-el.clientHeight<40;
   el.innerHTML=!labChat?needDB():labChat.length?labChat.map(m=>{const gm=managers[m.author];const when=new Date(m.created_at);
-    return`<p class="lc"><b>${m.author&&gm?`<a data-go="gympub:${m.author}">${esc(gm.gym)}</a>`:m.nick?`${esc(m.nick)} <span class="small mute">(guest)</span>`:'A retired gym'}</b> <span class="small mute">${when.toLocaleDateString('en-US',{month:'short',day:'numeric'})} ${when.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}</span>${m.author===ME?` <a class="small" data-labdel="${m.id}">delete</a>`:''}<br>${esc(m.body)}</p>`}).join(''):'<p class="mute">No messages yet. Say something!</p>';
+    return`<p class="lc"><b>${m.author&&gm?`<a data-go="gympub:${m.author}">${esc(gm.gym)}</a>`:m.nick?`${esc(m.nick)} <span class="small mute">(guest)</span>`:'A retired gym'}</b> <span class="small mute">${when.toLocaleDateString('en-US',{month:'short',day:'numeric'})} ${when.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}</span>${m.author===ME?` <a class="small" data-labdel="${m.id}">delete</a>`:''}${m.hidden?' <span class="small cr">(hidden pending review, only you see it)</span>':''}<br>${esc(m.body)}</p>`}).join(''):'<p class="mute">No messages yet. Say something!</p>';
   if(atBottom||!el.dataset.seen){el.scrollTop=el.scrollHeight;el.dataset.seen=1}
   el.querySelectorAll('[data-labdel]').forEach(a=>a.onclick=async()=>{await SB.from('lab_chat').delete().eq('id',+a.dataset.labdel);labLoadChat()});
 }
@@ -1113,7 +1113,8 @@ function aupHTML(){
   <p>Contenders is a game for fun. By playing you agree to the following:</p>
   <ol><li>No fighter, gym or forum name may be hateful, obscene, or aimed at a real private person.</li>
   <li>One gym per person. Don't run extra gyms to feed wins to your main gym.</li>
-  <li>Trash talk is part of boxing. Threats and harassment are not.</li>
+  <li>Trash talk is part of boxing, and some adult language is fine. Vulgar, sexual or graphic content is not, and gets removed.</li>
+  <li><b>Automatic gag, reviewed by the league:</b> racism or any hateful slur; personal attacks on a real person (go after his fighter, not him); threats; and posting anyone's personal information or real-life details (names, addresses, phone numbers, emails, workplaces, photos). The post is hidden at once and the league reviews it before anything else happens.</li>
   <li>Don't use bugs to gain an edge. Report them in the Bug Reports forum.</li>
   <li>The commissioner can rename, retire or remove anything that breaks these rules.</li>
   <li>No stealing: don't try to get into another manager's account, read his fight plans, or copy his gym. Fighters, records and money can only change through real fights.</li>
@@ -1582,7 +1583,7 @@ function topicHTML(tid){
   if(SB&&postsTopic!==tid){postsTopic=tid;posts=[];loadPosts(tid)}
   if(!t)return`${forumNav()}${needDB()}<p class="mute">Loading topic...</p>`;
   return`${forumNav()}<h1>${esc(t.title)}</h1><p class="sans small"><a data-go="forum:${t.forum}">Back to ${esc((FORUMS.find(f=>f[0]===t.forum)||['',''])[1])}</a></p>
-  <div class="sans">${posts.map(p=>`<div class="post"><div class="meta">Posted by: ${p.by?`<a data-dm="${esc(p.by)}" title="Send a message">${esc(gymOf(p.by))}</a>`:`<b>${postsTopic&&(topics.find(t=>t.id===postsTopic)||{}).forum==='announce'?'The Commissioner':gymOf(null)}</b>`}<br>Date: <span>${dt(p.at)}</span></div><p>${bodyHTML(p.text)}</p></div>`).join('')}</div>
+  <div class="sans">${posts.map(p=>`<div class="post"><div class="meta">Posted by: ${p.by?`<a data-dm="${esc(p.by)}" title="Send a message">${esc(gymOf(p.by))}</a>`:`<b>${postsTopic&&(topics.find(t=>t.id===postsTopic)||{}).forum==='announce'?'The Commissioner':gymOf(null)}</b>`}<br>Date: <span>${dt(p.at)}</span></div>${p.hidden?'<p class="small cr">Hidden by the league pending review. Only you can see this post.</p>':''}<p>${bodyHTML(p.text)}</p></div>`).join('')}</div>
   ${dbState==='on'?(ME?sanctionOf('gag')?sanctionNote('gag'):`<hr><p class="sans"><b>Reply</b></p><textarea id="rBody" data-keep rows="5"></textarea><p><button id="postReply" data-topic="${t.id}">Post Reply</button></p>`:needLogin('reply')):''}`;
 }
 function msgsHTML(arg){
