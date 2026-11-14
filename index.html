@@ -747,7 +747,7 @@ function condText(x,after){
 /* ================= SHARED DATA (Supabase: accounts, forums, messages) ================= */
 cleanSlate();
 const SB_URL='https://ojsphhzgzbxmnfcbitqb.supabase.co',SB_KEY='sb_publishable_SWO9WhiSkoVhflY5CmY08A_hlqCEJSi';
-const BUILD='1794616402';
+const BUILD='1794616528';
 /* A tab left open on an older build must not save over newer data: if the site has been updated, reload before anything else is saved. */
 let staleBuild=false;
 async function checkBuild(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
@@ -1367,14 +1367,20 @@ function pubHTML(side){
 function frankOf(side){if(ME&&cards[ME]){const i=rankedIn(divOf(state[side]),state[side].region).findIndex(x=>x.uid===ME&&x.f.id===side);if(i>=0)return i+1}const sc=s=>{const r=state[s].rec;return(r[0]+.5*r[2])/Math.max(1,r[0]+r[1]+r[2])+r[0]*.001};const d=divOf(state[side]);const peers=ROSTER().filter(k=>divOf(state[k])===d).sort((a,b)=>sc(b)-sc(a));return peers.indexOf(side)+1}
 function planEditHTML(side){if(!FTR(side))return planFormHTML('');return planFormHTML('edit:'+encN(state[side].planName||'Basic'))}
 /* ---------- Fights ---------- */
+let prPlan={red:'',blue:''}; // practice fights: '' = the fighter's own plan, else a saved plan name
+const prFighter=c=>{const k=c==='red'?state.red:state.blue,F=getF(k);if(!F)return F;const n=prPlan[c];ensurePlans();return n&&state.plans[n]!=null?{...F,plan:state.plans[n],planName:n}:F};
 function fightHTML(){
   const opt=(arr,v)=>arr.map(([val,lab])=>`<option value="${val}"${val===v?' selected':''}>${lab}</option>`).join('');
   const R0=ROSTER(),BK=Object.keys(botF);if(!R0.length||(R0.length<2&&!BK.length))return`<h1>Practice Fights</h1><p>You need an active fighter for a practice fight. <a data-go="create">Create a fighter</a>.</p>`;
   const[rc,bc]=corners(),o=(k,F,v)=>`<option value="${k}"${k===v?' selected':''}>${esc(F.name)} ${recStr(F)} - ${esc(divOf(F))}</option>`;
+  ensurePlans();const psel=c=>{const F=getF(c==='red'?rc:bc),cur=prPlan[c];if(cur&&state.plans[cur]==null)prPlan[c]='';
+    return`<select id="${c}Plan"><option value="">His own plan${F&&F.planName&&F.plan!=null&&!botF[c==='red'?rc:bc]?' ('+esc(F.planName)+')':''}</option>${Object.keys(state.plans).sort().map(n=>`<option value="${esc(n)}"${n===prPlan[c]?' selected':''}>${esc(n)}</option>`).join('')}</select>`};
   const fsel=(id,v,bots)=>`<select id="${id}"><optgroup label="Your gym">${R0.map(k=>o(k,state[k],v)).join('')}</optgroup>${bots&&BK.length?[...new Set(BK.map(k=>botF[k].gymName))].map(g=>`<optgroup label="${esc(g)}${seeBots()?' (bot gym)':''}">${BK.filter(k=>botF[k].gymName===g).sort((a,b)=>DIVS.findIndex(d=>d[0]===divOf(botF[b]))-DIVS.findIndex(d=>d[0]===divOf(botF[a]))).map(k=>o(k,botF[k],v)).join('')}</optgroup>`).join(''):''}</select>`;
   let h=`<h1>Practice Fights</h1>
   <table class="grid"><tr><td class="red">Red corner</td><td>${fsel('redSel',rc,false)}</td></tr>
+  <tr><td class="red">Red fight plan</td><td>${psel('red')}</td></tr>
   <tr><td class="navy">Blue corner</td><td>${fsel('blueSel',bc,true)}</td></tr>
+  <tr><td class="navy">Blue fight plan</td><td>${psel('blue')}</td></tr>
   <tr><td>Weight Division</td><td><select id="div">${opt(DIVS.map(([d,l])=>[d,`${d} (${l<1000?l:'unlimited'})`]),state.div)}</select></td></tr>
   <tr><td colspan="2" class="small mute">Two Bare Knuckles fighters always fight 25 rounds under bare-knuckle rules.</td></tr><tr><td>Bout</td><td><select id="bout">${opt([['12','12-round Contenders bout'],['12|WBC','WBC title, 12 rounds'],['12|WBA','WBA title, 12 rounds'],['12|WBO','WBO title, 12 rounds']],state.bout)}</select></td></tr></table>
   <p><button id="go">Start the Fight</button> <span class="cr small" id="err"></span></p>
@@ -1385,7 +1391,7 @@ function fightHTML(){
   else h+=`<p style="margin-top:16px"><button id="go2">Rematch</button> <button data-go="simbot">Run it 100 times in Simbot</button></p>`;
   return h;
 }
-function planErr(){for(const s of corners()){const F=getF(s);if(!F)return'Pick two fighters.';if(parsePlan(F.plan).errors.length)return`${F.name}'s fight plan has lines the parser didn't recognize. Fix them on his page.`}return''}
+function planErr(){corners();for(const c of['red','blue']){const F=prFighter(c);if(!F)return'Pick two fighters.';if(parsePlan(F.plan).errors.length)return prPlan[c]?`The plan "${F.planName}" has lines the parser didn't recognize. Fix it on the Fight Plans page.`:`${F.name}'s fight plan has lines the parser didn't recognize. Fix them on his page.`}return''}
 function weightOf(div){const l=(DIVS.find(d=>d[0]===div)||[0,160])[1];return l>=1000?225:l}
 function reportHTML(f,b,upto){
   const S=f.S,W=weightOf(b.div);
@@ -1448,7 +1454,7 @@ function startFight(){
   const bad=planErr();if(bad){$('#err').textContent=bad;return}
   const[rs,belt]=state.bout.split('|');
   const d=new Date();
-  const[RC,BC]=corners();if(!RC||!BC||RC===BC){$('#err').textContent='Pick two different fighters.';return}const FA=getF(RC),FB=getF(BC);
+  const[RC,BC]=corners();if(!RC||!BC||RC===BC){$('#err').textContent='Pick two different fighters.';return}const FA=prFighter('red'),FB=prFighter('blue');
   bout={rounds:+rs,belt:belt||null,div:state.div,done:false,gym:myGym(),ids:[RC,BC],recs:[FA.rec.slice(),FB.rec.slice()],
     date:d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'}).replace(/,/g,'').replace(/(\d+) (\d{4})$/,'$1, $2')};
   const prepF=F=>prepFighter(F,FA,FB,state.div);
@@ -1589,7 +1595,7 @@ function simbotHTML(){
 function runSimbot(n){
   const bad=planErr();if(bad){$('#simOut').innerHTML=`<p class="cr">${bad}</p>`;return}
   const rs=+state.bout.split('|')[0],c={w0:0,k0:0,w1:0,k1:0,d:0};let rounds=0;
-  const[RC,BC]=corners();if(!RC||!BC)return;const FA=getF(RC),FB=getF(BC),PA=prepFighter(FA,FA,FB,state.div),PB=prepFighter(FB,FA,FB,state.div),RS=boutRounds(FA,FB)===25?25:rs;for(let i=0;i<n;i++){const f=simulate(PA,PB,RS),r=f.result;if(r.w===null)c.d++;else{c['w'+r.w]++;if(!r.decision)c['k'+r.w]++}rounds+=f.rounds.length}
+  const[RC,BC]=corners();if(!RC||!BC)return;const FA=prFighter('red'),FB=prFighter('blue'),PA=prepFighter(FA,FA,FB,state.div),PB=prepFighter(FB,FA,FB,state.div),RS=boutRounds(FA,FB)===25?25:rs;for(let i=0;i<n;i++){const f=simulate(PA,PB,RS),r=f.result;if(r.w===null)c.d++;else{c['w'+r.w]++;if(!r.decision)c['k'+r.w]++}rounds+=f.rounds.length}
   const p=x=>(100*x/n).toFixed(1)+'%';
   $('#simOut').innerHTML=`<table class="grid"><tr><th></th><th>Wins</th><th>By stoppage</th><th>By decision</th></tr>
   <tr><td class="red">${esc(getF(RC).name)}</td><td class="n">${p(c.w0)}</td><td class="n">${p(c.k0)}</td><td class="n">${p(c.w0-c.k0)}</td></tr>
@@ -1961,6 +1967,7 @@ document.addEventListener('submit',async e=>{
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='q')doSearch(e.target.value)});
 document.addEventListener('change',e=>{
   const el=e.target;
+  if(el.id==='redPlan'||el.id==='bluePlan'){prPlan[el.id==='redPlan'?'red':'blue']=el.value;render();return}
   if(el.id==='redSel'||el.id==='blueSel'){state[el.id==='redSel'?'red':'blue']=el.value;save();render();return}
   if(el.id==='div'){state.div=el.value;save();return}
   if(el.id==='bout'){state.bout=el.value;save();return}
