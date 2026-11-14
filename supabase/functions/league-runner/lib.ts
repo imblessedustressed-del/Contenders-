@@ -1,6 +1,6 @@
 // Contenders nightly league runner (Supabase edge function).
 // Called every 15 minutes by pg_cron; it only acts during fight night (10:40-11:59 PM Central) unless ?force=1.
-// Fights run from 10:40 PM; booking happens at the midnight pass (11:50 PM on), after that night's fights (owner, Nov 12).
+// Fights run from 10:40 PM and booking happens in the same pass, right after that night's fights (owner, Nov 13: was the 11:56 PM pass).
 // Each pass: 1) vacate belts of retired champions, 2) fight every scheduled bout dated today or earlier,
 // 3) book next bouts: each human fighter vs a bot in his division and region (Contenders or Bare Knuckles, 25 rounds), and the remaining bots against each other,
 // on the division's next fight night: tonight's fighters get next week's night; for bots a night less than 24 hours away (tomorrow) skips to the week after.
@@ -151,8 +151,8 @@ export async function handle(req: Request, client: any, C: any): Promise<Respons
       await postReleases(rel, log);
     }
 
-    // 3) book next bouts at the midnight pass (only once every due fight is done)
-    if (leftDue === 0 && (quick || bookOnly || mins >= 23 * 60 + 50)) {
+    // 3) book next bouts in the fight-night pass, right after tonight's fights (only once every due fight is done)
+    if (leftDue === 0 && (quick || bookOnly || mins >= 22 * 60 + 40)) {
       const midnight = !quick;
       const open = await all(() => sb.from("bouts").select("id,red_user,red_fid,blue_user,blue_fid,bot_only,fight_date").eq("status", "scheduled"));
       const busy = new Set<string>(); open.forEach((b) => { busy.add(pk(b.red_user, b.red_fid)); busy.add(pk(b.blue_user, b.blue_fid)); });

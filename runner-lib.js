@@ -473,7 +473,7 @@ var RunnerLib = (() => {
         }
         await postReleases(rel, log);
       }
-      if (leftDue === 0 && (quick || bookOnly || mins >= 23 * 60 + 50)) {
+      if (leftDue === 0 && (quick || bookOnly || mins >= 22 * 60 + 40)) {
         const midnight = !quick;
         const open = await all(() => sb.from("bouts").select("id,red_user,red_fid,blue_user,blue_fid,bot_only,fight_date").eq("status", "scheduled"));
         const busy = /* @__PURE__ */ new Set();
