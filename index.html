@@ -770,7 +770,7 @@ function condText(x,after){
 /* ================= SHARED DATA (Supabase: accounts, forums, messages) ================= */
 cleanSlate();
 const SB_URL='https://ojsphhzgzbxmnfcbitqb.supabase.co',SB_KEY='sb_publishable_SWO9WhiSkoVhflY5CmY08A_hlqCEJSi';
-const BUILD='1794617064';
+const BUILD='1794617435';
 /* A tab left open on an older build must not save over newer data: if the site has been updated, reload before anything else is saved. */
 let staleBuild=false;
 async function checkBuild(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
@@ -783,6 +783,7 @@ async function initDB(){
   SB.auth.onAuthStateChange((ev,session)=>{
     if(ev==='PASSWORD_RECOVERY'){recovering=true;nav('newpass');return}
     const was=ME;ME=session?session.user.id:null;MYEMAIL=session?session.user.email:'';
+    if(ME!==was){if(labAnim){labAnim.stop=true;labAnim=null}LAB=null} // never leave one manager's Lab plans on screen for the next
     if(ME&&ME!==was){loadedGym=false;afterLogin()}
     if(!ME&&was){ims=[];loadedGym=false}
     updateTop();refresh();
@@ -949,8 +950,8 @@ function labCornerHTML(c){const L=labState(),F=L[c],u=used(F);
   <p class="labTot ${u===POOL?'ok':'cr'}">${u} / ${POOL} points ${u===POOL?'✓':u<POOL?`(${POOL-u} left)`:`(${u-POOL} too many)`}</p>
   <p class="small mute">${natWeight(F)} lb, can make ${minWeight(F)} lb. KO Punch needs 3 Strength per point.</p>
   <select data-lp="${c}"><option value="">Load a fight plan...</option>${plans.map(([v,l])=>`<option value="${esc(v)}">${esc(l)}</option>`).join('')}</select>
-  <textarea class="labPlan" data-lf="plan" data-c="${c}" rows="7" spellcheck="false" aria-label="Fight plan">${esc(F.plan)}</textarea>
-  <p class="small"><a data-go="help:plans">How fight plans work</a></p>
+  <textarea class="labPlan" data-lf="plan" data-c="${c}" rows="7" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off" data-gramm="false" data-gramm_editor="false" data-enable-grammarly="false" aria-label="Fight plan">${esc(F.plan)}</textarea>
+  <p class="small">🔒 Private: this plan stays on your device. It is never saved or sent anywhere. <a data-go="help:plans">How fight plans work</a></p>
   </div>`}
 function labBarHTML(){const L=labState(),o=(arr,v)=>arr.map(([a,b])=>`<option value="${a}"${String(a)===String(v)?' selected':''}>${b}</option>`).join('');
   return`<label>Division <select data-lset="div"><option value="">Auto (${esc(labDiv())})</option>${o(DIVS.map(([d,l])=>[d,`${d} (${l})`]),L.div)}</select></label>
@@ -1157,12 +1158,15 @@ async function labLoadChat(){if(!SB||labChatBusy)return;labChatBusy=true;
   if(atBottom||!el.dataset.seen){el.scrollTop=el.scrollHeight;el.dataset.seen=1}
   el.querySelectorAll('[data-labdel]').forEach(a=>a.onclick=async()=>{await SB.from('lab_chat').delete().eq('id',+a.dataset.labdel);labLoadChat()});
 }
+// Lab Chat is public: never let a fight plan (or a piece of one) get posted there by accident
+const labLooksLikePlan=t=>/\d{1,2}\s*\/\s*\d{1,2}\s*\/\s*\d{1,2}/.test(t)||/\((inside|counter|clinch|ring|feint|ropes|outside|all-?out)\)/i.test(t)||/\b(endurance_percent|opp_endurance|score\s*[<>])/i.test(t);
 async function labPost(body){if(!SB||!ME)return;body=body.trim().slice(0,280);if(!body)return;
+  if(labLooksLikePlan(body)){$('#labErr').textContent="That looks like part of a fight plan. Lab Chat is public, so plans can't be posted there.";return false}
   const{error}=await SB.from('lab_chat').insert({author:ME,body});if(error){$('#labErr').textContent='Chat: '+(/row-level/.test(error.message)?"you can't post right now.":error.message);return false}
   labLoadChat();return true}
 async function labSend(){const m=$('#labMsg');if(!m)return;if(await labPost(m.value))m.value=''}
 function labShare(){const L=labState(),f=L.fight;if(!f)return;const r=f.result,[a,b]=L.names,[pa,pb]=L.plans;
-  const txt=r.w==null?`🥊 ${a} (${pa}) and ${b} (${pb}) fought to a ${r.type.toLowerCase()} in the Lab.`:`🥊 ${L.names[r.w]} (${L.plans[r.w]}) beat ${L.names[1-r.w]} (${L.plans[1-r.w]}) by ${r.decision?r.type.toLowerCase():r.type+' in round '+r.round} in the Lab.`;
+  const txt=r.w==null?`🥊 ${a} and ${b} fought to a ${r.type.toLowerCase()} in the Lab.`:`🥊 ${L.names[r.w]} beat ${L.names[1-r.w]} by ${r.decision?r.type.toLowerCase():r.type+' in round '+r.round} in the Lab.`;
   labPost(txt)}
 
 /* ---------- Main ---------- */
@@ -1493,7 +1497,7 @@ function planFormHTML(arg){
     ${isEdit?'':`<table class="plain"><tr><td>Plan name:</td><td><input id="pfName" data-keep maxlength="40" style="width:280px"></td></tr></table>`}
     <p>Enter your fight plan below. <a data-go="help:plans">Instructions</a> are available online.</p>
     <p class="small">A "#" flags lines the parser didn't recognize. Old WeBL plans can be pasted in as they are.</p>
-    <textarea id="pfText" class="planbox" data-keep rows="16" spellcheck="false">${esc(text)}</textarea>
+    <textarea id="pfText" class="planbox" data-keep rows="16" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off" data-gramm="false" data-gramm_editor="false" data-enable-grammarly="false">${esc(text)}</textarea>
     <div id="pfCheck">${planErrBox(text)}</div>
     <p><button id="${isEdit?'pfSaveEdit':'pfSaveAdv'}" data-name="${esc(name)}">Submit Form</button> <button id="pfCheckBtn">Check Plan</button></p>${back}`;
   }
@@ -2170,7 +2174,7 @@ document.addEventListener('click',async e=>{
     if(await safeWrite(()=>SB.from('profiles').update({description:v,location:loc}).eq('id',ME))){managers[ME]=Object.assign(managers[ME]||{},{desc:v,loc});alertBox('Description saved.')}}
   else if(t.id==='doRetireGym'){if($('#retireName').value.trim()!==myGym())return alertBox('The gym name does not match.');
     t.disabled=true;if(await safeWrite(()=>SB.rpc('retire_gym'))){await SB.auth.signOut().catch(()=>{});try{localStorage.removeItem('contenders_v6')}catch(e){}ME=null;alert0()}else t.disabled=false}
-  else if(t.id==='doLogout'){await SB.auth.signOut();ME=null;ims=[];updateTop();nav('home')}
+  else if(t.id==='doLogout'){await SB.auth.signOut();ME=null;LAB=null;ims=[];updateTop();nav('home')}
   else if(t.dataset.prEdit){pressEdit=+t.dataset.prEdit;render()}
   else if(t.dataset.prCancel){pressEdit=null;render()}
   else if(t.dataset.prSave){const id=+t.dataset.prSave,body=$('#prEditText').value.trim().slice(0,280);if(!body)return alertBox('Write something, or delete the press release instead.');
