@@ -390,7 +390,9 @@ var RunnerLib = (() => {
     const url = new URL(req.url);
     const { data: key } = await sb.from("runner_key").select("k").eq("id", 1).maybeSingle();
     if (!key?.k || req.headers.get("x-runner-key") !== key.k) return new Response("no", { status: 401 });
-    const { date: today, mins } = chicago();
+    const { date: realToday, mins } = chicago();
+    const today = addDays(realToday, 1);
+    const upto = url.searchParams.get("upto");
     const force = url.searchParams.get("force") === "1";
     const bookOnly = url.searchParams.get("book") === "1";
     const quick = !force && mins < 22 * 60 + 40;
@@ -414,7 +416,7 @@ var RunnerLib = (() => {
       const states = await all(() => sb.from("gym_state").select("user_id,data"));
       const S = Object.fromEntries(states.map((s) => [s.user_id, s.data || {}]));
       if (!bookOnly && !quick) {
-        const due = await all(() => sb.from("bouts").select("*").eq("status", "scheduled").lte("fight_date", today).order("fight_date").order("id"));
+        const due = await all(() => sb.from("bouts").select("*").eq("status", "scheduled").lte("fight_date", upto && upto < today ? upto : today).order("fight_date").order("id"));
         for (const B of due) {
           if (ran >= MAX_FIGHTS) {
             leftDue++;
@@ -527,7 +529,7 @@ var RunnerLib = (() => {
               if (di < 0) continue;
               d.roster = d.roster.filter((x) => x !== k);
               delete d[k];
-              d.retired = [{ ...F, fid: k, retiredOn: today, why }, ...d.retired || []];
+              d.retired = [{ ...F, fid: k, retiredOn: realToday, why }, ...d.retired || []];
               card.fighters = (card.fighters || []).filter((f) => f.id !== k);
               card.retired = [{ id: "r0", name: F.name, div: F.div, region: F.region || null, rec: F.rec, rating: F.rating || 0, status: F.status || 0, earn: F.earn || 0, fans: F.fans || 0, ppv: F.ppv || 0, hgt: F.hgt, home: F.home || "", titles: [], active: false, hist: [] }, ...card.retired || []].map((x, i) => ({ ...x, id: "r" + i }));
               retiredN++;
@@ -579,7 +581,7 @@ var RunnerLib = (() => {
               if (!why) continue;
               d.roster = d.roster.filter((x) => x !== k);
               delete d[k];
-              d.retired = [{ ...F, fid: k, div, retiredOn: today, why }, ...d.retired || []];
+              d.retired = [{ ...F, fid: k, div, retiredOn: realToday, why }, ...d.retired || []];
               card.fighters = (card.fighters || []).filter((f) => f.id !== k);
               card.retired = [{ id: "r0", name: F.name, div, region: F.region || null, rec: F.rec, rating: F.rating || 0, status: F.status || 0, earn: F.earn || 0, fans: F.fans || 0, ppv: F.ppv || 0, hgt: F.hgt, home: F.home || "", titles: [], active: false, hist: [] }, ...card.retired || []].map((x, i) => ({ ...x, id: "r" + i }));
               changed = true;

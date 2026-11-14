@@ -90,7 +90,12 @@ export async function handle(req: Request, client: any, C: any): Promise<Respons
   // the caller must send the key kept in the private runner_key table (only pg_cron and the service role can read it)
   const { data: key } = await sb.from("runner_key").select("k").eq("id", 1).maybeSingle();
   if (!key?.k || req.headers.get("x-runner-key") !== key.k) return new Response("no", { status: 401 });
-  const { date: today, mins } = chicago();
+  // Fight day vs clock (owner, Nov 14, 2026): a card dated day D runs at 10:40 PM Central the night BEFORE (Sunday's card runs
+  // Saturday at 10:45 PM). So the next card to run is always dated tomorrow, and the date rules below use that card day as "today";
+  // the fight-time lead in humanNight and the 24-hour rule in restOk keep working unchanged (fighters who fought last night are booked tonight).
+  const { date: realToday, mins } = chicago();
+  const today = addDays(realToday, 1);
+  const upto = url.searchParams.get("upto"); // optional cap on which cards a forced pass may run (YYYY-MM-DD)
   const force = url.searchParams.get("force") === "1";
   const bookOnly = url.searchParams.get("book") === "1";
   // daytime: only book managers' fighters who have no bout yet
@@ -119,7 +124,7 @@ export async function handle(req: Request, client: any, C: any): Promise<Respons
 
     // 2) fight due bouts
     if (!bookOnly && !quick) {
-      const due = await all(() => sb.from("bouts").select("*").eq("status", "scheduled").lte("fight_date", today).order("fight_date").order("id"));
+      const due = await all(() => sb.from("bouts").select("*").eq("status", "scheduled").lte("fight_date", upto && upto < today ? upto : today).order("fight_date").order("id"));
       for (const B of due) {
         if (ran >= MAX_FIGHTS) { leftDue++; continue; }
         if (B.belt) { log.push(`bout ${B.id}: title fight, left for the commissioner`); continue; }
@@ -193,7 +198,7 @@ export async function handle(req: Request, client: any, C: any): Promise<Respons
             const why = shouldRetire(F); if (!why) continue;
             const di = C.DIVS.findIndex((x: any) => x[0] === F.div); if (di < 0) continue;
             d.roster = d.roster.filter((x: string) => x !== k); delete d[k];
-            d.retired = [{ ...F, fid: k, retiredOn: today, why }, ...(d.retired || [])];
+            d.retired = [{ ...F, fid: k, retiredOn: realToday, why }, ...(d.retired || [])];
             card.fighters = (card.fighters || []).filter((f: any) => f.id !== k);
             card.retired = [{ id: "r0", name: F.name, div: F.div, region: F.region || null, rec: F.rec, rating: F.rating || 0, status: F.status || 0, earn: F.earn || 0, fans: F.fans || 0, ppv: F.ppv || 0, hgt: F.hgt, home: F.home || "", titles: [], active: false, hist: [] }, ...(card.retired || [])].map((x: any, i: number) => ({ ...x, id: "r" + i }));
             retiredN++; changed = true;
@@ -220,7 +225,7 @@ export async function handle(req: Request, client: any, C: any): Promise<Respons
           for (const k of mine()) {
             const F = d[k], why = busy.has(pk(u, k)) ? null : shouldRetire(F); if (!why) continue;
             d.roster = d.roster.filter((x: string) => x !== k); delete d[k];
-            d.retired = [{ ...F, fid: k, div, retiredOn: today, why }, ...(d.retired || [])];
+            d.retired = [{ ...F, fid: k, div, retiredOn: realToday, why }, ...(d.retired || [])];
             card.fighters = (card.fighters || []).filter((f: any) => f.id !== k);
             card.retired = [{ id: "r0", name: F.name, div, region: F.region || null, rec: F.rec, rating: F.rating || 0, status: F.status || 0, earn: F.earn || 0, fans: F.fans || 0, ppv: F.ppv || 0, hgt: F.hgt, home: F.home || "", titles: [], active: false, hist: [] }, ...(card.retired || [])].map((x: any, i: number) => ({ ...x, id: "r" + i }));
             changed = true; retiredN++;
