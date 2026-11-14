@@ -1,6 +1,7 @@
 // Contenders nightly league runner (Supabase edge function).
 // Called every 15 minutes by pg_cron; it only acts during fight night (10:40-11:59 PM Central) unless ?force=1.
-// Fights run from 10:40 PM and booking happens in the same pass, right after that night's fights (owner, Nov 13: was the 11:56 PM pass).
+// Fights run from 10:40 PM. Booking waits 24 hours (owner, Nov 13): each fight-night pass books the fighters who fought the NIGHT BEFORE,
+// so managers get a full day after a fight to retire or create fighters. Fighters who fought tonight wait until tomorrow night's pass.
 // Each pass: 1) vacate belts of retired champions, 2) fight every scheduled bout dated today or earlier,
 // 3) book next bouts: each human fighter vs a bot in his division and region (Contenders or Bare Knuckles, 25 rounds), and the remaining bots against each other,
 // on the division's next fight night: tonight's fighters get next week's night; for bots a night less than 24 hours away (tomorrow) skips to the week after.
@@ -40,14 +41,28 @@ function humanNight(C: any, div: string, today: string, mins: number) {
 }
 const pk = (u: string, f: string) => u + ":" + f;
 // cheap check for the daytime passes: managers' fighters with no scheduled bout (skipping ones we already know can't be matched)
-async function freeHumans() {
+// 24-hour rule: a fighter who fought today isn't booked yet; one who fought yesterday is booked from tonight's 10:40 PM pass on
+async function recentFights(today: string) {
+  const r = (await sb.from("bouts").select("red_user,red_fid,blue_user,blue_fid,fight_date").eq("status", "done").gte("fight_date", addDays(today, -1))).data || [];
+  const m = new Map<string, string>();
+  r.forEach((b: any) => [pk(b.red_user, b.red_fid), pk(b.blue_user, b.blue_fid)].forEach((k) => { if (!m.has(k) || m.get(k)! < b.fight_date) m.set(k, b.fight_date); }));
+  return m;
+}
+const restOk = (recent: Map<string, string>, k: string, today: string, mins: number) => {
+  const d = recent.get(k); if (!d) return true;
+  if (d >= today) return false;
+  if (d === addDays(today, -1)) return mins >= 22 * 60 + 40;
+  return true;
+};
+async function freeHumans(today: string, mins: number) {
   const hs = (await sb.from("profiles").select("id").eq("is_bot", false)).data || [];
   if (!hs.length) return [] as string[];
   const st = (await sb.from("gym_state").select("user_id,data").in("user_id", hs.map((h: any) => h.id))).data || [];
   const open = (await sb.from("bouts").select("red_user,red_fid,blue_user,blue_fid").eq("status", "scheduled").eq("bot_only", false)).data || [];
   const busy = new Set<string>(); open.forEach((b: any) => { busy.add(pk(b.red_user, b.red_fid)); busy.add(pk(b.blue_user, b.blue_fid)); });
+  const recent = await recentFights(today);
   const out: string[] = [];
-  st.forEach((r: any) => (r.data?.roster || []).forEach((k: string) => { const F = r.data[k]; if (F && F.div && !F.deleteAfter && !busy.has(pk(r.user_id, k))) out.push(pk(r.user_id, k)); }));
+  st.forEach((r: any) => (r.data?.roster || []).forEach((k: string) => { const F = r.data[k]; if (F && F.div && !F.deleteAfter && !busy.has(pk(r.user_id, k)) && restOk(recent, pk(r.user_id, k), today, mins)) out.push(pk(r.user_id, k)); }));
   return out;
 }
 const gk = (u: string) => (/^00000000-0000-0000-0000-0000000000b[0-9a-f]$/.test(u) ? u.slice(-2) : "small"); // big bot gym key: ...00b4 -> b4
@@ -81,7 +96,7 @@ export async function handle(req: Request, client: any, C: any): Promise<Respons
   // daytime: only book managers' fighters who have no bout yet
   const quick = !force && mins < 22 * 60 + 40;
   if (quick) {
-    const fh = await freeHumans();
+    const fh = await freeHumans(today, mins);
     const last = (await sb.from("league_runs").select("unmatched").not("unmatched", "is", null).order("id", { ascending: false }).limit(1).maybeSingle()).data;
     const known = new Set<string>(last?.unmatched || []);
     if (!fh.some((x) => !known.has(x))) return Response.json({ skipped: "not fight time, every manager's fighter is booked", today });
@@ -238,11 +253,12 @@ export async function handle(req: Request, client: any, C: any): Promise<Respons
         }
       }
       if (signed || retiredN) log.push(`bots: ${retiredN} retired, ${signed} signed`);
+      const recent = await recentFights(today);
       const free = (bot: boolean) => {
         const out: any[] = [];
         for (const [u, d] of Object.entries(S)) {
           if (!P[u] || !!P[u].is_bot !== bot) continue;
-          for (const k of (d.roster || [])) { const F = d[k]; if (F && F.div && !busy.has(pk(u, k))) out.push({ u, k, F, gym: P[u].gym, reg: F.region === "bk" ? "bk" : "" }); }
+          for (const k of (d.roster || [])) { const F = d[k]; if (F && F.div && !busy.has(pk(u, k)) && restOk(recent, pk(u, k), today, mins)) out.push({ u, k, F, gym: P[u].gym, reg: F.region === "bk" ? "bk" : "" }); }
         }
         return out;
       };
