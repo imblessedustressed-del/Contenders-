@@ -795,7 +795,7 @@ function condText(x,after){
 /* ================= SHARED DATA (Supabase: accounts, forums, messages) ================= */
 cleanSlate();
 const SB_URL='https://ojsphhzgzbxmnfcbitqb.supabase.co',SB_KEY='sb_publishable_SWO9WhiSkoVhflY5CmY08A_hlqCEJSi';
-const BUILD='1794702001';
+const BUILD='1794702222';
 /* A tab left open on an older build must not save over newer data: if the site has been updated, reload before anything else is saved. */
 let staleBuild=false;
 async function checkBuild(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
@@ -998,7 +998,7 @@ function labHTML(){const L=labState();
   <p class="labBtns"><button class="labGo" data-lab="fight">🥊 FIGHT!</button> <button data-lab="sim">Run it 100 times</button> <span class="cr" id="labErr"></span></p>
   <div id="labStage"${L.fight?'':' style="display:none"'}><div class="labCvWrap"><canvas id="labCv" width="960" height="540"></canvas></div>
   <div id="labTick" class="labTick"></div>
-  <p class="labCtl"><button data-lab="pause" id="labPause">Pause</button> <button data-lab="skip">Skip to the end</button> <button data-lab="replay">Watch again</button> <button data-lab="report">Full report</button> <button data-lab="share">Share to Simbot Chat</button> <button data-lab="gfx" class="labGfx">${l3gfx()==='3d'?'Graphics: 3D':'Graphics: Classic'}</button></p>
+  <p class="labCtl"><button data-lab="pause" id="labPause">Pause</button> <button data-lab="skip">Skip to the end</button> <button data-lab="replay">Watch again</button> <button data-lab="report">Full report</button> <button data-lab="share">Share to Simbot Chat</button> <button data-lab="gfx" class="labGfx">${L3GFX_NAMES[l3gfx()]||'Graphics'}</button></p>
   <div id="labRep"></div></div>
   <div id="labSim"></div>
   <h2>Simbot Chat</h2><div id="labChat" class="labChat"><p class="mute">Loading...</p></div>
@@ -1093,7 +1093,7 @@ function labPlay(){const L=labState();if(!L.fight)return;if(labAnim)labAnim.stop
     labDraw(me.at,tl);if(me.at<tl.total)requestAnimationFrame(step);else if(labAnim===me)labAnim=null};
   requestAnimationFrame(step);
 }
-function labToggleGfx(t){l3setGfx(l3gfx()==='3d'?'classic':'3d');document.querySelectorAll('.labGfx').forEach(b=>b.textContent=l3gfx()==='3d'?'Graphics: 3D':'Graphics: Classic');if(!labAnim)labDraw(1e9)}
+function labToggleGfx(t){l3setGfx(l3nextGfx());document.querySelectorAll('.labGfx').forEach(b=>b.textContent=L3GFX_NAMES[l3gfx()]);if(!labAnim)labDraw(1e9)}
 function labTick(b){const el=$('#labTick');if(!el||!b.txt)return;const p=document.createElement('p');
   p.className='lt '+(b.k==='final'?'ltF':b.k==='bell'?'ltB':['kd','ko','stop','st'].includes(b.k)?'ltBig':b.a===0?'ltR':b.a===1?'ltBl':'');
   p.textContent=b.txt;el.prepend(p);while(el.children.length>5)el.lastChild.remove()}
@@ -1229,10 +1229,13 @@ function labDraw(at,tl){const cv=$('#labCv');if(!cv)return;const g=cv.getContext
   const kdNow=tl.beats.find(b=>b.k==='kd'&&at-b.at>=0&&at-b.at<1.6);
   const zoom=1+(kdNow?.06*Math.min(1,(at-kdNow.at)*4):0)+(fin&&res&&!res.decision?.04:0)+(inReplay?.22:0)+(intro?.05*(1-at/LAB_INTRO):0);
   g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,W,H);
-  if(l3gfx()==='3d')lab3D(g,{at,realAt,P,X,tl,f,res,stopBeat,kdNow,big,zoom,inReplay,intro,fin,cur});else{
-  g.save();if(big&&!inReplay){g.translate((Math.random()-.5)*10,(Math.random()-.5)*8)}
-  const focusX=inReplay&&res.w!=null?(X[0]+X[1])/2+(res.w===0?40:-40):cx;
-  g.translate(focusX,floorY-90);g.scale(zoom,zoom);g.translate(-cx,-(floorY-90));
+  const gfx=l3gfx();
+  if(gfx==='3d')lab3D(g,{at,realAt,P,X,tl,f,res,stopBeat,kdNow,big,zoom,inReplay,intro,fin,cur});else{
+  /* the 2D arena, drawn in three layers (background / referee and fighters / sparks and front ropes) so the 16-bit mode can outline the sprites */
+  const shk=big&&!inReplay?[(Math.random()-.5)*10,(Math.random()-.5)*8]:null;
+  const sceneDraw=(gBg,gFig,gFx,zm)=>{let g=gBg;const T3=[...new Set([gBg,gFig,gFx])];
+  const focusX=inReplay&&res.w!=null?(X[0]+X[1])/2+(res.w===0?40:-40):zm>1?(X[0]+X[1])/2:cx;
+  T3.forEach(x=>{x.save();if(shk)x.translate(shk[0],shk[1]);x.translate(cx,floorY-90);x.scale(zoom*zm,zoom*zm);x.translate(-focusX,-(floorY-90))});
   // arena: dark bowl, rigging and light cones
   const bg=g.createLinearGradient(0,0,0,H);bg.addColorStop(0,'#05060c');bg.addColorStop(.4,'#141020');bg.addColorStop(1,'#07070a');g.fillStyle=bg;g.fillRect(-60,-60,W+120,H+120);
   g.fillStyle='#222632';g.fillRect(-60,6,W+120,10);for(let x=-40;x<W+60;x+=36){g.fillRect(x,2,4,18)}
@@ -1268,17 +1271,17 @@ function labDraw(at,tl){const cv=$('#labCv');if(!cv)return;const g=cv.getContext
     [0,1,2].forEach(k=>{g.fillStyle=c;g.beginPath();g.roundRect(x-9,y-h+8+k*(h/3.3),18,h/4.2,4);g.fill()})};
   const ropeY=k=>[-102,-70,-38][k];const ropes=(A,B,hA,hB,alpha)=>{['#e8e8e8','#c8102e','#e8e8e8'].forEach((c,k)=>{g.globalAlpha=alpha;g.strokeStyle=c;g.lineWidth=k===1?5:4;g.beginPath();g.moveTo(A[0],A[1]+ropeY(k)*hA);g.lineTo(B[0],B[1]+ropeY(k)*hB);g.stroke()});g.globalAlpha=1};
   post(BL[0],BL[1],106,'#c8102e');post(BR[0],BR[1],106,'#1d4ed8');ropes(BL,BR,1,1,1);ropes(BL,FL,1,1.65,1);ropes(BR,FR,1,1.65,1);
-  // referee behind the fighters
+  g=gFig; // referee behind the fighters
   const kdF=kdNow?1-kdNow.a:null,refX=kdNow?X[kdF]+(kdF?60:-60):stopBeat&&at>=stopBeat.at&&!res.decision?X[1-res.w]+(res.w?-70:70):cx+Math.sin(at*.37)*90;
   labRef(g,refX,floorY-46,.92,at,!!kdNow||(stopBeat&&at>=stopBeat.at&&res.type==='KO'));
   // fighters (the one going down is drawn first)
   const order=P[0].fall>P[1].fall?[0,1]:[1,0];const hitPts=[];
   order.forEach(i=>{const p=P[i],c=LAB_SKIN[i],dir=i===0?1:-1;
-    g.fillStyle='rgba(0,0,0,.28)';g.beginPath();g.ellipse(X[i]+dir*p.fall*60,floorY+4,60+p.fall*50,11,0,0,7);g.fill();
+    gBg.fillStyle='rgba(0,0,0,.28)';gBg.beginPath();gBg.ellipse(X[i]+dir*p.fall*60,floorY+4,60+p.fall*50,11,0,0,7);gBg.fill(); // shadows stay on the floor layer
     g.save();g.translate(X[i]+Math.sin(at*13)*p.wob*8,floorY);g.scale(dir*S,S);
     if(p.fall){g.translate(-p.fall*20,0);g.rotate(-p.fall*1.42);g.translate(0,p.fall*6)}
     hitPts[i]=labFighter(g,c,p,dist,at);g.restore()});
-  // impact bursts
+  g=gFx; // impact bursts
   tl.beats.forEach(b=>{const d=at-b.at;if(d<.14||d>.5||b.a==null||!['p','r','j','c','st','kd'].includes(b.k))return;const i=1-b.a,dir=i===0?1:-1;labPunchType(b);
     const pt=b.low&&b.pt!=='jab'?[12,-160]:[10,-214],sx=X[i]+dir*pt[0]*S,sy=floorY+pt[1]*S,sz=(b.k==='j'?.6:b.k==='r'?.85:1.25)*(1-d*1.2);
     g.save();g.translate(sx,sy);g.rotate(d*3);g.scale(sz,sz);const gr=g.createRadialGradient(0,0,2,0,0,40);gr.addColorStop(0,'#fff');gr.addColorStop(.35,'#ffe066');gr.addColorStop(1,'rgba(255,120,0,0)');
@@ -1292,7 +1295,8 @@ function labDraw(at,tl){const cv=$('#labCv');if(!cv)return;const g=cv.getContext
     g.save();g.translate(X[i]-dir*(20+d*160),floorY-220*S-d*190+d*d*330);g.rotate(d*14);g.fillStyle='#f4f4f4';g.beginPath();g.roundRect(-9,-4,18,8,4);g.fill();g.fillStyle=i?'#1d4ed8':'#c8102e';g.fillRect(-9,-1,18,2);g.restore()}
   // front ropes and posts
   ropes(FL,FR,1.65,1.65,.82);post(FL[0],FL[1],168,'#c8102e');post(FR[0],FR[1],168,'#1d4ed8');
-  g.restore();}
+  T3.forEach(x=>x.restore())};
+  if(gfx==='16bit')lab16(g,sceneDraw);else sceneDraw(g,g,g,1);}
   // lens vignette and a little haze drifting through the lights
   {const vg=g.createRadialGradient(cx,H*.55,H*.3,cx,H*.55,H*.95);vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,.55)');g.fillStyle=vg;g.fillRect(0,0,W,H);
     g.fillStyle='rgba(255,250,235,.05)';for(let k=0;k<26;k++){const hx=(k*137+realAt*(8+k%5*3))%(W+80)-40,hy=40+(k*53)%260+Math.sin(realAt*.6+k)*8;g.beginPath();g.arc(hx,hy,1.4+k%3,0,7);g.fill()}}
@@ -1356,7 +1360,25 @@ const l3cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0
 const l3norm=a=>{const l=Math.hypot(a[0],a[1],a[2])||1;return[a[0]/l,a[1]/l,a[2]/l]};
 const l3rgb=h=>{h=h.replace('#','');if(h.length===3)h=h.split('').map(c=>c+c).join('');return[parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)]};
 const L3LIGHT=l3norm([-.35,.9,-.45]),L3RIM=l3norm([.2,.25,1]),L3FOG=[10,9,20];
-function l3gfx(){try{return localStorage.getItem('contenders_simbot_gfx')||'3d'}catch(e){return'3d'}}
+function l3gfx(){try{return localStorage.getItem('contenders_simbot_gfx')||'16bit'}catch(e){return'16bit'}}
+const L3GFX_NAMES={'16bit':'Graphics: 16-Bit','3d':'Graphics: 3D',classic:'Graphics: Classic'};
+/* 16-bit mode (owner, Nov 14, 2026: a Super Nintendo era boxing look): the 2D arena drawn at 320x180 in three layers,
+   colors cut to a small palette with a light ordered dither, fighters' edges hardened and outlined in near-black,
+   a tighter camera so the fighters are big sprites, then blown up with hard pixels. Original art, nothing copied. */
+let L16=null;
+function l16post(cv,outline){const c=cv.getContext('2d'),id=c.getImageData(0,0,L3W,L3H),d=id.data,B=[0,8,2,10,12,4,14,6,3,11,1,9,15,7,13,5],w=L3W,h=L3H;
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){const q=(y*w+x)*4;if(outline||d[q+3]){const b=(B[(y&3)*4+(x&3)]-7.5)*(outline==null?1.3:2);for(let j=0;j<3;j++){d[q+j]=Math.max(0,Math.min(255,Math.round((d[q+j]+b)/36)*36))}}
+    if(outline!=null)d[q+3]=d[q+3]>100?255:0}
+  if(outline){const a=new Uint8Array(w*h);for(let i=0;i<w*h;i++)a[i]=d[i*4+3];
+    for(let y=0;y<h;y++)for(let x=0;x<w;x++){const i=y*w+x;if(a[i])continue;if((x>0&&a[i-1])||(x<w-1&&a[i+1])||(y>0&&a[i-w])||(y<h-1&&a[i+w])){const q=i*4;d[q]=18;d[q+1]=12;d[q+2]=16;d[q+3]=255}}}
+  c.putImageData(id,0,0)}
+function lab16(g,sceneDraw){if(!L16)L16=[0,1,2,3].map(()=>{const c=document.createElement('canvas');c.width=L3W;c.height=L3H;return c});
+  const[bg,fig,fx,out]=L16,cs=[bg,fig,fx].map(c=>{const x=c.getContext('2d');x.setTransform(1,0,0,1,0,0);x.clearRect(0,0,L3W,L3H);x.setTransform(L3W/960,0,0,L3H/540,0,0);return x});
+  sceneDraw(cs[0],cs[1],cs[2],1.22);
+  l16post(bg);l16post(fig,true);l16post(fx,false);
+  const o=out.getContext('2d');o.clearRect(0,0,L3W,L3H);o.drawImage(bg,0,0);o.drawImage(fig,0,0);o.drawImage(fx,0,0);
+  g.setTransform(1,0,0,1,0,0);g.imageSmoothingEnabled=false;g.drawImage(out,0,0,L3W,L3H,0,0,960,540);g.imageSmoothingEnabled=true}
+function l3nextGfx(){const o=['16bit','3d','classic'];return o[(o.indexOf(l3gfx())+1)%3]}
 function l3setGfx(v){try{localStorage.setItem('contenders_simbot_gfx',v)}catch(e){}}
 /* textures (drawn once) */
 const L3TEX={};
@@ -2184,7 +2206,7 @@ function sbViewHTML(id){
   <div id="labStage"><div class="labCvWrap"><canvas id="labCv" width="960" height="540"></canvas></div>
   <div id="labTick" class="labTick"></div>
   <p class="labCtl"><button data-lab="pause" id="labPause">Pause</button> <button data-lab="skip">Skip to the end</button> <button data-lab="replay">Watch again</button>
-  <button data-lab="gfx" class="labGfx">${l3gfx()==='3d'?'Graphics: 3D':'Graphics: Classic'}</button> <span class="small">Length: ${[[30,'30 sec'],[60,'1 min'],[120,'2 min']].map(([v,l])=>v===sp?`<b>${l}</b>`:`<a data-sbspeed="${v}">${l}</a>`).join(' | ')}</span></p>
+  <button data-lab="gfx" class="labGfx">${L3GFX_NAMES[l3gfx()]||'Graphics'}</button> <span class="small">Length: ${[[30,'30 sec'],[60,'1 min'],[120,'2 min']].map(([v,l])=>v===sp?`<b>${l}</b>`:`<a data-sbspeed="${v}">${l}</a>`).join(' | ')}</span></p>
   <p><a data-go="lreport:${id}">Read the full fight report</a> | <a data-go="fcards">Recent Fight Cards</a> | <a data-go="simbot">Simbot</a></p></div></div>`}
 function sbMount(){const root=$('#sbv');if(!root||!LABV)return;
   root.addEventListener('click',e=>{const a=e.target.closest('[data-sbspeed]');if(a){LABV.speed=+a.dataset.sbspeed;if(labAnim){labAnim.stop=true;labAnim=null}render();return}

@@ -9,7 +9,25 @@ const l3cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0
 const l3norm=a=>{const l=Math.hypot(a[0],a[1],a[2])||1;return[a[0]/l,a[1]/l,a[2]/l]};
 const l3rgb=h=>{h=h.replace('#','');if(h.length===3)h=h.split('').map(c=>c+c).join('');return[parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)]};
 const L3LIGHT=l3norm([-.35,.9,-.45]),L3RIM=l3norm([.2,.25,1]),L3FOG=[10,9,20];
-function l3gfx(){try{return localStorage.getItem('contenders_simbot_gfx')||'3d'}catch(e){return'3d'}}
+function l3gfx(){try{return localStorage.getItem('contenders_simbot_gfx')||'16bit'}catch(e){return'16bit'}}
+const L3GFX_NAMES={'16bit':'Graphics: 16-Bit','3d':'Graphics: 3D',classic:'Graphics: Classic'};
+/* 16-bit mode (owner, Nov 14, 2026: a Super Nintendo era boxing look): the 2D arena drawn at 320x180 in three layers,
+   colors cut to a small palette with a light ordered dither, fighters' edges hardened and outlined in near-black,
+   a tighter camera so the fighters are big sprites, then blown up with hard pixels. Original art, nothing copied. */
+let L16=null;
+function l16post(cv,outline){const c=cv.getContext('2d'),id=c.getImageData(0,0,L3W,L3H),d=id.data,B=[0,8,2,10,12,4,14,6,3,11,1,9,15,7,13,5],w=L3W,h=L3H;
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){const q=(y*w+x)*4;if(outline||d[q+3]){const b=(B[(y&3)*4+(x&3)]-7.5)*(outline==null?1.3:2);for(let j=0;j<3;j++){d[q+j]=Math.max(0,Math.min(255,Math.round((d[q+j]+b)/36)*36))}}
+    if(outline!=null)d[q+3]=d[q+3]>100?255:0}
+  if(outline){const a=new Uint8Array(w*h);for(let i=0;i<w*h;i++)a[i]=d[i*4+3];
+    for(let y=0;y<h;y++)for(let x=0;x<w;x++){const i=y*w+x;if(a[i])continue;if((x>0&&a[i-1])||(x<w-1&&a[i+1])||(y>0&&a[i-w])||(y<h-1&&a[i+w])){const q=i*4;d[q]=18;d[q+1]=12;d[q+2]=16;d[q+3]=255}}}
+  c.putImageData(id,0,0)}
+function lab16(g,sceneDraw){if(!L16)L16=[0,1,2,3].map(()=>{const c=document.createElement('canvas');c.width=L3W;c.height=L3H;return c});
+  const[bg,fig,fx,out]=L16,cs=[bg,fig,fx].map(c=>{const x=c.getContext('2d');x.setTransform(1,0,0,1,0,0);x.clearRect(0,0,L3W,L3H);x.setTransform(L3W/960,0,0,L3H/540,0,0);return x});
+  sceneDraw(cs[0],cs[1],cs[2],1.22);
+  l16post(bg);l16post(fig,true);l16post(fx,false);
+  const o=out.getContext('2d');o.clearRect(0,0,L3W,L3H);o.drawImage(bg,0,0);o.drawImage(fig,0,0);o.drawImage(fx,0,0);
+  g.setTransform(1,0,0,1,0,0);g.imageSmoothingEnabled=false;g.drawImage(out,0,0,L3W,L3H,0,0,960,540);g.imageSmoothingEnabled=true}
+function l3nextGfx(){const o=['16bit','3d','classic'];return o[(o.indexOf(l3gfx())+1)%3]}
 function l3setGfx(v){try{localStorage.setItem('contenders_simbot_gfx',v)}catch(e){}}
 /* textures (drawn once) */
 const L3TEX={};
