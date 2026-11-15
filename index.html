@@ -909,7 +909,7 @@ function condText(x,after){
 /* ================= SHARED DATA (Supabase: accounts, forums, messages) ================= */
 cleanSlate();
 const SB_URL='https://ojsphhzgzbxmnfcbitqb.supabase.co',SB_KEY='sb_publishable_SWO9WhiSkoVhflY5CmY08A_hlqCEJSi';
-const BUILD='1794782134';
+const BUILD='1794782306';
 /* A tab left open on an older build must not save over newer data: if the site has been updated, reload before anything else is saved. */
 let staleBuild=false;
 async function checkBuild(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
@@ -2170,7 +2170,7 @@ function aiCard(html,chips){return`<div class="aiCard"><div class="dcAv aiAv">�
 /* Simbot AI's own pop-up window (the Discord-style Simbot Chat is left exactly as it is; owner, Nov 15: "the discord chat part is perfect don't change") */
 function aiItemHTML(x){if(x.me)return`<div class="aiMe"><span>${esc(x.text)}</span></div>`;
   return`<div class="aiMsg"><div class="dcAv aiAv">🤖</div><div class="aiBody"><div class="aiText">${x.html}</div>${aiChipsHTML(x.chips)}</div></div>`}
-function aiSay(html,chips){chips=aiWithNext(chips);AI.typing=false;aiIdle();AI.msgs.push({t:Date.now()+AI.msgs.length,ai:1,html,chips});AI.msgs=AI.msgs.slice(-40);aiPaint();if(!AI.open&&$('#aiFab')){AI.unread=(AI.unread||0)+1;aiFabDot()}}
+function aiSay(html,chips,noShow){chips=aiWithNext(chips,noShow);AI.typing=false;aiIdle();AI.msgs.push({t:Date.now()+AI.msgs.length,ai:1,html,chips});AI.msgs=AI.msgs.slice(-40);aiPaint();if(!AI.open&&$('#aiFab')){AI.unread=(AI.unread||0)+1;aiFabDot()}}
 function aiPaint(){const el=$('#aiLog');if(!el)return;el.innerHTML=AI.msgs.map(aiItemHTML).join('')+(AI.typing?'<div class="aiMsg"><div class="dcAv aiAv">🤖</div><div class="aiBody"><div class="aiText aiDots"><i></i><i></i><i></i></div></div></div>':'');el.scrollTop=el.scrollHeight}
 function aiFabDot(){const d=$('#aiFabN');if(d){d.hidden=!AI.unread;d.textContent=AI.unread||''}}
 const AI_MAIN=[['🥊 Fight me','fightme'],['👀 Show me a fight','show'],['🗺️ Show me around','tour'],['📋 How do fight plans work?','plans'],['🏆 What\'s the league?','league']];
@@ -2224,7 +2224,7 @@ function aiShow(){const L=labState(),[a,b]=(()=>{const p=[...STARTERS].sort(()=>
   labApplyStarter(L.A,a.id,L.level);labApplyStarter(L.B,b.id,L.level);L.A.name=a.nm.replace(/^The /,'Red ');L.B.name=b.nm.replace(/^The /,'Blue ');
   if(L.A.name===a.nm)L.A.name='Red '+a.nm;if(L.B.name===b.nm)L.B.name='Blue '+b.nm;labRefresh('A');labRefresh('B');
   AI.showing=true;aiClose();aiFabBubble(false);
-  aiSay(`Here we go! 🔔 <b>${esc(a.nm)}</b> (${esc(a.tag.toLowerCase())}) in the red corner vs <b>${esc(b.nm)}</b> (${esc(b.tag.toLowerCase())}) in the blue. I'll be right back when it's over to tell you why the winner won. 🍿`);
+  aiSay(`Here we go! 🔔 <b>${esc(a.nm)}</b> (${esc(a.tag.toLowerCase())}) in the red corner vs <b>${esc(b.nm)}</b> (${esc(b.tag.toLowerCase())}) in the blue. I'll be right back when it's over to tell you why the winner won. 🍿`,[],true);
   labFight()}
 
 /* "Fight me": a real challenge vs Simbot's fighter, so other people can watch it live too */
@@ -2233,7 +2233,7 @@ async function aiFightMe(stId,retry){let nick=null;
       document.querySelectorAll('#labNick,#sbcNick').forEach(i=>i.value=nick);if(!retry)aiSay(`I'll call you <b>${esc(nick)}</b> for now. Change it any time in the nickname box under the chat.`)}}
   const mine=aiRand(STARTERS.filter(x=>x.id!==stId)),F={name:'',nick:'The House Fighter',home:'The Simbot Gym',build:'normal'};
   labApplyStarter(F,mine.id,'title');F.name="Simbot's "+mine.nm.replace(/^The /,'');
-  aiSay('Setting up the ring... 🔔');
+  aiSay('Setting up the ring... 🔔',[],true);
   const r=await sbCall({action:'vsbot',level:'title',rounds:12,nick,bot:{name:F.name,nick:F.nick,home:F.home,build:F.build,str:F.str,kp:F.kp,spd:F.spd,agl:F.agl,chn:F.chn,cnd:F.cnd,hgt:F.hgt,cut:F.cut,plan:F.plan,planName:F.planName}});
   if(r.error){if(/nickname/i.test(r.error)&&!ME&&!retry)return aiFightMe(stId,true);return aiSay(`Hmm, the ring wasn't ready: ${esc(r.error)}`,[['Try again','pick:'+stId]])}
   sbcSaveSeat(r.id,'a',r.a);aiPre={id:r.id,st:stId};nav('sbch:'+r.id)}
@@ -2293,7 +2293,7 @@ const AI_TOPICS={
   free:{q:'Is it free?',a:()=>[`100% free. 🙌 Nothing to buy, nothing to download. It even installs like an app on your phone (button in the menu).`,[['✍️ Sign up free','go:register']]]},
   private:{q:'Can people see my plan?',a:()=>[`Nope. 🔒 Your plans are private: other managers never see them, not in challenges, not in league fights, and the league owner can't see them either. Fight reports show what happened, never the plan behind it. That's why scouting matters.`,[['🤝 Challenge a friend','challenge']]]},
   me:{q:'Who are you?',a:()=>[`I'm <b>Simbot AI</b> 🤖, the house fighter and helper in Simbot. I can explain the game, give plan tips, put on a fight for you, or fight you myself. I don't manage a league gym and I can't see anybody's plans. Ask away!`,[['🥊 Fight me','fightme'],['❓ What can I ask?','help']]]},
-  help:{q:'What can I ask you?',a:()=>[`Anything about the game, for example:<br>• "how do fight plans work?" • "what does agility do?"<br>• "how do I get knockouts?" • "why did my fighter gas out?"<br>• "what's the league?" • "is it free?"<br>• "give me a tip" • "fight me"<br>This chat is just between you and me.`,AI_MAIN]},
+  help:{q:'What can I ask you?',a:()=>[`Anything about the game, for example:<br>• "how do fight plans work?" • "what does agility do?"<br>• "how do I get knockouts?" • "why did my fighter gas out?"<br>• "what's the league?" • "is it free?"<br>• "give me a tip" • "fight me" • "show me a fight"<br>This chat is just between you and me.`,AI_MAIN]},
   app:{q:'Is there an app?',a:()=>[`Yes! The site installs like an app: tap <b>Install the App</b> in the menu (on iPhone: Share, then Add to Home Screen). 📱`,[]]},
   webl:{q:'Is this like WeBL?',a:()=>[`It started as a tribute to the old Web Boxing League, the classic fight-plan boxing game. 🥊 Same idea, you're the manager and the plan does the fighting, but Contenders has its own rules now, plus Simbot, live challenges, Rookies and Bare Knuckles.`,[['🏆 The league','league']]]},
   bk:{q:'What is Bare Knuckles?',a:()=>[`Our hardcore region. 🩸 <b>25 rounds</b>, no gloves, no ringside doctor, slower recovery between rounds. Going the distance, the man with more knockdowns wins. You pick the region when you create a fighter, and it's permanent. In Simbot, pick <b>Bare Knuckles, 25 rounds</b> to try it.`,[['🏆 The league','league']]]},
@@ -2401,7 +2401,10 @@ const AI_LESSONS=[
   {t:'Watch and learn',a:()=>[`📘 <b>Lesson 7: watch and learn.</b> 👀<br>The best way to get good: run a fight, see <b>why</b> the winner won, change <b>one thing</b>, run it again. After every fight I'll tell you what went wrong, and I can circle it on the page or fix it for you.<br>Let's try it right now:`,[['👀 Show me a fight','show']]]},
   {t:'Test yourself',a:()=>[`📘 <b>Lesson 8: test yourself.</b> 🥊<br>Fighting both corners yourself is practice. The real test is an opponent whose plan you <b>can't see</b>. You can fight me right now, or challenge a friend with a link. Everybody watching sees it live.`,[['🥊 Fight me','fightme'],['🤝 Challenge a friend','challenge']]]},
   {t:'The league',a:()=>[`📘 <b>Lesson 9: the league.</b> 🏆<br>Here's where it counts. Your fighter gets a <b>real fight every week</b>, keeps his record, earns points to train, climbs the rankings and earns purses. Your first fighter starts in <b>Rookies</b> against fighters at his level and debuts within a day. After every fight the Corner Coach sends you tips.<br><br>🎓 That's the whole course. You know how to play now! It's free:`,[['✍️ Sign up free','go:register']]]}];
-function aiWithNext(chips){chips=chips||[];const n=aiLs();if(n>=AI_LESSONS.length||chips.some(([,a])=>String(a).startsWith('lesson:')))return chips;
+function aiWithNext(chips,noShow){chips=chips||[];
+  /* "Show me a fight" rides along on every answer (owner, Nov 15, 2026), except while he's picking a fighter or a fight is about to start */
+  if(!noShow&&!chips.some(([,a])=>a==='show'||String(a).startsWith('pick:')))chips=[...chips,['👀 Show me a fight','show']];
+  const n=aiLs();if(n>=AI_LESSONS.length||chips.some(([,a])=>String(a).startsWith('lesson:')))return chips;
   return[...chips,[n===0?'📘 Teach me the game (1 min lessons)':`📘 Next lesson: ${AI_LESSONS[n].t}`,'lesson:'+n]]}
 function aiLesson(n){const L=AI_LESSONS[n];if(!L)return;aiUser(n===0?'Teach me the game':'Next lesson');aiLsSet(n+1);
   const[h,ch]=L.a(),more=[...(ch||[]),...(L.spot&&$(L.spot)?[['👉 Show me on the page','tourspot:'+n]]:[])];
