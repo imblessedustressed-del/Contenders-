@@ -359,9 +359,9 @@ function glKit(c,i){const rgb=h=>l3rgb(h),sk=rgb(c.sk);return{skin:[...sk,.28],b
 function glRefKit(sk){const s=l3rgb(sk);return{skin:[...s,.2],shirt:[236,236,236,.1],trunk:[30,30,34,.1],band:[30,30,34,.1],boot:[18,18,20,.5],bootBand:[18,18,20,.5],lace:[18,18,20,.1],sole:[18,18,20,.1],tie:[20,20,24,.2],hair:[90,90,92,.1],hairStyle:'cap',glove:s,cuff:s}}
 const GL_VS=`attribute vec3 aP;attribute vec3 aN;attribute vec4 aC;attribute vec2 aT;uniform mat4 uVP;varying vec3 vN;varying vec4 vC;varying vec3 vW;varying vec2 vT;
 void main(){vN=aN;vC=aC;vW=aP;vT=aT;gl_Position=uVP*vec4(aP,1.0);}`;
-const GL_FS=`precision mediump float;varying vec3 vN;varying vec4 vC;varying vec3 vW;varying vec2 vT;uniform sampler2D uTex;uniform float uUseTex;uniform vec3 uEye;uniform float uAlpha;uniform float uEmis;uniform float uFlash;
-void main(){vec3 n=normalize(vN);vec3 V=normalize(uEye-vW);if(dot(n,V)<0.0&&uUseTex<0.5)n=-n;
-vec3 L1=normalize(vec3(-0.35,0.9,-0.45));vec3 L2=normalize(vec3(0.7,0.35,0.45));vec3 base=vC.rgb;if(uUseTex>0.5)base*=texture2D(uTex,vT).rgb;
+const GL_FS=`precision mediump float;varying vec3 vN;varying vec4 vC;varying vec3 vW;varying vec2 vT;uniform sampler2D uTex;uniform float uUseTex;uniform vec3 uEye;uniform float uAlpha;uniform float uEmis;uniform float uFlash;uniform float uScroll;
+void main(){vec3 n=normalize(vN);vec4 tx=vec4(1.0);if(uUseTex>0.5){tx=texture2D(uTex,vec2(vT.x+uScroll,vT.y));if(tx.a<0.5)discard;}vec3 V=normalize(uEye-vW);if(dot(n,V)<0.0&&uUseTex<0.5)n=-n;
+vec3 L1=normalize(vec3(-0.35,0.9,-0.45));vec3 L2=normalize(vec3(0.7,0.35,0.45));vec3 base=vC.rgb;if(uUseTex>0.5)base*=tx.rgb;
 float d1=max(dot(n,L1),0.0),d2=max(dot(n,L2),0.0),rim=pow(1.0-max(dot(n,V),0.0),2.5);vec3 H=normalize(L1+V);float sp=pow(max(dot(n,H),0.0),28.0)*vC.a;
 vec3 c=base*(0.30+0.78*d1+0.28*d2)+vec3(1.0,0.96,0.88)*sp*0.9+base*rim*0.45+vec3(uFlash);if(uEmis>0.5)c=base;
 float fog=clamp((length(uEye-vW)-950.0)/1700.0,0.0,0.72);c=mix(c,vec3(0.04,0.035,0.08),fog);gl_FragColor=vec4(c,uAlpha);}`;
@@ -369,9 +369,9 @@ function glInit(){if(LGL!==null)return LGL;try{const cv=document.createElement('
     const gl=cv.getContext('webgl',{antialias:true,preserveDrawingBuffer:true,alpha:false});if(!gl)return LGL=false;
     const sh=(t,s)=>{const x=gl.createShader(t);gl.shaderSource(x,s);gl.compileShader(x);if(!gl.getShaderParameter(x,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(x));return x};
     const pr=gl.createProgram();gl.attachShader(pr,sh(gl.VERTEX_SHADER,GL_VS));gl.attachShader(pr,sh(gl.FRAGMENT_SHADER,GL_FS));gl.linkProgram(pr);if(!gl.getProgramParameter(pr,gl.LINK_STATUS))throw new Error('link');
-    const loc={};['aP','aN','aC','aT'].forEach(a=>loc[a]=gl.getAttribLocation(pr,a));['uVP','uTex','uUseTex','uEye','uAlpha','uEmis','uFlash'].forEach(u=>loc[u]=gl.getUniformLocation(pr,u));
+    const loc={};['aP','aN','aC','aT'].forEach(a=>loc[a]=gl.getAttribLocation(pr,a));['uVP','uTex','uUseTex','uEye','uAlpha','uEmis','uFlash','uScroll'].forEach(u=>loc[u]=gl.getUniformLocation(pr,u));
     const tex=img=>{const t=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,t);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,img);
-      const pot=x=>(x&(x-1))===0;if(pot(img.width)&&pot(img.height)){gl.generateMipmap(gl.TEXTURE_2D);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.REPEAT)}
+      const pot=x=>(x&(x-1))===0;if(pot(img.width)&&pot(img.height)){gl.generateMipmap(gl.TEXTURE_2D);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.REPEAT);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE)}
       else{gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE)}return t};
     const buf=M=>{const b={n:M.p.length/3,bufs:[]};[['aP',M.p,3],['aN',M.n,3],['aC',M.c,4],['aT',M.t,2]].forEach(([a,d,k])=>{const x=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,x);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(d),gl.STATIC_DRAW);b.bufs.push([a,x,k])});return b};
     // ---- static arena
@@ -385,15 +385,39 @@ function glInit(){if(LGL!==null)return LGL;try{const cv=document.createElement('
     const ropeC=[[240,240,240,.4],[200,16,46,.4],[240,240,240,.4],[29,78,216,.4]];
     for(let s=0;s<4;s++){const A=corners[s],B=corners[(s+1)%4];[0,1,2].forEach(r=>{const y=mat+66+r*36;glTube(st,[A[0],y,A[1]],[B[0],y,B[1]],()=>3.2,r===1?(s%2?ropeC[3]:ropeC[1]):ropeC[0],8,8)})}
     for(let k=-2;k<=2;k++)for(const z of[-70,70]){glBox(st,[k*190,560,z],[26,18,26],[255,246,214,0])}
-    // stands: three banks of seats with a painted crowd
-    const crowdT=l3tex('crowdGL',1024,512,(t,w,h)=>{t.fillStyle='#141a33';t.fillRect(0,0,w,h);const r=LAB_RNG(77),sh=['#b23a3a','#2f4fa8','#2f7d4a','#c7a33c','#6c6c6c','#7a3f8c','#d8d8d8','#a8642c','#1f6f7f','#c94f7c','#e2e2e2','#333'],sk=['#e8b98a','#c68e5d','#8d5524','#5c3a1e','#f1c9a5','#a8703f'];
-      for(let row=0;row<8;row++){const y=h-row*64-6;for(let x=0;x<w;x+=32){const jx=x+4+r()*6;t.fillStyle='#2849a8';t.fillRect(jx-3,y-44,30,44);t.fillStyle='#1b2f6e';t.fillRect(jx-3,y-8,30,8);
-        if(r()<.9){t.fillStyle=sh[Math.floor(r()*sh.length)];t.beginPath();t.roundRect(jx,y-34,24,30,6);t.fill();t.fillStyle=sk[Math.floor(r()*sk.length)];t.beginPath();t.arc(jx+12,y-42,8,0,7);t.fill();
-          if(r()<.5){t.fillStyle=['#2a1a0e','#111','#6b4b2a','#d8c070'][Math.floor(r()*4)];t.beginPath();t.arc(jx+12,y-46,8,Math.PI,2*Math.PI);t.fill()}
-          if(r()<.03){t.fillStyle='#fffbe6';t.fillRect(jx-6,y-70,36,16);t.fillStyle=r()<.5?'#c8102e':'#1d4ed8';t.font='bold 11px Impact,sans-serif';t.fillText(['KO!','#1','WAR!','10-9'][Math.floor(r()*4)],jx-2,y-58)}}}}});
-    const cr=glMesh();const bank=(A,B,C2,D,rep)=>{const n=l3norm(l3cross(l3sub(B,A),l3sub(D,A)));glQuad(cr,A,B,C2,D,n,n,n,n,[255,255,255,0],[[0,1],[rep,1],[rep,0],[0,0]])};
-    bank([-1300,-40,470],[1300,-40,470],[1300,560,1150],[-1300,560,1150],2.3);bank([-470,-40,-900],[-470,-40,900],[-1150,560,900],[-1150,560,-900],1.6);bank([470,-40,900],[470,-40,-900],[1150,560,-900],[1150,560,900],1.6);
-    LGL={cv,gl,pr,loc,tex,buf,st:buf(st),mat:buf(mm),apron:ap.map(buf),crowd:buf(cr),tMat:tex(l3matTex()),tApron:[0,1,2,3].map(k=>tex(l3apronTex(k))),tCrowd:tex(crowdT),dyn:null};
+    // stands (owner, Nov 14: "make that part a little more realistic"): stepped rows with seats and people, aisles with stairs,
+    // a railing in front, an upper deck behind a lit ribbon board, and a dark roof with the lighting truss
+    const crowdT=l3tex('crowdRows',1024,256,(t,w,h)=>{t.clearRect(0,0,w,h);const r=LAB_RNG(77),sh=['#b23a3a','#2f4fa8','#2f7d4a','#c7a33c','#6c6c6c','#7a3f8c','#d8d8d8','#a8642c','#1f6f7f','#c94f7c','#e2e2e2','#2b2b2b','#e07b2a','#5a8f2e'],sk=['#e8b98a','#c68e5d','#8d5524','#5c3a1e','#f1c9a5','#a8703f'],hr=['#2a1a0e','#111','#6b4b2a','#d8c070','#8a8a8a','#b0461c'];
+      for(let k=0;k<4;k++){const y0=k*64;for(let x=0;x<w;x+=32){t.fillStyle='#2a4bb0';t.fillRect(x+2,y0+34,28,30);t.fillStyle='#1b2f73';t.fillRect(x+2,y0+58,28,6);t.fillStyle='#3a5fd0';t.fillRect(x+2,y0+34,28,3);
+        if(r()<.88){const jx=x+4+r()*3,lean=(r()-.5)*3;t.fillStyle=sh[Math.floor(r()*sh.length)];t.beginPath();t.roundRect(jx+lean,y0+26,24,32,7);t.fill();
+          t.fillStyle=sk[Math.floor(r()*sk.length)];t.beginPath();t.ellipse(jx+12+lean,y0+17,7.5,8.5,0,0,7);t.fill();
+          if(r()<.75){t.fillStyle=hr[Math.floor(r()*hr.length)];t.beginPath();t.ellipse(jx+12+lean,y0+12,8,5,0,Math.PI,2*Math.PI);t.fill()}
+          if(r()<.12){t.fillStyle=t.fillStyle=sk[Math.floor(r()*sk.length)];t.fillRect(jx+(r()<.5?-3:23)+lean,y0+6,4,18)} // an arm in the air
+          if(r()<.04){t.fillStyle='#fffbe6';t.fillRect(jx-6,y0+1,36,14);t.fillStyle=r()<.5?'#c8102e':'#1d4ed8';t.fillRect(jx-3,y0+5,30,6)}}}}}); // signs carry a colored stripe (no words, so nothing reads backwards)
+    const ribT=l3tex('ribbon',1024,32,(t,w,h)=>{t.fillStyle='#120406';t.fillRect(0,0,w,h);t.font="italic 900 22px Impact, 'Arial Black', sans-serif";t.textBaseline='middle';
+      ['CONTENDERS BOXING LEAGUE','★ FIGHT NIGHT ★','SIMBOT','★ CONTENDERS ★'].forEach((x,k)=>{t.fillStyle=k%2?'#ffd23f':'#ff3b3b';t.fillText(x,20+k*256,h/2+1)})});
+    const cr=glMesh(),rb=glMesh();
+    const stand=(S,A,O,half)=>{const at=(u,d,y)=>[S[0]+A[0]*u+O[0]*d,y,S[2]+A[2]*u+O[2]*d],nIn=l3mul(O,-1),aisles=[-half*.62,0,half*.62],aw=46,inA=u=>aisles.some(a=>Math.abs(u-a)<aw/2);
+      let deck=0;
+      for(let row=0;row<16;row++){const upper=row>=8,d0=row*56+(upper?90:0),y=row*30+(upper?70:0)-30;
+        // tread and riser (concrete), lighter steps in the aisles
+        glQuad(st,at(-half,d0,y),at(half,d0,y),at(half,d0+56,y),at(-half,d0+56,y),[0,1,0],[0,1,0],[0,1,0],[0,1,0],[44,42,52,0]);
+        glQuad(st,at(-half,d0,y-30),at(half,d0,y-30),at(half,d0,y),at(-half,d0,y),nIn,nIn,nIn,nIn,[30,28,38,0]);
+        aisles.forEach(a=>glBox(st,at(a,d0+28,y+1),[Math.abs(A[0])*aw+Math.abs(A[2])*56,2,Math.abs(A[2])*aw+Math.abs(A[0])*56],[92,90,100,0]));
+        // a row of seats and people, split around the aisles
+        const v0=(row%4)/4,v1=v0+.25,seg=[[-half,aisles[0]-aw/2],[aisles[0]+aw/2,aisles[1]-aw/2],[aisles[1]+aw/2,aisles[2]-aw/2],[aisles[2]+aw/2,half]];
+        seg.forEach(([u1,u2],k)=>{const q1=(u1+half)/34/32,q2=(u2+half)/34/32;glQuad(cr,at(u1,d0+24,y),at(u2,d0+24,y),at(u2,d0+24,y+66),at(u1,d0+24,y+66),nIn,nIn,nIn,nIn,[255,255,255,0],[[q1+row*.37,v1],[q2+row*.37,v1],[q2+row*.37,v0],[q1+row*.37,v0]])});
+        if(row===7){deck=d0+56;// balcony: ribbon board on the fascia of the upper deck
+          glQuad(st,at(-half,deck,y),at(half,deck,y),at(half,deck,y+100),at(-half,deck,y+100),nIn,nIn,nIn,nIn,[22,20,28,0]);
+          glQuad(rb,at(-half,deck-2,y+46),at(half,deck-2,y+46),at(half,deck-2,y+92),at(-half,deck-2,y+92),nIn,nIn,nIn,nIn,[255,255,255,0],[[0,1],[half*2/700,1],[half*2/700,0],[0,0]])}}
+      // railing in front of the first row
+      glTube(st,at(-half,-8,22),at(half,-8,22),()=>2.4,[170,172,180,.8],2,8);for(let u=-half;u<=half;u+=180)glTube(st,at(u,-8,-30),at(u,-8,22),()=>2,[150,152,160,.6],1,6);
+      glQuad(st,at(-half,-14,-30),at(half,-14,-30),at(half,-14,8),at(-half,-14,8),nIn,nIn,nIn,nIn,[16,26,64,0])};
+    stand([0,0,470],[1,0,0],[0,0,1],1200);stand([-470,0,0],[0,0,-1],[-1,0,0],880);stand([470,0,0],[0,0,1],[1,0,0],880);
+    // roof and truss over the ring
+    glQuad(st,[-1600,1150,-1600],[1600,1150,-1600],[1600,1150,1700],[-1600,1150,1700],[0,-1,0],[0,-1,0],[0,-1,0],[0,-1,0],[12,12,18,0]);
+    for(const z of[-90,90])glTube(st,[-520,610,z],[520,610,z],()=>4,[70,72,80,.3],2,8);for(let k=-2;k<=2;k++)glTube(st,[k*190,610,-90],[k*190,610,90],()=>3,[70,72,80,.3],1,6);
+    LGL={cv,gl,pr,loc,tex,buf,st:buf(st),mat:buf(mm),apron:ap.map(buf),crowd:buf(cr),rib:buf(rb),tMat:tex(l3matTex()),tApron:[0,1,2,3].map(k=>tex(l3apronTex(k))),tCrowd:tex(crowdT),tRib:tex(ribT),dyn:null};
     return LGL}catch(e){console.warn('3D arena: WebGL unavailable, using the software renderer',e);return LGL=false}}
 function glMat4(C,T,fovy,asp,near,far){const f=l3norm(l3sub(T,C)),r=l3norm(l3cross(f,[0,1,0])),u=l3cross(r,f);
   const V=[r[0],u[0],-f[0],0, r[1],u[1],-f[1],0, r[2],u[2],-f[2],0, -l3dot(r,C),-l3dot(u,C),l3dot(f,C),1];
@@ -404,7 +428,7 @@ function labGLScene(g,o){const G=glInit();if(!G)return null;const{gl,loc}=G,{C,T
   const VP=glMat4(C,T,2*Math.atan(.5/1.32),16/9,30,6000);gl.uniformMatrix4fv(loc.uVP,false,VP);gl.uniform3fv(loc.uEye,C);gl.uniform1f(loc.uAlpha,1);gl.uniform1f(loc.uFlash,0);gl.uniform1i(loc.uTex,0);
   const draw=(b,tex,emis)=>{b.bufs.forEach(([a,x,k])=>{gl.bindBuffer(gl.ARRAY_BUFFER,x);gl.enableVertexAttribArray(loc[a]);gl.vertexAttribPointer(loc[a],k,gl.FLOAT,false,0,0)});
     gl.uniform1f(loc.uUseTex,tex?1:0);gl.uniform1f(loc.uEmis,emis?1:0);if(tex){gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,tex)}gl.drawArrays(gl.TRIANGLES,0,b.n)};
-  draw(G.st,null,false);draw(G.mat,G.tMat,false);G.apron.forEach((b,k)=>draw(b,G.tApron[k],false));draw(G.crowd,G.tCrowd,true);
+  draw(G.st,null,false);draw(G.mat,G.tMat,false);G.apron.forEach((b,k)=>draw(b,G.tApron[k],false));draw(G.crowd,G.tCrowd,true);gl.uniform1f(loc.uScroll,(realAt*.06)%1);draw(G.rib,G.tRib,true);gl.uniform1f(loc.uScroll,0);
   // the people and their shadows
   const M=glMesh(),hits=[];
   [0,1].forEach(i=>{const b=glBody(M,{p:P[i],x0:Xw[i],y0:mat,dirX:i?-1:1,Lz:i?1:-1,at,K:glKit(LAB_SKIN[i],i)});hits[i]={head:b.head,chest:b.chest,hip:b.hip}});
