@@ -520,6 +520,7 @@ const CUTRES={1:1.5,2:1,3:.5};
 const K_RATING=12;
 /* Simulator update 2 (owner-approved Nov 12, 2026): balanced so every style has a chance (engine tests: each type wins about 36-45%
    against the others, the rest draws); heavyweights capped at 6'9" and 280 lb ("Tyson Fury rule"); WeBL's heavyweight edges replaced. */
+const GX={mul:1.02,chin:1.1,rec:.03,hurt:.04};
 const BAL={counterDiv:6,counterStr:0,counterAgg:.8,counterFloor:.5,alloutGive:2,alloutTake:2.75,kpMul:3.75,wtPct:10,giantPer10:.5,smallMan:false,ringBase:1.75,ringFat:.4,clinchBase:1.75,clinchAggLoss:.12,insideBase:1};
 
 function newSev(){const r=rand();return r<2/3?1:r<8/9?2:r<26/27?3:4}
@@ -534,8 +535,8 @@ function injText(i){
 function prep(F,c){
   let str=F.str,kp=F.kp;const cap=Math.floor(str/3);if(kp>cap){str+=kp-cap;kp=cap}
   let parsed;try{parsed=parsePlan(typeof F.plan==='string'?F.plan:'6/6/8')}catch(e){parsed={stmts:[],errors:[]}}
-  const pm=F.primeMul||1;
-  return{F,c,n:escS(lastName(F.name)),str:str*pm,kp,spd:F.spd*pm,agl:F.agl*pm,chn:F.chn,cnd:F.cnd,hgt:F.hgt,cutres:F.cut,E0:10*F.cnd,E:10*F.cnd*(F.endMul||1),inj:[],fw:F.fightW||0,
+  const pm=(F.primeMul||1)*(F.gx?GX.mul:1);
+  return{F,c,n:escS(lastName(F.name)),str:str*pm,kp,spd:F.spd*pm,agl:F.agl*pm,chn:F.chn,cnd:F.cnd,hgt:F.hgt,cutres:F.cut,E0:10*F.cnd,E:10*F.cnd*(F.endMul||1),inj:[],fw:F.fightW||0,gx:F.gx?1:0,
     parsed,perc:0,won:0,lost:0,stuns:0,kds:0,warn:0,endFrac:1,ipDmg:0,
     fights:(F.rec||[0,0,0]).slice(0,3).reduce((a,b)=>a+b,0),
     giant:BAL.giantPer10&&(F.divLim||0)>=200&&(F.minW||0)>200?((F.minW-200)/10)*BAL.giantPer10:0};
@@ -624,7 +625,7 @@ function simulate(FA,FB,rounds){
       const tE={Head:.8,Body:1.2,Cut:.9,Opp:1}[e.tgt],tS={Head:1.2,Body:.8,Cut:.9,Opp:1}[e.tgt];
       const sDef=Math.max(1,o.agl+(S[j].chn-10)*(o.f||1));
       const stun=(a.str+BAL.kpMul*S[i].kp)*off/(od*sDef)*tS;
-      return{base:raw/lk/e.dmgMul,end:raw*tE,stun,ratio:stun/S[j].chn,agg,lk};
+      return{base:raw/lk/e.dmgMul,end:raw*tE,stun,ratio:stun/(S[j].chn*(S[j].gx?GX.chin:1)),agg,lk};
     });
     let D=calc();
     const stunsOf=ratio=>ratio>=2.5?99:ratio>=2.4?4:ratio>=2.25?3:ratio>=2?2:ratio>=1.5?1:0;
@@ -703,7 +704,7 @@ function simulate(FA,FB,rounds){
     R.cond=S.map(x=>condText(x));
     R.en=S.map(x=>Math.max(0,+(x.E/x.E0).toFixed(3))); // endurance left this round (for the Fight Lab arena)
     /* recovery */
-    S.forEach((x,i)=>{x.endFrac=x.E/x.E0;const lost=x.E0-x.E;x.E=Math.min(x.E0,x.E+(BK?.05:.1)*lost+.02*eff[i].rest*lost)});
+    S.forEach((x,i)=>{x.endFrac=x.E/x.E0;const lost=x.E0-x.E;x.E=Math.min(x.E0,x.E+(BK?.05:.1)*lost+.02*eff[i].rest*lost+(x.gx?(x.endFrac<.5?GX.hurt:GX.rec)*lost:0))});
     out.rounds.push(R);
   }
   const tot=[0,1,2].map(j=>out.rounds.reduce((s,R)=>R.cards.length?[s[0]+R.cards[j][0],s[1]+R.cards[j][1]]:s,[0,0]));
@@ -798,7 +799,7 @@ function condText(x,after){
 /* ================= SHARED DATA (Supabase: accounts, forums, messages) ================= */
 cleanSlate();
 const SB_URL='https://ojsphhzgzbxmnfcbitqb.supabase.co',SB_KEY='sb_publishable_SWO9WhiSkoVhflY5CmY08A_hlqCEJSi';
-const BUILD='1794707446';
+const BUILD='1794707949';
 /* A tab left open on an older build must not save over newer data: if the site has been updated, reload before anything else is saved. */
 let staleBuild=false;
 async function checkBuild(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
