@@ -139,6 +139,7 @@ table.wranks td{padding:2px 8px;vertical-align:bottom}
 table.wranks tr:nth-child(even) td{background:#ece1cd}table.wranks tr:nth-child(odd) td{background:#fbf7ef}
 svg.belt{width:46px;height:24px;display:block}
 .beltRow{display:inline-flex;gap:3px;vertical-align:middle;margin-right:6px}.beltRow svg.belt{display:inline-block;width:62px;height:32px}
+div.gymLinks{margin:14px 0 6px}div.gymLinks p{margin:4px 0}
 table.hist td.bl{white-space:nowrap;vertical-align:middle}
 .note{border:1px dashed #c9b99c;padding:6px 10px;background:#fbf7ef;font-size:14px;max-width:640px}
 @media(max-width:720px){
@@ -797,7 +798,7 @@ function condText(x,after){
 /* ================= SHARED DATA (Supabase: accounts, forums, messages) ================= */
 cleanSlate();
 const SB_URL='https://ojsphhzgzbxmnfcbitqb.supabase.co',SB_KEY='sb_publishable_SWO9WhiSkoVhflY5CmY08A_hlqCEJSi';
-const BUILD='1794704641';
+const BUILD='1794704688';
 /* A tab left open on an older build must not save over newer data: if the site has been updated, reload before anything else is saved. */
 let staleBuild=false;
 async function checkBuild(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
@@ -2427,12 +2428,11 @@ function gymPubHTML(uid){
   ${(()=>{const all=[...(c.fighters||[]),...(c.retired||[])],bkA=all.filter(f=>f.region==='bk');if(!bkA.length)return`<tr><td><b>Contenders</b></td><td>${money(g.earn)}</td><td>${g.rec[0]}-${g.rec[1]}-${g.rec[2]}</td><td class="cr">${g.titles}</td></tr>`;
     const row=(lab,L)=>{const r=[0,0,0];L.forEach(f=>(f.rec||[]).slice(0,3).forEach((v,i)=>r[i]+=v));return`<tr><td><b>${lab}</b></td><td>${money(L.reduce((a,f)=>a+(f.earn||0),0))}</td><td>${r[0]}-${r[1]}-${r[2]}</td><td class="cr">${L.reduce((a,f)=>a+(f.titles||[]).length,0)}</td></tr>`};
     return row('Contenders',all.filter(f=>f.region!=='bk'))+row('Bare Knuckles',bkA)})()}</table>
+  <div class="gymLinks">${ME&&uid!==ME?`<p>&#9758; <a data-go="gymres:${uid}:vs"><b>Your record against ${esc(m.gym)}</b></a></p>`:''}
+  <p>&#9758; <a data-go="gymh2h:${uid}"><b>Head to head record against other gyms</b></a></p>
+  <p>&#9758; <a data-go="gymres:${uid}"><b>Recent results</b></a></p></div>
   <h2>Fighters Managed by ${esc(m.gym)}</h2>${(c.fighters||[]).length?byDiv(c.fighters,true):'<p class="mute">No active fighters.</p>'}
   <p>&#9758; <a data-go="gymret:${uid}">${esc(m.gym)}'s Retired Fighters</a>${(c.retired||[]).length?` (${c.retired.length})`:''}</p>
-  <h2 style="margin-top:18px">Results</h2>
-  ${ME&&uid!==ME?`<p>&#9758; <a data-go="gymres:${uid}:vs">Your record against ${esc(m.gym)}</a></p>`:''}
-  <p>&#9758; <a data-go="gymh2h:${uid}">Head to head record against other gyms</a></p>
-  <p>&#9758; <a data-go="gymres:${uid}">Recent results</a></p>
   <p><a data-go="grank">Back to Gym Rankings</a></p>`;
 }
 /* a gym's fought bouts, loaded straight from the database (so older results show too) */
