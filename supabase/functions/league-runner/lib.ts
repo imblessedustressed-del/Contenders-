@@ -40,6 +40,12 @@ function humanNight(C: any, div: string, today: string, mins: number) {
   for (let n = 1; n <= 14; n++) { const d = addDays(today, n); if (weekday(d) === night && n * 1440 + 22 * 60 + 45 - mins >= HUMAN_LEAD) return d; }
   return null;
 }
+// Rookies trial (owner, Nov 15, 2026): about two fights a week. A rookie's next fight is the soonest card at least HUMAN_LEAD
+// (3 days) away, on any night of the week, instead of waiting for his division's night.
+function anyNight(today: string, mins: number) {
+  for (let n = 1; n <= 7; n++) if (n * 1440 + 22 * 60 + 45 - mins >= HUMAN_LEAD) return addDays(today, n);
+  return null;
+}
 const pk = (u: string, f: string) => u + ":" + f;
 // cheap check for the daytime passes: managers' fighters with no scheduled bout (skipping ones we already know can't be matched)
 // 24-hour rule: a fighter who fought today isn't booked yet; one who fought yesterday is booked from tonight's 10:40 PM pass on
@@ -327,7 +333,7 @@ export async function handle(req: Request, client: any, C: any): Promise<Respons
         // fast debut (owner, Nov 15, 2026): a brand-new rookie fights on the next nightly card, whatever his division's night,
         // with at least 12 hours' notice (tonight's card if it's before 10:40 AM, otherwise tomorrow night's)
         const debut = h.reg === "rk" && !(h.F.rec || []).slice(0, 3).some((x: number) => x > 0) && !(h.F.hist || []).some((x: any) => x.bout);
-        const date = debut ? (mins <= 10 * 60 + 40 ? today : addDays(today, 1)) : humanNight(C, h.F.div, today, mins); if (!date) continue;
+        const date = debut ? (mins <= 10 * 60 + 40 ? today : addDays(today, 1)) : h.reg === "rk" ? anyNight(today, mins) : humanNight(C, h.F.div, today, mins); if (!date) continue;
         const seen = new Set((h.F.hist || []).filter((x: any) => x.bout).map((x: any) => x.opp + "|" + x.ogym));
         const lastGym = ((h.F.hist || []).find((x: any) => x.bout) || {}).ogym;
         // a bot is open if he's free, or his last booked fight is 3+ days before this one, or his bot-vs-bot bout is on/after this night (it gets cancelled)
@@ -396,6 +402,26 @@ export async function handle(req: Request, client: any, C: any): Promise<Respons
         mgmt.push(challengeRelease(bu, { B: nm(S[bu][bk]), BG: P[bu].gym, H: nm(S[hu][hk]), HG: P[hu].gym, day, venue: r.venue?.name || "the arena" }));
       }
       await postReleases(mgmt, log);
+      // fight-eve reminder (Rookies trial, owner Nov 15, 2026): the Corner Coach messages each rookie's manager about tomorrow night's fight, once per bout
+      if (midnight && P[COACH_ID]) {
+        const eve = addDays(today, 1);
+        const up = (await sb.from("bouts").select("id,red_user,red_fid,blue_user,blue_fid,div,region,fight_date,venue").eq("status", "scheduled").eq("fight_date", eve).eq("region", "rk").eq("bot_only", false)).data || [];
+        if (up.length) {
+          const fresh = (await sb.from("coach_reminders").upsert(up.map((b: any) => ({ bout_id: b.id })), { onConflict: "bout_id", ignoreDuplicates: true }).select("bout_id")).data || [];
+          const go = new Set(fresh.map((r: any) => r.bout_id));
+          for (const b of up.filter((x: any) => go.has(x.id))) for (const [u, k, ou, ok] of [[b.red_user, b.red_fid, b.blue_user, b.blue_fid], [b.blue_user, b.blue_fid, b.red_user, b.red_fid]]) {
+            if (P[u]?.is_bot) continue;
+            const F = S[u]?.[k], O = S[ou]?.[ok]; if (!F || !O) continue;
+            const r = O.rec || [0, 0, 0, 0], plan = String(F.plan || "").trim();
+            const starter = !plan || plan === "6/6/8" || (F.planName || "Basic") === "Basic";
+            const body = [`Fight tomorrow night! ${nm(F)} meets ${nm(O)} from ${P[ou]?.gym || "another gym"} (${b.div}weight, Rookies). The card runs at about 10:45 PM Central tomorrow${b.venue?.name ? " at " + b.venue.name : ""}.`,
+              `Scouting: ${nm(O)} is ${r[0]}-${r[1]}-${r[2]} with ${r[3] || 0} KO${r[3] === 1 ? "" : "s"}, ${C.ht ? C.ht(60 + (O.hgt || 0)) : ""} tall. Click his name on your fighter's page to read his past fight reports.`,
+              starter ? `Your fighter is still on the starter plan. Even two extra lines help: a rest line ("if endurance_percent < 45 then 4/5/9") and a late push ("if score < 0 and round >= 9 then 7H/8/5"). Test them in Simbot first.` : `Last chance to tune his plan. Run it 100 times in Simbot against a few different styles to check it.`,
+              `Whatever plan is saved when the fights run is the one he uses. Good luck! (Automatic note; replies aren't read.)`].join("\n\n");
+            const m = await sb.from("messages").insert({ sender: COACH_ID, recipient: u, body }); if (m.error) log.push(`reminder ${b.id}: ${m.error.message}`);
+          }
+        }
+      }
     }
   } catch (e) {
     log.push("error: " + (e as Error).message);
