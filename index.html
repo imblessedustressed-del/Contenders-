@@ -811,7 +811,7 @@ function condText(x,after){
 /* ================= SHARED DATA (Supabase: accounts, forums, messages) ================= */
 cleanSlate();
 const SB_URL='https://ojsphhzgzbxmnfcbitqb.supabase.co',SB_KEY='sb_publishable_SWO9WhiSkoVhflY5CmY08A_hlqCEJSi';
-const BUILD='1794744521';
+const BUILD='1794744872';
 /* A tab left open on an older build must not save over newer data: if the site has been updated, reload before anything else is saved. */
 let staleBuild=false;
 async function checkBuild(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
@@ -2843,7 +2843,7 @@ function doSearch(q){
   $('#sres').innerHTML=[...fs,...gs,...ts,...rs].join('')||'<p class="mute">Nothing found.</p>';
 }
 /* ---------- Help ---------- */
-const HELP_TOPICS=[['start','Getting Started'],['fighter','Creating a Fighter'],['plans','Writing Fight Plans'],['sim','How Fights Are Simulated'],['training','Training, Rating and Status'],['schedule','The Fight Schedule'],['titles','Rankings and World Titles'],['bk','The Bare Knuckles Region'],['community','Forums, Messages and Press Releases'],['account','Your Account']];
+const HELP_TOPICS=[['start','Getting Started'],['fighter','Creating a Fighter'],['plans','Writing Fight Plans'],['styles','Fighting Styles'],['conditions','Plan Conditions (Reference)'],['strategy','Fight Plan Strategy'],['examples','Sample Fight Plans'],['sim','How Fights Are Simulated'],['scouting','Scouting Opponents'],['training','Training, Rating and Status'],['career','Managing a Career'],['schedule','The Fight Schedule'],['titles','Rankings and World Titles'],['bk','The Bare Knuckles Region'],['glossary','Glossary'],['community','Forums, Messages and Press Releases'],['account','Your Account']];
 function helpHTML(arg){
   const t=HELP_TOPICS.find(x=>x[0]===arg);
   const toc=`<p class="small">${HELP_TOPICS.map(x=>`<a data-go="help:${x[0]}">${x[1]}</a>`).join(' | ')}</p>`;
@@ -2855,6 +2855,240 @@ const HELP_BODY={
  start:()=>`<p>Contenders is a boxing strategy game. You're the manager: you build fighters, train them, write their fight plans, and watch every bout play out round by round. You never throw a punch yourself. Your decisions win or lose the fight.</p>
   <ol><li><a data-go="register">Sign up</a> and name your gym.</li><li><a data-go="create">Create a fighter</a> by spending his 70 points.</li><li>Write his <a data-go="help:plans">fight plan</a>.</li><li>Test it in <a data-go="simbot">Simbot</a> or a <a data-go="fight">practice fight</a>.</li><li>Fight on his division's <a data-go="help:schedule">fight night</a>, read the report, adjust, repeat.</li></ol>
   <p>There are two regions: <b>Contenders</b> (the regular game) and <b><a data-go="help:bk">Bare Knuckles</a></b>. You pick a fighter's region when you create him, and it can't be changed. Each region has its own rankings and its own WBC, WBA and WBO world titles in every division.</p>`,
+ fighter:()=>`<p>Every new fighter gets exactly <b>${POOL} points</b> to spread over his abilities. Once you create him the points are <b>locked</b>; after that he only improves by winning (see <a data-go="help:training">Training</a>).</p>
+  <table class="grid small"><tr><th>Ability</th><th>What it does</th><th>Fades when tired?</th></tr>
+  <tr><td>Strength (STR)</td><td>The engine of all damage, both endurance damage and stunning damage. Each point adds about a pound and a half.</td><td>Yes</td></tr>
+  <tr><td>KO Punch (KP)</td><td>Counts almost four times as much as STR toward stunning damage only. Each KP point needs 3 STR behind it (1 KP at 3 STR, 2 at 6, 3 at 9 and so on); extra KP over that cap is turned back into STR.</td><td>No</td></tr>
+  <tr><td>Speed (SPD)</td><td>How many of his punches land, and how many punches he can throw effectively. Jabs land more easily than power shots.</td><td>Yes</td></tr>
+  <tr><td>Agility (AGL)</td><td>How many punches he slips and how much of the damage he takes. Each point makes him about a pound lighter.</td><td>Yes</td></tr>
+  <tr><td>Chin (CHN)</td><td>How much stunning damage he can take before he is stunned, dropped or knocked out. Also sets how much damage per fight is free of injury points.</td><td>No (but a spent fighter is easier to hurt)</td></tr>
+  <tr><td>Conditioning (CND)</td><td>His gas tank. Starting endurance is 10 times CND, he absorbs CND/2 of fatigue every round for free, and it decides how much weight he can sweat off safely.</td><td>No</td></tr>
+  <tr><td>Height (HGT)</td><td>5 feet plus one inch per point, up to 6'9" (21). The taller man gets half a point of SPD and AGL for every inch he has on the other man. Height makes him heavier.</td><td>No</td></tr>
+  <tr><td>Cut Resistance</td><td>1 low, 2 normal or 3 high. A low-resistance fighter gets cut half again as often as normal; a high one half as often.</td><td>No</td></tr></table>
+  <h2>Weight and divisions</h2>
+  <p>His natural weight comes from his height and <b>build</b> (very light, light, normal, heavy, very heavy), plus about 1.5 lb per point of STR over 12 and minus about 1 lb per point of AGL over 12. A heavier build packs more weight on the same frame. Better conditioning lets him sweat off more before the weigh-in.</p>
+  <ul><li><b>Making weight:</b> if his lightest safe weight is under the division limit, he weighs in at his natural weight or the limit, whichever is lower.</li>
+  <li><b>Too heavy for the division:</b> he can still fight there, but drying out costs him. His starting endurance is multiplied by (limit / lightest safe weight) squared. Ten percent over the limit costs about a fifth of his gas tank, and with less endurance his STR, SPD and AGL fade sooner too.</li>
+  <li><b>Size edge:</b> the heavier man in the ring gets 1 extra STR for every 10% he outweighs his opponent at the weigh-in.</li>
+  <li><b>Big men tire faster:</b> a fighter whose lightest safe weight is over 200 lb loses an extra half point of endurance every round for each 10 lb over 200.</li>
+  <li>Heavyweight has a 280 lb limit. The Create a Fighter page shows his weight and the lightest division he can make as you change his numbers.</li></ul>
+  <p>Divisions and limits: ${DIVS.map(d=>d[0]+' '+(d[1]>=1000?'(no limit)':d[1]+' lb')).join(', ')}.</p>
+  <h2>Building by type</h2>
+  <ul><li><b>Slugger:</b> high STR and CHN, enough CND to keep swinging, modest SPD. Wins by wearing men down and hurting them late.</li>
+  <li><b>KO Puncher:</b> STR high enough to carry real KP. Lives on stuns and knockdowns, usually needs a decent chin because his fights get wild.</li>
+  <li><b>Dancer:</b> high AGL and SPD, often tall. Hard to hit, wins rounds on volume, makes sluggers miss and tire.</li>
+  <li><b>Counterpuncher:</b> more SPD (and height) than his opponents, so his counters land and theirs don't. Weak against a faster or taller man.</li>
+  <li><b>Clincher:</b> more STR than his opponents and a big gas tank. Ties men up, survives, and takes over when they tire.</li></ul>
+  <p><b>Rules of thumb:</b> don't let CHN get too low, since a glass jaw loses to anyone who can punch. Don't starve CND, because every ability except CHN and KP fades as he tires. Height is expensive in weight but helps against shorter men. Every build can win; the plan decides most fights.</p>`,
+ plans:()=>`<p>A fight plan tells your fighter what to do each round. At the start of every round he reads the plan and picks one tactic, then fights the whole round that way. You can't change anything during the fight, so the plan has to think ahead for you.</p>
+  <h2>Energy points: AGG/POW/DEF</h2>
+  <p>A tactic is three numbers, like <tt>6/6/8</tt>: aggressiveness, power and defense. They can add up to at most <b>20</b>. Anything you leave unused is <b>rest</b>, which helps him recover between rounds.</p>
+  <table class="grid small"><tr><th>Points</th><th>What they do</th><th>Usual range</th></tr>
+  <tr><td>AGG (aggressiveness)</td><td>How much he throws: roughly 9 punches per point over a round. More punches land more often and win rounds, but AGG is the most tiring thing he can do.</td><td>3 to 9</td></tr>
+  <tr><td>POW (power)</td><td>How hard he throws. Power multiplies the damage of every punch, and decides the mix: about 3 power punches and 3 regular punches per POW point, with the rest of his punches thrown as jabs.</td><td>4 to 10</td></tr>
+  <tr><td>DEF (defense)</td><td>How well he guards. Damage he takes is divided by his DEF, so low defense gets fighters stunned and knocked out. Both men's DEF also cut how many punches land.</td><td>6 to 12</td></tr></table>
+  <ul><li><b>Fatigue each round</b> is AGG + half of POW. He absorbs CND/2 of it free; the rest comes off his endurance. Example: a CND 12 fighter on <tt>8/6/6</tt> creates 11 fatigue, absorbs 6, and loses 5 endurance points to fatigue alone.</li>
+  <li><b>Recovery</b> between rounds is 10% of the endurance he has lost, plus 2% more for every point of rest in the tactic he just used.</li></ul>
+  <h2>Targets</h2>
+  <p>Put a letter right after the AGG number. No letter means he takes whatever opening he sees.</p>
+  <ul><li><tt>5H/7/8</tt> <b>head:</b> 20% more stunning damage, 20% less endurance damage. For hurting and finishing a man.</li>
+  <li><tt>5B/7/8</tt> <b>body:</b> 20% more endurance damage, 20% less stunning damage, and far fewer cuts. For wearing a man down early.</li>
+  <li><tt>5C/7/8</tt> <b>cuts:</b> goes after his face to open and worsen cuts and swelling, hoping for a doctor's stoppage.</li>
+  <li>Aiming costs accuracy: targeted head or body punches land about 20% less often, and cut-hunting about 10% less.</li></ul>
+  <h2>Dirty fighting</h2>
+  <p>Put <tt>!</tt> after the POW number: <tt>6/7!/7</tt>. He does 10% more damage, but each round he fouls there's about an even chance the referee warns him (a warned man's fouls only add 5%). From the second warning on, each warning costs a point on the cards, and every warning carries a small and growing risk of disqualification.</p>
+  <h2>Styles</h2>
+  <p>Add one style in parentheses at the end: <tt>6/6/8 (ring)</tt>. Each style has an upside and a cost, and most only pay off when he has a particular edge. See <a data-go="help:styles">Fighting Styles</a>.</p>
+  <h2>Rounds and conditions</h2>
+  <ul><li>A plain tactic on its own line applies every round: <tt>6/6/8</tt></li>
+  <li><b>Round lines:</b> <tt>4) 7/6/7</tt> means "from round 4 on". The lines under a round line also only count from that round on, until the next round line.</li>
+  <li><b>Conditions:</b> <tt>if score &lt; 0 and round &gt;= 8 then 8/7/5</tt>. Every condition is checked fresh at the start of each round. See the full list in <a data-go="help:conditions">Plan Conditions</a>.</li>
+  <li><b>The last true line wins.</b> He reads the plan from top to bottom and uses the last line that applies. Put your general tactic at the top and the special situations under it, with the most important ones last.</li>
+  <li>A line's position decides its priority, not its round number. A <tt>1)</tt> line placed at the bottom is checked every round and beats everything above it.</li>
+  <li><tt>stop</tt> on its own line means ignore everything below it. <tt>if ... then stop</tt> does that only when the condition is true.</li>
+  <li><tt>towel</tt> (or <tt>if ... then towel</tt>) tells his corner to throw in the towel, which only happens once he's under 50% endurance. It loses the fight but saves him a beating.</li>
+  <li><b>Your own words in the report:</b> <tt>say "..."</tt> (before the round), <tt>taunt "..."</tt>, <tt>sneer "..."</tt>, <tt>gloat "..."</tt> and <tt>tko "..."</tt> (when he wins by stoppage).</li>
+  <li>Anything after <tt>#</tt> is a note to yourself and is ignored. Separate several statements on one line with <tt>;</tt>. Upper or lower case doesn't matter.</li></ul>
+  <h2>A first plan</h2>
+  <pre class="plan"># every round unless something below applies
+6/6/8
+# opponent fading: go to the body and work harder
+if opponent &lt;= tired then 7B/7/6
+# I'm getting tired: slow down and rest
+if endurance_percent &lt; 45 then 4/5/9
+# way ahead late: protect the lead
+if score &gt;= 6 and round &gt;= 9 then 3/4/11
+# behind late: go get him
+if score &lt; 0 and round &gt;= 9 then 7H/8/5</pre>
+  <p>Mistakes to avoid: a plan with no rest lines runs out of gas by round 8; very low DEF (5 or less) gets fighters knocked out; and conditions in the wrong order never fire because a later true line overrides them. Test every change in <a data-go="simbot">Simbot</a> or a <a data-go="fight">practice fight</a> before fight night. Plans are private: only you ever see yours.</p>`,
+ styles:()=>`<p>Styles go in parentheses after the energy points, like <tt>6/6/8 (inside)</tt>. Only one per tactic. Most styles get stronger the bigger his edge in the ability they use, so check the tale of the tape before choosing one. No style at all is often the right answer.</p>
+  <table class="grid small"><tr><th>Style</th><th>Upside</th><th>Cost</th><th>Use it when</th></tr>
+  <tr><td><tt>(inside)</tt></td><td>+1 STR, plus half of any STR edge he has.</td><td>He takes 10% more damage.</td><td>He's the stronger man and can afford a trade.</td></tr>
+  <tr><td><tt>(clinch)</tt></td><td>+AGL, more if he's the stronger man.</td><td>His AGG drops by a fifth of the other man's AGG. Holding with DEF over 10 risks a point deduction for refusing to break.</td><td>He's stronger, tired, hurt, or protecting a lead.</td></tr>
+  <tr><td><tt>(feint)</tt></td><td>+1 SPD, plus half of any SPD edge.</td><td>1 extra fatigue per round.</td><td>He's faster and wants more punches to land.</td></tr>
+  <tr><td><tt>(counter)</tt></td><td>If his SPD plus height beats the other man's, he gains AGL and the other man loses AGL.</td><td>His AGG drops 20%. If the other man is faster or taller, it backfires and the swing goes the other way.</td><td>He's clearly faster and/or taller, against an aggressive opponent.</td></tr>
+  <tr><td><tt>(ring)</tt></td><td>+1.75 AGL, plus half of any AGL edge.</td><td>A little extra fatigue.</td><td>He's the more agile man and wants to be hard to hit.</td></tr>
+  <tr><td><tt>(ropes)</tt></td><td>If he's the more agile man, the other man loses a good part of his agility (never below 8).</td><td>He loses 1 AGL himself; it does nothing if he isn't more agile.</td><td>He's more agile and wants to land more, not just avoid.</td></tr>
+  <tr><td><tt>(outside)</tt></td><td>+0.5 SPD and AGL, and his height edge counts half again as much.</td><td>15% less power.</td><td>He's the taller man and is happy to win on jabs and volume.</td></tr>
+  <tr><td><tt>(allout)</tt></td><td>He does double damage.</td><td>He takes nearly triple damage.</td><td>Desperation: far behind late, or the other man is badly hurt and has to go.</td></tr></table>
+  <p>The fight report's private manager line tells you each round which styles took effect ("His AGL is increased by using the ring", "His counter-punching backfires!").</p>`,
+ conditions:()=>`<p>Everything you can test in an <tt>if ... then</tt> line. All values are checked at the start of the round, before any punches.</p>
+  <table class="grid small"><tr><th>Word</th><th>Meaning</th></tr>
+  <tr><td><tt>round</tt></td><td>The round about to start (1 to 12; 1 to 25 in Bare Knuckles).</td></tr>
+  <tr><td><tt>score</tt></td><td>His running score as one judge sees it: points for minus points against. Positive means he's ahead, negative behind.</td></tr>
+  <tr><td><tt>roundswon</tt>, <tt>roundslost</tt></td><td>Rounds that all three judges gave him, or all three gave the other man.</td></tr>
+  <tr><td><tt>decision_won</tt>, <tt>decision_lost</tt></td><td>True once he's won (or lost) 7 rounds outright on every card: the decision is decided if it goes the distance.</td></tr>
+  <tr><td><tt>endurance</tt></td><td>His endurance points left.</td></tr>
+  <tr><td><tt>endurance_percent</tt></td><td>His endurance left as a percent of his starting total (100 when fresh).</td></tr>
+  <tr><td><tt>opponent</tt> or <tt>opp</tt></td><td>The other man's condition at the end of the last round: 2 = <tt>strong</tt> (over 2/3 left), 1 = <tt>tired</tt>, 0 = <tt>exhausted</tt>, <tt>weak</tt> or <tt>hurt</tt> (under 1/3). So <tt>opp &lt;= tired</tt> means tired or worse.</td></tr>
+  <tr><td><tt>opptiring</tt></td><td>True when the other man is under half his endurance.</td></tr>
+  <tr><td><tt>mystuns</tt>, <tt>hisstuns</tt></td><td>How many times he has been stunned so far, and how many times the other man has been stunned.</td></tr>
+  <tr><td><tt>myknockdowns</tt>, <tt>hisknockdowns</tt></td><td>How many times he has been knocked down, and how many times the other man has been.</td></tr>
+  <tr><td><tt>mycuts</tt>, <tt>hiscuts</tt></td><td>How bad his cuts and swelling are (all injury levels added up), and the other man's.</td></tr>
+  <tr><td><tt>warnings</tt></td><td>Referee warnings he has received.</td></tr>
+  <tr><td><tt>true</tt>, <tt>false</tt></td><td>Always true or false. Handy for switching a line off while testing.</td></tr></table>
+  <h2>Math and logic</h2>
+  <ul><li>Numbers and <tt>+ - * /</tt>, with parentheses: <tt>if endurance_percent &gt; 100 - round * 5 then 7/6/7</tt></li>
+  <li>Comparisons: <tt>&lt; &gt; = &lt;= &gt;= &lt;&gt;</tt> (also <tt>==</tt>, <tt>!=</tt>, <tt>is</tt> and <tt>is not</tt>).</li>
+  <li><tt>and</tt>, <tt>or</tt>, <tt>not</tt>. <tt>and</tt> is checked before <tt>or</tt>, so use parentheses when you mix them: <tt>if (hisstuns &gt; 0 or opp = 0) and round &gt;= 6 then 6H/9/5</tt></li></ul>
+  <h2>Useful patterns</h2>
+  <pre class="plan"># pace: spend endurance evenly over 12 rounds
+if endurance_percent &lt; 100 - round * 6 then 4/5/9
+# behind by more than the rounds left can make up
+if score + 12 - round &lt; 0 then 8H/8/4
+# the decision is in the bag: survive
+if decision_won then 3/3/14 (clinch)
+# I've been hurt this fight: tighten up
+if mystuns &gt; hisstuns then 5/5/10
+# he's hurt: finish him
+if hisstuns &gt; 0 and opp = 0 then 6H/10/4</pre>`,
+ strategy:()=>`<h2>Winning rounds</h2>
+  <ul><li>The judges score each round 10-9 (or wider). A stun or knockdown wins the round. Otherwise the man who <b>landed</b> more wins it, with power punches worth 2, regular punches 1.5 and jabs 1. Landing a lot of punches matters more than landing a few hard ones.</li>
+  <li>If a judge has the fight even at the end, he gives it to the busier fighter. Real draws are rare.</li>
+  <li>AGG wins rounds; POW does damage. Raising AGG is the fastest way to win a close round, and also the fastest way to tire.</li></ul>
+  <h2>Efficiency</h2>
+  <ul><li>Damage he deals grows with POW and with the square root of AGG; damage he takes is divided by his DEF. So a point of POW buys more damage than a point of AGG, and DEF protects against everything.</li>
+  <li>For damage traded per point spent, balanced tactics around <tt>4/8/8</tt> are hard to beat. Move away from it on purpose: more AGG to steal rounds, more DEF when he's hurt or protecting a lead, less of everything to rest.</li>
+  <li>Fatigue is AGG + POW/2, so AGG costs twice what POW does in endurance.</li></ul>
+  <h2>Managing the gas tank</h2>
+  <ul><li>Every ability but CHN and KP shrinks as his endurance falls. A fighter at 40% endurance has about 40% of his STR, SPD and AGL.</li>
+  <li>Plan for all 12 rounds. Rest lines like <tt>if endurance_percent &lt; 45 then 4/5/9</tt> stop him from collapsing late.</li>
+  <li>Resting on its own isn't free: low DEF while resting invites a beating. Rest with DEF up, especially against a puncher.</li>
+  <li>A badly tired fighter is in real danger: his punches stop landing, his chin weakens, and the referee will stop a one-sided beating.</li></ul>
+  <h2>Hurting and finishing</h2>
+  <ul><li>Stunning damage in a round of 1.5 times his chin is a stun; twice his chin is a knockdown; 2.5 times is a knockout. A big gap in stuns or knockdowns in one round can also bring a referee stoppage.</li>
+  <li>To set up a knockout: work the body early to drain him, then switch to the head with high POW once he's tired (<tt>opp &lt;= tired</tt>) or after you've stunned him (<tt>hisstuns &gt; 0</tt>).</li>
+  <li>A stunned man fights the rest of that round on wobbly legs, throwing and landing less.</li>
+  <li>Your own DEF is your chin's best friend. If he's been stunned, raise DEF before he's dropped.</li></ul>
+  <h2>Using your edges</h2>
+  <ul><li>Stronger: inside or clinch. Faster: feint. Taller: outside, and counter if he's also faster. More agile: ring to avoid, ropes to land. See <a data-go="help:styles">Fighting Styles</a>.</li>
+  <li>Edges are relative: check the other man's height, weight and record before choosing. A style that wins one fight can backfire in the next.</li></ul>
+  <h2>Writing for an opponent</h2>
+  <ul><li>Your fighter's page shows his next opponent once he's booked. Scout him (see <a data-go="help:scouting">Scouting</a>) and adjust before fight night.</li>
+  <li>Against a puncher: more DEF, body work, make him tire. Against a dancer: pressure and body shots, take away his legs. Against a clincher: stay fresh and win the early rounds. Against a counterpuncher: lower AGG and let him come, or out-jab him if you're taller.</li>
+  <li>Don't be predictable. Other managers read your public fight reports too.</li></ul>
+  <h2>Testing</h2>
+  <p><a data-go="simbot">Simbot</a> lets you build a copy of your fighter and run any plan 100 times against any style in seconds. <a data-go="fight">Practice fights</a> give a full report with your private manager lines. Neither ever counts on your record.</p>`,
+ examples:()=>`<p>Starting points to adapt, not finished plans. Change the numbers for your fighter's abilities and test them in <a data-go="simbot">Simbot</a>.</p>
+  <h2>Pressure slugger</h2>
+  <pre class="plan"># walk him down and break the body
+6B/7/7 (inside)
+if opp &lt;= tired then 7/8/5 (inside)
+if hisstuns &gt; 0 then 7H/9/4
+if endurance_percent &lt; 40 then 4/5/9 (clinch)
+if score &gt; 2 * (12 - round) + 2 then 3/4/11</pre>
+  <h2>KO puncher</h2>
+  <pre class="plan"># patient early, head hunting once he slows
+4/8/8
+if round &gt;= 4 and opp &lt;= tired then 5H/10/5
+if hisstuns &gt; 0 then 6H/10/4
+if mystuns &gt; hisstuns then 4/6/10
+if endurance_percent &lt; 35 then 3/5/10</pre>
+  <h2>Dancer</h2>
+  <pre class="plan"># stick, move and pile up rounds
+7/4/9 (ring)
+if endurance_percent &lt; 50 then 5/4/10 (ring)
+if score &lt; 0 and round &gt;= 8 then 8/5/7 (ring)
+if decision_won then 3/3/12 (ring)</pre>
+  <h2>Counterpuncher</h2>
+  <pre class="plan"># let him come; only when you're faster or taller
+4/7/9 (counter)
+if opp &lt;= tired then 6/7/7
+if score &lt; 0 and round &gt;= 9 then 7H/8/5
+if endurance_percent &lt; 40 then 3/5/11</pre>
+  <h2>Clincher</h2>
+  <pre class="plan"># tie him up early, take over late
+4/6/10 (clinch)
+if round &gt;= 7 and opp &lt;= tired then 7B/7/6 (inside)
+if endurance_percent &lt; 40 then 3/4/10 (clinch)
+if score &lt; 0 and round &gt;= 10 then 8/7/5</pre>`,
+ scouting:()=>`<p>Every fighter's record and fight reports are public (only plans, abilities and the private manager lines are hidden). Read them before you write a plan.</p>
+  <ul><li><b>Height and weight:</b> very tall for his weight often means a dancer or jabber; short and heavy for his division often means a clincher or slugger. Weight that climbs over time means he's adding STR; weight that drops means more AGL.</li>
+  <li><b>Record:</b> lots of KO wins points to power or KP. Lots of KO losses means a weak chin or a reckless plan: make him trade. Lots of decisions on both sides suggests a careful, high-defense plan.</li>
+  <li><b>Fight reports:</b> watch how many punches he throws and lands early and late. Lots thrown means high AGG; lots of power punches means high POW. Look for style messages and when they appear.</li>
+  <li><b>Habits:</b> does he start the same way every fight? What does he do when ahead early, behind early, ahead late, behind late, or when he's tired? Does he change when the other man is hurt?</li>
+  <li><b>Signs of speed and agility:</b> a high landing rate means speed; opponents missing a lot means agility. Early feints or the ring point to an edge he's using.</li>
+  <li><b>Signs of KP:</b> stuns and knockdowns against fresh opponents early in fights.</li>
+  <li><b>Watch it:</b> the red Simbot View link plays any fight with a report in the Simbot arena, which makes momentum easy to see.</li>
+  <li><b>Scout yourself:</b> look at your own public reports the way a rival would, and change what's too predictable.</li></ul>`,
+ sim:()=>`<p>Fights are worked out one round at a time from both fighters' abilities and the tactics their plans choose, then written up blow by blow.</p><ul>
+  <li><b>Endurance</b> starts at 10 times CND (less if he had to dry out to make weight). As it drops, his STR, SPD and AGL shrink with it. At zero he's finished.</li>
+  <li><b>Damage</b> comes from his STR, POW, AGG and SPD against the other man's DEF and AGL. Head shots do more stunning damage and body shots more endurance damage.</li>
+  <li><b>Punches:</b> about 9 thrown per AGG point; about 3 power and 3 regular punches per POW point, and the rest are jabs. His SPD against the other man's AGL decides how many land.</li>
+  <li><b>Stuns:</b> stunning damage of 1.5 times the other man's chin in a round is a stun, twice is a knockdown, and 2.5 times is a knockout. A spent fighter can't take a punch the way a fresh one can.</li>
+  <li><b>Stoppages:</b> a knockout; the referee stopping a fight that's become one-sided (a big gap in stuns or knockdowns in a round, or an exhausted man taking a beating without answering); the ringside doctor for a bad cut, injury or both eyes swollen shut; a fighter with no endurance left; the corner's towel; or a disqualification.</li>
+  <li><b>Fatigue</b> each round is AGG plus half of POW (plus a little for some styles and for a broken nose). Half his CND is absorbed free. He recovers 10% of lost endurance between rounds, plus 2% for each point of rest.</li>
+  <li><b>Injuries:</b> hard rounds can open cuts above and below the eyes, swell the eyes, and damage the nose or jaw. Cuts near the eyes cost SPD, swelling costs SPD and AGL, and a broken nose adds fatigue. Head and cut-hunting punches cause the most; body punches very few.</li>
+  <li><b>Size:</b> the heavier man gets 1 STR for every 10% he outweighs the other at the weigh-in. The taller man gets half a point of SPD and AGL per inch (more when fighting outside). Fighters over 200 lb tire faster.</li>
+  <li><b>Prime:</b> a fighter whose rating has fallen well below his best (status) fights a bit below his best STR, SPD and AGL.</li>
+  <li><b>Training:</b> his primary training program adds 1 point to that ability during each fight.</li>
+  <li><b>Length:</b> every Contenders bout is 12 three-minute rounds; Bare Knuckles bouts are 25.</li>
+  <li><b>Judges:</b> three judges score each round on the 10-point must system (see <a data-go="help:strategy">Strategy</a>). Point deductions come from repeated fouling warnings and from refusing to break a clinch.</li></ul>
+  <p class="small mute">The numbers are tuned so every style has a real chance; the better plan usually decides.</p>`,
+ training:()=>`<ul>
+  <li><b>Rating</b> starts at 0. A win adds 1, or 2 if he's on a winning streak. A loss takes 1 away (never below 0), except when he's beaten by a higher-rated fighter, or loses a split or majority decision (unless it's a title fight against an equal or lower-rated man). Maximum 28 in both regions.</li>
+  <li><b>Status</b> is the highest rating he has ever reached.</li>
+  <li><b>Winning streak:</b> grows each time a win raises his status. Any loss or draw ends it.</li>
+  <li><b>Ability points:</b> he earns 1 point for every status level he gains, plus a bonus point at status 6 and at every even status after that (8, 10, 12 ... 28). A fighter who reaches status 28 has earned 28 + 12 = 40 extra points over his career.</li></ul>
+  <h2>Training programs</h2>
+  <ul><li><b>Primary program:</b> he fights with +1 in that ability every fight, and the first ability point a win earns goes there.</li>
+  <li><b>Secondary program:</b> where the second point from a win goes (wins worth 2 points, like the bonus levels).</li>
+  <li><b>Fast track:</b> on a winning streak a win is worth two status levels, which can mean three points. Pick a third program before the fight; it only counts if he wins. A loss or draw ends the streak and drops the third program.</li>
+  <li>Set training on the fighter's page ("train for something else"). There are no random points in Contenders: every point goes where you told it to.</li>
+  <li>Remember the KP rule: each KP point needs 3 STR, so train STR before KP.</li></ul>
+  <h2>Prime</h2>
+  <p>A fighter is in his <b>prime</b> when his rating equals his status. Each point of gap takes 1.5% off his STR, SPD and AGL in the ring (at most 30%). Wins close the gap.</p>
+  <h2>Injury points and AP loss</h2>
+  <ul><li>Each fight, damage up to 5 times his CHN is free. Everything above that becomes injury points (IP). A fighter knocked out takes a flat 10.</li>
+  <li>Every 500 IP costs him a random ability point for good (AP Loss), from STR, SPD, AGL, CHN or CND.</li>
+  <li>High defense, a good chin and not taking needless beatings keep IP down. The towel can save IP in a fight he can't win.</li></ul>`,
+ career:()=>`<ul>
+  <li><b>Early fights matter most.</b> Every early win raises his status and adds points while he has little invested. Pick plans that win, not plans that look pretty.</li>
+  <li><b>Plan his growth.</b> Decide what he should look like at status 6, 10, 15, 20 and 28 and set training to get there. Keep KP in step with STR (3 STR per KP).</li>
+  <li><b>Watch his weight.</b> Adding STR makes him heavier; adding AGL makes him lighter. Moving up a division can be better than drying out (see <a data-go="help:fighter">Creating a Fighter</a>).</li>
+  <li><b>Keep IP down.</b> Compare plans in Simbot by how often they win and how much punishment they take. A plan that wins slightly less but avoids beatings can be worth more over a career.</li>
+  <li><b>One fight a week.</b> Every fighter is booked automatically against a fair opponent (see <a data-go="help:schedule">Fight Schedule</a>). Once a bout is booked it will be fought; a fighter you retire with a bout booked fights it first.</li>
+  <li><b>When to retire him:</b> after several lost ability points, or when his rating has fallen far below his status and won't come back, or when he can no longer reach your goal. Retired fighters keep their record and stay on your gym's page.</li>
+  <li><b>Build a stable.</b> Fighters in different divisions fight on different nights, so a few fighters means more fight nights and more chances at belts.</li></ul>`,
+ glossary:()=>`<table class="grid small">
+  <tr><td><b>AGG / POW / DEF</b></td><td>Aggressiveness, power and defense: the three energy-point numbers in a tactic.</td></tr>
+  <tr><td><b>AP</b></td><td>Ability point. <b>AP Loss</b> is a point lost for good to injury points.</td></tr>
+  <tr><td><b>Build</b></td><td>Frame from very light to very heavy; decides how much he weighs at a given height.</td></tr>
+  <tr><td><b>Card</b></td><td>A judge's scores. Also a night's list of bouts (fight card).</td></tr>
+  <tr><td><b>Endurance</b></td><td>His gas tank: 10 times CND at the start of a fight.</td></tr>
+  <tr><td><b>Fast track</b></td><td>A win on a winning streak, worth two status levels.</td></tr>
+  <tr><td><b>Fatigue</b></td><td>Endurance burned by his own effort each round: AGG + POW/2 minus CND/2.</td></tr>
+  <tr><td><b>IP</b></td><td>Injury points. Every 500 costs an ability point.</td></tr>
+  <tr><td><b>KD</b></td><td>Knockdown.</td></tr>
+  <tr><td><b>KP</b></td><td>KO punch: extra stunning power, needing 3 STR per point.</td></tr>
+  <tr><td><b>Prime</b></td><td>Rating equal to status: fighting at his best.</td></tr>
+  <tr><td><b>Rating / Status</b></td><td>Current form / best form ever. Status gains earn ability points.</td></tr>
+  <tr><td><b>Rest</b></td><td>Energy points left unused (20 minus AGG, POW and DEF); speeds recovery.</td></tr>
+  <tr><td><b>Stun</b></td><td>A hurt fighter: stunning damage of 1.5 times his chin in a round.</td></tr>
+  <tr><td><b>Style</b></td><td>Inside, clinch, feint, counter, ring, ropes, outside or allout.</td></tr>
+  <tr><td><b>Tactic</b></td><td>One line of energy points, target and style, like <tt>5B/7/8 (inside)</tt>.</td></tr>
+  <tr><td><b>Target</b></td><td>H head, B body, C cuts; none means opportunistic.</td></tr>
+  <tr><td><b>TKO</b></td><td>Technical knockout: the referee, doctor or corner stops the fight.</td></tr></table>`,
  bk:()=>`<p>Bare Knuckles is a second region with its own rankings and champions. Pick it on the <a data-go="create">Create a Fighter</a> page. A fighter's region is set for life.</p>
   <ul><li><b>25 rounds</b> every fight.</li>
   <li><b>Knockdowns decide.</b> If it goes the distance, the man who scored more knockdowns wins. A point taken from your opponent for fouling counts as a knockdown for you. Equal knockdowns? More stuns wins. Still equal: a draw. The judges' cards don't matter.</li>
@@ -2863,58 +3097,6 @@ const HELP_BODY={
   <li><b>Rating and status top out at 28</b>, the same as the Contenders region.</li>
   <li>Same fight nights, same purses, one fight a week against fighters from the Bare Knuckles region only.</li></ul>
   <p><b>What tends to work:</b> it's a war of endurance. Agility matters most, so keep AGL level with (or a little above) STR, with speed around a third of strength. Very heavy builds pack the most agility into a weight class. Start conditioning around 14 to 15. Big punchers and high chins are less important than lasting 25 rounds. Low-energy tactics that save fatigue early, and opening up once he's tired, usually beat rushing.</p>`,
- fighter:()=>`<p>Every fighter starts with exactly <b>${POOL} points</b> spread across:</p>
-  <table class="grid small"><tr><th>Ability</th><th>What it does</th></tr>
-  <tr><td>Strength (STR)</td><td>Drives all damage. Fades as he tires. Each point adds about a pound and a half of muscle.</td></tr>
-  <tr><td>KO Punch Bonus (KP)</td><td>Counts triple toward stunning damage. Each point needs 3 Strength: 1 KP at 3 STR, 2 KP at 6, 3 KP at 9, and so on. Doesn't fade.</td></tr>
-  <tr><td>Speed (SPD)</td><td>Lands punches. Fades as he tires.</td></tr>
-  <tr><td>Agility (AGL)</td><td>Avoids punches. Fades as he tires. Each point makes him about a pound lighter.</td></tr>
-  <tr><td>Chin (CHN)</td><td>How much he can take before stuns, knockdowns and KOs. Doesn't fade.</td></tr>
-  <tr><td>Conditioning (CND)</td><td>Endurance (10 times CND), fatigue and recovery.</td></tr>
-  <tr><td>Height (HGT)</td><td>5 feet plus one inch per point. The taller man gets half the difference added to his SPD and AGL.</td></tr>
-  <tr><td>Cut Resistance</td><td>1 (low), 2 (normal) or 3 (high). Low cuts easily, high rarely does.</td></tr></table>
-  <p>Once a fighter is created his points are <b>locked</b>. He only improves by training and winning. Use the quick-build buttons (Slugger, Dancer, Counterpuncher and so on) as a starting point.</p>`,
- plans:()=>`<p>A tactic is <tt>AGG/POW/DEF</tt>, like <tt>6/6/8</tt>. The three numbers can't add up to more than 20, and anything left over is rest.</p>
-  <ul>
-  <li><b>Target:</b> a letter right after the AGG number. <tt>5H/7/8</tt> head, <tt>5B/7/8</tt> body, <tt>5C/7/8</tt> go after cuts for a doctor's stoppage. No letter means opportunistic.</li>
-  <li><b>Dirty fighting:</b> <tt>!</tt> after the POW number, like <tt>6/7!/7</tt>.</li>
-  <li><b>Style</b> in parentheses at the end: <tt>(inside)</tt>, <tt>(clinch)</tt>, <tt>(feint)</tt>, <tt>(counter)</tt>, <tt>(ring)</tt>, <tt>(ropes)</tt>, <tt>(outside)</tt>, <tt>(allout)</tt>.</li>
-  <li><b>Rounds:</b> <tt>4) 6/6/8</tt> starts a tactic in round 4 that lasts until another numbered line takes over.</li>
-  <li><b>Conditions:</b> <tt>if score &lt; 0 and round &gt;= 8 then 8/7/5</tt>. Checked at the start of every round. The <b>last true line wins</b>.</li>
-  <li><b>You can test:</b> <tt>round</tt>, <tt>score</tt>, <tt>endurance</tt>, <tt>endurance_percent</tt>, <tt>roundswon</tt>, <tt>roundslost</tt>, <tt>decision_won</tt>, <tt>decision_lost</tt>, <tt>opponent</tt>/<tt>opp</tt> <tt>is strong / tired / exhausted</tt> (as numbers: 2 = strong, over 2/3 of his endurance left; 1 = tired; 0 = weak or exhausted, under 1/3. So <tt>opp = 0</tt> means he's nearly done and <tt>opponent &lt;= tired</tt> means tired or worse), <tt>opptiring</tt>, <tt>mycuts</tt>, <tt>hiscuts</tt>, <tt>mystuns</tt>, <tt>hisstuns</tt>, <tt>myknockdowns</tt>, <tt>hisknockdowns</tt>, <tt>warnings</tt>.</li>
-  <li><b>Math and logic:</b> <tt>+ - *</tt>, parentheses, <tt>&lt; &gt; = &lt;= &gt;=</tt>, <tt>and</tt>, <tt>or</tt>, <tt>not</tt>.</li>
-  <li><b>Stop:</b> <tt>stop</tt> on its own line means ignore everything below it. <tt>if ... then stop</tt> does the same only when the condition is true.</li>
-  <li><b>Extras:</b> <tt>towel</tt>, and <tt>say "..."</tt>, <tt>taunt "..."</tt>, <tt>sneer "..."</tt>, <tt>gloat "..."</tt>, <tt>tko "..."</tt> to add your own lines to the fight report.</li>
-  <li>Comments start with <tt>#</tt>. Old WeBL plans paste in as they are.</li></ul>
-  <pre class="plan">6/6/8
-# cruise when way ahead
-if score >= 10 then 4/1/15
-# go for broke when way behind
-if score <= -10 then 5H/10/5 (allout)
-if endurance_percent < 50 then 1/1/10</pre>`,
- sim:()=>`<p>Fights are worked out a round at a time from both fighters' abilities and plans, then written up blow by blow.</p><ul>
-  <li><b>Endurance</b> starts at 10 times CND. As it drops, STR, SPD and AGL shrink with it. At zero he loses by TKO.</li>
-  <li><b>Damage</b> comes from POW, STR, AGG and SPD against the other man's DEF and AGL. Head shots do more stunning damage, and body shots wear down endurance.</li>
-  <li><b>Stuns:</b> stunning damage of 1.5 times CHN in a round is a stun, 2 times is a knockdown, and 2.5 times is a knockout.</li>
-  <li><b>Punches:</b> about 9 thrown per AGG point. The first 3 per POW point are power punches, the next 3 per POW are rights, and the rest are jabs. SPD against the other man's AGL decides how many land.</li>
-  <li><b>Fatigue</b> each round is AGG plus half of POW. Half his CND is absorbed free. He recovers 10% of lost endurance between rounds, plus 2% for each energy point spent resting.</li>
-  <li><b>Injuries:</b> hard rounds cause cuts, swelling and nose or jaw damage. The ringside doctor stops fights with serious injuries.</li>
-  <li><b>Styles:</b> inside adds STR, clinching adds AGL and smothers punches, feinting adds SPD, counter-punching punishes a slower man, ring and ropes play with AGL, outside uses height, and all-out doubles damage dealt but nearly triples damage taken.</li>
-  <li><b>Size:</b> the heavier man gets 1 STR for every 10% he outweighs the other (never counting weight sweated off). The taller man gets half an inch's worth of SPD and AGL per inch. Big men tire faster: a fighter whose minimum weight is over 200 pounds loses half a point of endurance per round for every 10 pounds over.</li>
-  <li><b>Tyson Fury rule:</b> no fighter can be taller than 6'9", and the heavyweight limit is 280 pounds. A heavyweight over 280 has to sweat down like any other division.</li>
-  <li><b>Length:</b> every Contenders bout is scheduled for 12 three-minute rounds, title fight or not.</li>
-  <li><b>Judges:</b> three judges score each round on the 10-point must system. Stuns and knockdowns win rounds. Otherwise the most punches landed wins, with power punches counting most.</li></ul>
-  <p class="small mute">The numbers are tuned so every style (slugger, KO puncher, dancer, counterpuncher, clincher, flasher) has a real chance. Changes are always posted in Contenders News.</p>`,
- training:()=>`<ul>
-  <li><b>Rating</b> starts at 0. A win adds 1, or 2 if he's already on a winning streak. A loss takes 1 away (never below 0), but not when he's beaten by a higher-rated fighter, and not on a split or majority decision unless it's a title fight against an equal or lower-rated opponent. Maximum 28.</li>
-  <li><b>Status</b> is the highest rating he has ever reached. Every point of status he gains is an ability point.</li>
-  <li><b>Winning streak:</b> grows each time his status goes up. Any loss or draw ends it.</li>
-  <li>A fighter is in his <b>prime</b> when rating and status are equal. The further apart they are, the further he is off his best.</li>
-  <li><b>Training</b>: his primary program gives +1 in that ability for each fight. Points become permanent only when a win raises his status: one per status level gained, plus a bonus point at status 6 and every even status after it.</li>
-  <li><b>Primary and secondary:</b> the first point a win earns goes to his primary program, the second to his secondary program.</li>
-  <li><b>Fast track:</b> on a winning streak a win is worth two status levels, which can mean three points. Pick a third program before the fight; it only counts if he wins. A loss or draw ends the streak and the third program with it.</li>
-  <li><b>Injury points:</b> each fight, damage up to 5 times his CHN is free and the rest becomes injury points. A knockout loss counts as 10. Every 500 costs him an ability point (AP Loss).</li></ul>
-  <p>Set training from the fighter's page: "train for something else."</p>`,
  schedule:()=>`<ul>
   <li><b>Each division fights on its own night every week:</b></li></ul>${SCHED_TABLE()}<ul>
   <li>Each week your fighters are matched against fighters from other gyms. You don't book fights yourself.</li>
@@ -2954,7 +3136,7 @@ function newbieHTML(){
 if endurance_percent < 50 then 4/4/10
 # push if I'm losing late
 if score < 0 and round >= 8 then 8/7/5</pre>
-  <p>Defense matters a lot. Fighters with very low DEF get stunned and knocked out. Full details are in <a data-go="help:plans">Writing Fight Plans</a>.</p>
+  <p>Defense matters a lot. Fighters with very low DEF get stunned and knocked out. Full details are in <a data-go="help:plans">Writing Fight Plans</a>, with ready-made starting plans in <a data-go="help:examples">Sample Fight Plans</a> and the thinking behind them in <a data-go="help:strategy">Fight Plan Strategy</a>.</p>
   <h2>3. Test it</h2>
   <p>Build his twin in <a data-go="simbot">Simbot</a> and run it 100 times against any style to see how the plan holds up, then read a full <a data-go="fight">practice fight</a> report to see why.</p>
   <h2>4. Training</h2>

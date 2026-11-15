@@ -171,6 +171,9 @@ Not posted, owner's order. Details are in the comment on table `private.gx_log`.
 - Viewers: "View without HTML" per gym, and "Block HTML in all gym descriptions" (localStorage `contenders_block_html`).
 - **Commissioner block (owner: "anything misleading... immediately gets blocked"):** `update profiles set desc_blocked = true where id = '<uid>';` shows "This gym's description was removed by the Commissioner." Players can't change `desc_blocked` (update grants: gym, description, location). Standing order: the commissioner blocks misleading descriptions (fake records or titles, fake site or commissioner messages, impersonating another gym or the owner) on his own judgment, like gags and bans.
 
+## Help pages (rebuilt Nov 15, 2026, owner: "almost all the information we can give them")
+`HELP_TOPICS`/`HELP_BODY` in shell.html: Getting Started, Creating a Fighter (abilities, weight/build, drying out, size rules, builds by type), Writing Fight Plans, Fighting Styles (table), Plan Conditions (every variable and operator), Fight Plan Strategy, Sample Fight Plans (5 starter plans, all parse), How Fights Are Simulated, Scouting Opponents, Training/Rating/Status, Managing a Career, Schedule, Titles, Bare Knuckles, Glossary, Community, Account. Written in original words from our own engine code (WeBL newbie files and tips were read for topics only). Keep the numbers in sync when BAL changes. Never mention GX.
+
 ## Installable app (Nov 12, 2026)
 PWA: manifest.webmanifest, icons/, sw.js (network-first, never caches Supabase), "Install the App" button in the sidebar (iPhone shows Add to Home Screen steps). Google Play via Capacitor later, once players come; Apple App Store skipped ($99/yr).
 
