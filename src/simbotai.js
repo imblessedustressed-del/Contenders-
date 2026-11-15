@@ -50,7 +50,7 @@ async function aiAct(a,btn){
   if(a==='send')return aiSendBox();
   if(a==='fightme'){aiUser('Fight me');return aiSay(`Oh, you want some? 😤 Pick your fighter. Every one comes with a fight plan that has a note on every line, so you'll see exactly what he does. I'll pick mine, and I'm not telling you which.`,[...STARTERS.map(x=>[`${x.em} ${esc(x.nm)}`,'pick:'+x.id]),['🎲 Surprise me','pick:?']])}
   if(a.startsWith('pick:')){let id=a.slice(5);if(id==='?')id=aiRand(STARTERS).id;const st=starterOf(id);if(!st)return;if(btn)btn.disabled=true;aiUser(st.nm);return aiFightMe(id)}
-  if(a==='show'){aiUser('Show me a fight');return aiShow()}
+  if(a==='show'){aiUser('Show me a fight');if(!AI.open)aiOpen();return aiShow()}
   if(a.startsWith('point:')){const[,k,c]=a.split(':');return aiPointDiag(k,c)}
   if(a.startsWith('fix:')){const[,k,c]=a.split(':');if(btn)btn.disabled=true;return aiFix(k,c)}
   if(a==='tour'){aiUser('Show me around');return aiTour(0)}
@@ -63,13 +63,23 @@ async function aiAct(a,btn){
   const r=AI_TOPICS[a];if(r){aiUser(r.q);const x=r.a();aiSay(x[0],x[1])}}
 function aiUser(text){aiIdle();AI.msgs.push({t:Date.now(),me:1,text})}
 
-/* "Show me a fight": two different starters in the Simbot corners, then FIGHT */
-function aiShow(){const L=labState(),[a,b]=(()=>{const p=[...STARTERS].sort(()=>Math.random()-.5);return[p[0],p[1]]})();
-  labApplyStarter(L.A,a.id,L.level);labApplyStarter(L.B,b.id,L.level);L.A.name=a.nm.replace(/^The /,'Red ');L.B.name=b.nm.replace(/^The /,'Blue ');
-  if(L.A.name===a.nm)L.A.name='Red '+a.nm;if(L.B.name===b.nm)L.B.name='Blue '+b.nm;labRefresh('A');labRefresh('B');
-  AI.showing=true;aiClose();aiFabBubble(false);
-  aiSay(`Here we go! 🔔 <b>${esc(a.nm)}</b> (${esc(a.tag.toLowerCase())}) in the red corner vs <b>${esc(b.nm)}</b> (${esc(b.tag.toLowerCase())}) in the blue. I'll be right back when it's over to tell you why the winner won. 🍿`,[],true);
-  labFight()}
+/* "Show me a fight" = the showcase (owner, Nov 15, 2026: "a 12 round KO, some excitement beforehand... showcase the simulation"):
+   a puncher vs a random opponent, 12 rounds, hype from Simbot, a 3-2-1, then the most exciting of up to 400 normal simulations:
+   a real KO late (rounds 6-11), best with knockdowns before it. */
+const AI_PUNCHERS=['KP Slugger','Slugger','Flasher','Closer','Agile Slugger','Body Snatcher'];
+const AI_HYPE=["These two have been calling each other out all week. 😤","The crowd is on its feet before the first bell. 🔥","Somebody's walking out of here on his shield tonight. ⚔️","Bad blood. Big punches. Twelve rounds scheduled. 🩸"];
+function aiShowScore(g){const r=g.result;if(!r||r.decision||r.w==null)return 0;
+  const kds=g.rounds.slice(0,-1).reduce((s,R)=>s+(R.st?(R.st[0].kd||0)+(R.st[1].kd||0):0),0);
+  return(r.type==='KO'?50:15)+(r.round>=6&&r.round<=11?30:r.round>=4?12:0)+Math.min(kds,2)*10}
+function aiShow(){const L=labState(),red=starterOf(aiRand(AI_PUNCHERS)),blue=aiRand(STARTERS.filter(x=>x.id!==red.id));
+  labApplyStarter(L.A,red.id,L.level);labApplyStarter(L.B,blue.id,L.level);L.A.name=red.nm.replace(/^The /,'Kid ');L.B.name=blue.nm.replace(/^The /,'Big ');
+  L.rounds='12';L.div='';labRefresh('A');labRefresh('B');const bar=$('#labBar');if(bar)bar.innerHTML=labBarHTML();
+  const tape=F=>{const h=HT(F);return`${Math.floor(h/12)}'${h%12}", ${natWeight(F)} lb`};
+  const og=aiRand(['WBC','WBA','WBO']),T={org:og,orgs:[og],champ:Math.random()<.5?0:1};AI.title=T;const ch=T.champ?L.B:L.A;
+  AI.showing=true;aiFabBubble(false);
+  aiSay(`🔔🔔 <b>LADIES AND GENTLEMEN... IT'S MAIN EVENT TIME!</b> 🔔🔔<br><br>Twelve rounds for the <b>🏆 ${T.org} WORLD CHAMPIONSHIP!</b><br><br>🔴 In the red corner, ${tape(L.A)}: <b>${esc(L.A.name)}</b>${T.champ===0?' 👑 <b>the CHAMPION</b>':', the challenger'}! ${esc(red.line)}<br>🔵 In the blue corner, ${tape(L.B)}: <b>${esc(L.B.name)}</b>${T.champ===1?' 👑 <b>the CHAMPION</b>':', the challenger'}! ${esc(blue.line)}<br><br>${esc(ch.name)} brings the belt to the ring. Somebody walks out with it. `+`${aiRand(AI_HYPE)} Turn your sound on 🔊 and watch for the knockdowns. I'll be back when it's over to tell you exactly why the winner won.`,[],true);
+  setTimeout(()=>{if(!AI.showing)return;aiSay('3... 2... 1... 🔔 <b>LET\'S GET IT ON!</b>',[],true)},2600);
+  setTimeout(()=>{if(!AI.showing||!$('#lab'))return;aiClose();aiSpotOff();labFight({score:aiShowScore,tries:400,enough:100,title:T})},4200)}
 
 /* "Fight me": a real challenge vs Simbot's fighter, so other people can watch it live too */
 async function aiFightMe(stId,retry){let nick=null;
@@ -106,7 +116,8 @@ function aiWatchFight(){clearTimeout(aiWatchT);const box=$('#labAi');if(box)box.
     const D=aiDiag(f),fx=D.k==='close'?[]:[['👉 Show me what went wrong','point:'+D.k+':'+D.c],['🔧 Fix it for me','fix:'+D.k+':'+D.c]];
     $('#labAi').innerHTML=aiCard(`${h}<br>${why}${!ME&&AI.fights===2?'<br><br>In the league, your fighter keeps his record, climbs the rankings and fights every week. It\'s free.':''}`,[...fx,...chips]);
     const mine=AI.showing;AI.showing=false;
-    aiSay(`${mine?'That\'s the fight! ':''}${h}<br><br>${why}`,[...fx,['🔁 Run it again','again'],['🎲 New matchup','show'],...(!ME&&AI.fights>=2?[['🏆 Sign up free','go:register']]:[['🥊 Fight me','fightme']])]);
+    const TB=L.bout&&L.bout.title,belt=TB&&f.result.w!=null?(f.result.w===TB.champ?`<br>👑 <b>AND STILL ${TB.org} CHAMPION!</b> The belt stays home.`:`<br>👑 <b>AND NEW ${TB.org} CHAMPION!</b> We've got a new king. 🏆`):'';
+    aiSay(`${mine?'That\'s the fight! ':''}${h}${belt}<br><br>${why}`,[...fx,['🔁 Run it again','again'],['🎲 New matchup','show'],...(!ME&&AI.fights>=2?[['🏆 Sign up free','go:register']]:[['🥊 Fight me','fightme']])]);
     if(mine&&!AI.open)aiOpen();else if(!AI.open)aiFabBubble(true,`🔔 Fight's over! Want to know why <b>${esc(N2(L.names,f))}</b> won? Tap me.`)};
   aiWatchT=setTimeout(tick,1500)}
 
@@ -253,6 +264,12 @@ function aiWithNext(chips,noShow){chips=chips||[];
 function aiLesson(n){const L=AI_LESSONS[n];if(!L)return;aiUser(n===0?'Teach me the game':'Next lesson');aiLsSet(n+1);
   const[h,ch]=L.a(),more=[...(ch||[]),...(L.spot&&$(L.spot)?[['👉 Show me on the page','tourspot:'+n]]:[])];
   AI.typing=true;aiPaint();setTimeout(()=>{aiSay(h+(n<AI_LESSONS.length-1?`<div class="aiStep">Lesson ${n+1} of ${AI_LESSONS.length}</div>`:''),[...more,['❓ I have a question','askq']])},600)}
-/* one gentle nudge if he goes quiet with the window open (once per quiet spell) */
-function aiIdle(){clearTimeout(AI.idleT);AI.idleT=setTimeout(()=>{if(!AI.open||!$('#aiWin')||AI.nudged>=2||$('.aiCall'))return;AI.nudged=(AI.nudged||0)+1;
-  const n=aiLs();aiSay(n<AI_LESSONS.length?aiRand([`Still there? 👀 No rush. Whenever you're ready, the next lesson takes about 20 seconds.`,`Take your time. When you want, we'll keep going. Next up: <b>${AI_LESSONS[n].t}</b>.`]):aiRand([`Still here if you need me. Want to test what you learned? 🥊`,`Bored? Fight me. 😏`]),n<AI_LESSONS.length?[]:[['🥊 Fight me','fightme'],['👀 Show me a fight','show']])},45000)}
+/* one gentle nudge after a long quiet spell (owner, Nov 15, 2026: "give it a while... the fight is still running and it asked two or three times... we don't annoy them"):
+   never while a fight plays, a showcase is starting or something is circled; 3 minutes of no clicks, typing or scrolling on the page; at most once per visit */
+const AI_IDLE_MS=180000;
+function aiBusy(){return!!(labAnim&&!labAnim.stop&&labAnim.at<labAnim.tl.total)||AI.showing||!!$('.aiCall')||document.visibilityState!=='visible'}
+function aiIdle(){clearTimeout(AI.idleT);if(AI.nudged)return;AI.idleT=setTimeout(function chk(){
+    if(AI.nudged||!$('#aiWin'))return;if(!AI.open||aiBusy()||Date.now()-(AI.lastAct||0)<AI_IDLE_MS){AI.idleT=setTimeout(chk,15000);return}
+    AI.nudged=1;const n=aiLs();
+    aiSay(n<AI_LESSONS.length?`Whenever you're ready, the next lesson takes about 20 seconds. No rush. 🙂`:`Still here if you need me. Want to test what you learned? 🥊`,n<AI_LESSONS.length?[]:[['🥊 Fight me','fightme']])},AI_IDLE_MS)}
+['click','keydown','scroll','touchstart'].forEach(ev=>addEventListener(ev,()=>{AI.lastAct=Date.now()},{passive:true,capture:true}));

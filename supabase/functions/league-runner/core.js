@@ -442,7 +442,7 @@ const VENUES={
     ['Fantasy Springs Resort Casino','Indio, California',3000],['York Hall','London, England',1200],['Sam\'s Town Live','Las Vegas, Nevada',1100],['Sycuan Casino','El Cajon, California',1200]]};
 function venueTier(div,rRed,rBlue,belt,star,topTen){return star>=2?'stadium':(belt||topTen)?'arena':'club'}
 function pickVenue(tier){const L=VENUES[tier]||VENUES.club,v=L[Math.floor(Math.random()*L.length)];return{name:v[0],city:v[1],cap:v[2],tier}}
-function attendanceFor(v,maxR,belt,star){const f=Math.min(1,.4+.02*(maxR||0)+(belt?.2:0)+.15*Math.max(0,(star||1)-1)+(Math.random()-.5)*.1);return Math.round(v.cap*Math.max(.25,f)/10)*10}
+function attendanceFor(v,maxR,belt,star){if(belt)return v.cap;const f=Math.min(1,.4+.02*(maxR||0)+(belt?.2:0)+.15*Math.max(0,(star||1)-1)+(Math.random()-.5)*.1);return Math.round(v.cap*Math.max(.25,f)/10)*10}
 const PPV_PRICE=79.99;
 function broadcastTier(belt,star,contender){return(belt||star>=2)?'ppv':contender?'tv':'stream'}
 const REGIONS=[['North America',.55],['UK & Ireland',.15],['Latin America',.12],['Europe',.08],['Asia-Pacific',.06],['Rest of world',.04]];

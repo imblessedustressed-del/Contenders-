@@ -804,12 +804,15 @@ function labClick(e){const ai=e.target.closest('[data-ai]');if(ai&&!ai.closest('
   if(a==='send')return labSend();
   if(a==='share')return labShare();
 }
-function labFight(){const L=labState(),err=labErr();$('#labErr').textContent=err;if(err)return;
+function labFight(opt){const L=labState(),err=labErr();$('#labErr').textContent=err;if(err)return;
   const[A,B]=labFighters(),div=labDiv(),bk=L.rounds==='bk',rounds=bk?25:+L.rounds;
   const d=new Date();
-  L.bout={rounds,belt:null,div,done:true,gym:'Simbot',gyms:['Simbot','Simbot'],ids:['labA','labB'],recs:[[0,0,0,0],[0,0,0,0]],
+  const tv=opt&&opt.title?VENUES.arena[Math.floor(Math.random()*VENUES.arena.length)]:null;
+  L.bout={rounds,belt:null,title:opt&&opt.title||null,...(tv?{venue:{name:tv[0],city:tv[1],cap:tv[2],tier:'arena'},att:tv[2]}:{}),div,done:true,gym:'Simbot',gyms:['Simbot','Simbot'],ids:['labA','labB'],recs:[[0,0,0,0],[0,0,0,0]],
     date:d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'}).replace(/,/g,'').replace(/(\d+) (\d{4})$/,'$1, $2')};
-  L.fight=simulate(prepFighter(A,A,B,div),prepFighter(B,A,B,div),rounds);
+  /* opt.score: run it up to opt.tries times and keep the most exciting fight (Simbot AI's showcase; each run is a normal, fair simulation) */
+  if(opt&&opt.score){let best=-1;for(let i=0;i<(opt.tries||300);i++){const g=simulate(prepFighter(A,A,B,div),prepFighter(B,A,B,div),rounds),sc=opt.score(g);if(sc>best){best=sc;L.fight=g}if(sc>=(opt.enough||1e9))break}}
+  else L.fight=simulate(prepFighter(A,A,B,div),prepFighter(B,A,B,div),rounds);
   L.names=[A.name,B.name];L.plans=[A.planName,B.planName];
   $('#labStage').style.display='';$('#labRep').innerHTML='';$('#labSim').innerHTML='';
   $('#labStage').scrollIntoView({behavior:'smooth',block:'start'});labPlay();aiWatchFight();
@@ -857,6 +860,8 @@ function labBeats(f){const L=labState(),sched=f.rounds.length&&L.bout?L.bout.rou
 }
 function labPlay(off){const L=labState();if(!L.fight)return;if(labAnim)labAnim.stop=true;
   $('#labTick').innerHTML='';$('#labPause').textContent='Pause';
+  LAB_INTRO=L.bout&&L.bout.title?3.4+LAB_TITLE_T:3.4;
+  if(L.bout&&L.bout.title&&!(off>0)){const T=L.bout.title;setTimeout(()=>{if(labAnim&&!labAnim.stop)labSay(`Ladies and gentlemen! This is the main event! ${L.bout.rounds||12} rounds, for the ${T.champ==null?'vacant ':''}${(T.orgs||[T.org]).map(o=>o.split('').join(' ')).join(' and ')} championship of the world!`)},300)}
   const tl=labBeats(L.fight);labAnim={tl,t0:performance.now()-(off>0?off*1000:0),at:0,shown:0,rs:0,paused:false,stop:false};const me=labAnim;
   labSndStop();labSndPause(false);labBedStart();
   const step=now=>{if(me.stop){if(!labAnim)labSndStop();return}if(!me.paused)me.at=(now-me.t0)/1000;
@@ -874,7 +879,8 @@ function labTickAll(){const L=labState();if(!L.fight)return;const tl=labBeats(L.
   tl.beats.filter(b=>['kd','ko','stop','final'].includes(b.k)).slice(-5).forEach(labTick)}
 // stable crowd
 /* --- Simbot arena: late-'90s console boxing look (shaded polygon fighters, 3/4 ring, crowd, referee, arcade HUD) --- */
-const LAB_INTRO=3.4; // seconds of tale-of-the-tape before the opening bell
+let LAB_INTRO=3.4; // seconds of tale-of-the-tape before the opening bell (6.4 for a title fight: the belt is presented first)
+const LAB_TITLE_T=3; // seconds of belt presentation in a title fight's intro
 const LAB_RNG=(seed)=>{let s=seed;return()=>(s=(s*16807)%2147483647)/2147483647};
 const LAB_CROWD=(()=>{const r=LAB_RNG(7),out=[],shirts=['#7a2a2a','#2a3f7a','#2f5d3a','#6b5a2a','#444','#5a2f6b','#8a6d3b','#1f4f5f','#913030','#ddd'],skins=['#e8b98a','#c68e5d','#8d5524','#5c3a1e','#f1c9a5','#a8703f'];
   for(let row=0;row<7;row++){const y=74+row*24,sz=.55+row*.09;for(let x=-10;x<980;x+=18+row*2+r()*6)out.push({x,y:y+r()*6,sz,sh:shirts[Math.floor(r()*shirts.length)],sk:skins[Math.floor(r()*skins.length)],f:r(),hat:r()<.12,sign:row>1&&r()<.035?['KO!','#1','SIMBOT','WAR!','10-9','BOOM'][Math.floor(r()*6)]:null})}
@@ -1080,17 +1086,21 @@ function labDraw(at,tl){const cv=$('#labCv');if(!cv)return;const g=cv.getContext
   if(inReplay){const blink=Math.floor(realAt*2.5)%2;g.fillStyle='rgba(30,20,0,.18)';g.fillRect(0,0,W,H);g.fillStyle='#000';g.fillRect(0,0,W,58);g.fillRect(0,H-58,W,58);
     g.font="italic 900 30px Impact, 'Arial Black', sans-serif";g.textAlign='left';g.fillStyle=blink?'#ff3b30':'#ffffff';g.fillText('● REPLAY',28,40);
     g.textAlign='right';g.fillStyle='#d4af37';g.font="italic 900 20px Impact, 'Arial Black', sans-serif";g.fillText('SLOW MOTION',W-28,H-22);return}
-  if(intro){const k=Math.min(1,at/.6),out=Math.max(0,(at-(LAB_INTRO-.9))/.75),sl=(1-k)*(1-k)*520+out*out*620,b=L.bout||{},recs=b.recs||[[0,0,0,0],[0,0,0,0]],gy=b.gyms||['',''];
+  const TT=L.bout&&L.bout.title,T0=TT?LAB_TITLE_T:0;
+  if(intro&&TT&&at<T0)labTitleShow(g,W,H,at,TT,L);
+  else if(intro){const k=Math.min(1,(at-T0)/.6),out=Math.max(0,(at-(LAB_INTRO-.9))/.75),sl=(1-k)*(1-k)*520+out*out*620,b=L.bout||{},recs=b.recs||[[0,0,0,0],[0,0,0,0]],gy=b.gyms||['',''];
     g.fillStyle=`rgba(0,0,0,${.45*(1-out)})`;g.fillRect(0,0,W,H);
     [0,1].forEach(i=>{const x=i?W-30-400+sl:30-sl,F=(f.S&&f.S[i]&&f.S[i].F)||{},r=recs[i]||[0,0,0,0];g.save();g.translate(x,150);
       const pg2=g.createLinearGradient(0,0,400,0);pg2.addColorStop(i?1:0,i?'rgba(29,78,216,.95)':'rgba(200,16,46,.95)');pg2.addColorStop(i?0:1,'rgba(10,10,14,.92)');g.fillStyle=pg2;
       g.beginPath();g.moveTo(i?30:0,0);g.lineTo(400,0);g.lineTo(i?400:370,170);g.lineTo(0,170);g.closePath();g.fill();g.strokeStyle='#d4af37';g.lineWidth=3;g.stroke();
       g.textAlign=i?'right':'left';const tx=i?380:20;g.fillStyle='#fff';g.font="italic 900 30px Impact, 'Arial Black', sans-serif";g.fillText((L.names[i]||'').toUpperCase().slice(0,20),tx,46);
-      g.font="bold 15px Verdana, sans-serif";g.fillStyle='#ffd23f';g.fillText(i?'BLUE CORNER':'RED CORNER',tx,74);g.fillStyle='#eee';g.font="14px Verdana, sans-serif";
-      g.fillText(`Record ${r[0]}-${r[1]}-${r[2]}`,tx,100);if(F.hgt!=null)g.fillText(`Height ${Math.floor(HT(F)/12)}' ${HT(F)%12}"`+(F.fightW?`   Weight ${F.fightW} lb`:''),tx,122);if(gy[i])g.fillText(String(gy[i]).slice(0,34),tx,144);g.restore()});
+      g.font="bold 15px Verdana, sans-serif";g.fillStyle='#ffd23f';g.fillText((i?'BLUE CORNER':'RED CORNER')+(TT&&TT.champ===i?'  ·  CHAMPION':TT&&TT.champ!=null?'  ·  CHALLENGER':''),tx,74);g.fillStyle='#eee';g.font="14px Verdana, sans-serif";
+      g.fillText(`Record ${r[0]}-${r[1]}-${r[2]}`,tx,100);if(F.hgt!=null)g.fillText(`Height ${Math.floor(HT(F)/12)}' ${HT(F)%12}"`+(F.fightW?`   Weight ${F.fightW} lb`:''),tx,122);if(gy[i])g.fillText(String(gy[i]).slice(0,34),tx,144);
+      if(TT&&TT.champ===i){const os=TT.orgs||[TT.org];os.forEach((o,j)=>labBelt(g,i?400-110-j*116:j*116,182,110,o));g.font="italic 900 16px Impact, 'Arial Black', sans-serif";g.fillStyle='#ffd23f';g.textAlign=i?'right':'left';g.fillText(`${os.join('/')} WORLD CHAMPION`,i?400-os.length*116-8:os.length*116+8,206)}
+      g.restore()});
     g.globalAlpha=1-out;labBigText(g,'VS',cx,258,86,'#ffd23f','#c47f00');g.font="italic 900 18px Impact, 'Arial Black', sans-serif";g.textAlign='center';g.fillStyle='#fff';g.fillText('TALE OF THE TAPE',cx,348);{const v=labVenue(),so=v.att>=v.cap;g.font="bold 16px Verdana, sans-serif";g.fillStyle='#ffd23f';g.fillText(`${v.name}${v.city?', '+v.city:''}`,cx,384);g.fillStyle=so?'#ff5a5a':'#ffffff';g.font="bold 15px Verdana, sans-serif";g.fillText(so?`SOLD OUT: ${v.cap.toLocaleString('en-US')} seats`:`Attendance ${v.att.toLocaleString('en-US')} of ${v.cap.toLocaleString('en-US')} seats`,cx,408)}g.globalAlpha=1}
   // HUD: arcade energy bars and round badge (3D mode: a slim late-'90s console HUD across the top instead)
-  if(gfx==='3d')labHud32(g,{P,at,cur,res,tl,names:L.names,W,cx});else{
+  if(TT&&intro&&at<T0){}else if(gfx==='3d')labHud32(g,{P,at,cur,res,tl,names:L.names,W,cx});else{
   const bar=(x,al,i)=>{const p=P[i],e=Math.max(0,Math.min(1,p.en));g.save();
     const fr=g.createLinearGradient(0,10,0,74);fr.addColorStop(0,'#5a5f6b');fr.addColorStop(.5,'#1d2028');fr.addColorStop(1,'#3a3e48');g.fillStyle=fr;g.beginPath();g.roundRect(x,10,350,66,8);g.fill();
     g.strokeStyle='#d4af37';g.lineWidth=2;g.stroke();
@@ -1129,8 +1139,35 @@ function labDraw(at,tl){const cv=$('#labCv');if(!cv)return;const g=cv.getContext
   if(fin){const d=at-lastBeat.at;g.save();g.globalAlpha=Math.min(1,d*3);g.fillStyle='rgba(0,0,0,.6)';g.fillRect(0,170,W,140);g.globalAlpha=1;
     labBigText(g,res.w==null?'DRAW!':!res.decision?(res.type==='KO'?'K.O.!':'T.K.O.!'):'DECISION',cx,252,res.decision?66:96,'#ffd23f','#c47f00');
     g.font="italic 900 26px Impact, 'Arial Black', sans-serif";g.textAlign='center';g.fillStyle=res.w===0?'#ff8f8f':res.w===1?'#8fb4ff':'#fff';
-    g.fillText(res.w==null?res.type.toUpperCase():`${L.names[res.w].toUpperCase()} WINS${res.decision?' BY '+res.type.toUpperCase():' IN ROUND '+res.round}`,cx,294);g.restore()}
+    g.fillText(res.w==null?res.type.toUpperCase():`${L.names[res.w].toUpperCase()} WINS${res.decision?' BY '+res.type.toUpperCase():' IN ROUND '+res.round}`,cx,294);
+    const TB=L.bout&&L.bout.title;if(TB&&res.w!=null&&d>.8){g.globalAlpha=Math.min(1,(d-.8)*2);g.fillStyle='rgba(0,0,0,.7)';g.fillRect(0,312,W,92);const tos=TB.orgs||[TB.org];labBelt(g,cx-330,322,120,tos[0]);labBelt(g,cx+210,322,120,tos[tos.length-1]);
+      labBigText(g,res.w===TB.champ?'AND STILL CHAMPION!':TB.champ==null?'AND THE NEW CHAMPION!':'AND NEW CHAMPION!',cx,368,36,'#ffd23f','#c47f00');g.font="bold 15px Verdana, sans-serif";g.fillStyle='#fff';g.fillText(`${TB.bk?'BARE KNUCKLES ':''}${(TB.orgs||[TB.org]).join(' · ')} WORLD ${String(L.bout.div||'').toUpperCase()}WEIGHT CHAMPION`,cx,392);g.globalAlpha=1}
+    g.restore()}
 }
+/* title belt for the Simbot arena (original drawing; colors from ORG_BELT) */
+function labBelt(g,x,y,w,org,shine){const C=(typeof ORG_BELT!=='undefined'&&ORG_BELT[org])||['#7a1a1a','#3d0b0b','#e8b923'],h=w*.42,cy=y+h/2;g.save();
+  const st=g.createLinearGradient(0,cy-h*.18,0,cy+h*.18);st.addColorStop(0,C[0]);st.addColorStop(.5,C[1]);st.addColorStop(1,C[0]);g.fillStyle=st;g.beginPath();g.roundRect(x,cy-h*.17,w,h*.34,h*.06);g.fill();g.strokeStyle='rgba(0,0,0,.5)';g.lineWidth=1;g.stroke();
+  [0.08,0.18,0.82,0.92].forEach(p=>{g.fillStyle=C[2];g.beginPath();g.ellipse(x+w*p,cy,h*.07,h*.09,0,0,7);g.fill()});
+  [0.27,0.73].forEach(p=>{const pg=g.createLinearGradient(0,cy-h*.3,0,cy+h*.3);pg.addColorStop(0,'#fff6c8');pg.addColorStop(.5,C[2]);pg.addColorStop(1,'#7a5a00');g.fillStyle=pg;g.beginPath();g.ellipse(x+w*p,cy,h*.17,h*.28,0,0,7);g.fill()});
+  const pg=g.createRadialGradient(x+w/2-h*.15,cy-h*.2,2,x+w/2,cy,h*.55);pg.addColorStop(0,'#fffbe0');pg.addColorStop(.35,C[2]);pg.addColorStop(1,'#6b4c00');g.fillStyle=pg;g.beginPath();g.ellipse(x+w/2,cy,w*.2,h*.5,0,0,7);g.fill();g.strokeStyle='#4a3500';g.lineWidth=Math.max(1,w/90);g.stroke();
+  g.fillStyle=C[1];g.beginPath();g.ellipse(x+w/2,cy+h*.04,w*.13,h*.3,0,0,7);g.fill();
+  g.fillStyle=C[2];g.beginPath();const cx=x+w/2,ty=cy-h*.36,cw=w*.07;g.moveTo(cx-cw,ty+h*.12);g.lineTo(cx-cw,ty);g.lineTo(cx-cw/2,ty+h*.06);g.lineTo(cx,ty-h*.04);g.lineTo(cx+cw/2,ty+h*.06);g.lineTo(cx+cw,ty);g.lineTo(cx+cw,ty+h*.12);g.closePath();g.fill();
+  g.fillStyle='#fff';g.font=`900 ${Math.round(h*.24)}px Impact, 'Arial Black', sans-serif`;g.textAlign='center';g.textBaseline='middle';g.fillText(org,cx,cy+h*.06);g.textBaseline='alphabetic';
+  if(shine!=null){g.globalCompositeOperation='lighter';const sx=x+w*shine,sg=g.createLinearGradient(sx-w*.12,0,sx+w*.12,0);sg.addColorStop(0,'rgba(255,255,255,0)');sg.addColorStop(.5,'rgba(255,255,230,.55)');sg.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=sg;g.beginPath();g.ellipse(x+w/2,cy,w*.2,h*.5,0,0,7);g.fill()}
+  g.restore()}
+function labTitleShow(g,W,H,at,T,L){const T0=LAB_TITLE_T,fi=Math.min(1,at/.4),fo=Math.max(0,(at-(T0-.45))/.45),a=fi*(1-fo),cx=W/2,orgs=T.orgs||[T.org];g.save();
+  g.fillStyle=`rgba(4,4,10,${.88*a})`;g.fillRect(0,0,W,H);g.globalAlpha=a;
+  g.translate(cx,250);g.rotate(at*.25);for(let i=0;i<14;i++){g.rotate(Math.PI/7);const rg=g.createLinearGradient(0,0,0,-520);rg.addColorStop(0,'rgba(255,210,63,.28)');rg.addColorStop(1,'rgba(255,210,63,0)');g.fillStyle=rg;g.beginPath();g.moveTo(-18,0);g.lineTo(-70,-520);g.lineTo(70,-520);g.lineTo(18,0);g.fill()}
+  g.setTransform(1,0,0,1,0,0);g.globalAlpha=a;
+  const sc=.85+.15*Math.min(1,at/.8)+.02*Math.sin(at*4),n=orgs.length,bw=(n===1?420:n===2?300:240)*sc,gap=16;
+  orgs.forEach((o,i)=>{const x=cx-(n*bw+(n-1)*gap)/2+i*(bw+gap);labBelt(g,x,250-bw*.21,bw,o,((at*.55+i*.3)%1.4)-.2)});
+  g.textAlign='center';g.font="italic 900 22px Impact, 'Arial Black', sans-serif";g.fillStyle='#fff';g.fillText(`${T.bk?'BARE KNUCKLES  ·  ':''}MAIN EVENT  ·  ${(L.bout&&L.bout.rounds)||12} ROUNDS`,cx,92);
+  labBigText(g,`${T.champ==null?'VACANT ':''}${n>2?'UNDISPUTED ':n>1?'UNIFIED ':''}${orgs.join(' · ')} WORLD CHAMPIONSHIP`,cx,140,n>1||T.champ==null?32:40,'#ffd23f','#c47f00');
+  if(T.champ==null){g.font="italic 900 26px Impact, 'Arial Black', sans-serif";g.fillStyle='#ff8f8f';g.fillText((L.names[0]||'').toUpperCase(),cx,404);g.font="bold 16px Verdana, sans-serif";g.fillStyle='#ddd';g.fillText('vs',cx,430);g.font="italic 900 26px Impact, 'Arial Black', sans-serif";g.fillStyle='#8fb4ff';g.fillText((L.names[1]||'').toUpperCase(),cx,458)}
+  else{const champ=L.names[T.champ]||'',chal=L.names[1-T.champ]||'';g.font="italic 900 24px Impact, 'Arial Black', sans-serif";g.fillStyle=T.champ?'#8fb4ff':'#ff8f8f';
+    g.fillText(`CHAMPION ${champ.toUpperCase()}`,cx,400);g.font="bold 16px Verdana, sans-serif";g.fillStyle='#ddd';g.fillText('defends against',cx,428);
+    g.font="italic 900 24px Impact, 'Arial Black', sans-serif";g.fillStyle=T.champ?'#ff8f8f':'#8fb4ff';g.fillText(chal.toUpperCase(),cx,458)}
+  g.restore()}
 %%LAB3D%%
 /* --- Lab Chat --- */
 const labNick=()=>{try{return localStorage.getItem('contenders_simbot_nick')||''}catch(e){return''}};
@@ -1495,7 +1532,7 @@ const VENUES={
 function venueTier(div,rRed,rBlue,belt,star,topTen){return star>=2?'stadium':(belt||topTen)?'arena':'club'}
 function pickVenue(tier){const L=VENUES[tier]||VENUES.club,v=L[Math.floor(Math.random()*L.length)];return{name:v[0],city:v[1],cap:v[2],tier}}
 /* crowd: 40% base, +2% per rating point of the bigger name, +20% for a title, +15% per extra star power, a little luck; capped at a sellout */
-function attendanceFor(v,maxR,belt,star){const f=Math.min(1,.4+.02*(maxR||0)+(belt?.2:0)+.15*Math.max(0,(star||1)-1)+(Math.random()-.5)*.1);return Math.round(v.cap*Math.max(.25,f)/10)*10}
+function attendanceFor(v,maxR,belt,star){if(belt)return v.cap;const f=Math.min(1,.4+.02*(maxR||0)+(belt?.2:0)+.15*Math.max(0,(star||1)-1)+(Math.random()-.5)*.1);return Math.round(v.cap*Math.max(.25,f)/10)*10}
 const venueAt=b=>b&&b.venue?` at ${esc(b.venue.name)}, ${esc(b.venue.city)}`:'';
 const crowdText=(v,att)=>v&&att?(att>=v.cap?`a sellout crowd of ${att.toLocaleString('en-US')}`:`${att.toLocaleString('en-US')} (capacity ${v.cap.toLocaleString('en-US')})`):'';
 /* ===== TV and pay-per-view (owner-approved, Nov 2026) =====
@@ -2006,13 +2043,21 @@ let sbvKey='';
 /* the red Simbot View link under a fight's result icon; bot-vs-bot bouts keep no round-by-round report, so they get none */
 function sbvLink(id){const b=bouts.find(x=>x.id===id)||vsExtra[id];if(!b)vsFetch(id);if(b&&b.bot_only&&b.fight_date<'2026-11-15')return''; /* bot-vs-bot reports are kept from Nov 15, 2026 on */return`<br><a class="sbvLink" data-go="sbview:${id}" title="Watch this fight in the Simbot arena">Simbot View</a>`}
 let sbvPlayed=null;
+/* a league title fight in Simbot View (owner, Nov 15, 2026: "spruce up the simbot view as much as we can for champions"): which belts are on the line,
+   and who walked in holding them (the last winner of a title fight for that belt in this division and region before this bout; none = vacant) */
+function sbvTitle(r){const orgs=beltOrgs(r);if(!orgs.length)return null;const key=ckey(r);let champ=null;
+  for(const o of orgs){const prev=bouts.filter(b=>b.status==='done'&&b.belt&&b.summary&&b.summary.w!=null&&ckey(b)===key&&beltOrgs(b).includes(o)&&(b.fight_date<r.fight_date||b.fight_date===r.fight_date&&b.id<r.id)&&!vacancies.some(v=>v.bout_id===b.id))
+      .sort((a,b)=>a.fight_date.localeCompare(b.fight_date)||a.id-b.id).pop();
+    if(!prev)continue;const w=prev.summary.w===0,u=w?prev.red_user:prev.blue_user,fi=w?prev.red_fid:prev.blue_fid;
+    if(r.red_user===u&&r.red_fid===fi)champ=0;else if(r.blue_user===u&&r.blue_fid===fi)champ=1}
+  return{org:orgs.join('/'),orgs,champ,bk:r.region==='bk'||/^BK\b/i.test(r.belt||'')}}
 function sbViewHTML(id){
   const r=lrep[id];if(r===false)return leagueReportHTML(id);if(!r){leagueReportHTML(id);return'<p>Loading the fight...</p>'}
   if(!r.result&&r.result_z){unz(r,'sbview:'+id);return'<p>Loading the fight...</p>'}
   if(!r.result||!r.result.f||!(r.result.f.rounds||[]).some(R=>(R.lines||[]).some(x=>x.k)))
     return`<h1>Simbot View</h1><p>This fight can't be shown in the arena (no round-by-round report was kept for it).</p><p><a data-go="lreport:${id}">Read the fight report</a></p>`;
   const f=r.result.f,b=r.result.b,names=f.S.map(x=>x.F.name);
-  if(!LABV||sbvKey!==String(id)){sbvKey=String(id);LABV={fight:f,names,bout:{...b,rounds:b.rounds||r.rounds||12,venue:r.venue||null,att:(r.summary||{}).att||null},speed:(LABV&&LABV.speed)||60,plans:['','']}}
+  if(!LABV||sbvKey!==String(id)){sbvKey=String(id);const TT=sbvTitle(r);LABV={fight:f,names,bout:{...b,rounds:b.rounds||r.rounds||12,venue:r.venue||null,att:TT&&r.venue&&r.venue.cap?r.venue.cap:(r.summary||{}).att||null,title:TT},speed:(LABV&&LABV.speed)||60,plans:['','']}}
   const sp=LABV.speed,res=f.result;
   return`<div id="sbv"><h1>Simbot View</h1>
   <p class="labIntro"><b class="red">${esc(names[0])}</b> (${esc((b.gyms||[])[0]||'')}) vs <b class="navy">${esc(names[1])}</b> (${esc((b.gyms||[])[1]||'')}), ${esc(r.div)}weight, ${esc(b.date||'')}.</p>
