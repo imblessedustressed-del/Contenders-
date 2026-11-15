@@ -892,6 +892,7 @@ function labTickAll(){const L=labState();if(!L.fight)return;const tl=labBeats(L.
   tl.beats.filter(b=>['kd','ko','stop','final'].includes(b.k)).slice(-5).forEach(labTick)}
 // stable crowd
 /* --- Simbot arena: late-'90s console boxing look (shaded polygon fighters, 3/4 ring, crowd, referee, arcade HUD) --- */
+let LAB_FPOS=[null,null]; // where each fighter's feet are on screen this frame (960x540), set by every graphics mode
 let LAB_INTRO=3.4; // seconds of tale-of-the-tape before the opening bell (6.4 for a title fight: the belt is presented first)
 const LAB_TITLE_T=3; // seconds of belt presentation in a title fight's intro
 const LAB_RNG=(seed)=>{let s=seed;return()=>(s=(s*16807)%2147483647)/2147483647};
@@ -1072,7 +1073,7 @@ function labDraw(at,tl){const cv=$('#labCv');if(!cv)return;const g=cv.getContext
   labRef(g,refX,floorY-46,.92,at,!!kdNow||(stopBeat&&at>=stopBeat.at&&res.type==='KO'));
   // fighters (the one going down is drawn first)
   const order=P[0].fall>P[1].fall?[0,1]:[1,0];const hitPts=[];
-  order.forEach(i=>{const p=P[i],c=LAB_SKIN[i],dir=i===0?1:-1;
+  order.forEach(i=>{const p=P[i],c=LAB_SKIN[i],dir=i===0?1:-1;{const m=g.getTransform(),cw=g.canvas.width||W,ch=g.canvas.height||H;LAB_FPOS[i]=[(m.a*X[i]+m.c*floorY+m.e)*W/cw,(m.b*X[i]+m.d*floorY+m.f)*H/ch]}
     gBg.fillStyle='rgba(0,0,0,.28)';gBg.beginPath();gBg.ellipse(X[i]+dir*p.fall*60,floorY+4,60+p.fall*50,11,0,0,7);gBg.fill(); // shadows stay on the floor layer
     g.save();g.translate(X[i]+Math.sin(at*13)*p.wob*8,floorY);g.scale(dir*S,S);
     if(p.fall){g.translate(-p.fall*20,0);g.rotate(-p.fall*1.42);g.translate(0,p.fall*6)}
@@ -1137,7 +1138,9 @@ function labDraw(at,tl){const cv=$('#labCv');if(!cv)return;const g=cv.getContext
     if(cb){const ph=(at-cb.cs)/LAB_CNT,n=Math.floor(ph),pop=1+.35*Math.max(0,1-(ph-n)*4);
       if(cb.k==='ko'&&n>=cb.cnt){const k=Math.min(1,(ph-n)*3);labBigText(g,'K.O.!',cx,250,Math.round(150*(1.6-.6*k)),'#ffd23f','#c4121f')}
       else{labBigText(g,'KNOCKDOWN!',cx,105,62,'#ffd23f','#c47f00');const m=Math.min(n,cb.cnt);if(m>=1){g.save();g.globalAlpha=n>=cb.cnt?.85:Math.max(.35,1-(ph-n)*.6);labBigText(g,String(m),cx,250,Math.round(120*(n>=cb.cnt?1:pop)),'#ffffff','#c4121f');g.restore()}}}
-    else if(st)labBigText(g,'STUNNED!',cx,220,62,'#ff9e4a','#c4121f');
+    else if(st){const si=1-st.a,fp=LAB_FPOS[si],k=Math.min(1,(at-st.at)/.15),sz=Math.round(46*(1.25-.25*k));
+      if(fp){const x=Math.max(130,Math.min(W-130,fp[0])),y=Math.max(150,Math.min(H-28,fp[1]+44));labBigText(g,'STUNNED!',x,y,sz,'#ff9e4a','#c4121f');g.save();g.fillStyle=si?'#5aa0ff':'#ff5a5a';g.beginPath();g.moveTo(x-12,y-sz*.95);g.lineTo(x+12,y-sz*.95);g.lineTo(x,y-sz*.95-14);g.closePath();g.fill();g.restore()}
+      else labBigText(g,'STUNNED!',cx,220,62,'#ff9e4a','#c4121f')}
     else if(bell){if(at-bell.at<1.1)labBigText(g,'DING DING!',cx,212,50,'#ffffff','#9aa0aa');const R=(tl.rounds.find(r=>r.n===bell.round)||{}).R;
       if(R&&R.st){g.save();g.fillStyle='rgba(8,10,16,.82)';g.beginPath();g.roundRect(cx-210,236,420,78,8);g.fill();g.strokeStyle='#d4af37';g.lineWidth=2;g.stroke();
         g.font="bold 13px Verdana, sans-serif";g.textAlign='center';g.fillStyle='#d4af37';g.fillText(`ROUND ${R.n} PUNCH STATS`,cx,256);

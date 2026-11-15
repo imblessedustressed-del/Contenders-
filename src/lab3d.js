@@ -142,9 +142,10 @@ function lab3D(g,o){const{at,realAt,P,X,tl,f,res,stopBeat,kdNow,big,zoom,inRepla
   const fw=l3norm(l3sub(T,C)),rt=l3norm(l3cross([0,1,0],fw)),up=l3cross(fw,rt),foc=L3H*1.32;
   const proj=v=>{const d=l3sub(v,C),z=l3dot(d,fw);if(z<20)return null;return[Math.round(L3W/2+l3dot(d,rt)*foc/z),Math.round(L3H/2-l3dot(d,up)*foc/z),z]};
   const R=300,mat=48;let lamps=[],hits=[];
+  [0,1].forEach(i=>{const q=proj([Xw[i],mat,0]);LAB_FPOS[i]=q?[q[0]*960/L3W,q[1]*540/L3H]:null});
   /* WebGL path (owner, Nov 14: "way more realistic"): smooth-shaded sculpted fighters on the graphics card; the software renderer below is the fallback */
   const glr=labGLScene(g,{C,T,P,Xw,mid,at,realAt,intro,fin,res,stopBeat,kdNow,tl,cur,mat,R,dist,tx,fill:labCrowdFill()});
-  if(glr){lamps=glr.lamps;hits=glr.hits}else{
+  let oproj=proj;if(glr){lamps=glr.lamps;hits=glr.hits;if(glr.proj)oproj=glr.proj}else{
   const F=[];
   // arena floor and the dark bowl
   c.fillStyle='rgb(10,9,20)';c.fillRect(0,0,L3W,L3H);
@@ -230,7 +231,7 @@ function lab3D(g,o){const{at,realAt,P,X,tl,f,res,stopBeat,kdNow,big,zoom,inRepla
   c.putImageData(id,0,0);
   g.imageSmoothingEnabled=false;g.drawImage(L3C,0,0,L3W,L3H,0,0,W,H);g.imageSmoothingEnabled=true;}
   // lamp glare (full resolution, additive)
-  g.save();g.globalCompositeOperation='lighter';lamps.forEach(l=>{const pp=proj(l);if(!pp)return;const sx=pp[0]*3,sy=pp[1]*3,r=Math.max(10,9000/pp[2]);const gr=g.createRadialGradient(sx,sy,1,sx,sy,r);gr.addColorStop(0,'rgba(255,245,220,.55)');gr.addColorStop(1,'rgba(255,245,220,0)');g.fillStyle=gr;g.beginPath();g.arc(sx,sy,r,0,7);g.fill()});g.restore();
+  g.save();g.globalCompositeOperation='lighter';lamps.forEach(l=>{const pp=oproj(l);if(!pp)return;const sx=pp[0]*3,sy=pp[1]*3,r=Math.max(10,9000/pp[2]);const gr=g.createRadialGradient(sx,sy,1,sx,sy,r);gr.addColorStop(0,'rgba(255,245,220,.55)');gr.addColorStop(1,'rgba(255,245,220,0)');g.fillStyle=gr;g.beginPath();g.arc(sx,sy,r,0,7);g.fill()});g.restore();
   // follow spots: sweeping during the introductions, locked on the winner at the end
   {const spots=[];if(intro){[0,1].forEach(i=>spots.push([Xw[i]+Math.sin(realAt*1.7+i*2)*40,Math.cos(realAt*1.3+i)*40]));spots.push([Math.sin(realAt*.9)*30,-40])}
     else if(fin&&res.w!=null)spots.push([Xw[res.w],0]);
@@ -239,7 +240,7 @@ function lab3D(g,o){const{at,realAt,P,X,tl,f,res,stopBeat,kdNow,big,zoom,inRepla
       g.fillStyle=gr;g.beginPath();g.moveTo(tx3-5,ty3);g.lineTo(tx3+5,ty3);g.lineTo(bx+w,by);g.lineTo(bx-w,by);g.closePath();g.fill();
       const pg2=g.createRadialGradient(bx,by,2,bx,by,w);pg2.addColorStop(0,'rgba(255,250,225,.35)');pg2.addColorStop(1,'rgba(255,250,225,0)');g.fillStyle=pg2;g.beginPath();g.ellipse(bx,by,w,w*.35,0,0,7);g.fill()});g.restore()}}
   // impact sparks, sweat and the flying mouthpiece, placed on the 3D bodies
-  const P2=v=>{const pp=proj(v);return pp?[pp[0]*3,pp[1]*3,pp[2]]:null};
+  const P2=v=>{const pp=oproj(v);return pp?[pp[0]*3,pp[1]*3,pp[2]]:null};
   tl.beats.forEach((b,bi)=>{const d=at-b.at;if(d<.14||d>.8||b.a==null||!['p','r','j','c','st','kd'].includes(b.k))return;const i=1-b.a;labPunchType(b);const low=b.low&&b.pt!=='jab';
     const pt=P2(low?hits[i].chest:hits[i].head);if(!pt)return;const sc=Math.min(1.6,700/pt[2]);
     if(d<.5){const sz=(b.k==='j'?.6:b.k==='r'?.85:1.25)*(1-d*1.2)*sc;g.save();g.translate(pt[0],pt[1]);g.rotate(d*3);g.scale(sz,sz);const gr=g.createRadialGradient(0,0,2,0,0,40);gr.addColorStop(0,'#fff');gr.addColorStop(.35,'#ffe066');gr.addColorStop(1,'rgba(255,120,0,0)');
@@ -421,7 +422,9 @@ function glMat4(C,T,fovy,asp,near,far){const f=l3norm(l3sub(T,C)),r=l3norm(l3cro
   const o=new Float32Array(16);for(let i=0;i<4;i++)for(let j=0;j<4;j++){let s=0;for(let k=0;k<4;k++)s+=P[k*4+j]*V[i*4+k];o[i*4+j]=s}return o}
 function labGLScene(g,o){const G=glInit();if(!G)return null;const{gl,loc}=G,{C,T,P,Xw,mid,at,realAt,intro,fin,res,stopBeat,kdNow,tl,cur,mat}=o;
   gl.viewport(0,0,960,540);gl.clearColor(.03,.03,.06,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.enable(gl.DEPTH_TEST);gl.useProgram(G.pr);
-  const VP=glMat4(C,T,2*Math.atan(.5/1.32),16/9,30,6000);gl.uniformMatrix4fv(loc.uVP,false,VP);gl.uniform3fv(loc.uEye,C);gl.uniform1f(loc.uAlpha,1);gl.uniform1f(loc.uFlash,0);gl.uniform1i(loc.uTex,0);
+  const VP=glMat4(C,T,2*Math.atan(.5/1.32),16/9,30,6000);gl.uniformMatrix4fv(loc.uVP,false,VP);
+  [0,1].forEach(i=>{const v=[Xw[i],mat,0,1],c=[0,1,2,3].map(r=>VP[r]*v[0]+VP[4+r]*v[1]+VP[8+r]*v[2]+VP[12+r]*v[3]);LAB_FPOS[i]=c[3]>0?[(c[0]/c[3]*.5+.5)*960,(.5-c[1]/c[3]*.5)*540]:null}); // feet on screen for the overlays (STUNNED!)
+gl.uniform3fv(loc.uEye,C);gl.uniform1f(loc.uAlpha,1);gl.uniform1f(loc.uFlash,0);gl.uniform1i(loc.uTex,0);
   const draw=(b,tex,emis)=>{b.bufs.forEach(([a,x,k])=>{gl.bindBuffer(gl.ARRAY_BUFFER,x);gl.enableVertexAttribArray(loc[a]);gl.vertexAttribPointer(loc[a],k,gl.FLOAT,false,0,0)});
     gl.uniform1f(loc.uUseTex,tex?1:0);gl.uniform1f(loc.uEmis,emis?1:0);if(tex){gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,tex)}gl.drawArrays(gl.TRIANGLES,0,b.n)};
   draw(G.st,null,false);draw(G.mat,G.tMat,false);G.apron.forEach((b,k)=>draw(b,G.tApron[k],false));draw(G.crowd,G.tSeats,true);gl.depthFunc(gl.LEQUAL);gl.uniform1f(loc.uFill,o.fill==null?1:o.fill);gl.uniform1f(loc.uPeople,1);draw(G.crowd,G.tCrowd,true);gl.uniform1f(loc.uPeople,0);gl.depthFunc(gl.LESS);gl.uniform1f(loc.uScroll,(realAt*.06)%1);draw(G.rib,G.tRib,true);gl.uniform1f(loc.uScroll,0);
@@ -442,7 +445,8 @@ function labGLScene(g,o){const G=glInit();if(!G)return null;const{gl,loc}=G,{C,T
     gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);gl.uniform1f(loc.uAlpha,.38);draw(sb,null,true);gl.depthMask(true);gl.disable(gl.BLEND);gl.uniform1f(loc.uAlpha,1)}
   g.setTransform(1,0,0,1,0,0);g.drawImage(G.cv,0,0,960,540);
   const lamps=[];for(let k=-2;k<=2;k++)for(const z of[-70,70])lamps.push([k*190,552,z]);
-  return{hits,lamps}}
+  const vproj=v=>{const c=[0,1,2,3].map(r=>VP[r]*v[0]+VP[4+r]*v[1]+VP[8+r]*v[2]+VP[12+r]);if(c[3]<20)return null;return[(c[0]/c[3]*.5+.5)*L3W,(.5-c[1]/c[3]*.5)*L3H,c[3]]}; // the WebGL camera, for overlays (sparks, glare)
+  return{hits,lamps,proj:vproj}}
 
 /* the house for this fight (owner, Nov 14, 2026): league fights use the bout's venue and attendance (small debuts draw a thin
    crowd, big fights sell out, matching purses and pay-per-view); Simbot fights play a small club */
