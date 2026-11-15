@@ -2128,6 +2128,10 @@ document.addEventListener('click',async e=>{
     if(ok){$('#dmBody').value='';await loadIms();nav('msgs:'+to)}t.disabled=false}
   else if(t.id==='doSearch')doSearch($('#q').value);
 });
+/* ad tracking (owner, Nov 14, 2026): ?ref=reddit etc. is remembered on this device for 30 days and sent with sign-up */
+(function(){try{const r=new URLSearchParams(location.search).get('ref');if(r&&/^[a-z0-9_-]{1,32}$/i.test(r))localStorage.setItem('contenders_ref',JSON.stringify({r:r.toLowerCase(),t:Date.now()}))}catch(e){}})();
+function refTag(){try{const o=JSON.parse(localStorage.getItem('contenders_ref')||'null');return o&&Date.now()-o.t<30*864e5?o.r:null}catch(e){return null}}
+
 document.addEventListener('submit',async e=>{
   const f=e.target;e.preventDefault();
   if(f.id==='planChooser'){const m=$('#plMode').value,n=$('#plName').value;window._plSel=n;nav(m==='create'||m==='adv'?'pf:'+m:`pf:${m}:${encN(n)}`);return}
@@ -2138,7 +2142,7 @@ document.addEventListener('submit',async e=>{
     if(gym.length<2)return alertBox('Gym names need at least 2 characters.');if(p1!==p2)return alertBox("The passwords don't match.");
     if(Object.values(managers).some(m=>m.gym.toLowerCase()===gym.toLowerCase()))return alertBox('That gym name is taken. Pick another.');
     {const bad=await gymNameProblem(gym);if(bad)return alertBox(bad)}
-    const{data,error}=await SB.auth.signUp({email,password:p1,options:{data:{gym},emailRedirectTo:SITE_URL}});
+    const{data,error}=await SB.auth.signUp({email,password:p1,options:{data:{gym,ref:refTag()},emailRedirectTo:SITE_URL}});
     if(error)return alertBox(/database error/i.test(error.message)?'That gym name is too close to an existing or reserved name. Pick another one.':error.message);
     if(!data.session){$('#view').innerHTML='<h1>Almost there!</h1><p>We sent a confirmation link to <b>'+esc(email)+'</b>. Click it, then <a data-go="login">log in</a>.</p>'}
     else{state.gymName=gym;save();nav('gym')}}
