@@ -299,7 +299,15 @@ pre.plan{background:#fbfaf7;border:1px solid var(--line)}
 .aiDots i{display:inline-block;width:7px;height:7px;border-radius:50%;background:#b5bac1;margin:0 2px;animation:aiDot 1s infinite}.aiDots i:nth-child(2){animation-delay:.15s}.aiDots i:nth-child(3){animation-delay:.3s}
 @keyframes aiDot{0%,60%,100%{opacity:.3;transform:none}30%{opacity:1;transform:translateY(-3px)}}
 .aiCard{display:flex;gap:12px;background:#313338;color:#dbdee1;border-radius:10px;padding:12px 14px;margin:12px 0;font-family:"gg sans","Segoe UI",Roboto,Helvetica,Arial,sans-serif;border-left:4px solid #5865f2}
-.aiCard .aiText{background:none;padding:4px 0 0}.aiName{color:#8ea1ff;font-weight:700;font-size:15px}
+.aiCard .aiText{background:none;padding:4px 0 0}
+#lab{position:relative}
+.aiRing{position:absolute;z-index:55;border:4px solid #f23f43;border-radius:18px;pointer-events:none;box-shadow:0 0 0 4000px rgba(0,0,0,.28),0 0 18px rgba(242,63,67,.8);animation:aiRing 1.2s ease-in-out infinite}
+.aiRing+.aiRing{box-shadow:0 0 18px rgba(242,63,67,.8)}
+@keyframes aiRing{0%,100%{transform:scale(1)}50%{transform:scale(1.025);border-color:#ff7b7e}}
+.aiCall{position:absolute;z-index:58;background:#313338;color:#dbdee1;border-radius:12px;padding:12px 14px;box-shadow:0 12px 34px rgba(0,0,0,.5);font-family:"gg sans","Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-size:14px;line-height:1.45;border-top:4px solid #f23f43;animation:aiPop .3s ease-out}
+.aiCall:before{content:"";position:absolute;top:-14px;left:28px;border:10px solid transparent;border-bottom-color:#f23f43}
+.aiCallHd{font-weight:700;color:#8ea1ff;margin-bottom:4px}.aiCallBot{font-size:16px}.aiCall b{color:#f2f3f5}.aiCall tt{background:#1e1f22;color:#f0b232;border-radius:3px;padding:0 4px;font-size:12.5px}
+.aiStep{font-size:11px;color:#949ba4;margin-top:6px;letter-spacing:.04em;text-transform:uppercase}.aiName{color:#8ea1ff;font-weight:700;font-size:15px}
 @media(max-width:760px){#aiFab{right:12px;bottom:12px}.aiWin{position:fixed;left:0;right:0;bottom:0;width:auto;height:78vh;border-radius:16px 16px 0 0}.aiBub{width:min(250px,calc(100vw - 40px))}#aiFab.open .aiFabBtn{display:none}}
 @media(max-width:1000px){.dc{grid-template-columns:minmax(0,1fr) 220px}.dcNav{display:none}}
 @media(max-width:760px){.dc{grid-template-columns:1fr}.dc .dcOnBtn{display:inline-block}.dcSide{display:none;max-height:260px;border-top:1px solid #26272b}.dcSide.open{display:block}.dcMsgs{height:360px}.dcHeadSub{display:none}}
@@ -901,7 +909,7 @@ function condText(x,after){
 /* ================= SHARED DATA (Supabase: accounts, forums, messages) ================= */
 cleanSlate();
 const SB_URL='https://ojsphhzgzbxmnfcbitqb.supabase.co',SB_KEY='sb_publishable_SWO9WhiSkoVhflY5CmY08A_hlqCEJSi';
-const BUILD='1794778662';
+const BUILD='1794782134';
 /* A tab left open on an older build must not save over newer data: if the site has been updated, reload before anything else is saved. */
 let staleBuild=false;
 async function checkBuild(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
@@ -2162,10 +2170,10 @@ function aiCard(html,chips){return`<div class="aiCard"><div class="dcAv aiAv">�
 /* Simbot AI's own pop-up window (the Discord-style Simbot Chat is left exactly as it is; owner, Nov 15: "the discord chat part is perfect don't change") */
 function aiItemHTML(x){if(x.me)return`<div class="aiMe"><span>${esc(x.text)}</span></div>`;
   return`<div class="aiMsg"><div class="dcAv aiAv">🤖</div><div class="aiBody"><div class="aiText">${x.html}</div>${aiChipsHTML(x.chips)}</div></div>`}
-function aiSay(html,chips){AI.typing=false;AI.msgs.push({t:Date.now()+AI.msgs.length,ai:1,html,chips});AI.msgs=AI.msgs.slice(-40);aiPaint();if(!AI.open&&$('#aiFab')){AI.unread=(AI.unread||0)+1;aiFabDot()}}
+function aiSay(html,chips){chips=aiWithNext(chips);AI.typing=false;aiIdle();AI.msgs.push({t:Date.now()+AI.msgs.length,ai:1,html,chips});AI.msgs=AI.msgs.slice(-40);aiPaint();if(!AI.open&&$('#aiFab')){AI.unread=(AI.unread||0)+1;aiFabDot()}}
 function aiPaint(){const el=$('#aiLog');if(!el)return;el.innerHTML=AI.msgs.map(aiItemHTML).join('')+(AI.typing?'<div class="aiMsg"><div class="dcAv aiAv">🤖</div><div class="aiBody"><div class="aiText aiDots"><i></i><i></i><i></i></div></div></div>':'');el.scrollTop=el.scrollHeight}
 function aiFabDot(){const d=$('#aiFabN');if(d){d.hidden=!AI.unread;d.textContent=AI.unread||''}}
-const AI_MAIN=[['🥊 Fight me','fightme'],['👀 Show me a fight','show'],['📋 How do fight plans work?','plans'],['🏆 What\'s the league?','league']];
+const AI_MAIN=[['🥊 Fight me','fightme'],['👀 Show me a fight','show'],['🗺️ Show me around','tour'],['📋 How do fight plans work?','plans'],['🏆 What\'s the league?','league']];
 
 /* ---- greeting ---- */
 function aiGreet(){if(AI.greeted||!$('#aiLog'))return;AI.greeted=true;const first=!aiSeen();aiMarkSeen();
@@ -2199,15 +2207,24 @@ async function aiAct(a,btn){
   if(a==='fightme'){aiUser('Fight me');return aiSay(`Oh, you want some? 😤 Pick your fighter. Every one comes with a fight plan that has a note on every line, so you'll see exactly what he does. I'll pick mine, and I'm not telling you which.`,[...STARTERS.map(x=>[`${x.em} ${esc(x.nm)}`,'pick:'+x.id]),['🎲 Surprise me','pick:?']])}
   if(a.startsWith('pick:')){let id=a.slice(5);if(id==='?')id=aiRand(STARTERS).id;const st=starterOf(id);if(!st)return;if(btn)btn.disabled=true;aiUser(st.nm);return aiFightMe(id)}
   if(a==='show'){aiUser('Show me a fight');return aiShow()}
-  if(a==='again'){if($('#labAi'))$('#labAi').innerHTML='';return labFight()}
+  if(a.startsWith('point:')){const[,k,c]=a.split(':');return aiPointDiag(k,c)}
+  if(a.startsWith('fix:')){const[,k,c]=a.split(':');if(btn)btn.disabled=true;return aiFix(k,c)}
+  if(a==='tour'){aiUser('Show me around');return aiTour(0)}
+  if(a.startsWith('tour:')){return aiTour(+a.slice(5))}
+  if(a==='spotx'){aiSpotOff();if(!AI.open)aiOpen();if(!AI.lessonPending)aiSay(aiRand(['Got it? 👍 Ask me anything about it, or keep going.','Nice. Little by little, that\'s how you learn this game. 🧠']));AI.lessonPending=false;return}
+  if(a.startsWith('tourspot:')){const L=AI_LESSONS[+a.slice(9)];AI.lessonPending=true;aiSpot(L.spot,L.a()[0].replace(/^📘 /,''),[]);setTimeout(()=>{AI.lessonPending=false},500);return}
+  if(a==='askq'){aiSay('Sure! Type it below. Anything about fighters, plans, fights or the league. 👇');setTimeout(()=>{const i=$('#aiIn');i&&i.focus()},100);return}
+  if(a.startsWith('lesson:')){const n=+a.slice(7);return aiLesson(n)}
+  if(a==='again'){aiSpotOff();if($('#labAi'))$('#labAi').innerHTML='';return labFight()}
   const r=AI_TOPICS[a];if(r){aiUser(r.q);const x=r.a();aiSay(x[0],x[1])}}
-function aiUser(text){AI.msgs.push({t:Date.now(),me:1,text})}
+function aiUser(text){aiIdle();AI.msgs.push({t:Date.now(),me:1,text})}
 
 /* "Show me a fight": two different starters in the Simbot corners, then FIGHT */
 function aiShow(){const L=labState(),[a,b]=(()=>{const p=[...STARTERS].sort(()=>Math.random()-.5);return[p[0],p[1]]})();
   labApplyStarter(L.A,a.id,L.level);labApplyStarter(L.B,b.id,L.level);L.A.name=a.nm.replace(/^The /,'Red ');L.B.name=b.nm.replace(/^The /,'Blue ');
   if(L.A.name===a.nm)L.A.name='Red '+a.nm;if(L.B.name===b.nm)L.B.name='Blue '+b.nm;labRefresh('A');labRefresh('B');
-  aiSay(`Here we go! 🔔 <b>${esc(a.nm)}</b> (${esc(a.tag.toLowerCase())}) in the red corner vs <b>${esc(b.nm)}</b> (${esc(b.tag.toLowerCase())}) in the blue. Watch it up top. When it's over I'll tell you why the winner won.`);
+  AI.showing=true;aiClose();aiFabBubble(false);
+  aiSay(`Here we go! 🔔 <b>${esc(a.nm)}</b> (${esc(a.tag.toLowerCase())}) in the red corner vs <b>${esc(b.nm)}</b> (${esc(b.tag.toLowerCase())}) in the blue. I'll be right back when it's over to tell you why the winner won. 🍿`);
   labFight()}
 
 /* "Fight me": a real challenge vs Simbot's fighter, so other people can watch it live too */
@@ -2222,25 +2239,31 @@ async function aiFightMe(stId,retry){let nick=null;
   sbcSaveSeat(r.id,'a',r.a);aiPre={id:r.id,st:stId};nav('sbch:'+r.id)}
 
 /* ---- after a Simbot fight: why the winner won, and one thing to try ---- */
-function aiFightNotes(f,N){const r=f.result,R=f.rounds,last=R[R.length-1]||{},en=last.en||[1,1];
+function aiFightNotes(f,N){const D=aiDiag(f);return[D.head,D.why]}
+function aiDiag(f){const N=labState().names||['Red','Blue'];const r=f.result,R=f.rounds,last=R[R.length-1]||{},en=last.en||[1,1];
   const tot=[0,1].map(i=>R.reduce((s,x)=>{const q=x.st&&x.st[i];if(q){s.t+=(q.pt||0)+(q.rt||0)+(q.jt||0);s.l+=(q.pl||0)+(q.rl||0)+(q.jl||0)}return s},{t:0,l:0}));
   const pct=i=>tot[i].t?Math.round(100*tot[i].l/tot[i].t):0;
-  if(r.w==null)return[`🤝 <b>A ${esc(r.type.toLowerCase())}!</b> Dead even. Change one number in either plan and it won't be next time.`,`Landed: ${esc(N[0])} ${tot[0].l} (${pct(0)}%), ${esc(N[1])} ${tot[1].l} (${pct(1)}%).`];
+  if(r.w==null)return{k:'close',c:'A',head:`🤝 <b>A ${esc(r.type.toLowerCase())}!</b> Dead even.`,why:`Landed: ${esc(N[0])} ${tot[0].l} (${pct(0)}%), ${esc(N[1])} ${tot[1].l} (${pct(1)}%). Change one number in either plan and it won't be next time.`};
   const w=r.w,l=1-w,how=r.decision?`by ${esc(r.type.toLowerCase())}`:`by ${esc(r.type)} in round ${r.round}`;
   const head=`🏆 <b>${esc(N[w])} wins ${how}!</b> He landed ${tot[w].l} punches (${pct(w)}%) to ${tot[l].l} (${pct(l)}%).`;
-  let why;
-  if(en[l]<.2)why=`<b>${esc(N[l])} ran out of gas</b> (${Math.round(en[l]*100)}% left at the end). Try lower numbers in his plan: when the three add up to less than 20, the rest is <b>rest</b>, and he gets his breath back.`;
-  else if(!r.decision)why=`<b>${esc(N[l])} got caught.</b> Give him more <b>DEFENSE</b> when he's tired, like a line at the bottom of his plan: <tt>if endurance_percent &lt; 40 then 4/4/12</tt>. Or more <b>CHIN</b> in his abilities.`;
-  else if(pct(l)+8<pct(w))why=`<b>${esc(N[l])} couldn't land</b>: ${pct(l)}% vs ${pct(w)}%. His opponent was harder to hit. Try going to the body (<tt>7B/6/7</tt>) or working <tt>(inside)</tt>, or give him more <b>SPEED</b>.`;
-  else if(tot[l].t<tot[w].t*.85)why=`<b>${esc(N[l])} got outworked.</b> The judges love the busier man. Raise his <b>AGGRESSION</b> (the first number) in the middle rounds.`;
-  else why=`<b>Close one on the cards.</b> One number either way could flip it. Change something in the losing plan and run it again. That's the whole game. 😉`;
-  return[head,why]}
+  let why,k;
+  if(en[l]<.2)k='gas',why=`<b>${esc(N[l])} ran out of gas</b> (${Math.round(en[l]*100)}% left at the end). Try lower numbers in his plan: when the three add up to less than 20, the rest is <b>rest</b>, and he gets his breath back.`;
+  else if(!r.decision)k='caught',why=`<b>${esc(N[l])} got caught.</b> Give him more <b>DEFENSE</b> when he's tired, like a line at the bottom of his plan: <tt>if endurance_percent &lt; 40 then 4/4/12</tt>. Or more <b>CHIN</b> in his abilities.`;
+  else if(pct(l)+8<pct(w))k='land',why=`<b>${esc(N[l])} couldn't land</b>: ${pct(l)}% vs ${pct(w)}%. His opponent was harder to hit. Try going to the body (<tt>7B/6/7</tt>) or working <tt>(inside)</tt>, or give him more <b>SPEED</b>.`;
+  else if(tot[l].t<tot[w].t*.85)k='work',why=`<b>${esc(N[l])} got outworked.</b> The judges love the busier man. Raise his <b>AGGRESSION</b> (the first number) in the middle rounds.`;
+  else k='close',why=`<b>Close one on the cards.</b> One number either way could flip it. Change something in the losing plan and run it again. That's the whole game. 😉`;
+  return{k,c:l===0?'A':'B',head,why,loser:N[l]}}
+const N2=(n,f)=>f.result.w==null?'nobody':n[f.result.w];
 function aiWatchFight(){clearTimeout(aiWatchT);const box=$('#labAi');if(box)box.innerHTML='';
   const L=labState(),f=L.fight;if(!f)return;let n=0;
   const tick=()=>{if(!$('#labAi')||labState().fight!==f)return;if(labAnim&&labAnim.at<labAnim.tl.total-.3&&n++<900){aiWatchT=setTimeout(tick,1000);return}
     const[h,why]=aiFightNotes(f,L.names);AI.fights=(AI.fights||0)+1;
     const chips=[['🔁 Run it again','again'],['🥊 Now fight me','fightme']];if(!ME&&AI.fights>=2)chips.push(['🏆 Make it count: sign up free','go:register']);else chips.push(['📋 How plans work','plans']);
-    $('#labAi').innerHTML=aiCard(`${h}<br>${why}${!ME&&AI.fights===2?'<br><br>In the league, your fighter keeps his record, climbs the rankings and fights every week. It\'s free.':''}`,chips)};
+    const D=aiDiag(f),fx=D.k==='close'?[]:[['👉 Show me what went wrong','point:'+D.k+':'+D.c],['🔧 Fix it for me','fix:'+D.k+':'+D.c]];
+    $('#labAi').innerHTML=aiCard(`${h}<br>${why}${!ME&&AI.fights===2?'<br><br>In the league, your fighter keeps his record, climbs the rankings and fights every week. It\'s free.':''}`,[...fx,...chips]);
+    const mine=AI.showing;AI.showing=false;
+    aiSay(`${mine?'That\'s the fight! ':''}${h}<br><br>${why}`,[...fx,['🔁 Run it again','again'],['🎲 New matchup','show'],...(!ME&&AI.fights>=2?[['🏆 Sign up free','go:register']]:[['🥊 Fight me','fightme']])]);
+    if(mine&&!AI.open)aiOpen();else if(!AI.open)aiFabBubble(true,`🔔 Fight's over! Want to know why <b>${esc(N2(L.names,f))}</b> won? Tap me.`)};
   aiWatchT=setTimeout(tick,1500)}
 
 /* ---- the challenge page vs Simbot ---- */
@@ -2309,6 +2332,83 @@ function aiAnswer(text){const s=' '+String(text).toLowerCase().replace(/[’‘]
 async function aiAsk(text){text=String(text).trim();if(!text){aiSay('Yeah? What\'s up? 🤖',AI_MAIN);return}
   aiUser(text);const r=aiAnswer(text);AI.typing=true;aiPaint();
   setTimeout(()=>{if(r.act==='fightme'){AI.typing=false;AI.msgs.pop();return aiAct('fightme')}if(r.act==='show'){AI.typing=false;return aiShow()}aiSay(r.x[0],r.x[1])},500+Math.random()*400)}
+
+/* ---- pointing at the page (owner, Nov 15, 2026: "circle what went wrong... this is how you play right here, move this move that") ----
+   A pulsing ring around a part of the Simbot page plus a callout; the chat window steps aside while it's up. */
+function aiSpotOff(){document.querySelectorAll('.aiRing,.aiCall').forEach(e=>e.remove());clearTimeout(AI.spotT)}
+function aiSpot(targets,html,btns){aiSpotOff();const root=$('#lab');if(!root)return false;
+  const els=(Array.isArray(targets)?targets:[targets]).map(t=>typeof t==='string'?$(t):t).filter(Boolean);if(!els.length)return false;
+  aiClose();aiFabBubble(false);els[0].scrollIntoView({behavior:'smooth',block:'center'});
+  const place=()=>{document.querySelectorAll('.aiRing,.aiCall').forEach(e=>e.remove());const rb=root.getBoundingClientRect();let top=1e9,bot=0;
+    els.forEach(el=>{const r=el.getBoundingClientRect(),g=document.createElement('div');g.className='aiRing';
+      Object.assign(g.style,{left:(r.left-rb.left-8)+'px',top:(r.top-rb.top-8)+'px',width:(r.width+16)+'px',height:(r.height+16)+'px'});root.appendChild(g);top=Math.min(top,r.top-rb.top);bot=Math.max(bot,r.bottom-rb.top)});
+    const r0=els[0].getBoundingClientRect(),c=document.createElement('div');c.className='aiCall';
+    c.innerHTML=`<div class="aiCallHd"><span class="aiCallBot">🤖</span> Simbot AI</div><div class="aiCallTx">${html}</div>${aiChipsHTML([...(btns||[]),['💬 Back to chat','spotx']])}`;
+    root.appendChild(c);const w=Math.min(340,rb.width-16);c.style.width=w+'px';
+    c.style.left=Math.max(8,Math.min(rb.width-w-8,r0.left-rb.left))+'px';c.style.top=(bot+18)+'px';
+    c.addEventListener('click',e=>{const a=e.target.closest('[data-ai]');if(a){e.stopPropagation();aiAct(a.dataset.ai,a)}})};
+  setTimeout(place,420);AI.spotPlace=place;return true}
+addEventListener('resize',()=>{if($('.aiCall')&&AI.spotPlace)AI.spotPlace()});
+const aiRow=(c,k)=>{const b=document.querySelector(`[data-lpm="${k}"][data-c="${c}"]`);return b&&b.closest('tr')};
+const aiPlanBox=c=>document.querySelector(`.labPlan[data-c="${c}"]`);
+const AI_STN={str:'Strength',kp:'KO Punch',spd:'Speed',agl:'Agility',chn:'Chin',cnd:'Conditioning'};
+function aiPointDiag(k,c){const L=labState(),F=L[c],who=`<b>${esc(F.name)}</b> (${c==='A'?'red':'blue'} corner)`;
+  const fix=[['🔧 Fix it for me','fix:'+k+':'+c]];
+  if(k==='gas')return aiSpot([aiRow(c,'cnd'),aiPlanBox(c)],`${who} ran out of gas. Two ways to fix it:<br>1️⃣ <b>Conditioning</b> is his gas tank. Tap <b>+</b> to raise it (take the points from another ability with <b>−</b>).<br>2️⃣ In his <b>plan</b>, make a line's three numbers add up to <b>less than 20</b>. Whatever's left over is rest.`,fix);
+  if(k==='caught')return aiSpot([aiRow(c,'chn'),aiPlanBox(c)],`${who} got knocked out.<br>1️⃣ <b>Chin</b> keeps him on his feet. Tap <b>+</b>.<br>2️⃣ At the <b>bottom of his plan</b>, add a safety line: <tt>if endurance_percent &lt; 40 then 4/4/12</tt>. When he's tired, he covers up. (The last true line wins, so the bottom is the boss.)`,fix);
+  if(k==='land')return aiSpot([aiRow(c,'spd'),aiRow(c,'agl')],`${who} couldn't land his punches.<br><b>Speed</b> lands punches and <b>Agility</b> makes him hard to hit. Tap <b>+</b> on one of these and <b>−</b> on something he doesn't need.`,fix);
+  if(k==='work')return aiSpot([aiPlanBox(c)],`${who} got outworked, and judges love the busier man.<br>In his <b>plan</b>, raise the <b>first number</b> (aggression) when he's behind. Add at the bottom: <tt>if score &lt; 0 and round &gt;= 4 then 8/6/6</tt>.`,fix);
+  return aiSpot([aiPlanBox(c)],`It was close. Try changing one number in ${who}'s plan and run it again.`)}
+/* move n points into stat `to` from the biggest other abilities, keeping the total and the KO Punch rule */
+function aiMove(F,to,n){const max=labMaxS(),got=[];for(let i=0;i<n;i++){if(F[to]>=max)break;
+    const don=['str','spd','agl','chn','cnd'].filter(k=>k!==to&&F[k]>(MINS[k]||1)+2&&!(k==='str'&&(F.kp||0)*3>F.str-1)).sort((a,b)=>F[b]-F[a])[0];if(!don)break;
+    F[don]--;F[to]++;got.push(don)}
+  const from={};got.forEach(k=>from[k]=(from[k]||0)+1);return{n:got.length,from}}
+function aiAddLine(F,line,note){const p=String(F.plan||'').replace(/\s+$/,'');F.plan=p+'\n'+line+'   # Simbot AI: '+note;F.planName='Custom'}
+function aiFix(k,c){const L=labState(),F=L[c];if(!F)return;let st=null,line=null,did=[];
+  const mv=(to,n)=>{const r=aiMove(F,to,n);if(r.n)did.push(`<b>+${r.n} ${AI_STN[to]}</b> (from ${Object.entries(r.from).map(([x,v])=>v+' '+AI_STN[x]).join(', ')})`);st=to};
+  if(k==='gas'){mv('cnd',3);line=['if endurance_percent < 50 then 5/4/8','rest when he is under half his gas']}
+  else if(k==='caught'){mv('chn',3);line=['if endurance_percent < 40 then 4/4/12','cover up when he is tired']}
+  else if(k==='land'){mv('spd',3)}
+  else if(k==='work'){line=['if score < 0 and round >= 4 then 8/6/6','throw more when he is behind']}
+  if(line){aiAddLine(F,line[0],line[1]);did.push(`a new line at the bottom of his plan: <tt>${esc(line[0])}</tt>`)}
+  labRefresh(c);const tx=aiPlanBox(c);if(tx){tx.value=F.plan;tx.scrollTop=tx.scrollHeight}
+  const els=[st&&aiRow(c,st),line&&aiPlanBox(c)].filter(Boolean);
+  aiSpot(els.length?els:[`#labCard${c}`],`Done! I gave <b>${esc(F.name)}</b> ${did.join(' and ')||'a small tweak'}. 🔧<br>That's how you play: change something, then <b>run it again</b> and see if it worked.`,[['🔁 Run it again','again']]);
+  aiSay(`🔧 Fixed up <b>${esc(F.name)}</b>: ${did.join(' and ')||'a small tweak'}. Hit <b>Run it again</b> and let's see if it works.`,[['🔁 Run it again','again'],['👉 Show me','point:'+k+':'+c]])}
+/* guided tour of the Simbot page */
+const AI_TOUR=[
+  ['.sbStartGrid',`<b>Step 1: pick your fighters.</b> 🥊 Every starter has a style and a ready-made plan. Tap <b>Red corner</b> on one and <b>Blue corner</b> on another.`],
+  ['#labCardA .labStats',`<b>Step 2: his abilities.</b> 💪 Strength, Speed, Chin... Tap <b>+</b> and <b>−</b> to move points around. He has to use every point (the total is right under this).`],
+  ['#labCardA .labPlan',`<b>Step 3: the fight plan.</b> 🧠 This is the real game. Each line is <tt>AGGRESSION/POWER/DEFENSE</tt>, and every line has a note saying what it does. Change a number and see what happens.`],
+  ['[data-lab=fight]',`<b>Step 4: FIGHT!</b> 🔔 Hit it and watch your plan go to work. When it's over I'll tell you why the winner won and what to change.`],
+  ['#sbLobby',`<b>Step 5: real opponents.</b> 🤝 Challenge a friend or anyone on the board. Plans stay secret and everyone watches live.`],
+  ['.dc',`<b>Step 6: the hangout.</b> 💬 Talk trash, share fights, find a challenge. That's it, you know how to play! Want to fight me?`]];
+function aiTour(i){const st=AI_TOUR[i];if(!st){aiSpotOff();return aiOpen()}
+  const next=i<AI_TOUR.length-1?[['Next ➜','tour:'+(i+1)]]:[['🥊 Fight me','fightme'],['👀 Show me a fight','show']];
+  if(!aiSpot(st[0],st[1]+`<div class="aiStep">${i+1} / ${AI_TOUR.length}</div>`,next))aiTour(i+1)}
+
+/* ---- Learn the game: short lessons, one idea at a time (owner, Nov 15, 2026: "give him information slowly but surely... understand the principles of the game") ---- */
+const aiLs=()=>{try{return+localStorage.getItem('contenders_ai_lesson')||0}catch(e){return 0}};
+const aiLsSet=n=>{try{localStorage.setItem('contenders_ai_lesson',String(Math.max(aiLs(),n)))}catch(e){}};
+const AI_LESSONS=[
+  {t:'You\'re the manager',a:()=>[`📘 <b>Lesson 1: you're the manager.</b><br>In Contenders you never press a punch button. You do two things: <b>build</b> a fighter and write his <b>fight plan</b>. Then the fight runs by itself, round by round, and the better plan usually wins.<br><br>Think of it like a corner man who gives orders before the bell. That's you. 🧢`]},
+  {t:'Abilities',spot:'#labCardA .labStats',a:()=>[`📘 <b>Lesson 2: abilities.</b><br>Every fighter gets the same number of points to spread out. The big ones:<br>💪 <b>Strength</b> hits hard &nbsp; ⚡ <b>Speed</b> lands punches<br>🕺 <b>Agility</b> slips punches &nbsp; 🪨 <b>Chin</b> takes a punch<br>🫁 <b>Conditioning</b> is his gas tank<br>You can't max everything, so every build is a trade-off. Tap <b>Show me on the page</b> and I'll circle them.`]},
+  {t:'The three numbers',spot:'#labCardA .labPlan',a:()=>[`📘 <b>Lesson 3: the three numbers.</b><br>A plan line looks like <tt>6/6/8</tt>: <b>aggression / power / defense</b>.<br>• High aggression = lots of punches<br>• High power = harder punches<br>• High defense = harder to hit<br>Every round, he fights the way the line tells him. Tap <b>Show me on the page</b> to see a real one. Each line has a note after the <tt>#</tt> telling you what it does.`]},
+  {t:'Gas and rest',a:()=>[`📘 <b>Lesson 4: gas and rest.</b> 😮‍💨<br>The three numbers can add up to <b>20 at most</b>. Anything you don't use is <b>rest</b>, and rest refills his gas.<br>• <tt>8/8/4</tt> = 20, no rest. Great for a round, deadly for twelve.<br>• <tt>6/5/6</tt> = 17, so he rests 3 every round.<br>A tired fighter lands less, gets hit more and gets knocked out easier. <b>Pacing wins fights.</b>`]},
+  {t:'If... then',a:()=>[`📘 <b>Lesson 5: if... then.</b> 🧠<br>Lines can start with a condition:<br><tt>if opponent &lt;= tired then 9/8/3</tt> = "when he's tired, go get him"<br><tt>if endurance_percent &lt; 40 then 4/4/12</tt> = "when I'm tired, cover up"<br>The big rule: every round he reads the plan <b>top to bottom</b> and uses the <b>last line that's true</b>. So your normal line goes at the top and your emergency lines at the bottom.`]},
+  {t:'Styles',a:()=>[`📘 <b>Lesson 6: styles.</b> 🎨<br>Add a style in brackets: <tt>6/6/8 (inside)</tt>. A few to start with:<br>• <tt>(inside)</tt> brawl up close<br>• <tt>(ring)</tt> move and stay away<br>• <tt>(counter)</tt> wait, then punish<br>• <tt>(clinch)</tt> tie him up<br>And <tt>7B/6/7</tt> goes to the <b>body</b> (drains his gas), <tt>7H/6/7</tt> to the <b>head</b>. Styles beat each other like rock-paper-scissors.`]},
+  {t:'Watch and learn',a:()=>[`📘 <b>Lesson 7: watch and learn.</b> 👀<br>The best way to get good: run a fight, see <b>why</b> the winner won, change <b>one thing</b>, run it again. After every fight I'll tell you what went wrong, and I can circle it on the page or fix it for you.<br>Let's try it right now:`,[['👀 Show me a fight','show']]]},
+  {t:'Test yourself',a:()=>[`📘 <b>Lesson 8: test yourself.</b> 🥊<br>Fighting both corners yourself is practice. The real test is an opponent whose plan you <b>can't see</b>. You can fight me right now, or challenge a friend with a link. Everybody watching sees it live.`,[['🥊 Fight me','fightme'],['🤝 Challenge a friend','challenge']]]},
+  {t:'The league',a:()=>[`📘 <b>Lesson 9: the league.</b> 🏆<br>Here's where it counts. Your fighter gets a <b>real fight every week</b>, keeps his record, earns points to train, climbs the rankings and earns purses. Your first fighter starts in <b>Rookies</b> against fighters at his level and debuts within a day. After every fight the Corner Coach sends you tips.<br><br>🎓 That's the whole course. You know how to play now! It's free:`,[['✍️ Sign up free','go:register']]]}];
+function aiWithNext(chips){chips=chips||[];const n=aiLs();if(n>=AI_LESSONS.length||chips.some(([,a])=>String(a).startsWith('lesson:')))return chips;
+  return[...chips,[n===0?'📘 Teach me the game (1 min lessons)':`📘 Next lesson: ${AI_LESSONS[n].t}`,'lesson:'+n]]}
+function aiLesson(n){const L=AI_LESSONS[n];if(!L)return;aiUser(n===0?'Teach me the game':'Next lesson');aiLsSet(n+1);
+  const[h,ch]=L.a(),more=[...(ch||[]),...(L.spot&&$(L.spot)?[['👉 Show me on the page','tourspot:'+n]]:[])];
+  AI.typing=true;aiPaint();setTimeout(()=>{aiSay(h+(n<AI_LESSONS.length-1?`<div class="aiStep">Lesson ${n+1} of ${AI_LESSONS.length}</div>`:''),[...more,['❓ I have a question','askq']])},600)}
+/* one gentle nudge if he goes quiet with the window open (once per quiet spell) */
+function aiIdle(){clearTimeout(AI.idleT);AI.idleT=setTimeout(()=>{if(!AI.open||!$('#aiWin')||AI.nudged>=2||$('.aiCall'))return;AI.nudged=(AI.nudged||0)+1;
+  const n=aiLs();aiSay(n<AI_LESSONS.length?aiRand([`Still there? 👀 No rush. Whenever you're ready, the next lesson takes about 20 seconds.`,`Take your time. When you want, we'll keep going. Next up: <b>${AI_LESSONS[n].t}</b>.`]):aiRand([`Still here if you need me. Want to test what you learned? 🥊`,`Bored? Fight me. 😏`]),n<AI_LESSONS.length?[]:[['🥊 Fight me','fightme'],['👀 Show me a fight','show']])},45000)}
 
 async function sbCall(body){if(!SB)return{error:'The league server is not reachable right now.'};
   try{const{data,error}=await SB.functions.invoke('simbot-match',{body});

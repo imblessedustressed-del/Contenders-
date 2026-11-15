@@ -299,7 +299,15 @@ pre.plan{background:#fbfaf7;border:1px solid var(--line)}
 .aiDots i{display:inline-block;width:7px;height:7px;border-radius:50%;background:#b5bac1;margin:0 2px;animation:aiDot 1s infinite}.aiDots i:nth-child(2){animation-delay:.15s}.aiDots i:nth-child(3){animation-delay:.3s}
 @keyframes aiDot{0%,60%,100%{opacity:.3;transform:none}30%{opacity:1;transform:translateY(-3px)}}
 .aiCard{display:flex;gap:12px;background:#313338;color:#dbdee1;border-radius:10px;padding:12px 14px;margin:12px 0;font-family:"gg sans","Segoe UI",Roboto,Helvetica,Arial,sans-serif;border-left:4px solid #5865f2}
-.aiCard .aiText{background:none;padding:4px 0 0}.aiName{color:#8ea1ff;font-weight:700;font-size:15px}
+.aiCard .aiText{background:none;padding:4px 0 0}
+#lab{position:relative}
+.aiRing{position:absolute;z-index:55;border:4px solid #f23f43;border-radius:18px;pointer-events:none;box-shadow:0 0 0 4000px rgba(0,0,0,.28),0 0 18px rgba(242,63,67,.8);animation:aiRing 1.2s ease-in-out infinite}
+.aiRing+.aiRing{box-shadow:0 0 18px rgba(242,63,67,.8)}
+@keyframes aiRing{0%,100%{transform:scale(1)}50%{transform:scale(1.025);border-color:#ff7b7e}}
+.aiCall{position:absolute;z-index:58;background:#313338;color:#dbdee1;border-radius:12px;padding:12px 14px;box-shadow:0 12px 34px rgba(0,0,0,.5);font-family:"gg sans","Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-size:14px;line-height:1.45;border-top:4px solid #f23f43;animation:aiPop .3s ease-out}
+.aiCall:before{content:"";position:absolute;top:-14px;left:28px;border:10px solid transparent;border-bottom-color:#f23f43}
+.aiCallHd{font-weight:700;color:#8ea1ff;margin-bottom:4px}.aiCallBot{font-size:16px}.aiCall b{color:#f2f3f5}.aiCall tt{background:#1e1f22;color:#f0b232;border-radius:3px;padding:0 4px;font-size:12.5px}
+.aiStep{font-size:11px;color:#949ba4;margin-top:6px;letter-spacing:.04em;text-transform:uppercase}.aiName{color:#8ea1ff;font-weight:700;font-size:15px}
 @media(max-width:760px){#aiFab{right:12px;bottom:12px}.aiWin{position:fixed;left:0;right:0;bottom:0;width:auto;height:78vh;border-radius:16px 16px 0 0}.aiBub{width:min(250px,calc(100vw - 40px))}#aiFab.open .aiFabBtn{display:none}}
 @media(max-width:1000px){.dc{grid-template-columns:minmax(0,1fr) 220px}.dcNav{display:none}}
 @media(max-width:760px){.dc{grid-template-columns:1fr}.dc .dcOnBtn{display:inline-block}.dcSide{display:none;max-height:260px;border-top:1px solid #26272b}.dcSide.open{display:block}.dcMsgs{height:360px}.dcHeadSub{display:none}}
