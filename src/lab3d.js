@@ -476,6 +476,12 @@ function labPunchSnd(c,t,kind){const v={j:[.35,1700,.07,110],r:[.55,1300,.1,90],
 function labWhoosh(c,t){labNoise(c,t,.22,{type:'bandpass',f:500,f2:2200,q:1.4,g:.18,att:.08})}
 function labBell(c,t,times=1){for(let k=0;k<times;k++){const t0=t+k*.32;[[1,0.5],[2.76,.25],[5.4,.12],[8.93,.06]].forEach(([m,g])=>labTone(c,t0,820*m,k===times-1?2.4:1.1,g*.55));labNoise(c,t0,.03,{type:'highpass',f:3000,g:.2})}}
 function labCheer(c,t,amt,dur){const f=labCrowdFill();labNoise(c,t,dur,{type:'bandpass',f:900,q:.5,g:Math.min(.9,.25+amt*f*.7),att:.25});labNoise(c,t+.1,dur*.8,{type:'bandpass',f:2200,q:.8,g:Math.min(.5,.12+amt*f*.35),att:.3})}
+/* the big roar on stuns and knockdowns (owner, Nov 14, 2026: "so we can tell when we have a stun or a knockdown"):
+   several layers of crowd noise that swell fast and hang, loud even in a small house (a big house is bigger still) */
+function labRoar(c,t,size,dur){const f=Math.max(.55,labCrowdFill()),g=Math.min(1.4,size*f);
+  [[350,.5,1],[800,.5,.9],[1600,.7,.6],[3200,1,.3]].forEach(([fr,q,w],i)=>labNoise(c,t+i*.03,dur,{type:'bandpass',f:fr,f2:fr*1.15,q,g:g*w,att:.18}));
+  labNoise(c,t+.25,dur*.9,{type:'bandpass',f:1100,q:.6,g:g*.6,att:.4}); // the second wave as the rest of the arena catches on
+  if(LSND.bedG){const n=c.currentTime,bg=LSND.bedG.gain;bg.cancelScheduledValues(n);bg.setValueAtTime(bg.value,n);bg.linearRampToValueAtTime(bg.value*2.2,n+.3);bg.linearRampToValueAtTime(.05+labCrowdFill()*.17,n+dur+1)}} // the murmur stays up a while
 function labBedStart(){const c=labSndCtx();if(!c||LSND.bed)return;const f=labCrowdFill(),t=c.currentTime;
   const s=c.createBufferSource();s.buffer=LSND.noise;s.loop=true;const l=c.createBiquadFilter();l.type='bandpass';l.frequency.value=650;l.Q.value=.4;
   const l2=c.createBiquadFilter();l2.type='lowpass';l2.frequency.value=1800;const g=c.createGain();g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(.05+f*.17,t+1.2);
@@ -488,8 +494,8 @@ function labSfx(b){const c=labSndCtx();if(!c)return;const t=c.currentTime+.01;
   switch(b.k){case 'j':labPunchSnd(c,t,'j');break;case 'r':labPunchSnd(c,t,'r');break;case 'p':labPunchSnd(c,t,'p');labCheer(c,t+.05,.25,.9);break;
     case 'c':labPunchSnd(c,t,'c');labCheer(c,t+.05,.3,1);break;case 'm':labWhoosh(c,t);break;
     case 'cl':labNoise(c,t,.12,{f:400,g:.25});break;case 'i':labPunchSnd(c,t,'r');labCheer(c,t,.4,1.2);break;
-    case 'st':labPunchSnd(c,t,'st');labCheer(c,t+.05,.6,1.6);break;
-    case 'kd':labPunchSnd(c,t,'kd');labNoise(c,t+.35,.25,{f:250,g:.7});labCheer(c,t+.1,1,2.4);break; // the punch, the body hitting the canvas, the roar
-    case 'ko':case 'stop':labPunchSnd(c,t,'ko');labNoise(c,t+.4,.3,{f:220,g:.8});labCheer(c,t+.1,1.3,4);labBell(c,t+1.2,4);break;
+    case 'st':labPunchSnd(c,t,'st');labRoar(c,t+.05,.9,2.6);break;
+    case 'kd':labPunchSnd(c,t,'kd');labNoise(c,t+.35,.25,{f:250,g:.7});labRoar(c,t+.1,1.2,3.6);break; // the punch, the body hitting the canvas, the roar
+    case 'ko':case 'stop':labPunchSnd(c,t,'ko');labNoise(c,t+.4,.3,{f:220,g:.8});labRoar(c,t+.1,1.4,5);labBell(c,t+1.2,4);break;
     case 'bell':labBell(c,t,1);labCheer(c,t,.2,1.2);break;case 'start':labBell(c,t,1);break;
     case 'final':labCheer(c,t,.9,3.5);break}}
