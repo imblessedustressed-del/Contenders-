@@ -166,16 +166,24 @@ function ctxFor(S,i,r){const x=S[i],y=S[1-i];
 /* a spent fighter can't take a punch (owner, Nov 15, 2026: "any power and his opponent he would be knocked out"): below BAL.tcStart of his
    endurance his chin weakens, down to BAL.tcFloor of normal when empty, so a puncher can finish him; a light hitter still mostly can't. Contenders only. */
 function tiredChin(x){if(x.bk||!BAL.tcStart)return 1;const f=Math.max(0,x.E/x.E0);return f>=BAL.tcStart?1:BAL.tcFloor+(1-BAL.tcFloor)*f/BAL.tcStart}
+/* Style and size bonuses (owner, Nov 15, 2026, two-week trial): Contenders uses WeBL's bonuses and penalties at HALF strength
+   (KP, the draw rule, the referee stoppage and the tired chin stay ours); Bare Knuckles keeps the values it had (BAL). */
+function styleKnobs(BK){return BK
+  ?{inB:BAL.insideBase,inEdge:.5,inTake:1.1,clB:BAL.bkClinchBase,clEdge:.5,clLoss:BAL.bkClinchAggLoss,fB:1,fEdge:.5,fFat:1,coStr:BAL.counterStr,coDiv:BAL.counterDiv,coAgg:BAL.counterAgg,
+    rB:BAL.ringBase,rEdge:.5,rFat:BAL.ringFat,roGap:2/3,roOwn:1,ouSA:.5,ouPow:.85,aoG:BAL.alloutGive,aoT:BAL.alloutTake,ht:.5,htOut:.75,tgt:.2,cut:.1,aim:.2,aimC:.1,dirty:.1,dirtyW:.05,small:BAL.smallMan,smSpd:.5,smAglPct:5}
+  :{inB:.5,inEdge:.25,inTake:1.05,clB:.5,clEdge:.25,clLoss:.075,fB:.5,fEdge:.25,fFat:.5,coStr:.5,coDiv:6,coAgg:.925,
+    rB:.5,rEdge:.25,rFat:.5,roGap:1/3,roOwn:.5,ouSA:.25,ouPow:.925,aoG:1.5,aoT:2.5,ht:.25,htOut:.375,tgt:.1,cut:.05,aim:.1,aimC:.05,dirty:.05,dirtyW:.025,small:true,smSpd:.25,smAglPct:10}}
 function simulate(FA,FB,rounds){
   const S=[prep(FA,'red'),prep(FB,'blue')];
   const out={rounds:[],result:null,S};
   /* weight advantage: heavier man gets +1 STR per 5% (fractions kept), nothing above 300 lb */
   if(S[0].fw&&S[1].fw){const w0=Math.min(300,S[0].fw),w1=Math.min(300,S[1].fw),h=w0>=w1?0:1,lo=Math.min(w0,w1);if(lo>0&&w0!==w1)S[h].str+=(Math.abs(w0-w1)/lo*100)/BAL.wtPct}
   /* heavyweight small-man edge (owner rule, Nov 9, 2026): the shorter man gets +0.5 SPD per inch, the lighter man +1 AGL per 5% (300 lb cap) */
-  if(BAL.smallMan&&(FA.divLim||0)>=1000){const hd=S[0].hgt-S[1].hgt;if(hd)S[hd>0?1:0].spd+=Math.abs(hd)*.5;
-    if(S[0].fw&&S[1].fw){const w0=Math.min(300,S[0].fw),w1=Math.min(300,S[1].fw),lo=Math.min(w0,w1);if(lo>0&&w0!==w1)S[w0<w1?0:1].agl+=(Math.abs(w0-w1)/lo*100)/5}}
+  const K0=styleKnobs(!!(FA.bk&&FB.bk));
+  if(K0.small&&(FA.divLim||0)>=1000){const hd=S[0].hgt-S[1].hgt;if(hd)S[hd>0?1:0].spd+=Math.abs(hd)*K0.smSpd;
+    if(S[0].fw&&S[1].fw){const w0=Math.min(300,S[0].fw),w1=Math.min(300,S[1].fw),lo=Math.min(w0,w1);if(lo>0&&w0!==w1)S[w0<w1?0:1].agl+=(Math.abs(w0-w1)/lo*100)/K0.smAglPct}}
   /* Bare Knuckles region (both fighters BK): 25 rounds, 5% recovery, no doctor, eyes shut = forced clinch, decided by knockdowns then stuns */
-  const BK=!!(FA.bk&&FB.bk);out.bk=BK;S.forEach(x=>{x.ded=0;x.bk=BK});
+  const BK=!!(FA.bk&&FB.bk);out.bk=BK;const K=styleKnobs(BK);S.forEach(x=>{x.ded=0;x.bk=BK});
   const run=[0,0];
   for(let r=1;r<=rounds&&!out.result;r++){
     const CH=S.map((x,i)=>choosePlan(x.parsed,ctxFor(S,i,r)));
@@ -193,29 +201,29 @@ function simulate(FA,FB,rounds){
     const A=base.map(b=>({...b}));
     for(let i=0;i<2;i++){const j=1-i,me=P[i],op=P[j],e=eff[i],o=eff[j],b=base[i],ob=base[j],a=A[i],oa=A[j];
       switch(me.style){
-        case'inside':a.str+=BAL.insideBase+Math.max(0,b.str-ob.str)/2;o.dmgMul*=1.1;e.notes.push('His STR is increased by fighting inside.');break;
-        case'clinch':{a.agl+=(BK?BAL.bkClinchBase:BAL.clinchBase)+(b.str>ob.str?(b.str-ob.str)/2:0);const lost=Math.min(e.agg,(BK?BAL.bkClinchAggLoss:BAL.clinchAggLoss)*op.agg);e.agg-=lost;e.rest+=lost;e.notes.push('His AGG is reduced by clinching.');break}
-        case'feint':a.spd+=1+Math.max(0,b.spd-ob.spd)/2;e.fat+=1;e.notes.push('His SPD is increased by feinting.');break;
-        case'counter':{a.str+=BAL.counterStr;const adv=(b.spd+S[i].hgt)-(ob.spd+S[j].hgt),q=BAL.counterDiv;
+        case'inside':a.str+=K.inB+Math.max(0,b.str-ob.str)*K.inEdge;o.dmgMul*=K.inTake;e.notes.push('His STR is increased by fighting inside.');break;
+        case'clinch':{a.agl+=K.clB+(b.str>ob.str?(b.str-ob.str)*K.clEdge:0);const lost=Math.min(e.agg,K.clLoss*op.agg);e.agg-=lost;e.rest+=lost;e.notes.push('His AGG is reduced by clinching.');break}
+        case'feint':a.spd+=K.fB+Math.max(0,b.spd-ob.spd)*K.fEdge;e.fat+=K.fFat;e.notes.push('His SPD is increased by feinting.');break;
+        case'counter':{a.str+=K.coStr;const adv=(b.spd+S[i].hgt)-(ob.spd+S[j].hgt),q=K.coDiv;
           if(adv>0){a.agl+=adv/q;oa.agl=Math.max(ob.agl*BAL.counterFloor,oa.agl-adv/q)}else if(adv<0){oa.agl+=-adv/q;a.agl=Math.max(b.agl*BAL.counterFloor,a.agl-(-adv)/q);e.notes.push('His counter-punching backfires!')}
-          e.agg*=BAL.counterAgg;e.notes.push('His AGG is reduced by counter-punching.');break}
-        case'ring':a.agl+=BAL.ringBase+Math.max(0,b.agl-ob.agl)/2;e.fat+=BAL.ringFat;e.notes.push('His AGL is increased by using the ring.');break;
-        case'ropes':if(b.agl>ob.agl&&ob.agl>8)oa.agl=Math.max(8,oa.agl-(2/3)*(b.agl-ob.agl));a.agl-=1;e.notes.push('He is laying on the ropes.');break;
-        case'outside':a.agl+=.5;a.spd+=.5;e.pow*=.85;e.notes.push('His POW is reduced by fighting outside.');break;
-        case'allout':e.dmgMul*=BAL.alloutGive;o.dmgMul*=BAL.alloutTake;e.notes.push('He is punching all out!');break;
+          e.agg*=K.coAgg;e.notes.push('His AGG is reduced by counter-punching.');break}
+        case'ring':a.agl+=K.rB+Math.max(0,b.agl-ob.agl)*K.rEdge;e.fat+=K.rFat;e.notes.push('His AGL is increased by using the ring.');break;
+        case'ropes':if(b.agl>ob.agl&&ob.agl>8)oa.agl=Math.max(8,oa.agl-K.roGap*(b.agl-ob.agl));a.agl-=K.roOwn;e.notes.push('He is laying on the ropes.');break;
+        case'outside':a.agl+=K.ouSA;a.spd+=K.ouSA;e.pow*=K.ouPow;e.notes.push('His POW is reduced by fighting outside.');break;
+        case'allout':e.dmgMul*=K.aoG;o.dmgMul*=K.aoT;e.notes.push('He is punching all out!');break;
       }
     }
     /* dirty fighting */
     for(let i=0;i<2&&!ended;i++){const e=eff[i];if(!e.dirty)continue;
-      e.dmgMul*=1.1;
-      if(rand()<.5){S[i].warn++;e.dmgMul*=1.05/1.1;R.pre.push(`<p>The referee warns ${S[i].n} for fighting dirty.</p>`);
+      e.dmgMul*=1+K.dirty;
+      if(rand()<.5){S[i].warn++;e.dmgMul*=(1+K.dirtyW)/(1+K.dirty);R.pre.push(`<p>The referee warns ${S[i].n} for fighting dirty.</p>`);
         if(S[i].warn>=2){e.deduct=(e.deduct||0)+1;R.pre.push(`<p class="r">${S[i].n} has a point deducted!</p>`)}
         if(rand()<.05*Math.pow(2,S[i].warn-1)){ended={type:'DQ',w:1-i,why:`${S[i].n} was disqualified for fouling`,t:30+rand()*140,dq:true}}}
     }
     for(let i=0;i<2;i++)if(!eff[i].dirty&&rand()<.01){S[i].warn++;R.pre.push(`<p>The referee warns ${S[i].n} for an accidental low blow.</p>`)}
     const A2=A.map(a=>({...a}));
     const hd=S[0].hgt-S[1].hgt;
-    if(hd!==0){const t=hd>0?0:1,bonus=Math.abs(hd)*(P[t].style==='outside'?.75:.5);A2[t].spd+=bonus;A2[t].agl+=bonus}
+    if(hd!==0){const t=hd>0?0:1,bonus=Math.abs(hd)*(P[t].style==='outside'?K.htOut:K.ht);A2[t].spd+=bonus;A2[t].agl+=bonus}
     A2.forEach((a,i)=>{const x=S[i];a.pen={spd:0,agl:0,fat:0};
       for(const j of x.inj){
         if(j.type==='cut'&&/eye/.test(j.loc))a.pen.spd+=.5*j.lvl;
@@ -239,7 +247,7 @@ function simulate(FA,FB,rounds){
       const agg=Math.max(1,e.agg*thrMul[i]),pow=Math.max(1,e.pow),lk=luck[i]*lkMul[i];
       const off=Math.sqrt(agg*a.spd)*pow*e.dmgMul*lk;
       const raw=a.str*off/(od*o.agl);
-      const tE={Head:.8,Body:1.2,Cut:.9,Opp:1}[e.tgt],tS={Head:1.2,Body:.8,Cut:.9,Opp:1}[e.tgt];
+      const tE={Head:1-K.tgt,Body:1+K.tgt,Cut:1-K.cut,Opp:1}[e.tgt],tS={Head:1+K.tgt,Body:1-K.tgt,Cut:1-K.cut,Opp:1}[e.tgt];
       const sDef=Math.max(1,o.agl+(S[j].chn-10)*(o.f||1));
       const stun=(a.str+BAL.kpMul*S[i].kp)*off/(od*sDef)*tS;
       return{base:raw/lk/e.dmgMul,end:raw*tE,stun,ratio:stun/(S[j].chn*(S[j].gx?GX.chin:1)*tiredChin(S[j])),agg,lk};
@@ -254,7 +262,7 @@ function simulate(FA,FB,rounds){
       const thrown=Math.max(3,Math.round(9*D[i].agg*(.9+.2*rand())));
       const k=S[0].F.k||K_RATING,denom=x=>x*x/(x*x+k*Math.sqrt(k*o.agl));
       let mult=15/(Math.max(1,eff[i].def)+Math.max(1,eff[j].def));
-      const adj=pc=>{let p=pc*mult;const lk=D[i].lk;p=lk<1?p*lk:p+(1-p)*(lk-1);p*=({Head:.8,Body:.8,Cut:.9,Opp:1}[e.tgt]);return clamp(p,.02,.95)};
+      const adj=pc=>{let p=pc*mult;const lk=D[i].lk;p=lk<1?p*lk:p+(1-p)*(lk-1);p*=({Head:1-K.aim,Body:1-K.aim,Cut:1-K.aimC,Opp:1}[e.tgt]);return clamp(p,.02,.95)};
       const pP=adj(denom(a.spd)),pJ=adj(denom(a.spd*1.5*(S[i].gx?GX.jab:1)));
       const pt=Math.min(thrown,Math.max(0,Math.round(3*e.pow+gauss())));const rt=Math.min(thrown-pt,Math.max(0,Math.round(3*e.pow+gauss())));const jt=thrown-pt-rt;
       const land=(n,p)=>clamp(Math.round(n*p+gauss()*Math.sqrt(n*p*(1-p))),0,n);
