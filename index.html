@@ -833,11 +833,11 @@ function condText(x,after){
 /* ================= SHARED DATA (Supabase: accounts, forums, messages) ================= */
 cleanSlate();
 const SB_URL='https://ojsphhzgzbxmnfcbitqb.supabase.co',SB_KEY='sb_publishable_SWO9WhiSkoVhflY5CmY08A_hlqCEJSi';
-const BUILD='1794772011';
+const BUILD='1794772471';
 /* A tab left open on an older build must not save over newer data: if the site has been updated, reload before anything else is saved. */
 let staleBuild=false;
 async function checkBuild(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
-  if(v&&BUILD.indexOf('%')<0&&v!==BUILD&&+v>+BUILD){staleBuild=true;const a=document.activeElement;if(!(a&&(a.tagName==='TEXTAREA'||a.tagName==='INPUT')&&a.value))location.reload()}}catch(e){}}
+  if(v&&BUILD.indexOf('%')<0&&v!==BUILD&&+v>+BUILD){staleBuild=true;const a=document.activeElement;if(!(a&&(a.tagName==='TEXTAREA'||a.tagName==='INPUT')&&a.value)&&!labAnim&&!view.startsWith('sbch:'))location.reload()}}catch(e){}}
 const SITE_URL='https://contendersboxingleague.com/';
 let vacancies=[],bouts=[],cards={},botF={},SB=null,ME=null,MYEMAIL='',dbState='loading',managers={},topics=[],ims=[],posts=[],postsTopic=null,recovering=false,syncTimer=null,loadedGym=false;
 async function initDB(){
@@ -1406,7 +1406,12 @@ function labDraw(at,tl){const cv=$('#labCv');if(!cv)return;const g=cv.getContext
   const st=tl.beats.find(b=>b.k==='st'&&at-b.at>=0&&at-b.at<1.1),bell=tl.beats.find(b=>b.k==='bell'&&at-b.at>=0&&at-b.at<3.1);
   if(!fin){
     if(at-cur.start>=0&&at-cur.start<.6&&!bell){const k=(at-cur.start)/.6;g.globalAlpha=Math.min(1,(1-k)*3);labBigText(g,at-cur.start<.35?'ROUND '+cur.n:'FIGHT!',cx,150,52+k*10,'#ffd23f','#c47f00');g.globalAlpha=1}
-    if(kdNow){labBigText(g,'KNOCKDOWN!',cx,105,62,'#ffd23f','#c47f00');const n=Math.min(kdNow.cnt||9,Math.floor((at-kdNow.cs)/LAB_CNT));if(n>=1)labBigText(g,String(n),cx+300,200,72,'#ffffff','#9aa0aa')}
+    /* knockout count, video-game style (owner, Nov 15, 2026): each number pops up big on the referee's count, then K.O.! at ten */
+    const koC=tl.beats.find(b=>b.k==='ko'&&b.cs!=null&&at>=b.cs+LAB_CNT&&at<b.cs+b.cnt*LAB_CNT+1.6);
+    if(koC){const ph=(at-koC.cs)/LAB_CNT,n=Math.floor(ph),pop=1+.35*Math.max(0,1-(ph-n)*4);
+      if(n<koC.cnt){g.save();g.globalAlpha=Math.max(.35,1-(ph-n)*.6);labBigText(g,String(n),cx,250,Math.round(120*pop),'#ffffff','#c4121f');g.restore()}
+      else{const k=Math.min(1,(ph-n)*3);labBigText(g,'K.O.!',cx,250,Math.round(150*(1.6-.6*k)),'#ffd23f','#c4121f')}}
+    else if(kdNow){labBigText(g,'KNOCKDOWN!',cx,105,62,'#ffd23f','#c47f00');const n=Math.min(kdNow.cnt||9,Math.floor((at-kdNow.cs)/LAB_CNT));if(n>=1)labBigText(g,String(n),cx+300,200,72,'#ffffff','#9aa0aa')}
     else if(st)labBigText(g,'STUNNED!',cx,220,62,'#ff9e4a','#c4121f');
     else if(bell){if(at-bell.at<1.1)labBigText(g,'DING DING!',cx,212,50,'#ffffff','#9aa0aa');const R=(tl.rounds.find(r=>r.n===bell.round)||{}).R;
       if(R&&R.st){g.save();g.fillStyle='rgba(8,10,16,.82)';g.beginPath();g.roundRect(cx-210,236,420,78,8);g.fill();g.strokeStyle='#d4af37';g.lineWidth=2;g.stroke();
@@ -2068,7 +2073,7 @@ function sbcPaint(){if(!SBC||!$('#sbc'))return;const r=SBC.row,s=SBC.seat,top=$(
   if(ph!==SBC.phase){SBC.phase=ph;
     if(ph==='cancelled')main.innerHTML='<p>The red corner called this one off.</p>';
     else if(ph==='load2')main.innerHTML='<p>Loading the fight...</p>';
-    else if(ph==='fought')main.innerHTML=sbcFightHTML();
+    else if(ph==='fought'){main.innerHTML=sbcFightHTML();SBC.drawn=0}
     else if(ph.startsWith('open'))main.innerHTML=sbcOpenHTML();}
   if(ph==='fought')sbcFightTick();
   if(r.next_id&&s){const k=r.next_id;if(!sbcSeats()[k])sbcSaveSeat(k,s.s,s.t);const nb=$('#sbcNext');if(nb)nb.innerHTML=`<p class="note"><b>Rematch is set!</b> <a data-go="sbch:${k}">Go to the rematch</a></p>`}
@@ -2095,6 +2100,7 @@ function sbcFightTick(){const r=SBC.row,L=SBC.L,at=new Date(r.fight_at).getTime(
   if(cnt)cnt.innerHTML='';
   if(SBC.shownFor!==SBC.id){SBC.shownFor=SBC.id;const off=(now-at)/1000;labPlay(off);
     const tot=labAnim?labAnim.tl.total:0;if(off>tot)labTickAll()}
+  else if(!labAnim&&!SBC.drawn){SBC.drawn=1;labDraw(1e9);labTickAll()}
   const res=L.fight.result,el=$('#sbcResult');
   if(el&&(!labAnim||labAnim.at>=labAnim.tl.total-1)&&!el.innerHTML)el.innerHTML=`<p class="note"><b>${res.w==null?`It's a ${esc(res.type.toLowerCase())}!`:`${esc(L.names[res.w])} (${esc(L.bout.gyms[res.w])}) wins by ${esc(res.decision?res.type.toLowerCase():res.type+' in round '+res.round)}!`}</b></p>`}
 function sbcChatPaint(){const el=$('#sbcChat');if(!el||!SBC)return;const atBottom=el.scrollHeight-el.scrollTop-el.clientHeight<40;
@@ -2760,8 +2766,9 @@ function unz(r,v){if(!r||r.result||!r.result_z||r._unz)return;r._unz=1;
 let sbvKey='';
 /* the red Simbot View link under a fight's result icon; bot-vs-bot bouts keep no round-by-round report, so they get none */
 function sbvLink(id){const b=bouts.find(x=>x.id===id)||vsExtra[id];if(!b)vsFetch(id);if(b&&b.bot_only&&b.fight_date<'2026-11-15')return''; /* bot-vs-bot reports are kept from Nov 15, 2026 on */return`<br><a class="sbvLink" data-go="sbview:${id}" title="Watch this fight in the Simbot arena">Simbot View</a>`}
+let sbvPlayed=null;
 function sbViewHTML(id){
-  const r=lrep[id];if(!r){leagueReportHTML(id);return'<p>Loading the fight...</p>'}
+  const r=lrep[id];if(r===false)return leagueReportHTML(id);if(!r){leagueReportHTML(id);return'<p>Loading the fight...</p>'}
   if(!r.result&&r.result_z){unz(r,'sbview:'+id);return'<p>Loading the fight...</p>'}
   if(!r.result||!r.result.f||!(r.result.f.rounds||[]).some(R=>(R.lines||[]).some(x=>x.k)))
     return`<h1>Simbot View</h1><p>This fight can't be shown in the arena (no round-by-round report was kept for it).</p><p><a data-go="lreport:${id}">Read the fight report</a></p>`;
@@ -2783,9 +2790,11 @@ function sbMount(){const root=$('#sbv');if(!root||!LABV)return;if(root.dataset.o
     if(d==='replay')return labPlay();
     if(d==='pause'){if(!labAnim)return;labAnim.paused=!labAnim.paused;labSndPause(labAnim.paused);if(!labAnim.paused)labAnim.t0=performance.now()-labAnim.at*1000;t.textContent=labAnim.paused?'Play':'Pause';return}
     if(d==='skip'){if(labAnim){labAnim.stop=true;labAnim=null}labSndStop();labDraw(1e9);labTickAll();return}});
-  if(!labAnim)labPlay()} /* a data refresh re-renders the page; the running highlight keeps going on the new canvas */
+  /* a data refresh re-renders the page every 45 s: the running highlight keeps going on the new canvas, and a finished one stays finished (it used to start over) */
+  if(labAnim)return;if(sbvPlayed!==sbvKey){sbvPlayed=sbvKey;labPlay()}else{labDraw(1e9);labTickAll()}}
 function leagueReportHTML(id){
   const r=lrep[id];
+  if(r===false)return`<h1>Fight not found</h1><p>That fight isn't on record (the link may be old or mistyped).</p><p><a data-go="results">Recent Results</a> | <a data-go="fcards">Recent Fight Cards</a></p>`; /* a missing bout used to re-fetch forever */
   if(!r){if(SB&&r!==null){lrep[id]=null;SB.from('bouts').select('*').eq('id',id).maybeSingle().then(({data})=>{lrep[id]=data||false;if(view==='lreport:'+id||view==='sbview:'+id)render()})}return'<p>Loading fight report...</p>'}
   if(!r.result&&r.result_z){unz(r,'lreport:'+id);return'<p>Loading fight report...</p>'}
   if(!r.result&&r.status==='done'&&r.summary){const n=k=>{const c=cards[r[k+'_user']]||{};const f=(c.fighters||[]).concat(c.retired||[]).find(x=>x.id===r[k+'_fid']);return f?f.name:'?'};const w=r.summary.w;
