@@ -7,8 +7,9 @@ import time
 s=open('src/shell.html').read()
 eng=open('src/plan.js').read()+open('src/sim4.js').read()
 pur=open('src/vendor/purify.min.js').read()
+l3d=open('src/lab3d.js').read()
 b=str(int(time.time()))
-open('index.html','w').write(s.replace('%%PURIFY%%',pur).replace('%%SIM%%',eng).replace('%%BUILD%%',b))
+open('index.html','w').write(s.replace('%%PURIFY%%',pur).replace('%%SIM%%',eng).replace('%%LAB3D%%',l3d).replace('%%BUILD%%',b))
 open('version.txt','w').write(b)
 print('index.html rebuilt, build',b)
 PY

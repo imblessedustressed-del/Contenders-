@@ -585,7 +585,7 @@ function labHTML(){const L=labState();
   <p class="labBtns"><button class="labGo" data-lab="fight">🥊 FIGHT!</button> <button data-lab="sim">Run it 100 times</button> <span class="cr" id="labErr"></span></p>
   <div id="labStage"${L.fight?'':' style="display:none"'}><div class="labCvWrap"><canvas id="labCv" width="960" height="540"></canvas></div>
   <div id="labTick" class="labTick"></div>
-  <p class="labCtl"><button data-lab="pause" id="labPause">Pause</button> <button data-lab="skip">Skip to the end</button> <button data-lab="replay">Watch again</button> <button data-lab="report">Full report</button> <button data-lab="share">Share to Simbot Chat</button></p>
+  <p class="labCtl"><button data-lab="pause" id="labPause">Pause</button> <button data-lab="skip">Skip to the end</button> <button data-lab="replay">Watch again</button> <button data-lab="report">Full report</button> <button data-lab="share">Share to Simbot Chat</button> <button data-lab="gfx" class="labGfx">${l3gfx()==='3d'?'Graphics: 3D':'Graphics: Classic'}</button></p>
   <div id="labRep"></div></div>
   <div id="labSim"></div>
   <h2>Simbot Chat</h2><div id="labChat" class="labChat"><p class="mute">Loading...</p></div>
@@ -624,6 +624,7 @@ function labClick(e){const t=e.target.closest('button');if(!t)return;const L=lab
   if(a==='pause'){if(!labAnim)return;labAnim.paused=!labAnim.paused;if(!labAnim.paused)labAnim.t0=performance.now()-labAnim.at*1000;t.textContent=labAnim.paused?'Play':'Pause';return}
   if(a==='skip'){if(labAnim){labAnim.stop=true;labAnim=null}labDraw(1e9);labTickAll();return}
   if(a==='report'){const r=$('#labRep');if(r.innerHTML){r.innerHTML='';return}r.innerHTML=`<div class="rep">${reportHTML(L.fight,L.bout,L.fight.rounds.length)}</div>`;return}
+  if(a==='gfx')return labToggleGfx(t);
   if(a==='sim')return labSim();
   if(a==='send')return labSend();
   if(a==='share')return labShare();
@@ -679,6 +680,7 @@ function labPlay(){const L=labState();if(!L.fight)return;if(labAnim)labAnim.stop
     labDraw(me.at,tl);if(me.at<tl.total)requestAnimationFrame(step);else if(labAnim===me)labAnim=null};
   requestAnimationFrame(step);
 }
+function labToggleGfx(t){l3setGfx(l3gfx()==='3d'?'classic':'3d');document.querySelectorAll('.labGfx').forEach(b=>b.textContent=l3gfx()==='3d'?'Graphics: 3D':'Graphics: Classic');if(!labAnim)labDraw(1e9)}
 function labTick(b){const el=$('#labTick');if(!el||!b.txt)return;const p=document.createElement('p');
   p.className='lt '+(b.k==='final'?'ltF':b.k==='bell'?'ltB':['kd','ko','stop','st'].includes(b.k)?'ltBig':b.a===0?'ltR':b.a===1?'ltBl':'');
   p.textContent=b.txt;el.prepend(p);while(el.children.length>5)el.lastChild.remove()}
@@ -814,6 +816,7 @@ function labDraw(at,tl){const cv=$('#labCv');if(!cv)return;const g=cv.getContext
   const kdNow=tl.beats.find(b=>b.k==='kd'&&at-b.at>=0&&at-b.at<1.6);
   const zoom=1+(kdNow?.06*Math.min(1,(at-kdNow.at)*4):0)+(fin&&res&&!res.decision?.04:0)+(inReplay?.22:0)+(intro?.05*(1-at/LAB_INTRO):0);
   g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,W,H);
+  if(l3gfx()==='3d')lab3D(g,{at,realAt,P,X,tl,f,res,stopBeat,kdNow,big,zoom,inReplay,intro,fin,cur});else{
   g.save();if(big&&!inReplay){g.translate((Math.random()-.5)*10,(Math.random()-.5)*8)}
   const focusX=inReplay&&res.w!=null?(X[0]+X[1])/2+(res.w===0?40:-40):cx;
   g.translate(focusX,floorY-90);g.scale(zoom,zoom);g.translate(-cx,-(floorY-90));
@@ -876,7 +879,7 @@ function labDraw(at,tl){const cv=$('#labCv');if(!cv)return;const g=cv.getContext
     g.save();g.translate(X[i]-dir*(20+d*160),floorY-220*S-d*190+d*d*330);g.rotate(d*14);g.fillStyle='#f4f4f4';g.beginPath();g.roundRect(-9,-4,18,8,4);g.fill();g.fillStyle=i?'#1d4ed8':'#c8102e';g.fillRect(-9,-1,18,2);g.restore()}
   // front ropes and posts
   ropes(FL,FR,1.65,1.65,.82);post(FL[0],FL[1],168,'#c8102e');post(FR[0],FR[1],168,'#1d4ed8');
-  g.restore();
+  g.restore();}
   // lens vignette and a little haze drifting through the lights
   {const vg=g.createRadialGradient(cx,H*.55,H*.3,cx,H*.55,H*.95);vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,.55)');g.fillStyle=vg;g.fillRect(0,0,W,H);
     g.fillStyle='rgba(255,250,235,.05)';for(let k=0;k<26;k++){const hx=(k*137+realAt*(8+k%5*3))%(W+80)-40,hy=40+(k*53)%260+Math.sin(realAt*.6+k)*8;g.beginPath();g.arc(hx,hy,1.4+k%3,0,7);g.fill()}}
@@ -929,6 +932,7 @@ function labDraw(at,tl){const cv=$('#labCv');if(!cv)return;const g=cv.getContext
     g.font="italic 900 26px Impact, 'Arial Black', sans-serif";g.textAlign='center';g.fillStyle=res.w===0?'#ff8f8f':res.w===1?'#8fb4ff':'#fff';
     g.fillText(res.w==null?res.type.toUpperCase():`${L.names[res.w].toUpperCase()} WINS${res.decision?' BY '+res.type.toUpperCase():' IN ROUND '+res.round}`,cx,294);g.restore()}
 }
+%%LAB3D%%
 /* --- Lab Chat --- */
 const labNick=()=>{try{return localStorage.getItem('contenders_simbot_nick')||''}catch(e){return''}};
 async function labLoadChat(){if(!SB||labChatBusy)return;labChatBusy=true;
@@ -1546,11 +1550,12 @@ function sbViewHTML(id){
   <div id="labStage"><div class="labCvWrap"><canvas id="labCv" width="960" height="540"></canvas></div>
   <div id="labTick" class="labTick"></div>
   <p class="labCtl"><button data-lab="pause" id="labPause">Pause</button> <button data-lab="skip">Skip to the end</button> <button data-lab="replay">Watch again</button>
-  <span class="small">Length: ${[[30,'30 sec'],[60,'1 min'],[120,'2 min']].map(([v,l])=>v===sp?`<b>${l}</b>`:`<a data-sbspeed="${v}">${l}</a>`).join(' | ')}</span></p>
+  <button data-lab="gfx" class="labGfx">${l3gfx()==='3d'?'Graphics: 3D':'Graphics: Classic'}</button> <span class="small">Length: ${[[30,'30 sec'],[60,'1 min'],[120,'2 min']].map(([v,l])=>v===sp?`<b>${l}</b>`:`<a data-sbspeed="${v}">${l}</a>`).join(' | ')}</span></p>
   <p><a data-go="lreport:${id}">Read the full fight report</a> | <a data-go="fcards">Recent Fight Cards</a> | <a data-go="simbot">Simbot</a></p></div></div>`}
 function sbMount(){const root=$('#sbv');if(!root||!LABV)return;
   root.addEventListener('click',e=>{const a=e.target.closest('[data-sbspeed]');if(a){LABV.speed=+a.dataset.sbspeed;if(labAnim){labAnim.stop=true;labAnim=null}render();return}
     const t=e.target.closest('button');if(!t)return;const d=t.dataset.lab;
+    if(d==='gfx')return labToggleGfx(t);
     if(d==='replay')return labPlay();
     if(d==='pause'){if(!labAnim)return;labAnim.paused=!labAnim.paused;if(!labAnim.paused)labAnim.t0=performance.now()-labAnim.at*1000;t.textContent=labAnim.paused?'Play':'Pause';return}
     if(d==='skip'){if(labAnim){labAnim.stop=true;labAnim=null}labDraw(1e9);labTickAll();return}});
