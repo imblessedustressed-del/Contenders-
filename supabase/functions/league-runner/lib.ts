@@ -79,6 +79,13 @@ const cardEntry = (F: any) => ({
   region: F.region || null, rec: F.rec, rating: F.rating || 0, status: F.status || 0, streak: F.streak || 0, earn: F.earn || 0, fans: F.fans || 0, ppv: F.ppv || 0,
   hist: (F.hist || []).slice(0, 25).map((h: any) => Object.fromEntries(["opp", "oh", "div", "belt", "date", "week", "res", "score", "icon", "ogym", "bout", "earned"].map((k) => [k, h[k] ?? null]))),
 });
+// gzip + base64 (bot-vs-bot reports are kept compressed in bouts.result_z)
+async function gz(obj: unknown) {
+  const st = new Blob([JSON.stringify(obj)]).stream().pipeThrough(new CompressionStream("gzip"));
+  const buf = new Uint8Array(await new Response(st).arrayBuffer());
+  let bin = ""; for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode(...buf.subarray(i, i + 0x8000));
+  return btoa(bin);
+}
 async function all(q: () => any) { // page through a select
   const out: any[] = [];
   for (let from = 0; ; from += 1000) { const { data, error } = await q().range(from, from + 999); if (error) throw error; out.push(...data); if (data.length < 1000) return out; }
@@ -144,6 +151,7 @@ export async function handle(req: Request, client: any, C: any): Promise<Respons
           if (error) { log.push(`bout ${B.id}: ${error.message}`); continue; }
           if (data === "done") {
             ran++;
+            if (o.full) { try { await sb.from("bouts").update({ result_z: await gz(o.full) }).eq("id", B.id); } catch (e) { log.push(`bout ${B.id} report: ${(e as Error).message}`); } }
             tonight.push({ B, o, FA, FB });
             // keep our in-memory copy current (retired fighters leave the roster)
             [[B.red_user, B.red_fid, o.after[0]], [B.blue_user, B.blue_fid, o.after[1]]].forEach(([u, k, F]: any) => {

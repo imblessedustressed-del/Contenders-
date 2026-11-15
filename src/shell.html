@@ -1539,14 +1539,19 @@ function afterFight(f,end){
   ${f.belt&&end.w!==null?'':''}`;
 }
 let lrep={};
+/* reports of fights between two computer-run gyms come compressed (bouts.result_z); unpack once, then re-render */
+function unz(r,v){if(!r||r.result||!r.result_z||r._unz)return;r._unz=1;
+  try{const bin=atob(r.result_z),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);
+    new Response(new Blob([u]).stream().pipeThrough(new DecompressionStream('gzip'))).text().then(t=>{r.result=JSON.parse(t);if(view===v)render()},()=>{})}catch(e){}}
 /* Simbot View (owner, Nov 14, 2026: "let him watch the report instead of read it"): a league bout's stored report played
    in the Simbot arena. Uses only the public report (no plans, tactics or abilities); the full report link adds the
    manager's own private lines for his fighter. */
 let sbvKey='';
 /* the red Simbot View link under a fight's result icon; bot-vs-bot bouts keep no round-by-round report, so they get none */
-function sbvLink(id){const b=bouts.find(x=>x.id===id)||vsExtra[id];if(!b)vsFetch(id);if(b&&b.bot_only)return'';return`<br><a class="sbvLink" data-go="sbview:${id}" title="Watch this fight in the Simbot arena">Simbot View</a>`}
+function sbvLink(id){const b=bouts.find(x=>x.id===id)||vsExtra[id];if(!b)vsFetch(id);if(b&&b.bot_only&&b.fight_date<'2026-11-15')return''; /* bot-vs-bot reports are kept from Nov 15, 2026 on */return`<br><a class="sbvLink" data-go="sbview:${id}" title="Watch this fight in the Simbot arena">Simbot View</a>`}
 function sbViewHTML(id){
   const r=lrep[id];if(!r){leagueReportHTML(id);return'<p>Loading the fight...</p>'}
+  if(!r.result&&r.result_z){unz(r,'sbview:'+id);return'<p>Loading the fight...</p>'}
   if(!r.result||!r.result.f||!(r.result.f.rounds||[]).some(R=>(R.lines||[]).some(x=>x.k)))
     return`<h1>Simbot View</h1><p>This fight can't be shown in the arena (no round-by-round report was kept for it).</p><p><a data-go="lreport:${id}">Read the fight report</a></p>`;
   const f=r.result.f,b=r.result.b,names=f.S.map(x=>x.F.name);
@@ -1570,8 +1575,9 @@ function sbMount(){const root=$('#sbv');if(!root||!LABV)return;
 function leagueReportHTML(id){
   const r=lrep[id];
   if(!r){if(SB&&r!==null){lrep[id]=null;SB.from('bouts').select('*').eq('id',id).maybeSingle().then(({data})=>{lrep[id]=data||false;if(view==='lreport:'+id||view==='sbview:'+id)render()})}return'<p>Loading fight report...</p>'}
+  if(!r.result&&r.result_z){unz(r,'lreport:'+id);return'<p>Loading fight report...</p>'}
   if(!r.result&&r.status==='done'&&r.summary){const n=k=>{const c=cards[r[k+'_user']]||{};const f=(c.fighters||[]).concat(c.retired||[]).find(x=>x.id===r[k+'_fid']);return f?f.name:'?'};const w=r.summary.w;
-    return`<h1>${esc(n('red'))} vs ${esc(n('blue'))}</h1><p>${w==null?'Draw':esc(n(w===0?'red':'blue'))+' won'} by ${esc(r.summary.how)}${r.summary.decision?` (${esc(r.summary.score)})`:''}.</p><p class="small mute">No round-by-round report was kept for this bout.</p><p class="small"><a data-go="results">Recent Results</a> | <a data-go="fcards">Recent Fight Cards</a></p>`}
+    return`<h1>${esc(n('red'))} vs ${esc(n('blue'))}</h1><p>${w==null?'Draw'+(r.summary.how&&r.summary.how!=='draw'?' ('+esc(r.summary.how)+')':''):esc(n(w===0?'red':'blue'))+' won by '+esc(r.summary.how)}${r.summary.decision?` (${esc(r.summary.score)})`:''}.</p><p class="small mute">No round-by-round report was kept for this bout.</p><p class="small"><a data-go="results">Recent Results</a> | <a data-go="fcards">Recent Fight Cards</a></p>`}
   if(!r.result)return`<p>That fight hasn't been fought yet. <a data-go="fcards">Back to Fight Cards</a></p>`;
   if(r.mine===undefined&&SB&&ME){r.mine=null;SB.from('bout_private').select('mgr').eq('bout_id',id).maybeSingle().then(({data})=>{r.mine=data?data.mgr:[];if(view==='lreport:'+id)render()})}
   const side=r.red_user===ME?0:r.blue_user===ME?1:-1,f={...r.result.f,rounds:r.result.f.rounds.map((R,i)=>{const m=side>=0&&Array.isArray(r.mine)?r.mine[i]:null,pre=m&&typeof m==='object'?m.pre:m,post=m&&typeof m==='object'?m.post:null;
@@ -1861,7 +1867,7 @@ function leagueFights(){
 }
 let vsExtra={},vsWant=new Set(),vsTimer=null;
 function vsFetch(id){if(!SB||vsExtra[id]!==undefined||vsWant.has(id))return;vsWant.add(id);clearTimeout(vsTimer);vsTimer=setTimeout(async()=>{const ids=[...vsWant];vsWant.clear();ids.forEach(i=>vsExtra[i]=null);
-  try{const{data}=await SB.from('bouts').select('id,red_user,red_fid,blue_user,blue_fid,bot_only').in('id',ids);(data||[]).forEach(b=>vsExtra[b.id]=b);if(data&&data.length)render()}catch(e){}},50)}
+  try{const{data}=await SB.from('bouts').select('id,red_user,red_fid,blue_user,blue_fid,bot_only,fight_date').in('id',ids);(data||[]).forEach(b=>vsExtra[b.id]=b);if(data&&data.length)render()}catch(e){}},50)}
 /* "vs Opponent" in a fight history links to the opponent's fighter page (found from the bout; plain text if the bout isn't loaded) */
 function vsOpp(h,uid,bold){const t=bold?`<b>${esc(h.opp)}</b>`:esc(h.opp),b=h.bout&&(bouts.find(x=>x.id===h.bout)||vsExtra[h.bout]);if(!b){if(h.bout)vsFetch(h.bout);return t}
   const[ou,of]=b.red_user===uid?[b.blue_user,b.blue_fid]:[b.red_user,b.red_fid];

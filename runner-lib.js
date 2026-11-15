@@ -56,8 +56,9 @@ var RunnerLib = (() => {
       );
     });
     const summary = { w: r.w, decision: !!r.decision, type: r.type, round: r.round, how, score, ip: f.ip, ratings: [rR, rB], purse, att, fans, tv };
-    const result = B.bot_only ? null : { f, b: { rounds: B.rounds || 12, belt, div, gym: "", gyms: [red.gym, blue.gym], recs: [FA.rec.slice(), FB.rec.slice()], date } };
-    return { summary, result, mgr: B.bot_only ? null : mgr, after };
+    const full = { f, b: { rounds: B.rounds || 12, belt, div, gym: "", gyms: [red.gym, blue.gym], recs: [FA.rec.slice(), FB.rec.slice()], date } };
+    const result = B.bot_only ? null : full;
+    return { summary, result, full: B.bot_only ? full : null, mgr: B.bot_only ? null : mgr, after };
   }
 
   // ../supabase/functions/league-runner/botgen.ts
@@ -377,6 +378,13 @@ var RunnerLib = (() => {
     ppv: F.ppv || 0,
     hist: (F.hist || []).slice(0, 25).map((h) => Object.fromEntries(["opp", "oh", "div", "belt", "date", "week", "res", "score", "icon", "ogym", "bout", "earned"].map((k) => [k, h[k] ?? null])))
   });
+  async function gz(obj) {
+    const st = new Blob([JSON.stringify(obj)]).stream().pipeThrough(new CompressionStream("gzip"));
+    const buf = new Uint8Array(await new Response(st).arrayBuffer());
+    let bin = "";
+    for (let i = 0; i < buf.length; i += 32768) bin += String.fromCharCode(...buf.subarray(i, i + 32768));
+    return btoa(bin);
+  }
   async function all(q) {
     const out = [];
     for (let from = 0; ; from += 1e3) {
@@ -450,6 +458,13 @@ var RunnerLib = (() => {
             }
             if (data === "done") {
               ran++;
+              if (o.full) {
+                try {
+                  await sb.from("bouts").update({ result_z: await gz(o.full) }).eq("id", B.id);
+                } catch (e) {
+                  log.push(`bout ${B.id} report: ${e.message}`);
+                }
+              }
               tonight.push({ B, o, FA, FB });
               [[B.red_user, B.red_fid, o.after[0]], [B.blue_user, B.blue_fid, o.after[1]]].forEach(([u, k, F]) => {
                 if (F.retireAfter) {

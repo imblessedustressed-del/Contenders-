@@ -26,8 +26,9 @@ export function fightOne(C: any, B: any, red: any, blue: any) {
       { id: "L" + B.id, bout: B.id, oid: null, oh: C.ht(60 + op.hgt), opp: op.name, ogym: opGym, div, belt, date: sdate, week: 1 });
   });
   const summary = { w: r.w, decision: !!r.decision, type: r.type, round: r.round, how, score, ip: f.ip, ratings: [rR, rB], purse, att, fans, tv };
-  // Bot-vs-bot bouts keep the result line only; any bout with a human keeps the full report.
-  const result = B.bot_only ? null : { f, b: { rounds: B.rounds || 12, belt, div, gym: "", gyms: [red.gym, blue.gym], recs: [FA.rec.slice(), FB.rec.slice()], date } };
-  return { summary, result, mgr: B.bot_only ? null : mgr, after };
+  // Bot-vs-bot bouts keep their public report too (owner, Nov 14, 2026), stored compressed in bouts.result_z by the runner.
+  const full = { f, b: { rounds: B.rounds || 12, belt, div, gym: "", gyms: [red.gym, blue.gym], recs: [FA.rec.slice(), FB.rec.slice()], date } };
+  const result = B.bot_only ? null : full;
+  return { summary, result, full: B.bot_only ? full : null, mgr: B.bot_only ? null : mgr, after };
 }
 
