@@ -49,6 +49,7 @@ async function aiAct0(a,btn){
   if(a==='fab')return aiOpen();
   if(a==='bubx')return aiFabBubble(false);
   if(a==='close')return aiClose();
+  if(a==='feedback'){aiSay('Thanks for helping make Contenders better! 🙌 Type it in the box and it goes straight to the league.');fbOpen('simbot-ai');return}
   if(a==='send')return aiSendBox();
   if(a.startsWith('tbelt:'))return aiTitleFight(a.slice(6));
   if(a==='fightme'){AI.titleOrg=null;aiUser('Fight me');return aiSay(`Oh, you want some? 😤 Pick your fighter. Every one comes with a fight plan that has a note on every line, so you'll see exactly what he does. I'll pick mine, and I'm not telling you which.`,[...STARTERS.map(x=>[`${x.em} ${esc(x.nm)}`,'pick:'+x.id]),['🎲 Surprise me','pick:?']])}
@@ -155,7 +156,7 @@ const AI_TOPICS={
   free:{q:'Is it free?',a:()=>[`100% free. 🙌 Nothing to buy, nothing to download. It even installs like an app on your phone (button in the menu).`,[['✍️ Sign up free','go:register']]]},
   private:{q:'Can people see my plan?',a:()=>[`Nope. 🔒 Your plans are private: other managers never see them, not in challenges, not in league fights, and the league owner can't see them either. Fight reports show what happened, never the plan behind it. That's why scouting matters.`,[['🤝 Challenge a friend','challenge']]]},
   me:{q:'Who are you?',a:()=>[`I'm <b>Simbot AI</b> 🤖, the house fighter and helper in Simbot. I can explain the game, give plan tips, put on a fight for you, or fight you myself. I don't manage a league gym and I can't see anybody's plans. Ask away!`,[['🥊 Fight me','fightme'],['❓ What can I ask?','help']]]},
-  help:{q:'What can I ask you?',a:()=>[`Anything about the game, for example:<br>• "how do fight plans work?" • "what does agility do?"<br>• "how do I get knockouts?" • "why did my fighter gas out?"<br>• "what's the league?" • "is it free?"<br>• "give me a tip" • "fight me" • "show me a fight"<br>This chat is just between you and me.`,AI_MAIN]},
+  help:{q:'What can I ask you?',a:()=>[`Anything about the game, for example:<br>• "how do fight plans work?" • "what does agility do?"<br>• "how do I get knockouts?" • "why did my fighter gas out?"<br>• "what's the league?" • "is it free?"<br>• "give me a tip" • "fight me" • "show me a fight"<br>This chat is just between you and me. Got an idea or found a bug? Tap 💬 Send feedback.`,[...AI_MAIN,['💬 Send feedback','feedback']]]},
   app:{q:'Is there an app?',a:()=>[`Yes! The site installs like an app: tap <b>Install the App</b> in the menu (on iPhone: Share, then Add to Home Screen). 📱`,[]]},
   webl:{q:'Is this like WeBL?',a:()=>[`It started as a tribute to the old Web Boxing League, the classic fight-plan boxing game. 🥊 Same idea, you're the manager and the plan does the fighting, but Contenders has its own rules now, plus Simbot, live challenges, Rookies and Bare Knuckles.`,[['🏆 The league','league']]]},
   bk:{q:'What is Bare Knuckles?',a:()=>[`Our hardcore region. 🩸 <b>25 rounds</b>, no gloves, no ringside doctor, slower recovery between rounds. Going the distance, the man with more knockdowns wins. You pick the region when you create a fighter, and it's permanent. In Simbot, pick <b>Bare Knuckles, 25 rounds</b> to try it.`,[['🏆 The league','league']]]},
@@ -164,6 +165,7 @@ const AI_TOPICS={
 };
 const AI_INTENTS=[
   [/^(hi|hey|hello|yo|sup|what'?s up|howdy|hiya)\b/,()=>[aiRand([`Hey hey! 👋`,`Yo! 🥊`,`What's good! 👊`])+` What can I do for you?`,AI_MAIN]],
+  [/\b(feedback|suggest(ion)?|idea|report a bug|found a bug|bug|broken|complain)\b/,()=>[`Love to hear it! 🙌 Tap below and it goes straight to the league. The Commissioner reads every note.`,[['💬 Send feedback','feedback']]]],
   [/\b(thanks|thank you|thx|ty|appreciate)\b/,()=>[aiRand([`Anytime, champ. 🥊`,`That's what I'm here for! 👊`,`You got it. Now go win something. 🏆`]),[['🥊 Fight me','fightme']]]],
   [/\b(bye|later|gtg|gotta go|see ya|cya)\b/,()=>[`Later! 👋 Come back and fight me sometime. I'll be here. I'm always here. 🤖`,[['✍️ Sign up free so your fighter keeps fighting','go:register']]]],
   [/\b(fight me|spar|play (with|against) (you|me)|vs you|challenge you|fight you|1v1)\b/,'fightme'],

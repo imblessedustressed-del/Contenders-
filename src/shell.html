@@ -270,6 +270,7 @@ pre.plan{background:#fbfaf7;border:1px solid var(--line)}
 .dcDot{position:absolute;left:32px;top:29px;width:10px;height:10px;border-radius:50%;background:#23a55a;border:3px solid #2b2d31}.dcU:hover .dcDot{border-color:#35373c}
 .dcUT{min-width:0}.dcUN{color:#f2f3f5;font-weight:500;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dcSub{font-size:12px;color:#949ba4}.dcYou{color:#949ba4;font-size:12px}
 .dcEmpty{font-size:12px;color:#949ba4;padding:8px}
+#fbBox{position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:14px}.fbCard{background:#fff;border-radius:12px;padding:16px 18px;max-width:440px;width:100%;box-shadow:0 14px 40px rgba(0,0,0,.4)}.fbCard h3{margin:0 0 6px}.fbCard input,.fbCard textarea{width:100%;box-sizing:border-box;margin:6px 0;padding:8px;border:1px solid #ccc;border-radius:8px;font:inherit}.fbLink{cursor:pointer}
 .sbTitles{border:2px solid #d4af37;border-radius:12px;padding:12px 14px;margin:18px 0;background:linear-gradient(180deg,#fffaf0,#fff)}.sbTitles h2{margin-top:0}
 .sbBelts{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.sbBelt{border:1px solid #e3d3a0;border-radius:10px;padding:10px;text-align:center;background:#fff}.sbBelt.vac{opacity:.92;background:#fafafa}
 .sbBeltArt{display:flex;justify-content:center}.sbBeltArt svg.belt{width:120px;height:62px}.sbBelt button{font-size:14px!important;padding:6px 12px!important}.sbBeltOrg{font:900 20px Impact,'Arial Black',sans-serif;letter-spacing:.06em}.sbBeltWho{margin:4px 0}.sbYou{color:#1a7f37;font-weight:700}.sbBeltBtns{margin-top:8px;display:flex;flex-direction:column;gap:6px;align-items:center}
@@ -352,7 +353,7 @@ pre.plan{background:#fbfaf7;border:1px solid var(--line)}
   <div class="box"><div class="hd">Your Gym</div><a data-v="gym">Active Fighters</a><a data-v="plans">Fight Plans</a><a data-v="fight">Practice Fights</a><a data-v="create">Create a Fighter</a><a data-v="short">Short Gym</a><a data-v="changegym">Change Gym</a><a data-v="desc">Description</a><a data-v="login">Login</a><a data-v="logout">Logout</a></div>
   <div class="box"><div class="hd">Community</div><a data-v="forums">Contenders Forums</a><a data-v="msgs" id="msgLink">Messages</a><a data-v="forum:press">Press Releases</a><a data-v="simbot">🥊 Simbot<span class="sbHere" id="sbHere" hidden></span></a></div>
   <div class="box"><div class="hd">Hall of Records</div><a data-v="champs">Champions</a><a data-v="frank">Fighter Rankings</a><a data-v="grank">Gym Rankings</a><a data-v="ppv">Pay-Per-View</a><a data-v="results">Fight Results</a><a data-v="fcards">Fight Cards</a><a data-v="sched">Fight Schedule</a><a data-v="discarded">Discarded Fighters</a><a data-v="search">Search Contenders</a></div>
-  <div class="box"><div class="hd">Contenders Help &amp; Tools</div><a data-v="help">Help Pages</a><a data-v="newbie">Newbie Files</a></div>
+  <div class="box"><div class="hd">Contenders Help &amp; Tools</div><a data-v="help">Help Pages</a><a data-v="newbie">Newbie Files</a><a data-fb="sidebar" class="fbLink">💬 Send Feedback</a></div>
   <div class="box"><div class="hd">Other Stuff</div><a data-v="forgot">Forgotten Password</a><a data-v="changepw">Change Email/Passwd.</a></div>
   <div class="box fund"><a data-v="funding">Contenders Funding</a></div>
   <div class="box fund"><a data-v="retiregym">Retire Gym (Quit)</a></div>
@@ -1262,6 +1263,20 @@ function dcOnline(rows){const side=$('#dcSide');
   const lobby=rows.filter(r=>r.place==='simbot'),fight=rows.filter(r=>r.place!=='simbot');
   const one=r=>`<div class="dcU">${dcAv(r.name)}<span class="dcDot"></span><div class="dcUT"><div class="dcUN">${r.uid&&!r.guest?`<a data-go="gympub:${r.uid}" style="color:inherit">${esc(r.name)}</a>`:esc(r.name)}${r.guest?' <span class="dcTag">GUEST</span>':''}${r.me?' <span class="dcYou">(you)</span>':''}</div><div class="dcSub">${r.place==='simbot'?'in the lobby':`at a fight · <a data-go="sbch:${esc(r.place)}">watch</a>`}</div></div></div>`;
   side.innerHTML=`<div class="dcGrp">IN THE LOBBY — ${lobby.length}</div>${lobby.map(one).join('')}${fight.length?`<div class="dcGrp">AT A FIGHT — ${fight.length}</div>${fight.map(one).join('')}`:''}${rows.length<=1?'<p class="dcEmpty">Nobody else here right now. Start a challenge and share the link, or hang out: the green number on Simbot tells everyone you\'re here.</p>':''}`}
+/* ---- Feedback box (owner, Nov 15, 2026): anyone, guests too; saved to public.feedback, a copy goes to the owner's inbox, the commissioner check answers it ---- */
+function fbOpen(page){if($('#fbBox'))return;const d=document.createElement('div');d.id='fbBox';
+  d.innerHTML=`<div class="fbCard"><h3>💬 Send Feedback</h3><p class="small">Ideas, bugs, things you love or hate. It goes straight to the league. ${ME?'':'You don\'t need an account.'}</p>
+  ${ME?'':`<input id="fbWho" maxlength="20" placeholder="Your name or nickname (optional)" value="${esc(labNick())}">`}
+  <textarea id="fbBody" maxlength="1000" rows="5" placeholder="What's on your mind?"></textarea>
+  <p class="fbBtns"><button class="labGo" id="fbSend">Send</button> <button id="fbClose">Cancel</button> <span class="cr small" id="fbErr"></span></p></div>`;
+  document.body.appendChild(d);setTimeout(()=>$('#fbBody').focus(),50);
+  d.addEventListener('click',async e=>{if(e.target===d||e.target.id==='fbClose'){d.remove();return}
+    if(e.target.id==='fbSend'){const b=$('#fbBody').value.trim();if(b.length<2){$('#fbErr').textContent='Write a little something first.';return}
+      if(!SB){$('#fbErr').textContent='The league server is not reachable right now.';return}e.target.disabled=true;
+      const{error}=await SB.from('feedback').insert({body:b,page:page||view.split(':')[0],who:ME?null:(($('#fbWho')||{}).value||'').trim()||null});
+      e.target.disabled=false;if(error){$('#fbErr').textContent=/plenty/.test(error.message)?'Thanks! That\'s plenty for now. Try again in a few minutes.':'Couldn\'t send that. Try again in a moment.';return}
+      d.querySelector('.fbCard').innerHTML='<h3>🙌 Thanks!</h3><p>Got it. The Commissioner reads every note.</p><p><button id="fbClose">Close</button></p>'}})}
+document.addEventListener('click',e=>{const f=e.target.closest('[data-fb]');if(f){e.preventDefault();e.stopPropagation();fbOpen(f.dataset.fb)}},true);
 %%SIMBOTAI%%
 async function sbCall(body){if(!SB)return{error:'The league server is not reachable right now.'};
   body={...body,viewer:sbcViewer()};
