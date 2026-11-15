@@ -521,7 +521,7 @@ const K_RATING=12;
 /* Simulator update 2 (owner-approved Nov 12, 2026): balanced so every style has a chance (engine tests: each type wins about 36-45%
    against the others, the rest draws); heavyweights capped at 6'9" and 280 lb ("Tyson Fury rule"); WeBL's heavyweight edges replaced. */
 const GX={pow:1.02,agl:1.02,jab:1.08,fat:.9,chin:1.1,ip:.85,rec:.02,hurt:.03};
-const BAL={refEnd:.25,refLand:8,refRounds:2,counterDiv:6,counterStr:0,counterAgg:.8,counterFloor:.5,alloutGive:2,alloutTake:2.75,kpMul:3.75,wtPct:10,giantPer10:.5,smallMan:false,ringBase:1.75,ringFat:.4,clinchBase:.5,clinchAggLoss:.2,bkClinchBase:1.75,bkClinchAggLoss:.12,insideBase:1,tieDmg:.015};
+const BAL={tcStart:.35,tcFloor:.3,refEnd:.25,refLand:8,refRounds:2,counterDiv:6,counterStr:0,counterAgg:.8,counterFloor:.5,alloutGive:2,alloutTake:2.75,kpMul:3.75,wtPct:10,giantPer10:.5,smallMan:false,ringBase:1.75,ringFat:.4,clinchBase:.5,clinchAggLoss:.2,bkClinchBase:1.75,bkClinchAggLoss:.12,insideBase:1,tieDmg:.015};
 
 function newSev(){const r=rand();return r<2/3?1:r<8/9?2:r<26/27?3:4}
 function promote(l){if(l>=3)return 4;if(l===2)return rand()<2/3?3:4;const r=rand();return r<2/3?2:r<8/9?3:4}
@@ -549,6 +549,9 @@ function ctxFor(S,i,r){const x=S[i],y=S[1-i];
     myknockdowns:x.kds,hisknockdowns:y.kds,warnings:x.warn,opptiring:y.E/y.E0<.5};
 }
 
+/* a spent fighter can't take a punch (owner, Nov 15, 2026: "any power and his opponent he would be knocked out"): below BAL.tcStart of his
+   endurance his chin weakens, down to BAL.tcFloor of normal when empty, so a puncher can finish him; a light hitter still mostly can't. Contenders only. */
+function tiredChin(x){if(x.bk||!BAL.tcStart)return 1;const f=Math.max(0,x.E/x.E0);return f>=BAL.tcStart?1:BAL.tcFloor+(1-BAL.tcFloor)*f/BAL.tcStart}
 function simulate(FA,FB,rounds){
   const S=[prep(FA,'red'),prep(FB,'blue')];
   const out={rounds:[],result:null,S};
@@ -558,7 +561,7 @@ function simulate(FA,FB,rounds){
   if(BAL.smallMan&&(FA.divLim||0)>=1000){const hd=S[0].hgt-S[1].hgt;if(hd)S[hd>0?1:0].spd+=Math.abs(hd)*.5;
     if(S[0].fw&&S[1].fw){const w0=Math.min(300,S[0].fw),w1=Math.min(300,S[1].fw),lo=Math.min(w0,w1);if(lo>0&&w0!==w1)S[w0<w1?0:1].agl+=(Math.abs(w0-w1)/lo*100)/5}}
   /* Bare Knuckles region (both fighters BK): 25 rounds, 5% recovery, no doctor, eyes shut = forced clinch, decided by knockdowns then stuns */
-  const BK=!!(FA.bk&&FB.bk);out.bk=BK;S.forEach(x=>x.ded=0);
+  const BK=!!(FA.bk&&FB.bk);out.bk=BK;S.forEach(x=>{x.ded=0;x.bk=BK});
   const run=[0,0];
   for(let r=1;r<=rounds&&!out.result;r++){
     const CH=S.map((x,i)=>choosePlan(x.parsed,ctxFor(S,i,r)));
@@ -625,7 +628,7 @@ function simulate(FA,FB,rounds){
       const tE={Head:.8,Body:1.2,Cut:.9,Opp:1}[e.tgt],tS={Head:1.2,Body:.8,Cut:.9,Opp:1}[e.tgt];
       const sDef=Math.max(1,o.agl+(S[j].chn-10)*(o.f||1));
       const stun=(a.str+BAL.kpMul*S[i].kp)*off/(od*sDef)*tS;
-      return{base:raw/lk/e.dmgMul,end:raw*tE,stun,ratio:stun/(S[j].chn*(S[j].gx?GX.chin:1)),agg,lk};
+      return{base:raw/lk/e.dmgMul,end:raw*tE,stun,ratio:stun/(S[j].chn*(S[j].gx?GX.chin:1)*tiredChin(S[j])),agg,lk};
     });
     let D=calc();
     const stunsOf=ratio=>ratio>=2.5?99:ratio>=2.4?4:ratio>=2.25?3:ratio>=2?2:ratio>=1.5?1:0;
@@ -808,7 +811,7 @@ function condText(x,after){
 /* ================= SHARED DATA (Supabase: accounts, forums, messages) ================= */
 cleanSlate();
 const SB_URL='https://ojsphhzgzbxmnfcbitqb.supabase.co',SB_KEY='sb_publishable_SWO9WhiSkoVhflY5CmY08A_hlqCEJSi';
-const BUILD='1794744288';
+const BUILD='1794744521';
 /* A tab left open on an older build must not save over newer data: if the site has been updated, reload before anything else is saved. */
 let staleBuild=false;
 async function checkBuild(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
