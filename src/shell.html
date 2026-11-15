@@ -902,7 +902,8 @@ function labDraw(at,tl){const cv=$('#labCv');if(!cv)return;const g=cv.getContext
       g.font="bold 15px Verdana, sans-serif";g.fillStyle='#ffd23f';g.fillText(i?'BLUE CORNER':'RED CORNER',tx,74);g.fillStyle='#eee';g.font="14px Verdana, sans-serif";
       g.fillText(`Record ${r[0]}-${r[1]}-${r[2]}`,tx,100);if(F.hgt!=null)g.fillText(`Height ${Math.floor(HT(F)/12)}' ${HT(F)%12}"`+(F.fightW?`   Weight ${F.fightW} lb`:''),tx,122);if(gy[i])g.fillText(String(gy[i]).slice(0,34),tx,144);g.restore()});
     g.globalAlpha=1-out;labBigText(g,'VS',cx,258,86,'#ffd23f','#c47f00');g.font="italic 900 18px Impact, 'Arial Black', sans-serif";g.textAlign='center';g.fillStyle='#fff';g.fillText('TALE OF THE TAPE',cx,348);g.globalAlpha=1}
-  // HUD: arcade energy bars and round badge
+  // HUD: arcade energy bars and round badge (3D mode: a slim late-'90s console HUD across the top instead)
+  if(gfx==='3d')labHud32(g,{P,at,cur,res,tl,names:L.names,W,cx});else{
   const bar=(x,al,i)=>{const p=P[i],e=Math.max(0,Math.min(1,p.en));g.save();
     const fr=g.createLinearGradient(0,10,0,74);fr.addColorStop(0,'#5a5f6b');fr.addColorStop(.5,'#1d2028');fr.addColorStop(1,'#3a3e48');g.fillStyle=fr;g.beginPath();g.roundRect(x,10,350,66,8);g.fill();
     g.strokeStyle='#d4af37';g.lineWidth=2;g.stroke();
@@ -918,7 +919,7 @@ function labDraw(at,tl){const cv=$('#labCv');if(!cv)return;const g=cv.getContext
   g.beginPath();g.moveTo(cx-62,6);g.lineTo(cx+62,6);g.lineTo(cx+54,70);g.lineTo(cx,86);g.lineTo(cx-54,70);g.closePath();g.fill();
   g.fillStyle='#14161c';g.beginPath();g.moveTo(cx-54,12);g.lineTo(cx+54,12);g.lineTo(cx+47,66);g.lineTo(cx,80);g.lineTo(cx-47,66);g.closePath();g.fill();
   g.textAlign='center';g.fillStyle='#f5d76e';g.font="italic 900 15px Impact, 'Arial Black', sans-serif";g.fillText('ROUND '+rd,cx,32);
-  g.fillStyle='#ff3b30';g.font="bold 28px 'Courier New', monospace";g.fillText(`${Math.floor(sec/60)}:${String(sec%60).padStart(2,'0')}`,cx,62);g.restore();
+  g.fillStyle='#ff3b30';g.font="bold 28px 'Courier New', monospace";g.fillText(`${Math.floor(sec/60)}:${String(sec%60).padStart(2,'0')}`,cx,62);g.restore();}
   /* the running score now shows on the hanging scoreboard */
   // big calls
   const st=tl.beats.find(b=>b.k==='st'&&at-b.at>=0&&at-b.at<1.1),bell=tl.beats.find(b=>b.k==='bell'&&at-b.at>=0&&at-b.at<.9);

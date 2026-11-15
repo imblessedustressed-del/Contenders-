@@ -798,7 +798,7 @@ function condText(x,after){
 /* ================= SHARED DATA (Supabase: accounts, forums, messages) ================= */
 cleanSlate();
 const SB_URL='https://ojsphhzgzbxmnfcbitqb.supabase.co',SB_KEY='sb_publishable_SWO9WhiSkoVhflY5CmY08A_hlqCEJSi';
-const BUILD='1794705058';
+const BUILD='1794705475';
 /* A tab left open on an older build must not save over newer data: if the site has been updated, reload before anything else is saved. */
 let staleBuild=false;
 async function checkBuild(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
@@ -1315,7 +1315,8 @@ function labDraw(at,tl){const cv=$('#labCv');if(!cv)return;const g=cv.getContext
       g.font="bold 15px Verdana, sans-serif";g.fillStyle='#ffd23f';g.fillText(i?'BLUE CORNER':'RED CORNER',tx,74);g.fillStyle='#eee';g.font="14px Verdana, sans-serif";
       g.fillText(`Record ${r[0]}-${r[1]}-${r[2]}`,tx,100);if(F.hgt!=null)g.fillText(`Height ${Math.floor(HT(F)/12)}' ${HT(F)%12}"`+(F.fightW?`   Weight ${F.fightW} lb`:''),tx,122);if(gy[i])g.fillText(String(gy[i]).slice(0,34),tx,144);g.restore()});
     g.globalAlpha=1-out;labBigText(g,'VS',cx,258,86,'#ffd23f','#c47f00');g.font="italic 900 18px Impact, 'Arial Black', sans-serif";g.textAlign='center';g.fillStyle='#fff';g.fillText('TALE OF THE TAPE',cx,348);g.globalAlpha=1}
-  // HUD: arcade energy bars and round badge
+  // HUD: arcade energy bars and round badge (3D mode: a slim late-'90s console HUD across the top instead)
+  if(gfx==='3d')labHud32(g,{P,at,cur,res,tl,names:L.names,W,cx});else{
   const bar=(x,al,i)=>{const p=P[i],e=Math.max(0,Math.min(1,p.en));g.save();
     const fr=g.createLinearGradient(0,10,0,74);fr.addColorStop(0,'#5a5f6b');fr.addColorStop(.5,'#1d2028');fr.addColorStop(1,'#3a3e48');g.fillStyle=fr;g.beginPath();g.roundRect(x,10,350,66,8);g.fill();
     g.strokeStyle='#d4af37';g.lineWidth=2;g.stroke();
@@ -1331,7 +1332,7 @@ function labDraw(at,tl){const cv=$('#labCv');if(!cv)return;const g=cv.getContext
   g.beginPath();g.moveTo(cx-62,6);g.lineTo(cx+62,6);g.lineTo(cx+54,70);g.lineTo(cx,86);g.lineTo(cx-54,70);g.closePath();g.fill();
   g.fillStyle='#14161c';g.beginPath();g.moveTo(cx-54,12);g.lineTo(cx+54,12);g.lineTo(cx+47,66);g.lineTo(cx,80);g.lineTo(cx-47,66);g.closePath();g.fill();
   g.textAlign='center';g.fillStyle='#f5d76e';g.font="italic 900 15px Impact, 'Arial Black', sans-serif";g.fillText('ROUND '+rd,cx,32);
-  g.fillStyle='#ff3b30';g.font="bold 28px 'Courier New', monospace";g.fillText(`${Math.floor(sec/60)}:${String(sec%60).padStart(2,'0')}`,cx,62);g.restore();
+  g.fillStyle='#ff3b30';g.font="bold 28px 'Courier New', monospace";g.fillText(`${Math.floor(sec/60)}:${String(sec%60).padStart(2,'0')}`,cx,62);g.restore();}
   /* the running score now shows on the hanging scoreboard */
   // big calls
   const st=tl.beats.find(b=>b.k==='st'&&at-b.at>=0&&at-b.at<1.1),bell=tl.beats.find(b=>b.k==='bell'&&at-b.at>=0&&at-b.at<.9);
@@ -1363,7 +1364,7 @@ const l3cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0
 const l3norm=a=>{const l=Math.hypot(a[0],a[1],a[2])||1;return[a[0]/l,a[1]/l,a[2]/l]};
 const l3rgb=h=>{h=h.replace('#','');if(h.length===3)h=h.split('').map(c=>c+c).join('');return[parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)]};
 const L3LIGHT=l3norm([-.35,.9,-.45]),L3RIM=l3norm([.2,.25,1]),L3FOG=[10,9,20];
-function l3gfx(){try{return localStorage.getItem('contenders_simbot_gfx')||'16bit'}catch(e){return'16bit'}}
+function l3gfx(){try{return localStorage.getItem('contenders_simbot_gfx')||'3d'}catch(e){return'3d'}}
 const L3GFX_NAMES={'16bit':'Graphics: 16-Bit','3d':'Graphics: 3D',classic:'Graphics: Classic'};
 /* 16-bit mode (owner, Nov 14, 2026: a Super Nintendo era boxing look): the 2D arena drawn at 320x180 in three layers,
    colors cut to a small palette with a light ordered dither, fighters' edges hardened and outlined in near-black,
@@ -1381,7 +1382,7 @@ function lab16(g,sceneDraw){if(!L16)L16=[0,1,2,3].map(()=>{const c=document.crea
   l16post(bg);l16post(fig,true);l16post(fx,false);
   const o=out.getContext('2d');o.clearRect(0,0,L3W,L3H);o.drawImage(bg,0,0);o.drawImage(fig,0,0);o.drawImage(fx,0,0);
   g.setTransform(1,0,0,1,0,0);g.imageSmoothingEnabled=false;g.drawImage(out,0,0,L3W,L3H,0,0,960,540);g.imageSmoothingEnabled=true}
-function l3nextGfx(){const o=['16bit','3d','classic'];return o[(o.indexOf(l3gfx())+1)%3]}
+function l3nextGfx(){const o=['3d','16bit','classic'];return o[(o.indexOf(l3gfx())+1)%3]}
 function l3setGfx(v){try{localStorage.setItem('contenders_simbot_gfx',v)}catch(e){}}
 /* textures (drawn once) */
 const L3TEX={};
@@ -1443,16 +1444,18 @@ function l3body(F,o){const{p,x0,dirX,Lz,at,col}=o,ref=!!o.ref,z0=o.z0||0,fx=o.fx
   const sideZ=s=>Lz*s;
   // legs and shoes
   [[bk,bf,-1,col.legD],[fk,ff,1,col.leg]].forEach(([k,ft,s,lc])=>{const z=sideZ(s*11),H=W([hip[0]+s*6,hip[1]],z),K=W(k,z),Fp=W(ft,z);
-    l3prism(F,H,K,11,9,lc,6);l3prism(F,K,l3add(Fp,[0,12,0]),9,7,lc,6);l3prism(F,l3add(Fp,[0,18,0]),l3add(Fp,[0,9,0]),8,8,col.sock,6);
-    const toe=W([ft[0]+12,ft[1]-3],z),heel=W([ft[0]-8,ft[1]-3],z);l3prism(F,heel,toe,8,7,col.shoe,6)});
+    l3prism(F,H,K,13.5,10.5,lc,8);l3prism(F,K,l3add(Fp,[0,40,0]),10.5,9,lc,8);
+    // high boxing boots with a white top band
+    l3prism(F,l3add(Fp,[0,42,0]),l3add(Fp,[0,6,0]),9.5,9,col.boot||col.sock,8);l3prism(F,l3add(Fp,[0,44,0]),l3add(Fp,[0,38,0]),10,10,[240,240,240],8);
+    const toe=W([ft[0]+13,ft[1]-3],z),heel=W([ft[0]-8,ft[1]-3],z);l3prism(F,heel,toe,9,8,col.boot||col.shoe,8)});
   // trunks / pants and torso
   const hp=W(hip,0),wb=W([hip[0]+lean*.3,hip[1]-14],0),tr=W([hip[0]+2,hip[1]+26],0),ch=W([lean*.9,-176+bob+crouch],0),nk=W([head[0]-3,head[1]+18],0);
-  l3slab(F,tr,wb,23,17,22,16,col.trunk);l3slab(F,l3add(wb,[0,-1,0]),l3add(wb,[0,5,0]),23.5,17.5,23.5,17.5,col.band);
-  l3slab(F,wb,ch,20,14,25,13,col.torso);if(!ref){l3slab(F,l3add(ch,[0,-10,0]),l3add(ch,[0,2,0]),22,12.5,24,12,col.chest)}
+  l3slab(F,tr,wb,26,19,25,18,col.trunk);l3slab(F,l3add(wb,[0,-1,0]),l3add(wb,[0,6,0]),26.5,19.5,26.5,19.5,col.band);
+  l3slab(F,wb,ch,23,16,30,15,col.torso);if(!ref){l3slab(F,l3add(ch,[0,-12,0]),l3add(ch,[0,3,0]),27,15,29,14.5,col.chest)}
   else{l3box(F,l3add(l3add(ch,l3mul(fwd,12)),[0,-2,0]),[3,4,8],col.tie||[20,20,20])}
   l3prism(F,nk,W([head[0]-2,head[1]+8],0),7,7,col.skinD,5);
   // head: skin with hair on top, little dark eyes facing forward
-  const hc=W(head,0),hairTop=col.hair;l3ball(F,hc,14,17,13.5,n=>n[1]>.45?hairTop:col.skin,undefined,8,6);
+  const hc=W(head,0),hairTop=col.hair;l3ball(F,hc,15,18,14.5,n=>n[1]>.45?hairTop:col.skin,undefined,10,7);
   if(col.flat){const tp=W([head[0]-2,head[1]-20],0);l3slab(F,l3add(tp,[0,-4,0]),l3add(tp,[0,7,0]),12,12,12.5,12.5,hairTop)}
   // the face is a little warped texture, the way the old games did it
   {const hx=head[0]+14.8,hy=head[1],fv=p.fall>.6||(p.wob>.5&&Math.floor(at*3)%2)?'x':p.cel||p.snap>.45?'o':(p.wob>.2||((at*.8+p.seed)%3.7)<.09)?'c':'n';
@@ -1463,28 +1466,28 @@ function l3body(F,o){const{p,x0,dirX,Lz,at,col}=o,ref=!!o.ref,z0=o.z0||0,fx=o.fx
     F.push({v:fq,uv:[[0,0],[32,0],[32,32],[0,32]],tex:l3face(col.skinHex,col.skinDHex,fv),c:[255,255,255],pc:hc})}
   // arms and gloves (rear first so painter order is right)
   [[sh[1],armR,-1,pe('rear')],[sh[0],armL,1,pe('lead')]].forEach(([S,arm,s,e])=>{const zs=sideZ(s*19),zh=zs*(1-e*.85)+(e?0:sideZ(s*-4)),zm=(zs+zh)/2;
-    const A=W(S,zs),E=W(arm[0],zm),Hh=W(arm[1],zh);l3ball(F,A,11.5,11,11,()=>col.armU,undefined,6,4);l3prism(F,A,E,10,8,col.armU,6);if(!ref)l3ball(F,l3mul(l3add(A,E),.5),9,9,9,()=>col.armU,undefined,6,4);l3prism(F,E,Hh,8,6.5,col.arm,6);
-    if(ref){l3ball(F,Hh,6,6,6,()=>col.skin,undefined,5,4)}else{const gc=l3add(Hh,l3mul(fwd,3));l3ball(F,gc,14,13,12,()=>col.glove,undefined,7,5);l3ball(F,l3add(l3add(gc,[0,5,0]),[0,0,sideZ(s*-9)]),5,7,5,()=>col.glove,undefined,5,3);l3prism(F,l3add(Hh,l3mul(fwd,-6)),l3add(Hh,l3mul(fwd,-12)),8.5,8.5,col.cuff,6)}});
+    const A=W(S,zs),E=W(arm[0],zm),Hh=W(arm[1],zh);l3ball(F,A,14,13,13,()=>col.armU,undefined,8,5);l3prism(F,A,E,12,9.5,col.armU,8);if(!ref)l3ball(F,l3mul(l3add(A,E),.5),11,10.5,10.5,()=>col.armU,undefined,8,5);l3prism(F,E,Hh,9.5,8,col.arm,8);
+    if(ref){l3ball(F,Hh,6,6,6,()=>col.skin,undefined,5,4)}else{const gc=l3add(Hh,l3mul(fwd,3));l3ball(F,gc,17,16,15,()=>col.glove,undefined,9,6);l3ball(F,l3add(l3add(gc,[0,5,0]),[0,0,sideZ(s*-9)]),5,7,5,()=>col.glove,undefined,5,3);l3prism(F,l3add(Hh,l3mul(fwd,-7)),l3add(Hh,l3mul(fwd,-14)),10,10,col.cuff,8)}});
   return{head:hc,chest:ch,hip:hp}}
 function l3col(c,ref,extra){const sk=l3rgb(c.sk),skD=l3rgb(c.skD),base={skinHex:c.sk,skinDHex:c.skD,...(extra||{})};
   return ref?{skin:sk,skinD:skD,hair:[110,110,110],torso:[235,235,235],chest:[235,235,235],armU:[235,235,235],arm:sk,trunk:[25,25,25],band:[25,25,25],leg:[30,30,30],legD:[22,22,22],sock:[20,20,20],shoe:[15,15,15],glove:sk,cuff:sk,...base}
-  :{skin:sk,skinD:skD,hair:l3rgb(c.hr),torso:sk,chest:sk,armU:sk,arm:sk,trunk:l3rgb(c.tr),band:l3rgb(c.st),leg:sk,legD:skD,sock:[238,238,238],shoe:l3rgb(c.sh==='#f2f2f2'?'#e8e8e8':'#1b1b1b'),glove:l3rgb(c.gl),cuff:[245,245,245],...base}}
+  :{boot:l3rgb(c.tr),skin:sk,skinD:skD,hair:l3rgb(c.hr),torso:sk,chest:sk,armU:sk,arm:sk,trunk:l3rgb(c.tr),band:l3rgb(c.st),leg:sk,legD:skD,sock:[238,238,238],shoe:l3rgb(c.sh==='#f2f2f2'?'#e8e8e8':'#1b1b1b'),glove:l3rgb(c.gl),cuff:[245,245,245],...base}}
 /* the crowd: billboards on three banks of seats */
 const L3CROWD=(()=>{const r=LAB_RNG(31),out=[],shirts=['#7a2a2a','#2a3f7a','#2f5d3a','#6b5a2a','#555','#5a2f6b','#8a6d3b','#1f4f5f','#a33','#ddd','#c8b040'],skins=['#e8b98a','#c68e5d','#8d5524','#5c3a1e','#f1c9a5','#a8703f'];
-  for(let row=0;row<9;row++){const y=30+row*34,z=520+row*62;for(let x=-980;x<=980;x+=30+r()*10)out.push({p:[x,y,z],sh:l3rgb(shirts[Math.floor(r()*shirts.length)]),sk:l3rgb(skins[Math.floor(r()*skins.length)]),f:r(),sign:row>1&&r()<.03})
-    for(const s of[-1,1])for(let zz=-420;zz<=470;zz+=30+r()*10)out.push({p:[s*(560+row*62),y,zz],sh:l3rgb(shirts[Math.floor(r()*shirts.length)]),sk:l3rgb(skins[Math.floor(r()*skins.length)]),f:r(),sign:false})}
+  for(let row=0;row<10;row++){const y=30+row*34,z=500+row*58;for(let x=-1000;x<=1000;x+=24+r()*6)out.push({p:[x,y,z],sh:l3rgb(shirts[Math.floor(r()*shirts.length)]),sk:l3rgb(skins[Math.floor(r()*skins.length)]),f:r(),sign:row>1&&r()<.025})
+    for(const s of[-1,1])for(let zz=-440;zz<=480;zz+=24+r()*6)out.push({p:[s*(520+row*58),y,zz],sh:l3rgb(shirts[Math.floor(r()*shirts.length)]),sk:l3rgb(skins[Math.floor(r()*skins.length)]),f:r(),sign:false})}
   return out})();
 function lab3D(g,o){const{at,realAt,P,X,tl,f,res,stopBeat,kdNow,big,zoom,inReplay,intro,fin,cur}=o,L=labState(),W=960,H=540,cx=W/2,S=1.12;
   if(!L3C){L3C=document.createElement('canvas');L3C.width=L3W;L3C.height=L3H}const c=L3C.getContext('2d');c.imageSmoothingEnabled=false;
   const Xw=intro?[-200,200]:X.map(x=>(x-cx)/S),mid=(Xw[0]+Xw[1])/2;
   // camera: slow orbit, swoop in during the intro, low and close for the replay, shake on big shots
   const k=intro?Math.min(1,at/(LAB_INTRO-.2)):1,ease=1-(1-k)*(1-k);
-  const CAMS=[[0,700,235],[.55,640,205],[-.75,640,300],[.3,520,150],[-.35,760,380]],between0=!intro&&!fin&&cur&&at>=cur.end-.05,cam=between0?[0,900,420]:CAMS[((cur?cur.n:1)-1)%CAMS.length];
-  let yaw=cam[0]+Math.sin(realAt*.07)*.22+(1-ease)*1.1,dist=cam[1]+(1-ease)*420,hgt=cam[2]+(1-ease)*260,tx=mid*.6;
-  if(inReplay){const lo=res.w==null?0:1-res.w;tx=Xw[lo]*.7;dist=600;hgt=210;yaw=-.5+Math.sin(realAt*.4)*.12}
+  const CAMS=[[.62,390,178],[-.62,390,178],[.3,440,200],[.95,410,168],[-.28,460,215]],between0=!intro&&!fin&&cur&&at>=cur.end-.05,cam=between0?[.1,760,340]:CAMS[((cur?cur.n:1)-1)%CAMS.length];
+  let yaw=cam[0]+Math.sin(realAt*.07)*.12+(1-ease)*1.1,dist=cam[1]+(1-ease)*520,hgt=cam[2]+(1-ease)*300,tx=mid;
+  if(inReplay){const lo=res.w==null?0:1-res.w;tx=Xw[lo]*.6+mid*.4;dist=420;hgt=160;yaw=-.55+Math.sin(realAt*.4)*.12}
   if(fin&&!inReplay){yaw+=Math.min(1,(at-(tl.beats[tl.beats.length-1].at))*.15)*.25}
   dist/=zoom;
-  const T=[tx,150,0];let C=[tx+Math.sin(yaw)*dist,hgt,-Math.cos(yaw)*dist];
+  const T=[tx,intro?170:198,0];let C=[tx+Math.sin(yaw)*dist,hgt,-Math.cos(yaw)*dist];
   if(big&&!inReplay)C=l3add(C,[(Math.random()-.5)*14,(Math.random()-.5)*10,0]);
   const fw=l3norm(l3sub(T,C)),rt=l3norm(l3cross([0,1,0],fw)),up=l3cross(fw,rt),foc=L3H*1.32;
   const proj=v=>{const d=l3sub(v,C),z=l3dot(d,fw);if(z<20)return null;return[Math.round(L3W/2+l3dot(d,rt)*foc/z),Math.round(L3H/2-l3dot(d,up)*foc/z),z]};
@@ -1494,9 +1497,9 @@ function lab3D(g,o){const{at,realAt,P,X,tl,f,res,stopBeat,kdNow,big,zoom,inRepla
   const bowl=c.createLinearGradient(0,0,0,L3H);bowl.addColorStop(0,'#05050b');bowl.addColorStop(1,'#141020');c.fillStyle=bowl;c.fillRect(0,0,L3W,L3H);
   F.push({v:[[-1400,-60,-1400],[1400,-60,-1400],[1400,-60,1600],[-1400,-60,1600]],n:[0,1,0],c:[24,22,30],layer:0});
   // seating banks (stepped)
-  for(let row=0;row<9;row++){const y=row*34,z=500+row*62;F.push({v:[[-1000,y,z],[1000,y,z],[1000,y,z+62],[-1000,y,z+62]],n:[0,1,0],c:row%2?[34,30,44]:[40,36,52],layer:0});
+  for(let row=0;row<10;row++){const y=row*34,z=480+row*58;F.push({v:[[-1000,y,z],[1000,y,z],[1000,y,z+58],[-1000,y,z+58]],n:[0,1,0],c:row%2?[34,30,44]:[40,36,52],layer:0});
     F.push({v:[[-1000,y-34,z],[1000,y-34,z],[1000,y,z],[-1000,y,z]],n:[0,0,-1],c:[22,20,30],layer:0});
-    for(const s of[-1,1]){const xx=s*(540+row*62);F.push({v:[[xx,y,-440],[xx,y,500],[xx+s*62,y,500],[xx+s*62,y,-440]],n:[0,1,0],c:row%2?[34,30,44]:[40,36,52],layer:0})}}
+    for(const s of[-1,1]){const xx=s*(500+row*58);F.push({v:[[xx,y,-460],[xx,y,500],[xx+s*58,y,500],[xx+s*58,y,-460]],n:[0,1,0],c:row%2?[34,30,44]:[40,36,52],layer:0})}}
   // lighting rig with lamps
   l3box(F,[0,560,60],[900,10,10],[50,52,60],0);l3box(F,[0,560,-60],[900,10,10],[50,52,60],0);
   const lamps=[];[-360,-180,0,180,360].forEach(x=>[-60,60].forEach(z=>{l3box(F,[x,548,z],[22,16,22],[255,246,214],0,true);lamps.push([x,540,z])}));
@@ -1525,11 +1528,11 @@ function lab3D(g,o){const{at,realAt,P,X,tl,f,res,stopBeat,kdNow,big,zoom,inRepla
   const lift=v=>[v[0],v[1]+mat,v[2]];const hits=[];
   [0,1].forEach(i=>{const before=F.length,b=l3body(F,{cam:C,p:P[i],x0:Xw[i],dirX:i?-1:1,Lz:i?1:-1,at,col:l3col(LAB_SKIN[i],false,{flat:i===1})});for(let q=before;q<F.length;q++){F[q].v=F[q].v.map(lift);if(F[q].pc)F[q].pc=lift(F[q].pc);F[q].layer=2}
     hits[i]={head:lift(b.head),chest:lift(b.chest),hip:lift(b.hip)}});
-  {const kdF=kdNow?1-kdNow.a:null,stopX=stopBeat&&at>=stopBeat.at&&!res.decision?Xw[1-res.w]+(res.w?-70:70):null,rx=kdNow?Xw[kdF]+(kdF?60:-60):stopX!=null?stopX:mid+Math.sin(at*.37)*90;
+  {const kdF=kdNow?1-kdNow.a:null,stopX=stopBeat&&at>=stopBeat.at&&!res.decision?Xw[1-res.w]+(res.w?-70:70):null,rx=kdNow?Xw[kdF]+(kdF?60:-60):stopX!=null?stopX:mid-(C[0]-tx)/Math.max(1,dist)*150+Math.sin(at*.37)*40; // the referee works the far side, away from the camera
     const count=!!kdNow||(stopBeat&&at>=stopBeat.at&&res.type==='KO'),rp={seed:5,lean:0,hug:0,lunge:0,snap:0,tired:0,bodyHit:0,guardDrop:30,fall:0,wob:0,cel:0,
       rear:count?[24,-200+Math.abs(Math.sin(at*5.5))*-60]:[18,-130],lead:[22,-135],rearUp:!!count};
-    shadow(rx,150,36,22);const before=F.length;l3body(F,{cam:C,zoff:150,p:rp,x0:rx,dirX:rx<mid?1:-1,Lz:-1,at,col:l3col({sk:'#d9a066',skD:'#a8714a'},true),ref:true});
-    for(let q=before;q<F.length;q++){F[q].v=F[q].v.map(v=>[v[0],v[1]+mat,v[2]+150]);if(F[q].pc)F[q].pc=[F[q].pc[0],F[q].pc[1]+mat,F[q].pc[2]+150];F[q].layer=2}}
+    shadow(rx,200,36,22);const before=F.length;l3body(F,{cam:C,zoff:200,p:rp,x0:rx,dirX:rx<mid?1:-1,Lz:-1,at,col:l3col({sk:'#d9a066',skD:'#a8714a'},true),ref:true});
+    for(let q=before;q<F.length;q++){F[q].v=F[q].v.map(v=>[v[0],v[1]+mat,v[2]+200]);if(F[q].pc)F[q].pc=[F[q].pc[0],F[q].pc[1]+mat,F[q].pc[2]+200];F[q].layer=2}}
   // shade, cull, fog, sort and draw
   const out=[];
   for(const fc of F){const pv=fc.v.map(proj);if(pv.some(q=>!q))continue;
@@ -1546,6 +1549,7 @@ function lab3D(g,o){const{at,realAt,P,X,tl,f,res,stopBeat,kdNow,big,zoom,inRepla
     const cs=L3CROWD.map(q=>{const jump=fl?Math.abs(Math.sin(realAt*10+q.f*20))*7:Math.sin(realAt*2+q.f*9)*1.5;const pp=proj([q.p[0],q.p[1]+18+jump,q.p[2]]);return pp?{q,pp}:null}).filter(Boolean).sort((a,b)=>b.pp[2]-a.pp[2]);
     cs.forEach(({q,pp})=>{const sc=foc/pp[2],fog=Math.max(0,Math.min(.8,(pp[2]-900)/1500)),mix=(cc,s)=>`rgb(${cc.map((x,j)=>Math.round(x*s*(1-fog)+L3FOG[j]*fog)).join(',')})`;
       const bw=Math.max(1,Math.round(22*sc)),bh=Math.max(1,Math.round(22*sc)),hd=Math.max(1,Math.round(11*sc));
+      c.fillStyle=mix([40,70,170],.8);c.fillRect(pp[0]-bw*.7|0,pp[1]-bh*.9|0,Math.max(1,bw*1.4|0),Math.max(1,bh*1.5|0));
       c.fillStyle=mix(q.sh,.75);c.fillRect(pp[0]-bw/2|0,pp[1]-bh/2|0,bw,bh);c.fillStyle=mix(q.sk,.85);c.fillRect(pp[0]-hd/2|0,pp[1]-bh/2-hd|0,hd,hd);
       if(fl&&q.f>.45&&bw>1){c.fillStyle=mix(q.sk,.85);const ay=pp[1]-bh/2-hd*1.6|0;c.fillRect(pp[0]-bw/2-1|0,ay,1,Math.max(1,hd*1.4|0));c.fillRect(pp[0]+bw/2|0,ay,1,Math.max(1,hd*1.4|0))}
       if(q.sign){c.fillStyle=mix([250,250,240],1);c.fillRect(pp[0]-bw|0,pp[1]-bh/2-hd*2.6|0,bw*2,hd*1.4)}
@@ -1568,7 +1572,7 @@ function lab3D(g,o){const{at,realAt,P,X,tl,f,res,stopBeat,kdNow,big,zoom,inRepla
 
   // ordered-dither shimmer on the image, like the old consoles
   const id=c.getImageData(0,0,L3W,L3H),dd=id.data,BAY=[0,8,2,10,12,4,14,6,3,11,1,9,15,7,13,5];
-  for(let y=0;y<L3H;y++)for(let x=0;x<L3W;x++){const q=(y*L3W+x)*4,b=(BAY[(y&3)*4+(x&3)]-7.5)*1.6;for(let j=0;j<3;j++)dd[q+j]=Math.max(0,Math.min(255,dd[q+j]+b))&0xF8}
+  for(let y=0;y<L3H;y++)for(let x=0;x<L3W;x++){const q=(y*L3W+x)*4,b=(BAY[(y&3)*4+(x&3)]-7.5)*.9;for(let j=0;j<3;j++)dd[q+j]=Math.max(0,Math.min(255,dd[q+j]+b))&0xF8}
   c.putImageData(id,0,0);
   g.imageSmoothingEnabled=false;g.drawImage(L3C,0,0,L3W,L3H,0,0,W,H);g.imageSmoothingEnabled=true;
   // lamp glare (full resolution, additive)
@@ -1591,6 +1595,34 @@ function lab3D(g,o){const{at,realAt,P,X,tl,f,res,stopBeat,kdNow,big,zoom,inRepla
   if(stopBeat&&res.type==='KO'&&at>=stopBeat.at&&at-stopBeat.at<1.4){const d=at-stopBeat.at,i=1-res.w,pt=P2(hits[i].head);if(pt){const dir=i?1:-1;
     g.save();g.translate(pt[0]+dir*(20+d*160),pt[1]-d*190+d*d*330);g.rotate(d*14);g.fillStyle='#f4f4f4';g.fillRect(-9,-4,18,8);g.fillStyle=i?'#1d4ed8':'#c8102e';g.fillRect(-9,-1,18,2);g.restore()}}
 }
+
+/* 3D-mode HUD (original design in the style of late-'90s console boxing): long health bars across the top in each corner's color,
+   a thin yellow punch-stamina bar under each (full at the bell, drains as he throws, refills between rounds), and a framed
+   digital clock in the middle with the round count. */
+function labHud32(g,o){const{P,at,cur,res,tl,names,W,cx}=o,rounds=(labState().bout&&labState().bout.rounds)||12;
+  const thrown=i=>tl.beats.filter(b=>b.round===cur.n&&b.a===i&&b.at<=at&&['p','r','j','m','c','st','kd'].includes(b.k)).length;
+  const bar=(i)=>{const p=P[i],e=Math.max(0,Math.min(1,p.en)),left=i===0,x0=left?24:cx+58,w0=W/2-82,col=left?['#ff5a5a','#b0101e']:['#5aa0ff','#1d3fb0'];
+    g.save();g.fillStyle='rgba(0,0,0,.55)';g.fillRect(x0-4,14,w0+8,34);
+    // frame
+    const fr=g.createLinearGradient(0,16,0,40);fr.addColorStop(0,'#f2f2f2');fr.addColorStop(1,'#8a8f99');g.fillStyle=fr;g.fillRect(x0-2,16,w0+4,20);
+    g.fillStyle='#111';g.fillRect(x0,18,w0,16);
+    const w=w0*e,bx=left?x0+w0-w:x0,gr=g.createLinearGradient(0,18,0,34);gr.addColorStop(0,col[0]);gr.addColorStop(.5,col[1]);gr.addColorStop(1,col[0]);g.fillStyle=gr;g.fillRect(bx,18,w,16);
+    g.fillStyle='rgba(255,255,255,.35)';g.fillRect(bx,18,w,4);if(p.hitAt>0&&at-p.hitAt<.2){g.fillStyle='rgba(255,255,255,.7)';g.fillRect(x0,18,w0,16)}
+    // stamina
+    const between=at>=cur.end-.05,sta=between?1:Math.max(.08,1-thrown(i)*.035),sw=w0*.92*sta,sx=left?x0+w0*.08+w0*.92-sw:x0;
+    g.fillStyle='#222';g.fillRect(left?x0+w0*.08:x0,38,w0*.92,7);g.fillStyle='#ffd400';g.fillRect(sx,38,sw,7);g.fillStyle='rgba(255,255,255,.4)';g.fillRect(sx,38,sw,2);
+    // name
+    g.font="italic 900 15px Impact, 'Arial Black', sans-serif";g.textAlign=left?'left':'right';g.fillStyle='#000';const nm=(names[i]||'').toUpperCase().slice(0,22);
+    g.fillText(nm,(left?x0:x0+w0)+1,63);g.fillStyle=left?'#ffb3b3':'#b9d3ff';g.fillText(nm,left?x0:x0+w0,62);g.restore()};
+  bar(0);bar(1);
+  // center clock
+  const clockT=Math.max(0,Math.min(1,(at-cur.start)/(cur.end-cur.start)))*(cur.last&&!res.decision?cur.clockEnd:180),sec=Math.max(0,180-Math.floor(clockT));
+  g.save();const mt=g.createLinearGradient(0,6,0,86);mt.addColorStop(0,'#e9edf2');mt.addColorStop(.5,'#7b828e');mt.addColorStop(1,'#dfe3e8');g.fillStyle=mt;
+  g.beginPath();g.moveTo(cx-56,6);g.lineTo(cx+56,6);g.lineTo(cx+50,74);g.lineTo(cx+20,86);g.lineTo(cx-20,86);g.lineTo(cx-50,74);g.closePath();g.fill();
+  g.fillStyle='#0b0d10';g.fillRect(cx-46,13,92,58);g.fillStyle='#1a2a12';g.fillRect(cx-42,16,84,52);
+  g.font="bold 15px 'Courier New', monospace";g.textAlign='center';g.fillStyle='#b8ff4a';g.fillText(`R ${String(cur.n).padStart(2,'0')}/${String(rounds).padStart(2,'0')}`,cx,33);
+  g.font="bold 28px 'Courier New', monospace";g.fillStyle='#d6ff7a';g.fillText(`${Math.floor(sec/60)}:${String(sec%60).padStart(2,'0')}`,cx,62);
+  g.fillStyle='rgba(184,255,74,.12)';g.fillRect(cx-42,16,84,26);g.fillStyle='#c8102e';g.font="italic 900 9px Verdana, sans-serif";g.fillText('CONTENDERS',cx,82);g.restore()}
 
 /* --- Lab Chat --- */
 const labNick=()=>{try{return localStorage.getItem('contenders_simbot_nick')||''}catch(e){return''}};
