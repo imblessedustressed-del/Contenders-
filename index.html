@@ -520,7 +520,7 @@ const CUTRES={1:1.5,2:1,3:.5};
 const K_RATING=12;
 /* Simulator update 2 (owner-approved Nov 12, 2026): balanced so every style has a chance (engine tests: each type wins about 36-45%
    against the others, the rest draws); heavyweights capped at 6'9" and 280 lb ("Tyson Fury rule"); WeBL's heavyweight edges replaced. */
-const GX={mul:1.02,chin:1.1,rec:.03,hurt:.04};
+const GX={pow:1.02,agl:1.02,jab:1.08,fat:.9,chin:1.1,ip:.85,rec:.02,hurt:.03};
 const BAL={counterDiv:6,counterStr:0,counterAgg:.8,counterFloor:.5,alloutGive:2,alloutTake:2.75,kpMul:3.75,wtPct:10,giantPer10:.5,smallMan:false,ringBase:1.75,ringFat:.4,clinchBase:1.75,clinchAggLoss:.12,insideBase:1};
 
 function newSev(){const r=rand();return r<2/3?1:r<8/9?2:r<26/27?3:4}
@@ -535,8 +535,8 @@ function injText(i){
 function prep(F,c){
   let str=F.str,kp=F.kp;const cap=Math.floor(str/3);if(kp>cap){str+=kp-cap;kp=cap}
   let parsed;try{parsed=parsePlan(typeof F.plan==='string'?F.plan:'6/6/8')}catch(e){parsed={stmts:[],errors:[]}}
-  const pm=(F.primeMul||1)*(F.gx?GX.mul:1);
-  return{F,c,n:escS(lastName(F.name)),str:str*pm,kp,spd:F.spd*pm,agl:F.agl*pm,chn:F.chn,cnd:F.cnd,hgt:F.hgt,cutres:F.cut,E0:10*F.cnd,E:10*F.cnd*(F.endMul||1),inj:[],fw:F.fightW||0,gx:F.gx?1:0,
+  const pm=F.primeMul||1,gp=F.gx?GX.pow:1,ga=F.gx?GX.agl:1;
+  return{F,c,n:escS(lastName(F.name)),str:str*pm*gp,kp,spd:F.spd*pm,agl:F.agl*pm*ga,chn:F.chn,cnd:F.cnd,hgt:F.hgt,cutres:F.cut,E0:10*F.cnd,E:10*F.cnd*(F.endMul||1),inj:[],fw:F.fightW||0,gx:F.gx?1:0,
     parsed,perc:0,won:0,lost:0,stuns:0,kds:0,warn:0,endFrac:1,ipDmg:0,
     fights:(F.rec||[0,0,0]).slice(0,3).reduce((a,b)=>a+b,0),
     giant:BAL.giantPer10&&(F.divLim||0)>=200&&(F.minW||0)>200?((F.minW-200)/10)*BAL.giantPer10:0};
@@ -638,7 +638,7 @@ function simulate(FA,FB,rounds){
       const k=S[0].F.k||K_RATING,denom=x=>x*x/(x*x+k*Math.sqrt(k*o.agl));
       let mult=15/(Math.max(1,eff[i].def)+Math.max(1,eff[j].def));
       const adj=pc=>{let p=pc*mult;const lk=D[i].lk;p=lk<1?p*lk:p+(1-p)*(lk-1);p*=({Head:.8,Body:.8,Cut:.9,Opp:1}[e.tgt]);return clamp(p,.02,.95)};
-      const pP=adj(denom(a.spd)),pJ=adj(denom(a.spd*1.5));
+      const pP=adj(denom(a.spd)),pJ=adj(denom(a.spd*1.5*(S[i].gx?GX.jab:1)));
       const pt=Math.min(thrown,Math.max(0,Math.round(3*e.pow+gauss())));const rt=Math.min(thrown-pt,Math.max(0,Math.round(3*e.pow+gauss())));const jt=thrown-pt-rt;
       const land=(n,p)=>clamp(Math.round(n*p+gauss()*Math.sqrt(n*p*(1-p))),0,n);
       return{pt,pl:land(pt,pP),rt,rl:land(rt,pP),jt,jl:land(jt,pJ)};
@@ -647,7 +647,7 @@ function simulate(FA,FB,rounds){
     const e0=S.map(x=>x.E); // bookkeeping only (no random numbers): the manager's end-of-round damage line
     const injNews=[[],[]];
     for(let i=0;i<2;i++){const j=1-i,X=S[i],Y=S[j],e=eff[i];
-      Y.E-=D[i].end;Y.ipDmg+=D[i].base;
+      Y.E-=D[i].end;Y.ipDmg+=D[i].base*(Y.gx?GX.ip:1);
       let p=Math.pow(D[i].base,2)/10/100*(1+.005*Y.fights);
       p*=e.tgt==='Head'||e.tgt==='Cut'?1.5:e.tgt==='Body'?.25:1;p*=CUTRES[Y.cutres]||1;p=Math.min(.5,p);
       for(const ex of Y.inj.slice()){
@@ -668,7 +668,7 @@ function simulate(FA,FB,rounds){
     }
     const eD=S.map((x,i)=>e0[i]-x.E),fatV=[0,0];
     for(let i=0;i<2;i++){const X=S[i],e=eff[i];
-      const fat=e.agg+.5*e.pow+e.fat+A[i].pen.fat+X.giant;fatV[i]=Math.max(0,fat-X.cnd/2);X.E-=fatV[i]}
+      const fat=e.agg+.5*e.pow+e.fat+A[i].pen.fat+X.giant;fatV[i]=Math.max(0,fat-X.cnd/2)*(X.gx?GX.fat:1);X.E-=fatV[i]}
     /* private to each manager, like the tactics line: endurance lost to damage and to fatigue, stun damage taken, damage so far */
     S.forEach((x,i)=>{x.dmgTot=(x.dmgTot||0)+eD[i]});
     R.dmg=S.map((x,i)=>({d:+eD[i].toFixed(1),f:+fatV[i].toFixed(1),s:+D[1-i].stun.toFixed(1),a:Math.round(x.dmgTot)}));
@@ -799,7 +799,7 @@ function condText(x,after){
 /* ================= SHARED DATA (Supabase: accounts, forums, messages) ================= */
 cleanSlate();
 const SB_URL='https://ojsphhzgzbxmnfcbitqb.supabase.co',SB_KEY='sb_publishable_SWO9WhiSkoVhflY5CmY08A_hlqCEJSi';
-const BUILD='1794707949';
+const BUILD='1794708040';
 /* A tab left open on an older build must not save over newer data: if the site has been updated, reload before anything else is saved. */
 let staleBuild=false;
 async function checkBuild(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
