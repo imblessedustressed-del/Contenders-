@@ -243,6 +243,35 @@ pre.plan{background:#fbfaf7;border:1px solid var(--line)}
 @media(max-width:760px){.labGrid{grid-template-columns:1fr}.labVs{font-size:22px}.labTick .lt:first-child{font-size:14px}}
 .sbHere{display:inline-block;min-width:18px;padding:0 6px;margin-left:6px;border-radius:9px;background:#1b7f2a;color:#fff;font:bold 12px/18px Verdana,sans-serif;text-align:center;vertical-align:middle;animation:sbHerePulse 2s infinite}
 @keyframes sbHerePulse{0%,100%{box-shadow:0 0 0 0 rgba(27,127,42,.6)}50%{box-shadow:0 0 0 5px rgba(27,127,42,0)}}
+.dc{background:#313338;color:#dbdee1;border-radius:10px;display:grid;grid-template-columns:220px minmax(0,1fr) 240px;overflow:hidden;font-family:"gg sans","Noto Sans","Helvetica Neue",Helvetica,Arial,sans-serif;font-size:15px;box-shadow:0 6px 24px rgba(0,0,0,.3)}
+.dc a{color:#00a8fc}
+.dcNav{background:#2b2d31;display:flex;flex-direction:column;min-width:0}.dcSrv{padding:13px 14px;font-weight:800;color:#f2f3f5;border-bottom:1px solid #1f2023;box-shadow:0 1px 0 rgba(0,0,0,.2);letter-spacing:.02em}.dcSrvSub{font-weight:500;color:#949ba4;font-size:12px;margin-left:4px}
+.dcCat{font-size:12px;font-weight:700;color:#949ba4;margin:16px 8px 4px 16px;letter-spacing:.02em}
+.dc a.dcCh{display:flex;align-items:center;gap:6px;color:#949ba4;padding:6px 8px;margin:1px 8px;border-radius:4px;font-weight:500;cursor:pointer;text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dc a.dcCh:hover{background:#35373c;color:#dbdee1}.dc a.dcCh.on{background:#404249;color:#f2f3f5}
+.dcLiveDot{width:8px;height:8px;border-radius:50%;background:#f23f43;flex:none;animation:sbHerePulse 1.6s infinite}.dcNone{font-size:12px;color:#6d6f78;margin:4px 16px}
+.dcMe{margin-top:auto;background:#232428;display:flex;align-items:center;gap:10px;padding:8px 10px;position:relative}.dcDotMe{left:34px;top:30px;border-color:#232428}
+.dcDay{display:flex;align-items:center;margin:18px 16px 4px;color:#949ba4;font-size:12px;font-weight:600}.dcDay:before,.dcDay:after{content:'';flex:1;height:1px;background:#3f4147}.dcDay span{padding:0 8px}.dcMain{display:flex;flex-direction:column;min-width:0}
+.dcHead{display:flex;align-items:center;gap:6px;padding:11px 14px;border-bottom:1px solid #26272b;font-weight:700;color:#f2f3f5;box-shadow:0 1px 0 rgba(0,0,0,.2)}.dcHash{color:#80848e;font-size:20px;font-weight:400}
+.dcHeadSub{color:#949ba4;font-weight:400;font-size:13px;margin-left:8px;border-left:1px solid #3f4147;padding-left:10px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.dc .dcOnBtn{margin-left:auto;display:none;background:#2b2d31!important;color:#dbdee1!important;border:0!important;box-shadow:none!important;border-radius:6px;padding:4px 10px;font-weight:700}
+.dcMsgs{height:420px;overflow-y:auto;padding:10px 0}
+.dcM{display:flex;gap:14px;padding:3px 16px;margin-top:12px}.dcM:hover{background:#2e3035}.dcCont{margin-top:0;padding-top:1px;padding-bottom:1px}
+.dcAv{width:40px;height:40px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:15px;position:relative}.dcAvS{width:32px;height:32px;font-size:12px}
+.dcGut{width:40px;flex:none;font-size:10px;color:transparent;text-align:right;padding-top:3px}.dcCont:hover .dcGut{color:#949ba4}
+.dcBody{min-width:0}.dcN{font-weight:600;cursor:pointer;text-decoration:none}.dcN:hover{text-decoration:underline}.dcT{font-size:12px;color:#949ba4;margin-left:8px}
+.dcB{color:#dbdee1;line-height:1.375;word-wrap:break-word;overflow-wrap:anywhere;white-space:pre-wrap}.dcDel{font-size:11px;color:#949ba4!important;margin-left:6px;cursor:pointer}.dcHid{font-size:12px;color:#f23f43}
+.dcTag{display:inline-block;background:#5865f2;color:#fff;font-size:10px;font-weight:700;border-radius:3px;padding:0 4px;line-height:15px;vertical-align:1px;margin-left:4px}
+.dcSys{color:#949ba4;font-size:14px;margin:8px 0 0;padding:0 16px 0 70px}.dcSys b{color:#f2f3f5}.dcIn{color:#23a55a;font-weight:700}.dcOut{color:#f23f43;font-weight:700}
+.dcGuest{padding:4px 16px;font-size:13px;color:#949ba4}.dcGuest input{background:#1e1f22;border:0;color:#dbdee1;border-radius:4px;padding:4px 8px;width:170px}
+.dcSay{display:flex;gap:8px;margin:6px 16px 16px;background:#383a40;border-radius:8px;padding:4px 6px 4px 14px}.dcSay input{flex:1;background:transparent;border:0;color:#dbdee1;font-size:15px;outline:none}.dcSay input::placeholder{color:#6d6f78}
+.dcSay button{background:#5865f2;color:#fff;border:0;border-radius:6px;padding:6px 14px;font-weight:600}
+.dcSide{background:#2b2d31;padding:14px 8px;overflow-y:auto;max-height:560px}.dcGrp{font-size:12px;font-weight:700;color:#949ba4;letter-spacing:.02em;margin:10px 8px 4px}
+.dcU{display:flex;align-items:center;gap:12px;padding:5px 8px;border-radius:4px;position:relative}.dcU:hover{background:#35373c}
+.dcDot{position:absolute;left:32px;top:29px;width:10px;height:10px;border-radius:50%;background:#23a55a;border:3px solid #2b2d31}.dcU:hover .dcDot{border-color:#35373c}
+.dcUT{min-width:0}.dcUN{color:#f2f3f5;font-weight:500;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dcSub{font-size:12px;color:#949ba4}.dcYou{color:#949ba4;font-size:12px}
+.dcEmpty{font-size:12px;color:#949ba4;padding:8px}
+@media(max-width:1000px){.dc{grid-template-columns:minmax(0,1fr) 220px}.dcNav{display:none}}
+@media(max-width:760px){.dc{grid-template-columns:1fr}.dc .dcOnBtn{display:inline-block}.dcSide{display:none;max-height:260px;border-top:1px solid #26272b}.dcSide.open{display:block}.dcMsgs{height:360px}.dcHeadSub{display:none}}
 .sbLobby{border:2px solid #c62828;border-radius:10px;padding:10px 14px;margin:18px 0;background:#fff8f0}.sbLobby h3{margin:12px 0 4px;font-size:15px}
 .sbcWrap{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:14px;align-items:start}.sbcSide{position:sticky;top:8px}.sbcChat{max-height:520px;min-height:260px}
 .sbcVs{display:grid;grid-template-columns:1fr 46px 1fr;gap:10px;align-items:center;margin-bottom:6px}.sbcC{border:2px solid var(--line);border-radius:10px;padding:8px 12px;background:#fff;text-align:center}
@@ -629,9 +658,15 @@ function labHTML(){const L=labState();
   <div id="labRep"></div></div>
   <div id="labSim"></div>
   ${sbLobbyHTML()}
-  <h2>Simbot Chat</h2><div id="labChat" class="labChat"><p class="mute">Loading...</p></div>
-  ${ME?'':`<p class="small labGuest">Chatting as a guest: <input id="labNick" maxlength="20" placeholder="Pick a Simbot nickname" value="${esc(labNick())}" autocomplete="off"> <span class="mute">or <a data-go="register">sign up</a> to chat as your gym.</span></p>`}
-  <div class="labSay"><input id="labMsg" maxlength="280" placeholder="Talk some trash..." autocomplete="off"><button data-lab="send">Send</button></div>
+  <h2>Simbot Chat</h2>
+  <div class="dc"><div class="dcNav"><div class="dcSrv">CONTENDERS <span class="dcSrvSub">Simbot</span></div>
+    <div class="dcCat">TEXT CHANNELS</div><a class="dcCh on"><span class="dcHash">#</span> simbot-chat</a><a class="dcCh" data-dc="lobby"><span class="dcHash">#</span> challenges</a>
+    <div class="dcCat">LIVE FIGHTS</div><div id="dcLive"><p class="dcNone">No fights on right now</p></div>
+    <div class="dcMe" id="dcMe"></div></div><div class="dcMain"><div class="dcHead"><span class="dcHash">#</span> simbot-chat <span class="dcHeadSub">talk trash, share fights, find a challenge</span><button class="dcOnBtn" data-dc="side">👥 <span id="dcOnN">0</span></button></div>
+    <div id="labChat" class="dcMsgs"><p class="dcSys">Loading...</p></div>
+    ${ME?'':`<div class="dcGuest">Chatting as a guest: <input id="labNick" maxlength="20" placeholder="Pick a nickname" value="${esc(labNick())}" autocomplete="off"> <span>or <a data-go="register">sign up</a> to chat as your gym</span></div>`}
+    <div class="dcSay"><input id="labMsg" maxlength="280" placeholder="Message #simbot-chat" autocomplete="off"><button data-lab="send">Send</button></div></div>
+  <div class="dcSide" id="dcSide"><div class="dcGrp">ONLINE — 0</div></div></div>
   </div>`}
 const labDivFor=F=>{const d=DIVS.find(x=>x[1]>=minWeight(F));return d?d[0]+'weight':'Heavyweight'};
 function labRefresh(c){const el=$('#labCard'+c),old=el&&el.querySelector('.labWt')?.textContent;if(el)el.outerHTML=labCornerHTML(c);const b=$('#labBar');if(b)b.innerHTML=labBarHTML();
@@ -639,7 +674,10 @@ function labRefresh(c){const el=$('#labCard'+c),old=el&&el.querySelector('.labWt
 function labMount(){const root=$('#lab');if(!root)return;
   root.addEventListener('click',labClick);root.addEventListener('change',labChange);root.addEventListener('input',labInput);
   const m=$('#labMsg');if(m)m.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();labSend()}});
-  const lb=$('#sbLobby');if(lb)lb.addEventListener('click',sbLobbyClick);sbLoadBoard(true);sbHereTick();
+  const lb=$('#sbLobby');if(lb)lb.addEventListener('click',sbLobbyClick);sbLoadBoard(true);dcPrev=null;dcSys=[];sbHereTick();
+  const ln=$('#labNick');if(ln)ln.addEventListener('change',()=>{const v=ln.value.trim().replace(/\s+/g,' ');if(/^[A-Za-z0-9 _.'-]{3,20}$/.test(v)){try{localStorage.setItem('contenders_simbot_nick',v)}catch(e){}sbHereTick();dcNavPaint()}});
+  const ob=$('[data-dc=side]');if(ob)ob.addEventListener('click',()=>$('#dcSide').classList.toggle('open'));
+  const lc=$('[data-dc=lobby]');if(lc)lc.addEventListener('click',()=>{const l=$('#sbLobby');if(l)l.scrollIntoView({behavior:'smooth',block:'start'})});dcNavPaint();
   labLoadChat();if(!labPoll)labPoll=setInterval(()=>{if(view==='lab'||view==='simbot'){labLoadChat();sbLoadBoard(true)}else{clearInterval(labPoll);labPoll=null}},15000);
   const L=labState();if(L.fight&&!labAnim)labDraw(1e9);
 }
@@ -1004,7 +1042,10 @@ function labDraw(at,tl){const cv=$('#labCv');if(!cv)return;const g=cv.getContext
 const labNick=()=>{try{return localStorage.getItem('contenders_simbot_nick')||''}catch(e){return''}};
 async function labLoadChat(){if(!SB||labChatBusy)return;labChatBusy=true;
   try{const{data,error}=await SB.from('lab_chat').select('id,author,nick,body,created_at,hidden').is('room',null).order('created_at',{ascending:false}).limit(40);if(!error)labChat=data.reverse()}finally{labChatBusy=false}
-  const el=$('#labChat');if(!el)return;const atBottom=el.scrollHeight-el.scrollTop-el.clientHeight<40;
+  labChatPaint()}
+function labChatPaint(){const el=$('#labChat');if(!el)return;const atBottom=el.scrollHeight-el.scrollTop-el.clientHeight<40;
+  if(el.classList.contains('dcMsgs')){el.innerHTML=!labChat?needDB():dcRender(labChat,dcSys);if(atBottom||!el.dataset.seen){el.scrollTop=el.scrollHeight;el.dataset.seen=1}
+    el.querySelectorAll('[data-labdel]').forEach(a=>a.onclick=async()=>{await SB.from('lab_chat').delete().eq('id',+a.dataset.labdel);labLoadChat()});return}
   el.innerHTML=!labChat?needDB():labChat.length?labChat.map(m=>{const gm=managers[m.author];const when=new Date(m.created_at);
     return`<p class="lc"><b>${m.author&&gm?`<a data-go="gympub:${m.author}">${esc(gm.gym)}</a>`:m.nick?`${esc(m.nick)} <span class="small mute">(guest)</span>`:'A retired gym'}</b> <span class="small mute">${when.toLocaleDateString('en-US',{month:'short',day:'numeric'})} ${when.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}</span>${m.author===ME?` <a class="small" data-labdel="${m.id}">delete</a>`:''}${m.hidden?' <span class="small cr">(hidden pending review, only you see it)</span>':''}<br>${esc(m.body)}</p>`}).join(''):'<p class="mute">No messages yet. Say something!</p>';
   if(atBottom||!el.dataset.seen){el.scrollTop=el.scrollHeight;el.dataset.seen=1}
@@ -1040,9 +1081,43 @@ const sbcLink=(id,s,t)=>location.origin+location.pathname+'#sbch:'+id+(s?':'+s+'
 /* who's in Simbot (owner, Nov 15, 2026: "a number by it if there's someone in the simbot chat room"): every visitor checks the count every 30 s;
    anyone on the Simbot page or a challenge page also checks in, so others see him. The number never counts you. */
 function sbHereShow(n){[['#sbHere','in Simbot right now'],['#sbHereM','in Simbot']].forEach(([id,t])=>{const el=$(id);if(!el)return;el.hidden=!(n>0);el.textContent=n>0?String(n):'';el.title=n+(n===1?' person ':' people ')+t})}
-async function sbHereTick(){if(!SB||document.visibilityState!=='visible')return;const inSb=/^(simbot|lab|sbch)(:|$)/.test(view);
-  try{const{data}=await SB.rpc(inSb?'sb_here_ping':'sb_here_count',{p_viewer:sbcViewer()});if(typeof data==='number')sbHereShow(data)}catch(e){}}
-setTimeout(sbHereTick,1500);setInterval(sbHereTick,30000);
+let sbHereN=0;
+async function sbHereTick(){if(!SB||document.visibilityState!=='visible')return;const m=/^(simbot|lab|sbch)(:|$)/.exec(view);
+  try{if(!m){const{data}=await SB.rpc('sb_here_count',{p_viewer:sbcViewer()});if(typeof data==='number')sbHereShow(data);return}
+    const nk=ME?null:labNick()||null,place=m[1]==='sbch'?view.split(':')[1]:'simbot';
+    const{data,error}=await SB.rpc('sb_here_ping2',{p_viewer:sbcViewer(),p_nick:nk,p_place:place});if(error||!Array.isArray(data))return;
+    const rows=dcUnique(data);sbHereShow(rows.filter(r=>!r.me).length);if(m[1]!=='sbch')dcOnline(rows)}catch(e){}}
+setTimeout(sbHereTick,1500);setInterval(()=>{sbHereN++;if(/^(simbot|lab|sbch)(:|$)/.test(view)||sbHereN%2===0)sbHereTick()},15000); /* 15 s inside Simbot, 30 s elsewhere */
+/* ---- Discord-style Simbot chat and online list (owner, Nov 15, 2026: "who's online, who joined who left, make it look like discord") ---- */
+let dcSys=[],dcPrev=null;
+const DC_COL=['#5865f2','#eb459e','#ed4245','#f0b232','#57f287','#3ba55c','#e67e22','#1abc9c','#9b59b6','#e91e63','#2e86de','#d35400'];
+const dcCol=n=>{let h=0;for(const c of String(n))h=(h*31+c.charCodeAt(0))>>>0;return DC_COL[h%DC_COL.length]};
+const dcIni=n=>String(n||'?').replace(/\(guest\)/,'').trim().split(/\s+/).slice(0,2).map(w=>w[0]||'').join('').toUpperCase()||'?';
+const dcAv=(n,big)=>`<div class="dcAv${big?'':' dcAvS'}" style="background:${dcCol(n)}">${esc(dcIni(n))}</div>`;
+function dcUnique(rows){const seen=new Map();rows.forEach(r=>{const k=r.uid||('g:'+r.name);const o=seen.get(k);if(!o||r.me)seen.set(k,{...r,k})});return[...seen.values()]}
+function dcWho(m){const gm=managers[m.author];return m.author&&gm?{n:gm.gym,go:'gympub:'+m.author,guest:false}:m.nick?{n:m.nick,guest:true}:{n:'A retired gym',guest:false}}
+function dcTime(d){const t=new Date(d),now=new Date();return(t.toDateString()===now.toDateString()?'Today at ':t.toLocaleDateString('en-US',{month:'2-digit',day:'2-digit',year:'numeric'})+' ')+t.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}
+function dcRender(msgs,sys){const items=[...msgs.map(m=>({t:Date.parse(m.created_at),m})),...(sys||[]).map(x=>({t:x.t,x}))].sort((a,b)=>a.t-b.t);let last=null;
+  if(!items.length)return'<p class="dcSys">No messages yet. Say something!</p>';
+  let day='';
+  return items.map(it=>{const dv=new Date(it.t).toDateString(),divi=dv!==day?(day=dv,last=null,`<div class="dcDay"><span>${esc(new Date(it.t).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}))}</span></div>`):'';return divi+(()=>{if(it.x){last=null;return`<p class="dcSys"><span class="${it.x.k==='in'?'dcIn':'dcOut'}">${it.x.k==='in'?'→':'←'}</span> <b>${esc(it.x.n)}</b> ${it.x.k==='in'?'joined Simbot.':'left.'} <span class="dcT">${esc(dcTime(it.t))}</span></p>`}
+    const m=it.m,w=dcWho(m),same=last&&last.n===w.n&&it.t-last.t<5*60e3;last={n:w.n,t:it.t};
+    const nm=w.go?`<a class="dcN" data-go="${w.go}" style="color:${dcCol(w.n)}">${esc(w.n)}</a>`:`<span class="dcN" style="color:${dcCol(w.n)}">${esc(w.n)}</span>`;
+    const tools=`${m.author===ME&&ME?` <a class="dcDel" data-labdel="${m.id}">delete</a>`:''}${m.hidden?' <span class="dcHid">(hidden pending review, only you see it)</span>':''}`;
+    return same?`<div class="dcM dcCont"><div class="dcGut">${esc(new Date(it.t).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}))}</div><div class="dcBody"><div class="dcB">${esc(m.body)}${tools}</div></div></div>`
+      :`<div class="dcM">${dcAv(w.n,1)}<div class="dcBody"><div>${nm}${w.guest?' <span class="dcTag">GUEST</span>':''}<span class="dcT">${esc(dcTime(it.t))}</span></div><div class="dcB">${esc(m.body)}${tools}</div></div></div>`})()}).join('')}
+/* left column: live fight rooms as channels, and your own name at the bottom */
+function dcNavPaint(){const lv=$('#dcLive');if(lv){const now=Date.now(),L=(sbBoard||[]).filter(r=>r.status==='open'&&r.b_taken||r.status==='fought'&&new Date(r.fight_at).getTime()>now-6*60e3);
+    lv.innerHTML=L.length?L.slice(0,8).map(r=>`<a class="dcCh" data-go="sbch:${r.id}"><span class="dcLiveDot"></span> ${esc((r.a_name||r.a_who||'?').slice(0,14))} vs ${esc((r.b_name||r.b_who||'?').slice(0,14))}</a>`).join(''):'<p class="dcNone">No fights on right now</p>'}
+  const me=$('#dcMe');if(me){const n=ME&&managers[ME]?managers[ME].gym:(labNick()||'Guest');me.innerHTML=`${dcAv(n)}<span class="dcDot dcDotMe"></span><div class="dcUT"><div class="dcUN">${esc(n)}</div><div class="dcSub">${ME?'Online':'Online · guest'}</div></div>`}}
+function dcOnline(rows){const side=$('#dcSide');
+  const keys=new Map(rows.filter(r=>!r.me).map(r=>[r.k,r.name]));
+  if(dcPrev){for(const[k,n]of keys)if(!dcPrev.has(k))dcSys.push({t:Date.now(),k:'in',n});for(const[k,n]of dcPrev)if(!keys.has(k))dcSys.push({t:Date.now(),k:'out',n});dcSys=dcSys.slice(-30);labChatPaint()}
+  dcPrev=keys;
+  const n=$('#dcOnN');if(n)n.textContent=rows.length;if(!side)return;
+  const lobby=rows.filter(r=>r.place==='simbot'),fight=rows.filter(r=>r.place!=='simbot');
+  const one=r=>`<div class="dcU">${dcAv(r.name)}<span class="dcDot"></span><div class="dcUT"><div class="dcUN">${r.uid&&!r.guest?`<a data-go="gympub:${r.uid}" style="color:inherit">${esc(r.name)}</a>`:esc(r.name)}${r.guest?' <span class="dcTag">GUEST</span>':''}${r.me?' <span class="dcYou">(you)</span>':''}</div><div class="dcSub">${r.place==='simbot'?'in the lobby':`at a fight · <a data-go="sbch:${esc(r.place)}">watch</a>`}</div></div></div>`;
+  side.innerHTML=`<div class="dcGrp">IN THE LOBBY — ${lobby.length}</div>${lobby.map(one).join('')}${fight.length?`<div class="dcGrp">AT A FIGHT — ${fight.length}</div>${fight.map(one).join('')}`:''}${rows.length<=1?'<p class="dcEmpty">Nobody else here right now. Start a challenge and share the link, or hang out: the green number on Simbot tells everyone you\'re here.</p>':''}`}
 async function sbCall(body){if(!SB)return{error:'The league server is not reachable right now.'};
   try{const{data,error}=await SB.functions.invoke('simbot-match',{body});
     if(error){let m='';try{const j=await error.context.json();m=j&&j.error}catch(e){}return{error:m||'Something went wrong. Try again in a moment.'}}
@@ -1067,7 +1142,7 @@ async function sbLoadBoard(force){if(!SB)return;const el=$('#sbBoard');if(!el)re
   const since=new Date(Date.now()-36*3600e3).toISOString();
   const{data,error}=await SB.from('sb_challenges').select('id,created_at,status,level,rounds,listed,a_who,b_who,a_name,b_name,a_ready,b_ready,b_taken,fight_at').gte('created_at',since).neq('status','cancelled').order('created_at',{ascending:false}).limit(60);
   if(error){el.innerHTML='<p class="mute">The board is not available right now.</p>';return}
-  sbBoard=data;sbBoardAt=Date.now();sbPaintBoard()}
+  sbBoard=data;sbBoardAt=Date.now();sbPaintBoard();dcNavPaint()}
 function sbPaintBoard(){const el=$('#sbBoard');if(!el||!sbBoard)return;const mine=sbcSeats(),now=Date.now();
   const lv=r=>r.level==='basic'?'70 pts':'Title';const rd=r=>r.rounds===25?'Bare Knuckles':r.rounds+' rds';
   const open=sbBoard.filter(r=>r.status==='open'&&r.listed&&!r.b_taken),live=sbBoard.filter(r=>r.status==='open'&&r.b_taken||r.status==='fought'&&new Date(r.fight_at).getTime()>now-6*60e3),
