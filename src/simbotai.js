@@ -50,7 +50,8 @@ async function aiAct(a,btn){
   if(a==='send')return aiSendBox();
   if(a==='fightme'){aiUser('Fight me');return aiSay(`Oh, you want some? 😤 Pick your fighter. Every one comes with a fight plan that has a note on every line, so you'll see exactly what he does. I'll pick mine, and I'm not telling you which.`,[...STARTERS.map(x=>[`${x.em} ${esc(x.nm)}`,'pick:'+x.id]),['🎲 Surprise me','pick:?']])}
   if(a.startsWith('pick:')){let id=a.slice(5);if(id==='?')id=aiRand(STARTERS).id;const st=starterOf(id);if(!st)return;if(btn)btn.disabled=true;aiUser(st.nm);return aiFightMe(id)}
-  if(a==='show'){aiUser('Show me a fight');if(!AI.open)aiOpen();return aiShow()}
+  if(a==='show'){if(AI.showing)return; /* one at a time: a second tap is ignored */
+    document.querySelectorAll('.aiChip[data-ai=show]').forEach(c=>c.disabled=true);aiUser('Show me a fight');if(!AI.open)aiOpen();return aiShow()}
   if(a.startsWith('point:')){const[,k,c]=a.split(':');return aiPointDiag(k,c)}
   if(a.startsWith('fix:')){const[,k,c]=a.split(':');if(btn)btn.disabled=true;return aiFix(k,c)}
   if(a==='tour'){aiUser('Show me around');return aiTour(0)}
@@ -78,8 +79,9 @@ function aiShow(){const L=labState(),red=starterOf(aiRand(AI_PUNCHERS)),blue=aiR
   const og=aiRand(['WBC','WBA','WBO']),T={org:og,orgs:[og],champ:Math.random()<.5?0:1};AI.title=T;const ch=T.champ?L.B:L.A;
   AI.showing=true;aiFabBubble(false);
   aiSay(`🔔🔔 <b>LADIES AND GENTLEMEN... IT'S MAIN EVENT TIME!</b> 🔔🔔<br><br>Twelve rounds for the <b>🏆 ${T.org} WORLD CHAMPIONSHIP!</b><br><br>🔴 In the red corner, ${tape(L.A)}: <b>${esc(L.A.name)}</b>${T.champ===0?' 👑 <b>the CHAMPION</b>':', the challenger'}! ${esc(red.line)}<br>🔵 In the blue corner, ${tape(L.B)}: <b>${esc(L.B.name)}</b>${T.champ===1?' 👑 <b>the CHAMPION</b>':', the challenger'}! ${esc(blue.line)}<br><br>${esc(ch.name)} brings the belt to the ring. Somebody walks out with it. `+`${aiRand(AI_HYPE)} Turn your sound on 🔊 and watch for the knockdowns. I'll be back when it's over to tell you exactly why the winner won.`,[],true);
-  setTimeout(()=>{if(!AI.showing)return;aiSay('3... 2... 1... 🔔 <b>LET\'S GET IT ON!</b>',[],true)},2600);
-  setTimeout(()=>{if(!AI.showing||!$('#lab'))return;aiClose();aiSpotOff();labFight({score:aiShowScore,tries:400,enough:100,title:T})},4200)}
+  AI.lastShowAt=Date.now();
+  setTimeout(()=>{if(!AI.showing)return;aiSay('3... 2... 1... 🔔 <b>LET\'S GET IT ON!</b>',[],true)},1400);
+  setTimeout(()=>{if(!AI.showing||!$('#lab'))return;aiClose();aiSpotOff();labFight({score:aiShowScore,tries:400,enough:100,title:T})},2600)}
 
 /* "Fight me": a real challenge vs Simbot's fighter, so other people can watch it live too */
 async function aiFightMe(stId,retry){let nick=null;
