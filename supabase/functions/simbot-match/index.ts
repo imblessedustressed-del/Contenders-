@@ -28,6 +28,7 @@ const ABIL = ["str", "kp", "spd", "agl", "chn", "cnd"];
 const ALNUM = "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 const rnd = (n: number, set = ALNUM) => { const b = crypto.getRandomValues(new Uint8Array(n)); return [...b].map((x) => set[x % set.length]).join(""); };
 const sha = async (s: string) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode("sbch:" + s)))].map((x) => x.toString(16).padStart(2, "0")).join("");
+const SIMBOT = "Simbot (AI)"; // the house fighter for "Fight me" challenges
 const NAME_RE = /^[\p{L}\p{N} .'&-]{1,40}$/u;
 const clean = (s: unknown, n: number) => String(s ?? "").replace(/\s+/g, " ").trim().slice(0, n);
 
@@ -146,6 +147,20 @@ Deno.serve(async (req) => {
       return out({ id, a: ta, b: tb });
     }
 
+    if (a === "vsbot") { // "Fight me": the player vs Simbot AI's fighter (a starter build sent by the page, checked like any fighter); Simbot is ready at once
+      if (limited("create:" + caller, 12, 3600e3)) fail("That's a lot of challenges for one hour. Finish a few first.");
+      const Cx = await engine();
+      const level = body.level === "basic" ? "basic" : "title";
+      const rounds = [3, 6, 12, 25].includes(+body.rounds) ? +body.rounds : 12;
+      const name = await who(uid, body.nick);
+      const G = checkFighter(Cx, body.bot, level);
+      const ta = rnd(28);
+      const id = await newChallenge({ level, rounds, listed: true, a_who: name, a_user: uid || null, b_who: SIMBOT, b_taken: true, b_ready: true, b_name: G.name });
+      const { error } = await admin.from("sb_seats").insert([{ challenge_id: id, seat: "a", token_hash: await sha(ta) }, { challenge_id: id, seat: "b", token_hash: await sha(rnd(28)), fighter: G }]);
+      if (error) throw error;
+      return out({ id, a: ta });
+    }
+
     if (a === "take") { // accept an open challenge from the board
       const row = await getRow(body.id);
       if (row.status !== "open" || !row.listed || row.b_taken) fail("Someone already took that challenge.");
@@ -217,8 +232,8 @@ Deno.serve(async (req) => {
       await seatOk(row.id, body.seat, body.token);
       if (row.next_id) return out({ id: row.next_id });
       const { data: seats } = await admin.from("sb_seats").select("*").eq("challenge_id", row.id);
-      const id = await newChallenge({ level: row.level, rounds: row.rounds, listed: false, a_who: row.a_who, b_who: row.b_who, a_user: row.a_user, b_user: row.b_user,
-        b_taken: true, a_name: row.a_name, b_name: row.b_name });
+      const id = await newChallenge({ level: row.level, rounds: row.rounds, listed: row.b_who === SIMBOT, a_who: row.a_who, b_who: row.b_who, a_user: row.a_user, b_user: row.b_user,
+        b_taken: true, a_name: row.a_name, b_name: row.b_name, b_ready: row.b_who === SIMBOT });
       await admin.from("sb_seats").insert((seats || []).map((s: any) => ({ challenge_id: id, seat: s.seat, token_hash: s.token_hash, fighter: s.fighter })));
       const { data: ok } = await admin.from("sb_challenges").update({ next_id: id }).eq("id", row.id).is("next_id", null).select("id");
       if (!ok || !ok.length) { const again = await getRow(row.id); return out({ id: again.next_id }); }

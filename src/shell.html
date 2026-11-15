@@ -270,6 +270,37 @@ pre.plan{background:#fbfaf7;border:1px solid var(--line)}
 .dcDot{position:absolute;left:32px;top:29px;width:10px;height:10px;border-radius:50%;background:#23a55a;border:3px solid #2b2d31}.dcU:hover .dcDot{border-color:#35373c}
 .dcUT{min-width:0}.dcUN{color:#f2f3f5;font-weight:500;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dcSub{font-size:12px;color:#949ba4}.dcYou{color:#949ba4;font-size:12px}
 .dcEmpty{font-size:12px;color:#949ba4;padding:8px}
+/* Simbot AI (its own pop-up window; the Discord-style chat is untouched) */
+#aiFab{position:fixed;right:18px;bottom:18px;z-index:60;font-family:"gg sans","Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+.aiFabBtn{width:62px;height:62px;border-radius:50%;border:0;background:linear-gradient(145deg,#5865f2,#3b44c4);color:#fff;font-size:30px;cursor:pointer;box-shadow:0 6px 22px rgba(0,0,0,.45),0 0 0 3px rgba(88,101,242,.35);position:relative;animation:aiPulse 2.4s ease-in-out infinite;padding:0}
+.aiFabBtn:hover{transform:scale(1.06)}
+@keyframes aiPulse{0%,100%{box-shadow:0 6px 22px rgba(0,0,0,.45),0 0 0 3px rgba(88,101,242,.35)}50%{box-shadow:0 6px 22px rgba(0,0,0,.45),0 0 0 10px rgba(88,101,242,0)}}
+.aiFabN{position:absolute;top:-2px;right:-2px;background:#f23f43;color:#fff;font-size:12px;font-weight:700;border-radius:10px;min-width:20px;height:20px;line-height:20px;text-align:center;padding:0 5px;border:2px solid #fff}
+.aiBub{position:absolute;right:4px;bottom:76px;width:250px;background:#fff;color:#1e1f22;border-radius:14px 14px 4px 14px;padding:12px 30px 12px 14px;font-size:14px;line-height:1.4;box-shadow:0 8px 28px rgba(0,0,0,.35);cursor:pointer;animation:aiPop .35s cubic-bezier(.2,1.4,.5,1)}
+.aiBubX{position:absolute;top:6px;right:9px;color:#80848e;cursor:pointer;font-size:13px;text-decoration:none}
+@keyframes aiPop{from{transform:scale(.6) translateY(20px);opacity:0}to{transform:none;opacity:1}}
+.aiWin{position:absolute;right:0;bottom:76px;width:370px;height:min(560px,calc(100vh - 120px));background:#313338;color:#dbdee1;border-radius:14px;box-shadow:0 14px 44px rgba(0,0,0,.55);display:flex;flex-direction:column;overflow:hidden;animation:aiPop .25s ease-out}
+.aiWin[hidden],.aiBub[hidden]{display:none}
+.aiHead{display:flex;gap:10px;align-items:center;padding:12px 14px;background:#2b2d31;border-bottom:1px solid #1f2023;color:#f2f3f5}.aiHead b{font-size:15px}
+.aiSub{font-size:12px;color:#949ba4;margin-top:2px}.aiOn{display:inline-block;width:8px;height:8px;border-radius:50%;background:#23a55a;margin-right:3px}
+.aiX{margin-left:auto;background:none;border:0;color:#b5bac1;font-size:18px;cursor:pointer;padding:4px 8px}.aiX:hover{color:#fff}
+.aiLog{flex:1;overflow-y:auto;padding:12px}
+.aiMsg{display:flex;gap:10px;margin:0 0 14px}.aiBody{min-width:0;flex:1}
+.aiAv{background:linear-gradient(145deg,#5865f2,#3b44c4)!important;font-size:20px;flex:0 0 auto}
+.aiText{background:#2b2d31;border-radius:4px 12px 12px 12px;padding:9px 12px;font-size:14px;line-height:1.45;color:#dbdee1;word-wrap:break-word}
+.aiText a{color:#00a8fc;cursor:pointer}.aiText tt{background:#1e1f22;color:#f0b232;border-radius:3px;padding:0 4px;font-size:12.5px}.aiText b{color:#f2f3f5}
+.aiMe{text-align:right;margin:0 0 14px}.aiMe span{display:inline-block;background:#5865f2;color:#fff;border-radius:12px 4px 12px 12px;padding:8px 12px;font-size:14px;max-width:80%;text-align:left;word-wrap:break-word}
+.aiChips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.aiChip{background:#1e1f22;color:#dbdee1;border:1px solid #4e5058;border-radius:16px;padding:5px 11px;font-size:13px;cursor:pointer;text-decoration:none;font-family:inherit;line-height:1.3}
+.aiChip:hover{background:#5865f2;border-color:#5865f2;color:#fff}.aiChip:disabled{opacity:.5}
+.aiSay{display:flex;gap:6px;padding:10px;background:#2b2d31;border-top:1px solid #1f2023}
+.aiSay input{flex:1;background:#383a40;border:0;border-radius:8px;color:#dbdee1;padding:10px 12px;font-size:15px;outline:none}
+.aiSay button{background:#5865f2;border:0;border-radius:8px;color:#fff;font-size:16px;padding:0 14px;cursor:pointer}
+.aiDots i{display:inline-block;width:7px;height:7px;border-radius:50%;background:#b5bac1;margin:0 2px;animation:aiDot 1s infinite}.aiDots i:nth-child(2){animation-delay:.15s}.aiDots i:nth-child(3){animation-delay:.3s}
+@keyframes aiDot{0%,60%,100%{opacity:.3;transform:none}30%{opacity:1;transform:translateY(-3px)}}
+.aiCard{display:flex;gap:12px;background:#313338;color:#dbdee1;border-radius:10px;padding:12px 14px;margin:12px 0;font-family:"gg sans","Segoe UI",Roboto,Helvetica,Arial,sans-serif;border-left:4px solid #5865f2}
+.aiCard .aiText{background:none;padding:4px 0 0}.aiName{color:#8ea1ff;font-weight:700;font-size:15px}
+@media(max-width:760px){#aiFab{right:12px;bottom:12px}.aiWin{position:fixed;left:0;right:0;bottom:0;width:auto;height:78vh;border-radius:16px 16px 0 0}.aiBub{width:min(250px,calc(100vw - 40px))}#aiFab.open .aiFabBtn{display:none}}
 @media(max-width:1000px){.dc{grid-template-columns:minmax(0,1fr) 220px}.dcNav{display:none}}
 @media(max-width:760px){.dc{grid-template-columns:1fr}.dc .dcOnBtn{display:inline-block}.dcSide{display:none;max-height:260px;border-top:1px solid #26272b}.dcSide.open{display:block}.dcMsgs{height:360px}.dcHeadSub{display:none}}
 .sbStart{border:2px solid #d4af37;border-radius:10px;padding:10px 14px;margin:10px 0 16px;background:#fffaf0}.sbStart h2{margin:2px 0 4px}
@@ -707,7 +738,7 @@ function labHTML(){const L=labState();
   <div id="labStage"${L.fight?'':' style="display:none"'}><div class="labCvWrap"><canvas id="labCv" width="960" height="540"></canvas></div>
   <div id="labTick" class="labTick"></div>
   <p class="labCtl"><button data-lab="pause" id="labPause">Pause</button> <button data-lab="skip">Skip to the end</button> <button data-lab="replay">Watch again</button> <button data-lab="report">Full report</button> <button data-lab="share">Share to Simbot Chat</button> <button data-lab="gfx" class="labGfx">${L3GFX_NAMES[l3gfx()]||'Graphics'}</button> <button data-lab="snd" class="labSnd">${labSndOn()?'🔊 Sound On':'🔇 Sound Off'}</button></p>
-  <div id="labRep"></div></div>
+  <div id="labAi"></div><div id="labRep"></div></div>
   <div id="labSim"></div>
   ${sbLobbyHTML()}
   <h2>Simbot Chat</h2>
@@ -719,7 +750,7 @@ function labHTML(){const L=labState();
     ${ME?'':`<div class="dcGuest">Chatting as a guest: <input id="labNick" maxlength="20" placeholder="Pick a nickname" value="${esc(labNick())}" autocomplete="off"> <span>or <a data-go="register">sign up</a> to chat as your gym</span></div>`}
     <div class="dcSay"><input id="labMsg" maxlength="280" placeholder="Message #simbot-chat" autocomplete="off"><button data-lab="send">Send</button></div></div>
   <div class="dcSide" id="dcSide"><div class="dcGrp">ONLINE — 0</div></div></div>
-  </div>`}
+  ${aiFabHTML()}</div>`}
 const labDivFor=F=>{const d=DIVS.find(x=>x[1]>=minWeight(F));return d?d[0]+'weight':'Heavyweight'};
 function labRefresh(c){const el=$('#labCard'+c),old=el&&el.querySelector('.labWt')?.textContent;if(el)el.outerHTML=labCornerHTML(c);const b=$('#labBar');if(b)b.innerHTML=labBarHTML();
   const w=$('#labWt'+c);if(w&&old&&w.textContent!==old){w.classList.add('flash');setTimeout(()=>w.classList.remove('flash'),700)}}
@@ -732,6 +763,7 @@ function labMount(){const root=$('#lab');if(!root)return;
   const lc=$('[data-dc=lobby]');if(lc)lc.addEventListener('click',()=>{const l=$('#sbLobby');if(l)l.scrollIntoView({behavior:'smooth',block:'start'})});dcNavPaint();
   labLoadChat();if(!labPoll)labPoll=setInterval(()=>{if(view==='lab'||view==='simbot'){labLoadChat();sbLoadBoard(true)}else{clearInterval(labPoll);labPoll=null}},15000);
   const L=labState();if(L.fight&&!labAnim)labDraw(1e9);
+  aiMount();
 }
 function labInput(e){const el=e.target,c=el.dataset.c;if(el.dataset.lf==='name'||el.dataset.lf==='plan'){labState()[c][el.dataset.lf]=el.value;if(el.dataset.lf==='plan')labState()[c].planName='Custom'}}
 function labChange(e){const el=e.target,L=labState(),c=el.dataset.c;
@@ -745,7 +777,8 @@ function labChange(e){const el=e.target,L=labState(),c=el.dataset.c;
   if(el.dataset.lset){const k=el.dataset.lset;L[k]=k==='speed'?+el.value:el.value;if(k==='level'){['A','B'].forEach(c=>{if(!L[c])return;const pn=L[c].planName; /* a quick build switches to that level's own tuned build; anything custom grows or shrinks in shape */
     const so=starterOf(pn);if(so||PRESETS[pn]){if(so)labApplyStarter(L[c],so.id,L.level);else{const[st,pl]=labPreset(pn,L.level);Object.assign(L[c],st,{plan:pl})}}else{['str','spd','agl','chn','cnd','kp'].forEach(q=>L[c][q]=Math.min(labMaxS(),L[c][q]));labScale(L[c],labPool(),labMaxS())}if($('#labCard'+c))labRefresh(c)})}const b=$('#labBar');if(b)b.innerHTML=labBarHTML()}
 }
-function labClick(e){const t=e.target.closest('button');if(!t)return;const L=labState();
+function labClick(e){const ai=e.target.closest('[data-ai]');if(ai&&!ai.closest('#aiFab')){aiAct(ai.dataset.ai,ai);return}
+  const t=e.target.closest('button');if(!t)return;const L=labState();
   if(t.dataset.starter){const c=t.dataset.c;labApplyStarter(L[c],t.dataset.starter,L.level);labRefresh(c);const card=$('#labCard'+c);if(card){card.scrollIntoView({behavior:'smooth',block:'nearest'});card.classList.add('flash');setTimeout(()=>card.classList.remove('flash'),700)}return}
   if(t.dataset.lpm){const c=t.dataset.c,k=t.dataset.lpm,F=L[c],d=+t.dataset.d;
     const lo=MINS[k]??0,hi=k==='hgt'?21:labMaxS();F[k]=Math.max(lo,Math.min(hi,F[k]+d));
@@ -771,7 +804,7 @@ function labFight(){const L=labState(),err=labErr();$('#labErr').textContent=err
   L.fight=simulate(prepFighter(A,A,B,div),prepFighter(B,A,B,div),rounds);
   L.names=[A.name,B.name];L.plans=[A.planName,B.planName];
   $('#labStage').style.display='';$('#labRep').innerHTML='';$('#labSim').innerHTML='';
-  $('#labStage').scrollIntoView({behavior:'smooth',block:'start'});labPlay();
+  $('#labStage').scrollIntoView({behavior:'smooth',block:'start'});labPlay();aiWatchFight();
 }
 function labSim(){const L=labState(),err=labErr();$('#labErr').textContent=err;if(err)return;
   const[A,B]=labFighters(),div=labDiv(),rounds=L.rounds==='bk'?25:+L.rounds,PA=prepFighter(A,A,B,div),PB=prepFighter(B,A,B,div),c={w0:0,k0:0,w1:0,k1:0,d:0};
@@ -1171,6 +1204,7 @@ function dcOnline(rows){const side=$('#dcSide');
   const lobby=rows.filter(r=>r.place==='simbot'),fight=rows.filter(r=>r.place!=='simbot');
   const one=r=>`<div class="dcU">${dcAv(r.name)}<span class="dcDot"></span><div class="dcUT"><div class="dcUN">${r.uid&&!r.guest?`<a data-go="gympub:${r.uid}" style="color:inherit">${esc(r.name)}</a>`:esc(r.name)}${r.guest?' <span class="dcTag">GUEST</span>':''}${r.me?' <span class="dcYou">(you)</span>':''}</div><div class="dcSub">${r.place==='simbot'?'in the lobby':`at a fight · <a data-go="sbch:${esc(r.place)}">watch</a>`}</div></div></div>`;
   side.innerHTML=`<div class="dcGrp">IN THE LOBBY — ${lobby.length}</div>${lobby.map(one).join('')}${fight.length?`<div class="dcGrp">AT A FIGHT — ${fight.length}</div>${fight.map(one).join('')}`:''}${rows.length<=1?'<p class="dcEmpty">Nobody else here right now. Start a challenge and share the link, or hang out: the green number on Simbot tells everyone you\'re here.</p>':''}`}
+%%SIMBOTAI%%
 async function sbCall(body){if(!SB)return{error:'The league server is not reachable right now.'};
   try{const{data,error}=await SB.functions.invoke('simbot-match',{body});
     if(error){let m='';try{const j=await error.context.json();m=j&&j.error}catch(e){}return{error:m||'Something went wrong. Try again in a moment.'}}
@@ -1220,7 +1254,8 @@ function sbchHTML(arg){const p=arg.split(':'),id=p[0];
   if(p[1]&&p[2]&&/^[ab]$/.test(p[1])){sbcSaveSeat(id,p[1],p[2]);history.replaceState(null,'','#sbch:'+id);view='sbch:'+id}
   if(!SBC||SBC.id!==id){sbcStop();const seat=sbcSeats()[id]||null;const lv=LAB_LEVELS.title;
     SBC={id,row:null,seat,phase:'',chat:[],watch:0,mgr:null,joined:false,loadedMine:false,shownFor:null,
-      L:{A:labMk('Red Rocket','Slugger','Detroit, Michigan'),B:labMk('Blue Thunder','Counterpuncher','Philadelphia, Pennsylvania'),level:'title',div:'',rounds:'12',fight:null,bout:null,names:['',''],plans:['','']}}}
+      L:{A:labMk('Red Rocket','Slugger','Detroit, Michigan'),B:labMk('Blue Thunder','Counterpuncher','Philadelphia, Pennsylvania'),level:'title',div:'',rounds:'12',fight:null,bout:null,names:['',''],plans:['','']}};
+    if(aiPre&&aiPre.id===id){const st=starterOf(aiPre.st);labApplyStarter(SBC.L.A,aiPre.st,'title');if(st)SBC.L.A.name=st.nm.replace(/^The /,'Kid ')}}
   return`<div id="sbc"><h1>Simbot Challenge</h1><div id="sbcTop"><p class="mute">Loading...</p></div>
   <div class="sbcWrap"><div class="sbcMain" id="sbcMain"></div>
   <div class="sbcSide"><h2>Fight Chat <span class="small mute" id="sbcWatch"></span></h2><div id="sbcChat" class="labChat sbcChat"><p class="mute">Loading...</p></div>
@@ -1279,8 +1314,9 @@ function sbcOpenHTML(){const r=SBC.row,s=SBC.seat;
     return`<p>${r.b_taken?'Both corners are building their fighters. Plans are secret: you\'ll see the fight the moment both are ready. Stick around and chat!':'Waiting for the blue corner to show up.'}</p>`}
   const c=s.s==='a'?'A':'B',ready=r[s.s+'_ready'],inv=s.s==='a'&&!r.b_taken&&s.inv?`<div class="note"><b>Send this link to your opponent</b> (it gives him the blue corner):<br><input class="sbcLinkBox" readonly value="${esc(sbcLink(r.id,'b',s.inv))}"> <button data-sbc="copyinv">Copy</button>${r.listed?'<br><span class="small mute">Or wait: it\'s on the board, and anyone can accept.</span>':''}</div>`:'';
   if(s.s==='b'&&!r.b_taken)return`${ME?'':`<p>Pick a nickname to take the blue corner: <input id="sbcNick" maxlength="20" value="${esc(labNick())}"> <button data-sbc="join">Take the corner</button></p>`}<p class="cr">${esc(SBC.joinErr||'')}</p>`;
+  const ai=aiChallengeNote(r,s);
   if(ready)return`${inv}<p class="note">✅ <b>You're locked in.</b> Waiting for your opponent. The fight starts the moment he's ready.</p><p><button data-sbc="unready">Unlock: I want to change something</button>${s.s==='a'?' <button data-sbc="cancel">Call it off</button>':''} <span class="cr" id="sbcErr"></span></p>`;
-  return`${inv}<p>Build your fighter and write his plan. Your opponent can't see any of it, and nobody else can either.</p>
+  return`${inv}${ai}<p>Build your fighter and write his plan. Your opponent can't see any of it, and nobody else can either.</p>
     <div class="labGrid sbcOne">${labCornerHTML(c)}</div>
     <p class="labBtns"><button class="labGo" data-sbc="ready">✅ READY! Lock in my fighter</button>${s.s==='a'?' <button data-sbc="cancel">Call it off</button>':''} <span class="cr" id="sbcErr"></span></p>
     <p class="small mute">Tip: test your plan first in <a data-go="simbot">Simbot</a> against a fighter like the one you expect.</p>`}
@@ -1296,7 +1332,7 @@ function sbcFightTick(){const r=SBC.row,L=SBC.L,at=new Date(r.fight_at).getTime(
     const tot=labAnim?labAnim.tl.total:0;if(off>tot)labTickAll()}
   else if(!labAnim&&!SBC.drawn){SBC.drawn=1;labDraw(1e9);labTickAll()}
   const res=L.fight.result,el=$('#sbcResult');
-  if(el&&(!labAnim||labAnim.at>=labAnim.tl.total-1)&&!el.innerHTML)el.innerHTML=`<p class="note"><b>${res.w==null?`It's a ${esc(res.type.toLowerCase())}!`:`${esc(L.names[res.w])} (${esc(L.bout.gyms[res.w])}) wins by ${esc(res.decision?res.type.toLowerCase():res.type+' in round '+res.round)}!`}</b></p>`}
+  if(el&&(!labAnim||labAnim.at>=labAnim.tl.total-1)&&!el.innerHTML)el.innerHTML=`<p class="note"><b>${res.w==null?`It's a ${esc(res.type.toLowerCase())}!`:`${esc(L.names[res.w])} (${esc(L.bout.gyms[res.w])}) wins by ${esc(res.decision?res.type.toLowerCase():res.type+' in round '+res.round)}!`}</b></p>`+aiAfterChallenge(r,SBC.seat,res)}
 function sbcChatPaint(){const el=$('#sbcChat');if(!el||!SBC)return;const atBottom=el.scrollHeight-el.scrollTop-el.clientHeight<40;
   const sig=SBC.chat.map(m=>m.id).join(',');if(el.dataset.sig===sig)return;el.dataset.sig=sig;
   el.innerHTML=SBC.chat.length?SBC.chat.map(m=>{const gm=managers[m.author];const when=new Date(m.created_at);
@@ -1308,7 +1344,8 @@ async function sbcSend(){const m=$('#sbcMsg'),er=$('#sbcChatErr');if(!m||!SB||!S
   const{error}=await SB.from('lab_chat').insert(ME?{author:ME,body,room:SBC.id}:{nick,body,room:SBC.id});
   if(error){er.textContent=/row-level/.test(error.message)?"You can't post right now.":/lab_chat_no_plans/.test(error.message)?"That looks like part of a fight plan.":error.message;return}
   er.textContent='';m.value='';sbcTick(false)}
-async function sbcClick(e){const del=e.target.closest('[data-sbcdel]');if(del){await SB.from('lab_chat').delete().eq('id',+del.dataset.sbcdel);sbcTick(false);return}
+async function sbcClick(e){const ai=e.target.closest('[data-ai]');if(ai){aiAct(ai.dataset.ai,ai);return}
+const del=e.target.closest('[data-sbcdel]');if(del){await SB.from('lab_chat').delete().eq('id',+del.dataset.sbcdel);sbcTick(false);return}
   const t=e.target.closest('button');if(!t||!SBC)return;
   if(t.closest('.labCard')){labClick(e);return}
   if(t.dataset.lab){const a=t.dataset.lab,L=SBC.L;
