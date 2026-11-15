@@ -833,7 +833,7 @@ function condText(x,after){
 /* ================= SHARED DATA (Supabase: accounts, forums, messages) ================= */
 cleanSlate();
 const SB_URL='https://ojsphhzgzbxmnfcbitqb.supabase.co',SB_KEY='sb_publishable_SWO9WhiSkoVhflY5CmY08A_hlqCEJSi';
-const BUILD='1794770242';
+const BUILD='1794771554';
 /* A tab left open on an older build must not save over newer data: if the site has been updated, reload before anything else is saved. */
 let staleBuild=false;
 async function checkBuild(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
@@ -2963,7 +2963,9 @@ function gymPubHTML(uid){
   const c=cards[uid]||{fighters:[],retired:[]},g=gymStats(uid),rk={};(c.fighters||[]).forEach(f=>{const kk=f.div+(f.region||'');if(!rk[kk])rk[kk]=rankedIn(f.div,f.region)});const fl=(f,i,act)=>{const r=f.rec||[0,0,0,0];
     return`<p class="fl">${act?`<a data-go="opub:${uid}:${encN(f.id)}">${esc(f.name)}</a>`:esc(f.name)}${(f.titles||[]).length?' <span style="color:#e8a400">&#9733;</span>':''} ${r[0]} wins (${r[3]} by knock out), ${r[1]} losses, and ${r[2]} draws. Rating ${f.rating||0}. Status ${f.status||0}.${(()=>{const t=act?[reignLine(uid,f.id),champLine(uid,f.id)].filter(Boolean).join(', '):'';return t?` <b class="r">${esc(cap(t))}!!</b>`:(f.titles||[]).length?` <b class="r">Winner of ${f.titles.length} world title${f.titles.length>1?'s':''}!!</b>`:''})()}${act&&rk[f.div+(f.region||'')]?(()=>{const n=rk[f.div+(f.region||'')].findIndex(x=>x.uid===uid&&x.f.id===f.id)+1;return n?` Rank #${n} in <a data-go="frank:${encN(f.div)}${regOf(f)?'@'+regOf(f):''}">${REG_NAME(regOf(f))}</a>.`:''})():''} Career earnings ${money(f.earn)}.</p>`};
   const rg=regOf;
-  const byDiv=(L,act)=>['','bk','rk'].flatMap(R=>[...DIVS].reverse().map(([d])=>[d,R])).filter(([d,R])=>L.some(f=>f.div===d&&rg(f)===R)).map(([d,R])=>`<h3 class="divh">${R?REG_NAME(R)+' ':''}${esc(d)}weights</h3>${L.map((f,i)=>[f,i]).filter(([f])=>f.div===d&&rg(f)===R).sort((x,y)=>{const r=f=>{const n=act&&rk[d+R]?rk[d+R].findIndex(z=>z.uid===uid&&z.f.id===f.id):-1;return n<0?1e9:n};return r(x[0])-r(y[0])}).map(([f,i])=>fl(f,i,act)).join('')}`).join('');
+  /* one heading per weight class (owner, Nov 15, 2026): Contenders, Bare Knuckles and Rookies fighters of a division are listed together; each line says which region he's ranked in */
+  const RO={'':0,rk:1,bk:2};
+  const byDiv=(L,act)=>[...DIVS].reverse().map(([d])=>d).filter(d=>L.some(f=>f.div===d)).map(d=>`<h3 class="divh">${esc(d)}weights</h3>${L.map((f,i)=>[f,i]).filter(([f])=>f.div===d).sort((x,y)=>{const r=f=>{const R=rg(f),n=act&&rk[d+(f.region||'')]?rk[d+(f.region||'')].findIndex(z=>z.uid===uid&&z.f.id===f.id):-1;return(RO[R]||0)*1e6+(n<0?1e5:n)};return r(x[0])-r(y[0])}).map(([f,i])=>fl(f,i,act)).join('')}`).join('');
   return`<h1 class="pubname">${esc(m.gym)}${m.bot&&seeBots()?' <span class="small mute">(bot gym)</span>':''}</h1>${m.bot&&seeBots()?'<p class="small mute">A computer-run gym that fills out the rankings. Spar with its fighters in Practice Fights.</p>':''}
   <p>${esc(m.gym)} trains fighters${m.loc?` in ${esc(m.loc)}`:''}. Managing since ${m.at?dt(m.at).slice(0,10):'recently'}.${uid!==ME&&!(m.bot&&seeBots())?` <a data-dm="${esc(uid)}">Send a message</a>`:''}</p>
   ${m.descBlocked?'<p class="small mute">This gym\'s description was removed by the Commissioner.</p>':m.desc?gymDescBox(m.desc,{uid}):''}
