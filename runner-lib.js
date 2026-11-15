@@ -65,11 +65,14 @@ var RunnerLib = (() => {
   var FIRST = ["Abel", "Ade", "Alonzo", "Amos", "Arlo", "Arturo", "August", "Bastian", "Beau", "Bennett", "Boris", "Brady", "Bram", "Cade", "Calvin", "Cecil", "Chance", "Cliff", "Colton", "Cyrus", "Dale", "Dante", "Darnell", "Deacon", "Dexter", "Dimitri", "Donnie", "Dorian", "Earl", "Efrain", "Elias", "Emeka", "Emmett", "Enzo", "Ernesto", "Ezra", "Felix", "Garrett", "Gideon", "Grady", "Hank", "Harlan", "Hollis", "Hugo", "Ignacio", "Isaiah", "Jabari", "Jalen", "Jasper", "Joaquin", "Jonah", "Judd", "Kareem", "Kendrick", "Kofi", "Lamar", "Lance", "Leland", "Lorenzo", "Lucius", "Malik", "Mateo", "Mason", "Mitch", "Monty", "Nestor", "Nico", "Noel", "Obi", "Orlando", "Otis", "Pablo", "Percy", "Quentin", "Quincy", "Ramon", "Rhett", "Roman", "Rufus", "Saul", "Silas", "Stefan", "Thad", "Tobias", "Tyrell", "Ulysses", "Vaughn", "Virgil", "Wade", "Walker", "Xavier", "Yusuf", "Zane"];
   var LAST = ["Abernathy", "Acosta", "Ambrose", "Arceneaux", "Ashby", "Barlow", "Beckett", "Bellamy", "Blackwood", "Boudreaux", "Bramwell", "Calloway", "Cantrell", "Carrasco", "Chatman", "Colfax", "Crenshaw", "Dabney", "Delacroix", "Draper", "Dunmore", "Easton", "Echols", "Fairbanks", "Falcone", "Fenwick", "Galloway", "Garland", "Gentry", "Gutierrez", "Halloran", "Harrow", "Hastings", "Hightower", "Holloway", "Ingram", "Jarvis", "Kessler", "Kingsley", "Lachance", "Landry", "Larkin", "Lockhart", "Maddox", "Mancini", "Marchetti", "McCrae", "Mendez", "Merriweather", "Nakamura", "Northcutt", "Obuya", "Okafor", "Oyelaran", "Pembrook", "Pettigrew", "Quintero", "Radcliffe", "Rainwater", "Rasheed", "Reinholt", "Rocha", "Rutledge", "Salcedo", "Santangelo", "Shackleford", "Slade", "Stroud", "Tamayo", "Thibodeaux", "Treadwell", "Underhill", "Valdez", "Vasquez", "Voss", "Wakefield", "Whitaker", "Winslow", "Yarbrough", "Zamora", "Zeller"];
   var NICK = ["Brick House", "The Mechanic", "Quicksilver", "Sandman", "The Mailman", "Big Train", "Thunder", "The Undertaker", "Lockjaw", "Night Train", "The Bull", "Mojo", "Showtime", "Ice Water", "The Tailor", "Gravedigger", "Little Hands", "The Freight", "Rawhide", "Hammerhand", "Easy Money", "The Prospector", "Dynamo", "Sweet Feet", "Ironside", "Copperhead", "The Anvil", "Cyclone", "Tank", "Velvet", "", "", "", "", "", "", ""];
-  var GYMS = { "b4": { "temper": 0, "towns": ["New Orleans, Louisiana", "Baton Rouge, Louisiana", "Lafayette, Louisiana", "Houston, Texas", "Mobile, Alabama", "Biloxi, Mississippi", "Kingston, Jamaica", "Havana, Cuba"], "short": "Bayou" }, "b5": { "temper": 1, "towns": ["Pittsburgh, Pennsylvania", "Youngstown, Ohio", "Buffalo, New York", "Erie, Pennsylvania", "Wheeling, West Virginia", "Gary, Indiana", "Glasgow, Scotland", "Cardiff, Wales"], "short": "Steel" }, "b6": { "temper": -1, "towns": ["Phoenix, Arizona", "Tucson, Arizona", "El Paso, Texas", "Albuquerque, New Mexico", "Hermosillo, Mexico", "Mexicali, Mexico", "Reno, Nevada", "Las Cruces, New Mexico"], "short": "Desert" }, "b7": { "temper": 0, "towns": ["Baltimore, Maryland", "Norfolk, Virginia", "Boston, Massachusetts", "Providence, Rhode Island", "Liverpool, England", "Dublin, Ireland", "Lagos, Nigeria", "San Juan, Puerto Rico"], "short": "Harbor" }, "b8": { "temper": 1, "towns": ["Detroit, Michigan", "Flint, Michigan", "Toledo, Ohio", "Akron, Ohio", "Milwaukee, Wisconsin", "Windsor, Ontario", "Sheffield, England", "Leeds, England"], "short": "Rust" }, "b9": { "temper": -1, "towns": ["San Diego, California", "Los Angeles, California", "Oxnard, California", "Tijuana, Mexico", "Ensenada, Mexico", "Honolulu, Hawaii", "Cebu, Philippines", "Auckland, New Zealand"], "short": "Pacific" }, "ba": { "temper": 0, "towns": ["San Antonio, Texas", "Dallas, Texas", "Fort Worth, Texas", "Corpus Christi, Texas", "Laredo, Texas", "Monterrey, Mexico", "Oklahoma City, Oklahoma", "Tulsa, Oklahoma"], "short": "Lone" }, "bb": { "temper": 1, "towns": ["Atlantic City, New Jersey", "Camden, New Jersey", "Trenton, New Jersey", "Philadelphia, Pennsylvania", "Wilmington, Delaware", "Bronx, New York", "Kingston, Jamaica", "Santo Domingo, Dominican Republic"], "short": "Atlantic" } };
+  var GYMS = { "b4": { "temper": 0, "towns": ["New Orleans, Louisiana", "Baton Rouge, Louisiana", "Lafayette, Louisiana", "Houston, Texas", "Mobile, Alabama", "Biloxi, Mississippi", "Kingston, Jamaica", "Havana, Cuba"], "short": "Bayou" }, "b5": { "temper": 1, "towns": ["Pittsburgh, Pennsylvania", "Youngstown, Ohio", "Buffalo, New York", "Erie, Pennsylvania", "Wheeling, West Virginia", "Gary, Indiana", "Glasgow, Scotland", "Cardiff, Wales"], "short": "Steel" }, "b6": { "temper": -1, "towns": ["Phoenix, Arizona", "Tucson, Arizona", "El Paso, Texas", "Albuquerque, New Mexico", "Hermosillo, Mexico", "Mexicali, Mexico", "Reno, Nevada", "Las Cruces, New Mexico"], "short": "Desert" }, "b7": { "temper": 0, "towns": ["Baltimore, Maryland", "Norfolk, Virginia", "Boston, Massachusetts", "Providence, Rhode Island", "Liverpool, England", "Dublin, Ireland", "Lagos, Nigeria", "San Juan, Puerto Rico"], "short": "Harbor" }, "b8": { "temper": 1, "towns": ["Detroit, Michigan", "Flint, Michigan", "Toledo, Ohio", "Akron, Ohio", "Milwaukee, Wisconsin", "Windsor, Ontario", "Sheffield, England", "Leeds, England"], "short": "Rust" }, "b9": { "temper": -1, "towns": ["San Diego, California", "Los Angeles, California", "Oxnard, California", "Tijuana, Mexico", "Ensenada, Mexico", "Honolulu, Hawaii", "Cebu, Philippines", "Auckland, New Zealand"], "short": "Pacific" }, "ba": { "temper": 0, "towns": ["San Antonio, Texas", "Dallas, Texas", "Fort Worth, Texas", "Corpus Christi, Texas", "Laredo, Texas", "Monterrey, Mexico", "Oklahoma City, Oklahoma", "Tulsa, Oklahoma"], "short": "Lone" }, "bb": { "temper": 1, "towns": ["Atlantic City, New Jersey", "Camden, New Jersey", "Trenton, New Jersey", "Philadelphia, Pennsylvania", "Wilmington, Delaware", "Bronx, New York", "Kingston, Jamaica", "Santo Domingo, Dominican Republic"], "short": "Atlantic" }, "r0": { "temper": 0, "towns": ["Tulsa, Oklahoma", "Wichita, Kansas", "Springfield, Missouri", "Fort Smith, Arkansas"], "short": "First Bell" }, "r1": { "temper": 1, "towns": ["Toledo, Ohio", "Flint, Michigan", "Gary, Indiana", "Erie, Pennsylvania"], "short": "Riverbend" }, "r2": { "temper": 0, "towns": ["Fresno, California", "Bakersfield, California", "Stockton, California", "Reno, Nevada"], "short": "Valley Starters" }, "r3": { "temper": -1, "towns": ["Savannah, Georgia", "Augusta, Georgia", "Macon, Georgia", "Columbia, South Carolina"], "short": "Sunrise" }, "r4": { "temper": 1, "towns": ["Worcester, Massachusetts", "Providence, Rhode Island", "Hartford, Connecticut", "Lowell, Massachusetts"], "short": "Mill Town" }, "r5": { "temper": 0, "towns": ["El Paso, Texas", "Las Cruces, New Mexico", "Albuquerque, New Mexico", "Tucson, Arizona"], "short": "Border Line" }, "r6": { "temper": -1, "towns": ["Boise, Idaho", "Spokane, Washington", "Billings, Montana", "Salt Lake City, Utah"], "short": "High Country" }, "r7": { "temper": 0, "towns": ["Memphis, Tennessee", "Jackson, Mississippi", "Little Rock, Arkansas", "Shreveport, Louisiana"], "short": "Delta" } };
   var TW = { "Slugger": { "w": [0.21, 0.03, 0.19, 0.15, 0.2, 0.22], "dh": 0, "train": ["str", "cnd"] }, "KO Puncher": { "w": [0.21, 0.05, 0.18, 0.17, 0.19, 0.2], "dh": 0, "train": ["str", "kp"] }, "Dancer": { "w": [0.15, 0.02, 0.23, 0.24, 0.16, 0.2], "dh": 1, "train": ["agl", "spd"] }, "Counterpuncher": { "w": [0.19, 0.03, 0.2, 0.17, 0.19, 0.22], "dh": -1, "train": ["spd", "agl"] }, "Clincher": { "w": [0.18, 0.02, 0.19, 0.16, 0.2, 0.25], "dh": 0, "train": ["cnd", "chn"] } };
   var REG_TYPES = ["Slugger", "KO Puncher", "Dancer", "Counterpuncher", "Clincher"];
   var BK_TYPES = ["BK Grinder", "BK Clincher", "BK Flasher"];
   var PER_DIV = 5;
+  var RK_START = { a: -2, d: -3 };
+  var RK_GENE = { aMin: -4, aMax: -1, dMin: -5, dMax: -2 };
+  var isRkKey = (k) => k.startsWith("r");
   var LATE = "score + 12 - round < 0 and endurance_percent >= 40";
   var AHEAD = "score > 2*(1 + 12 - round)";
   var T = {
@@ -111,6 +114,7 @@ var RunnerLib = (() => {
   }
   function defaultGene(F, gymKey) {
     if (F.gene) return F.gene;
+    if (isRkKey(gymKey)) return { ...RK_START };
     const t = (GYMS[gymKey] || { temper: 0 }).temper;
     return { a: t, d: -t };
   }
@@ -126,8 +130,13 @@ var RunnerLib = (() => {
       g.a += 1;
       g.d -= 1;
     }
-    g.a = clamp(g.a, -3, 3);
-    g.d = clamp(g.d, -3, 4);
+    if (F.region === "rk") {
+      g.a = clamp(g.a, RK_GENE.aMin, RK_GENE.aMax);
+      g.d = clamp(g.d, RK_GENE.dMin, RK_GENE.dMax);
+    } else {
+      g.a = clamp(g.a, -3, 3);
+      g.d = clamp(g.d, -3, 4);
+    }
     F.bt = t;
     F.gene = g;
     F.plan = planFor(t, g);
@@ -142,22 +151,23 @@ var RunnerLib = (() => {
   }
   function shouldRetire(F) {
     const r = F.rec || [0, 0, 0, 0], n = r[0] + r[1] + r[2];
+    if (F.region === "rk" && ((F.status || 0) >= 18 || n >= 100)) return "graduated from the rookie ranks";
     if ((F.aploss || 0) >= 3) return "worn down by too many wars";
     if (n >= 8 && r[1] - r[0] >= 4) return "the losses piled up";
     if (n >= 40) return "a long career";
     return null;
   }
   var K = ["str", "kp", "spd", "agl", "chn", "cnd"];
-  function regStats(t, hgt, cut) {
-    const pool = 70 - hgt - cut, w = TW[t].w;
+  function regStats(t, hgt, cut, total = 70) {
+    const pool = total - hgt - cut, w = TW[t].w;
     const st = w.map((x) => Math.max(1, Math.round(pool * x)));
     st[1] = Math.min(st[1], Math.max(0, Math.floor(st[0] / 2)));
     const order = [5, 2, 3, 4, 0];
     let i = 0;
-    const sum = () => st.reduce((a, b) => a + b, 0);
-    while (sum() !== pool && i < 500) {
+    const sum2 = () => st.reduce((a, b) => a + b, 0);
+    while (sum2() !== pool && i < 500) {
       const k = order[i % 5];
-      if (sum() < pool) st[k]++;
+      if (sum2() < pool) st[k]++;
       else if (st[k] > 3) st[k]--;
       i++;
     }
@@ -194,14 +204,14 @@ var RunnerLib = (() => {
     const sp = rest - s - a;
     return { str: s, kp, spd: sp, agl: a, chn, cnd };
   }
-  function makeFighter(C, t, div, lim, prevLim, gymKey, taken, home, gene) {
+  function makeFighter(C, t, div, lim, prevLim, gymKey, taken, home, gene, rk = false, total = 70) {
     const bk = t.startsWith("BK "), builds = ["very heavy", "heavy", "normal", "light", "very light"];
     let best = null;
     const heavy = div === "Heavy", target = bk ? 204 : 210 + Math.floor(Math.random() * 66);
     for (let h = 60; h <= 81; h++) {
       const cut = bk ? 1 : rnd([1, 2, 2, 3]);
-      const st = bk ? bkStats(t, 70 - (h - 60) - cut) : regStats(t, h - 60, cut);
-      if (st.spd < 1 || K.reduce((a, k) => a + st[k], 0) + (h - 60) + cut !== 70) continue;
+      const st = bk ? bkStats(t, 70 - (h - 60) - cut) : regStats(t, h - 60, cut, total);
+      if (st.spd < 1 || K.reduce((a, k) => a + st[k], 0) + (h - 60) + cut !== (bk ? 70 : total)) continue;
       for (const b of builds) {
         const F = { ...st, hgt: h - 60, cut, build: b };
         const m = C.minWeight(F);
@@ -226,7 +236,7 @@ var RunnerLib = (() => {
       nick: rnd(NICK),
       home,
       div,
-      ...bk ? { region: "bk" } : {},
+      ...bk ? { region: "bk" } : rk ? { region: "rk" } : {},
       bt: t,
       gene,
       plan: planFor(t, gene),
@@ -244,6 +254,61 @@ var RunnerLib = (() => {
       ppv: 0,
       locked: true
     };
+  }
+
+  // ../supabase/functions/league-runner/coach.ts
+  var COACH_ID = "00000000-0000-0000-0000-0000000000d0";
+  var num = (s, k) => {
+    const m = new RegExp(k + " = ([0-9.]+)").exec(s || "");
+    return m ? +m[1] : null;
+  };
+  var sum = (a) => a.reduce((x, y) => x + y, 0);
+  function coachNote(C, B, o, i, F, O) {
+    const f = (o.result || o.full || {}).f;
+    if (!f || !f.rounds || !f.rounds.length) return null;
+    const R = f.rounds, j = 1 - i, n = R.length;
+    const mgr = o.mgr && o.mgr[i] || [];
+    const s = o.summary, won = s.w === i, lost = s.w === j, name = String(F.name || "Your fighter").trim(), opp = String(O.name || "his opponent").trim();
+    const tips = [];
+    const thrown = (x) => (x.pt || 0) + (x.rt || 0) + (x.jt || 0), landed = (x) => (x.pl || 0) + (x.rl || 0) + (x.jl || 0);
+    const myT = sum(R.map((r) => r.st ? thrown(r.st[i]) : 0)), myL = sum(R.map((r) => r.st ? landed(r.st[i]) : 0));
+    const hisT = sum(R.map((r) => r.st ? thrown(r.st[j]) : 0)), hisL = sum(R.map((r) => r.st ? landed(r.st[j]) : 0));
+    const en = (r, k) => r.en ? r.en[k] : 1;
+    const tac = mgr.map((m) => (typeof m === "string" ? m : m?.pre) || "");
+    const dmg = mgr.map((m) => m && typeof m === "object" ? m.post : null).filter(Boolean);
+    const defs = tac.map((t) => num(t, "defense")).filter((x) => x != null);
+    const aggs = tac.map((t) => num(t, "aggressiveness")).filter((x) => x != null);
+    const lines = [];
+    lines.push(`Coach's notes on ${name} vs ${opp} (${B.div}${B.region === "rk" ? ", Rookies" : B.region === "bk" ? ", Bare Knuckles" : ""}): he ${won ? "won" : lost ? "lost" : "drew"} by ${s.how}.`);
+    lines.push(`Punches: he landed ${myL} of ${myT} (${myT ? Math.round(100 * myL / myT) : 0}%), ${opp} landed ${hisL} of ${hisT} (${hisT ? Math.round(100 * hisL / hisT) : 0}%).`);
+    const lowAt = R.findIndex((r) => en(r, i) < 0.35);
+    const fat = sum(dmg.map((d) => d.f || 0)), hurt = sum(dmg.map((d) => d.d || 0));
+    if (lowAt >= 0 && lowAt + 1 <= Math.min(9, n - 1)) tips.push(`He was running on fumes by round ${lowAt + 1} (under 35% endurance). Every ability but chin and KP shrinks as he tires. Add a rest line near the bottom of the plan, e.g. "if endurance_percent < 45 then 4/5/9", or lower AGG early.`);
+    if (dmg.length && (!won || lowAt >= 0) && fat > hurt * 1.2 && fat > 15) tips.push(`His own work cost him more endurance (${Math.round(fat)} points of fatigue) than the other man's punches did (${Math.round(hurt)}). Fatigue each round is AGG + POW/2, and CND/2 of it is free, so trim AGG or POW a point, or train conditioning.`);
+    const myStuns = sum(R.map((r) => r.st ? (r.st[j].stun || 0) + 2 * (r.st[j].kd || 0) : 0));
+    const lowDef = defs.length ? Math.min(...defs) : null;
+    if ((myStuns > 0 || lost && !s.decision) && lowDef != null && lowDef <= 7) tips.push(`He got hurt with DEF as low as ${lowDef}. Damage taken is divided by DEF, so raise it to 8 or more, and add a line like "if mystuns > 0 then 5/5/10" so he covers up once he's been rocked.`);
+    else if (myStuns > 0 && lowDef != null) tips.push(`He was stunned or dropped ${myStuns > 1 ? "more than once" : "once"}. A safety line such as "if mystuns > hisstuns then 5/5/10" helps him survive a bad round.`);
+    if (myT >= 60 && myL / myT < 0.3 && hisT && hisL / hisT > myL / myT + 0.1) tips.push(`Only ${Math.round(100 * myL / myT)}% of his punches landed. ${opp} was harder to hit (more agility or defense). Jabs land more easily than power shots, so a little less POW and more AGG helps, and "(feint)" helps if he's the faster man.`);
+    const closeLost = R.filter((r) => r.cards && r.cards.length && r.cards.filter((c) => c[i] < c[j]).length >= 2 && !(r.st[j].stun || r.st[j].kd) && thrown(r.st[i]) < thrown(r.st[j])).length;
+    if (closeLost >= 3) tips.push(`He lost ${closeLost} rounds while throwing less than ${opp}. Judges reward punches landed (power 2, regular 1.5, jab 1), so a point or two more AGG in close rounds steals them, e.g. "if score <= 0 and round >= 4 then 7/6/7".`);
+    const spent = R.filter((r) => en(r, j) < 0.3).length;
+    if (spent >= 2 && s.decision && !lost) tips.push(`${opp} was spent for ${spent} rounds and still heard the final bell. Add a finishing line: "if opp = 0 then 6H/9/5" (or "if hisstuns > 0 then 6H/10/4") to go to the head once he's done.`);
+    if (aggs.length >= 4 && new Set(tac.map((t) => (t.match(/aggressiveness = [0-9.]+, power = [0-9.]+, defense = [0-9.]+/) || [""])[0])).size === 1 && n >= 6) tips.push(`He fought every round with the same tactic. Conditions let him adapt: rest when tired, push when behind late ("if score < 0 and round >= 9 then 7H/8/5"), protect a lead ("if score >= 6 and round >= 9 then 3/4/11").`);
+    if (tac.some((t) => /backfires/.test(t))) tips.push(`His counter-punching backfired: counters only work when his speed plus height beats the other man's. Drop "(counter)" against faster or taller men.`);
+    if (R.some((r) => (r.post || []).some((p) => p.includes(F.name?.split(" ").pop() || "@@") && /refusing to break/.test(p)))) tips.push(`He lost a point for holding. Clinching with DEF over 10 risks that; keep clinch lines at DEF 10 or less.`);
+    if (/doctor/.test(s.how || "") && lost) tips.push(`The doctor stopped it on his injuries. Higher DEF in the middle rounds, or more cut resistance next time you build, keeps cuts from piling up.`);
+    try {
+      const lim = ((C.DIVS || []).find((d) => d[0] === B.div) || [0, 999])[1], mw = C.minWeight ? C.minWeight(F) : 0;
+      if (lim < 1e3 && mw > lim) tips.push(`He weighs in over the ${B.div} limit (lightest safe weight ${mw} lb vs ${lim}), so drying out cut his gas tank before the first bell. Move him up a division, or train agility or conditioning to bring his weight down.`);
+    } catch (_) {
+    }
+    if ((F.kp || 0) > Math.floor((F.str || 0) / 3)) tips.push(`His KP (${F.kp}) is more than his strength supports (${F.str} STR allows ${Math.floor((F.str || 0) / 3)}). Each KP point needs 3 STR; train STR before more KP.`);
+    else if ((F.kp || 0) > 0 && (F.str || 0) % 3 === 2) tips.push(`One more point of STR (to ${F.str + 1}) lets him carry another KP point, since every 3 STR supports 1 KP.`);
+    if (!tips.length) tips.push(won ? `Clean work. Keep the plan, and scout his next opponent's public reports before fight night.` : `No single big mistake. Test small changes in Simbot (run it 100 times) against the same style before his next fight.`);
+    lines.push(...tips.slice(0, 4).map((t, k) => `${k + 1}. ${t}`));
+    lines.push(`Read the full report (with your private tactics and damage lines) from Recent Fight Cards. For more help: Help Pages > Fight Plan Strategy, or the "Ask your own AI" button on the fight plan page. (This is an automatic note; replies aren't read.)`);
+    return lines.join("\n\n").slice(0, 3500);
   }
 
   // ../supabase/functions/league-runner/press.ts
@@ -347,11 +412,13 @@ var RunnerLib = (() => {
     const out = [];
     st.forEach((r) => (r.data?.roster || []).forEach((k) => {
       const F = r.data[k];
-      if (F && F.div && !F.deleteAfter && !busy.has(pk(r.user_id, k)) && restOk(recent, pk(r.user_id, k), today, mins)) out.push(pk(r.user_id, k));
+      if (F && F.div && !F.deleteAfter && !rkDone(F) && !busy.has(pk(r.user_id, k)) && restOk(recent, pk(r.user_id, k), today, mins)) out.push(pk(r.user_id, k));
     }));
     return out;
   }
-  var gk = (u) => /^00000000-0000-0000-0000-0000000000b[0-9a-f]$/.test(u) ? u.slice(-2) : "small";
+  var gk = (u) => /^00000000-0000-0000-0000-0000000000b[0-9a-f]$/.test(u) ? u.slice(-2) : /^00000000-0000-0000-0000-0000000000c[0-7]$/.test(u) ? "r" + u.slice(-1) : "small";
+  var regOf = (F) => F?.region === "bk" ? "bk" : F?.region === "rk" ? "rk" : "";
+  var rkDone = (F) => F?.region === "rk" && ((F.status || 0) >= 18 || (F.rec || [0, 0, 0])[0] + (F.rec || [0, 0, 0])[1] + (F.rec || [0, 0, 0])[2] >= 100);
   var nm = (F) => String(F?.name || "?").trim();
   async function postReleases(list, log) {
     for (const r of list) {
@@ -466,6 +533,18 @@ var RunnerLib = (() => {
                 }
               }
               tonight.push({ B, o, FA, FB });
+              if (!B.bot_only) for (const [u, F, O, i] of [[B.red_user, FA, FB, 0], [B.blue_user, FB, FA, 1]]) {
+                if (P[u]?.is_bot || !P[COACH_ID]) continue;
+                try {
+                  const body = coachNote(C, B, o, i, F, O);
+                  if (body) {
+                    const m = await sb.from("messages").insert({ sender: COACH_ID, recipient: u, body });
+                    if (m.error) log.push(`coach ${B.id}: ${m.error.message}`);
+                  }
+                } catch (e) {
+                  log.push(`coach ${B.id}: ${e.message}`);
+                }
+              }
               [[B.red_user, B.red_fid, o.after[0]], [B.blue_user, B.blue_fid, o.after[1]]].forEach(([u, k, F]) => {
                 if (F.retireAfter) {
                   S[u].roster = (S[u].roster || []).filter((x) => x !== k);
@@ -588,9 +667,9 @@ var RunnerLib = (() => {
             }
             continue;
           }
-          for (const reg of ["", "bk"]) for (let di = 0; di < C.DIVS.length; di++) {
+          for (const reg of isRkKey(key2) ? ["rk"] : ["", "bk"]) for (let di = 0; di < C.DIVS.length; di++) {
             const [div, lim] = C.DIVS[di], prev = di ? C.DIVS[di - 1][1] : 0;
-            const mine = () => (d.roster || []).filter((k) => d[k] && d[k].div === div && (d[k].region === "bk" ? "bk" : "") === reg);
+            const mine = () => (d.roster || []).filter((k) => d[k] && d[k].div === div && regOf(d[k]) === reg);
             for (const k of mine()) {
               const F = d[k], why = busy.has(pk(u, k)) ? null : shouldRetire(F);
               if (!why) continue;
@@ -602,16 +681,16 @@ var RunnerLib = (() => {
               changed = true;
               retiredN++;
             }
-            const types = reg ? BK_TYPES : REG_TYPES;
+            const types = reg === "bk" ? BK_TYPES : REG_TYPES;
             let guard = 0;
             while (mine().length < PER_DIV && guard++ < 10) {
               const have = mine().map((k) => typeOf(d[k]));
               const t = [...types].sort((a, b) => have.filter((x) => x === a).length - have.filter((x) => x === b).length)[0];
-              const peers = allBots.filter((x) => x.F.div === div && (x.F.region === "bk" ? "bk" : "") === reg && typeOf(x.F) === t && x.F.rec[0] + x.F.rec[1] + x.F.rec[2] >= 3).sort((a, b) => b.F.rec[0] - b.F.rec[1] - (a.F.rec[0] - a.F.rec[1]));
+              const peers = allBots.filter((x) => x.F.div === div && regOf(x.F) === reg && typeOf(x.F) === t && x.F.rec[0] + x.F.rec[1] + x.F.rec[2] >= 3).sort((a, b) => b.F.rec[0] - b.F.rec[1] - (a.F.rec[0] - a.F.rec[1]));
               const g = { ...peers[0] ? defaultGene(peers[0].F, gk(peers[0].u)) : defaultGene({}, key2) };
               if (Math.random() < 0.5) g[Math.random() < 0.5 ? "a" : "d"] += rnd([-1, 1]);
               const home = rnd(GYMS[key2].towns);
-              const NF = makeFighter(C, t, div, lim, prev, key2, taken, home, g);
+              const NF = makeFighter(C, t, div, lim, prev, key2, taken, home, g, reg === "rk");
               if (!NF) {
                 log.push(`could not build a ${t} for ${P[u].gym} at ${div}`);
                 break;
@@ -660,7 +739,7 @@ var RunnerLib = (() => {
             if (!P[u] || !!P[u].is_bot !== bot) continue;
             for (const k of d.roster || []) {
               const F = d[k];
-              if (F && F.div && !busy.has(pk(u, k)) && restOk(recent, pk(u, k), today, mins)) out.push({ u, k, F, gym: P[u].gym, reg: F.region === "bk" ? "bk" : "" });
+              if (F && F.div && !rkDone(F) && !busy.has(pk(u, k)) && restOk(recent, pk(u, k), today, mins)) out.push({ u, k, F, gym: P[u].gym, reg: regOf(F) });
             }
           }
           return out;
@@ -677,8 +756,57 @@ var RunnerLib = (() => {
         const allBotList = [];
         for (const [u, d] of Object.entries(S)) if (P[u]?.is_bot) for (const k of d.roster || []) {
           const F = d[k];
-          if (F && F.div) allBotList.push({ u, k, F, gym: P[u].gym, reg: F.region === "bk" ? "bk" : "" });
+          if (F && F.div && !rkDone(F)) allBotList.push({ u, k, F, gym: P[u].gym, reg: regOf(F) });
         }
+        const rkGyms = Object.keys(S).filter((u) => P[u]?.is_bot && isRkKey(gk(u)) && PUB[u]);
+        let rkTurn = 0;
+        const signRookieFor = async (h, total) => {
+          if (!rkGyms.length) return null;
+          const u = rkGyms[rkTurn++ % rkGyms.length], key2 = gk(u), d = S[u], card = PUB[u];
+          const di = C.DIVS.findIndex((x2) => x2[0] === h.F.div);
+          if (di < 0) return null;
+          const t = rnd(REG_TYPES), home = rnd(GYMS[key2].towns);
+          const NF = makeFighter(C, t, h.F.div, C.DIVS[di][1], di ? C.DIVS[di - 1][1] : 0, key2, taken, home, defaultGene({}, key2), true, total);
+          if (!NF) {
+            log.push(`could not build a ${total}-point rookie for ${nm(h.F)}`);
+            return null;
+          }
+          const nk = "n" + Date.now().toString(36) + Math.floor(Math.random() * 1e4).toString(36);
+          d[nk] = NF;
+          d.roster = [...d.roster || [], nk];
+          card.fighters = [...card.fighters || [], {
+            id: nk,
+            region: "rk",
+            name: NF.name,
+            nick: NF.nick,
+            home,
+            div: NF.div,
+            hgt: NF.hgt,
+            w: C.natWeight ? C.natWeight(NF) : 0,
+            mw: C.minWeight(NF),
+            rec: [0, 0, 0, 0],
+            hist: [],
+            train: NF.train,
+            active: true,
+            rating: 0,
+            status: 0,
+            streak: 0,
+            titles: [],
+            earn: 0,
+            fans: 0,
+            ppv: 0
+          }];
+          const a1 = await sb.from("gym_state").update({ data: d }).eq("user_id", u), b1 = await sb.from("gym_public").update({ data: card }).eq("user_id", u);
+          if (a1.error || b1.error) {
+            log.push(`rookie signing ${P[u].gym}: ${(a1.error || b1.error).message}`);
+            return null;
+          }
+          const x = { u, k: nk, F: NF, gym: P[u].gym, reg: "rk" };
+          allBotList.push(x);
+          signed++;
+          log.push(`${P[u].gym} signed ${NF.name} (${total} pts) to face ${nm(h.F)}`);
+          return x;
+        };
         const AP = (F) => ["str", "kp", "spd", "agl", "chn", "cnd", "hgt", "cut"].reduce((t, k) => t + (+F[k] || 0), 0);
         const fair = (a, b) => Math.abs(AP(a.F) - AP(b.F)) <= 1;
         const gap = (a, b) => Math.abs((a.F.status || 0) - (b.F.status || 0)) * 100 + Math.abs((a.F.rating || 0) - (b.F.rating || 0));
@@ -696,6 +824,10 @@ var RunnerLib = (() => {
           };
           const open2 = (b) => !busy.has(pk(b.u, b.k)) || before(b) || bumpable(b);
           const cands = allBotList.filter((b) => b.F.div === h.F.div && b.reg === h.reg && open2(b) && fair(h, b));
+          if (!cands.length && h.reg === "rk") {
+            const nb = await signRookieFor(h, AP(h.F));
+            if (nb) cands.push(nb);
+          }
           if (!cands.length) {
             unmatched.push(pk(h.u, h.k));
             log.push(`no fair opponent free for ${nm(h.F)} (${h.F.div}, ${AP(h.F)} AP, ${h.F.rating || 0}/${h.F.status || 0})`);
@@ -717,7 +849,7 @@ var RunnerLib = (() => {
         }
         const byDiv = {};
         const left = [];
-        if (midnight) free(true).filter((b) => !busy.has(pk(b.u, b.k))).forEach((b) => (byDiv[b.F.div + "|" + b.reg] ||= []).push(b));
+        if (midnight) free(true).filter((b) => !busy.has(pk(b.u, b.k)) && b.reg !== "rk").forEach((b) => (byDiv[b.F.div + "|" + b.reg] ||= []).push(b));
         for (const [dk, list] of Object.entries(byDiv)) {
           const div = dk.split("|")[0];
           const date = humanNight(C, div, today, mins);
@@ -752,7 +884,7 @@ var RunnerLib = (() => {
           const before = (b) => (lastDate.get(pk(b.u, b.k)) || "9999") <= addDays(date, -3);
           const c = allBotList.filter((b) => b.F.div === a.F.div && b.reg === a.reg && b.gym !== a.gym && fair(a, b) && (!busy.has(pk(b.u, b.k)) || before(b)));
           if (!c.length) {
-            log.push(`no fair opponent for ${nm(a.F)} (${P[a.u]?.gym}, ${a.F.div}${a.reg ? " BK" : ""})`);
+            log.push(`no fair opponent for ${nm(a.F)} (${P[a.u]?.gym}, ${a.F.div}${a.reg ? " " + a.reg.toUpperCase() : ""})`);
             continue;
           }
           c.sort((x, y) => gap(a, x) - gap(a, y) || Math.random() - 0.5);

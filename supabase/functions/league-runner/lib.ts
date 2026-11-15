@@ -11,7 +11,8 @@
 // This file is bundled by build.sh into /runner-lib.js on the site; the deployed edge function (index.ts) downloads it
 // and the engine (/engine-core.js) on every run, so pushing the site updates the runner. No redeploy needed.
 import { fightOne } from "./fight.ts";
-import { BK_TYPES, GYMS, makeFighter, PER_DIV, REG_TYPES, rnd, scoutedPlan, shouldRetire, learn, typeOf, defaultGene } from "./botgen.ts";
+import { BK_TYPES, GYMS, makeFighter, PER_DIV, REG_TYPES, rnd, scoutedPlan, shouldRetire, learn, typeOf, defaultGene, isRkKey } from "./botgen.ts";
+import { COACH_ID, coachNote } from "./coach.ts";
 import { challengeRelease, Release, resultRelease } from "./press.ts";
 
 let sb: any; // set by handle()
@@ -62,10 +63,13 @@ async function freeHumans(today: string, mins: number) {
   const busy = new Set<string>(); open.forEach((b: any) => { busy.add(pk(b.red_user, b.red_fid)); busy.add(pk(b.blue_user, b.blue_fid)); });
   const recent = await recentFights(today);
   const out: string[] = [];
-  st.forEach((r: any) => (r.data?.roster || []).forEach((k: string) => { const F = r.data[k]; if (F && F.div && !F.deleteAfter && !busy.has(pk(r.user_id, k)) && restOk(recent, pk(r.user_id, k), today, mins)) out.push(pk(r.user_id, k)); }));
+  st.forEach((r: any) => (r.data?.roster || []).forEach((k: string) => { const F = r.data[k]; if (F && F.div && !F.deleteAfter && !rkDone(F) && !busy.has(pk(r.user_id, k)) && restOk(recent, pk(r.user_id, k), today, mins)) out.push(pk(r.user_id, k)); }));
   return out;
 }
-const gk = (u: string) => (/^00000000-0000-0000-0000-0000000000b[0-9a-f]$/.test(u) ? u.slice(-2) : "small"); // big bot gym key: ...00b4 -> b4
+const gk = (u: string) => (/^00000000-0000-0000-0000-0000000000b[0-9a-f]$/.test(u) ? u.slice(-2) : /^00000000-0000-0000-0000-0000000000c[0-7]$/.test(u) ? "r" + u.slice(-1) : "small"); // big bot gym key: ...00b4 -> b4; rookie gyms ...00c0 -> r0
+// regions: "" Contenders, "bk" Bare Knuckles, "rk" Rookies (owner, Nov 15, 2026)
+const regOf = (F: any) => (F?.region === "bk" ? "bk" : F?.region === "rk" ? "rk" : "");
+const rkDone = (F: any) => F?.region === "rk" && ((F.status || 0) >= 18 || ((F.rec || [0, 0, 0])[0] + (F.rec || [0, 0, 0])[1] + (F.rec || [0, 0, 0])[2]) >= 100);
 const nm = (F: any) => String(F?.name || "?").trim();
 async function postReleases(list: Release[], log: string[]) {
   for (const r of list) {
@@ -153,6 +157,12 @@ export async function handle(req: Request, client: any, C: any): Promise<Respons
             ran++;
             if (o.full) { try { await sb.from("bouts").update({ result_z: await gz(o.full) }).eq("id", B.id); } catch (e) { log.push(`bout ${B.id} report: ${(e as Error).message}`); } }
             tonight.push({ B, o, FA, FB });
+            // the Corner Coach writes each manager a private note on what went wrong and what to try (owner, Nov 15, 2026)
+            if (!B.bot_only) for (const [u, F, O, i] of [[B.red_user, FA, FB, 0], [B.blue_user, FB, FA, 1]] as any) {
+              if (P[u]?.is_bot || !P[COACH_ID]) continue;
+              try { const body = coachNote(C, B, o, i, F, O); if (body) { const m = await sb.from("messages").insert({ sender: COACH_ID, recipient: u, body }); if (m.error) log.push(`coach ${B.id}: ${m.error.message}`); } }
+              catch (e) { log.push(`coach ${B.id}: ${(e as Error).message}`); }
+            }
             // keep our in-memory copy current (retired fighters leave the roster)
             [[B.red_user, B.red_fid, o.after[0]], [B.blue_user, B.blue_fid, o.after[1]]].forEach(([u, k, F]: any) => {
               if (F.retireAfter) { S[u].roster = (S[u].roster || []).filter((x: string) => x !== k); delete S[u][k]; } else S[u][k] = F;
@@ -227,9 +237,9 @@ export async function handle(req: Request, client: any, C: any): Promise<Respons
           }
           continue;
         }
-        for (const reg of ["", "bk"]) for (let di = 0; di < C.DIVS.length; di++) {
+        for (const reg of (isRkKey(key) ? ["rk"] : ["", "bk"])) for (let di = 0; di < C.DIVS.length; di++) {
           const [div, lim] = C.DIVS[di], prev = di ? C.DIVS[di - 1][1] : 0;
-          const mine = () => (d.roster || []).filter((k: string) => d[k] && d[k].div === div && (d[k].region === "bk" ? "bk" : "") === reg);
+          const mine = () => (d.roster || []).filter((k: string) => d[k] && d[k].div === div && regOf(d[k]) === reg);
           for (const k of mine()) {
             const F = d[k], why = busy.has(pk(u, k)) ? null : shouldRetire(F); if (!why) continue;
             d.roster = d.roster.filter((x: string) => x !== k); delete d[k];
@@ -238,18 +248,18 @@ export async function handle(req: Request, client: any, C: any): Promise<Respons
             card.retired = [{ id: "r0", name: F.name, div, region: F.region || null, rec: F.rec, rating: F.rating || 0, status: F.status || 0, earn: F.earn || 0, fans: F.fans || 0, ppv: F.ppv || 0, hgt: F.hgt, home: F.home || "", titles: [], active: false, hist: [] }, ...(card.retired || [])].map((x: any, i: number) => ({ ...x, id: "r" + i }));
             changed = true; retiredN++;
           }
-          const types = reg ? BK_TYPES : REG_TYPES;
+          const types = reg === "bk" ? BK_TYPES : REG_TYPES;
           let guard = 0;
           while (mine().length < PER_DIV && guard++ < 10) {
             const have = mine().map((k: string) => typeOf(d[k]));
             const t = [...types].sort((a, b) => have.filter((x: any) => x === a).length - have.filter((x: any) => x === b).length)[0];
             // inherit the plan gene of the best fighter of this type in this division and region, with a small mutation
-            const peers = allBots.filter((x) => x.F.div === div && (x.F.region === "bk" ? "bk" : "") === reg && typeOf(x.F) === t && (x.F.rec[0] + x.F.rec[1] + x.F.rec[2]) >= 3)
+            const peers = allBots.filter((x) => x.F.div === div && regOf(x.F) === reg && typeOf(x.F) === t && (x.F.rec[0] + x.F.rec[1] + x.F.rec[2]) >= 3)
               .sort((a, b) => (b.F.rec[0] - b.F.rec[1]) - (a.F.rec[0] - a.F.rec[1]));
             const g = { ...(peers[0] ? defaultGene(peers[0].F, gk(peers[0].u)) : defaultGene({}, key)) };
             if (Math.random() < 0.5) g[Math.random() < 0.5 ? "a" : "d"] += rnd([-1, 1]);
             const home = rnd(GYMS[key].towns);
-            const NF = makeFighter(C, t, div, lim, prev, key, taken, home, g);
+            const NF = makeFighter(C, t, div, lim, prev, key, taken, home, g, reg === "rk");
             if (!NF) { log.push(`could not build a ${t} for ${P[u].gym} at ${div}`); break; }
             const nk = "n" + Date.now().toString(36) + Math.floor(Math.random() * 1e4).toString(36);
             d[nk] = NF; d.roster = [...(d.roster || []), nk];
@@ -271,7 +281,7 @@ export async function handle(req: Request, client: any, C: any): Promise<Respons
         const out: any[] = [];
         for (const [u, d] of Object.entries(S)) {
           if (!P[u] || !!P[u].is_bot !== bot) continue;
-          for (const k of (d.roster || [])) { const F = d[k]; if (F && F.div && !busy.has(pk(u, k)) && restOk(recent, pk(u, k), today, mins)) out.push({ u, k, F, gym: P[u].gym, reg: F.region === "bk" ? "bk" : "" }); }
+          for (const k of (d.roster || [])) { const F = d[k]; if (F && F.div && !rkDone(F) && !busy.has(pk(u, k)) && restOk(recent, pk(u, k), today, mins)) out.push({ u, k, F, gym: P[u].gym, reg: regOf(F) }); }
         }
         return out;
       };
@@ -284,7 +294,26 @@ export async function handle(req: Request, client: any, C: any): Promise<Respons
         busy.add(pk(a.u, a.k)); busy.add(pk(b.u, b.k));
       };
       const allBotList: any[] = [];
-      for (const [u, d] of Object.entries(S) as any) if (P[u]?.is_bot) for (const k of (d.roster || [])) { const F = d[k]; if (F && F.div) allBotList.push({ u, k, F, gym: P[u].gym, reg: F.region === "bk" ? "bk" : "" }); }
+      for (const [u, d] of Object.entries(S) as any) if (P[u]?.is_bot) for (const k of (d.roster || [])) { const F = d[k]; if (F && F.div && !rkDone(F)) allBotList.push({ u, k, F, gym: P[u].gym, reg: regOf(F) }); }
+      const rkGyms = Object.keys(S).filter((u) => P[u]?.is_bot && isRkKey(gk(u)) && PUB[u]);
+      let rkTurn = 0;
+      const signRookieFor = async (h: any, total: number) => {
+        if (!rkGyms.length) return null;
+        const u = rkGyms[rkTurn++ % rkGyms.length], key = gk(u), d = S[u], card = PUB[u];
+        const di = C.DIVS.findIndex((x: any) => x[0] === h.F.div); if (di < 0) return null;
+        const t = rnd(REG_TYPES), home = rnd(GYMS[key].towns);
+        const NF = makeFighter(C, t, h.F.div, C.DIVS[di][1], di ? C.DIVS[di - 1][1] : 0, key, taken, home, defaultGene({}, key), true, total);
+        if (!NF) { log.push(`could not build a ${total}-point rookie for ${nm(h.F)}`); return null; }
+        const nk = "n" + Date.now().toString(36) + Math.floor(Math.random() * 1e4).toString(36);
+        d[nk] = NF; d.roster = [...(d.roster || []), nk];
+        card.fighters = [...(card.fighters || []), { id: nk, region: "rk", name: NF.name, nick: NF.nick, home, div: NF.div, hgt: NF.hgt, w: C.natWeight ? C.natWeight(NF) : 0, mw: C.minWeight(NF),
+          rec: [0, 0, 0, 0], hist: [], train: NF.train, active: true, rating: 0, status: 0, streak: 0, titles: [], earn: 0, fans: 0, ppv: 0 }];
+        const a1 = await sb.from("gym_state").update({ data: d }).eq("user_id", u), b1 = await sb.from("gym_public").update({ data: card }).eq("user_id", u);
+        if (a1.error || b1.error) { log.push(`rookie signing ${P[u].gym}: ${(a1.error || b1.error)!.message}`); return null; }
+        const x = { u, k: nk, F: NF, gym: P[u].gym, reg: "rk" }; allBotList.push(x); signed++;
+        log.push(`${P[u].gym} signed ${NF.name} (${total} pts) to face ${nm(h.F)}`);
+        return x;
+      };
       // Fair matchmaking (owner, Nov 12, 2026): never more than 1 ability point apart in total (STR+KP+SPD+AGL+CHN+CND+HGT+CUT);
       // then the same status, closest rating (18/18 meets 18/18, then 17/18, 16/18...), then status 1 apart, and so on.
       // Nobody fit? He waits for the next night's booking instead of getting an unfair fight.
@@ -303,6 +332,9 @@ export async function handle(req: Request, client: any, C: any): Promise<Respons
         const bumpable = (b: any) => { const x = bump.get(pk(b.u, b.k)); return !!x && x.date >= date && !before(b); };
         const open2 = (b: any) => !busy.has(pk(b.u, b.k)) || before(b) || bumpable(b);
         const cands = allBotList.filter((b) => b.F.div === h.F.div && b.reg === h.reg && open2(b) && fair(h, b));
+        // Rookies: rookie gyms don't fight each other, so their fighters don't grow. When a manager's rookie has outgrown them,
+        // a rookie gym signs a new fighter built to his size (same total ability points) so he always has a fair opponent.
+        if (!cands.length && h.reg === "rk") { const nb = await signRookieFor(h, AP(h.F)); if (nb) cands.push(nb); }
         if (!cands.length) { unmatched.push(pk(h.u, h.k)); log.push(`no fair opponent free for ${nm(h.F)} (${h.F.div}, ${AP(h.F)} AP, ${h.F.rating || 0}/${h.F.status || 0})`); continue; }
         const score = (b: any) => gap(h, b) * 10 + (bumpable(b) ? 5 : before(b) ? 2 : 0) + (seen.has(b.F.name + "|" + b.gym) ? 3 : 0) + (b.gym === lastGym ? 1 : 0) + Math.random() * 0.9;
         cands.sort((x, y) => score(x) - score(y));
@@ -316,7 +348,7 @@ export async function handle(req: Request, client: any, C: any): Promise<Respons
       // then the other gyms against each other (owner, Nov 13: "treat the bot gyms like humans, they get fights every week"):
       // same booking rules as managers (24-hour wait, soonest night at least 3 days away), same division and region, different gyms
       const byDiv: Record<string, any[]> = {};const left: any[] = [];
-      if (midnight) free(true).filter((b) => !busy.has(pk(b.u, b.k))).forEach((b) => (byDiv[b.F.div + "|" + b.reg] ||= []).push(b));
+      if (midnight) free(true).filter((b) => !busy.has(pk(b.u, b.k)) && b.reg !== "rk").forEach((b) => (byDiv[b.F.div + "|" + b.reg] ||= []).push(b));
       for (const [dk, list] of Object.entries(byDiv)) {
         const div = dk.split("|")[0];
         const date = humanNight(C, div, today, mins); if (!date) continue;
@@ -342,7 +374,7 @@ export async function handle(req: Request, client: any, C: any): Promise<Respons
         if (busy.has(pk(a.u, a.k))) continue;
         const before = (b: any) => (lastDate.get(pk(b.u, b.k)) || "9999") <= addDays(date, -3);
         const c = allBotList.filter((b) => b.F.div === a.F.div && b.reg === a.reg && b.gym !== a.gym && fair(a, b) && (!busy.has(pk(b.u, b.k)) || before(b)));
-        if (!c.length) { log.push(`no fair opponent for ${nm(a.F)} (${P[a.u]?.gym}, ${a.F.div}${a.reg ? " BK" : ""})`); continue; }
+        if (!c.length) { log.push(`no fair opponent for ${nm(a.F)} (${P[a.u]?.gym}, ${a.F.div}${a.reg ? " " + a.reg.toUpperCase() : ""})`); continue; }
         c.sort((x, y) => gap(a, x) - gap(a, y) || Math.random() - .5);
         book(a, c[0], date, true); lastDate.set(pk(a.u, a.k), date); lastDate.set(pk(c[0].u, c[0].k), date);
       }

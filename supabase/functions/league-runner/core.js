@@ -425,6 +425,7 @@ const POOL=70,MAX=30,MINS={str:1,kp:0,spd:1,agl:1,chn:1,cnd:1,hgt:0};
 const DIVS=[['Straw',105],['Junior Fly',108],['Fly',112],['Super Fly',115],['Bantam',118],['Super Bantam',122],['Feather',126],['Super Feather',130],['Light',135],['Welter',147],['Super Welter',154],['Middle',160],['Super Middle',168],['Light Heavy',175],['Cruiser',200],['Heavy',280]];
 const FIGHT_NIGHT={'Straw':'Sunday','Junior Fly':'Sunday','Fly':'Sunday','Super Fly':'Monday','Bantam':'Monday','Super Bantam':'Monday','Feather':'Tuesday','Super Feather':'Tuesday','Light':'Wednesday','Welter':'Wednesday','Super Welter':'Wednesday','Super Middle':'Thursday','Middle':'Thursday','Cruiser':'Friday','Light Heavy':'Friday','Heavy':'Saturday'};
 const isBK=F=>!!F&&F.region==='bk';
+const RK_CAP=18,RK_FIGHTS=100;
 const HT=F=>60+F.hgt;
 const ht=i=>`${Math.floor(i/12)} feet ${i%12} inches`;
 function boutPurses(rRed,rBlue,belt,champSide,star){const top=Math.max(rRed||0,rBlue||0);let pot=2000*Math.pow(1.35,top)*(star||1);if(belt)pot*=4;
@@ -475,7 +476,7 @@ function prepFighter(F,FA,FB,div){const c=JSON.parse(JSON.stringify(F));const wi
   c.k=12+(((FA.rating||0)+(FB.rating||0))/2)/3;c.bk=isBK(F);c.minW=minWeight(F);c.divLim=(DIVS.find(d=>d[0]===div)||[0,160])[1];return c}
 function ratingStatus(F,out,r){
   const me=F.rating||0,opp=r.oppRating!=null?r.oppRating:me;F.gains=[];
-  if(out==='win'){const fast=(F.streak||0)>0,inc=fast?2:1;F.rating=Math.min(28,me+inc); /* both regions top out at 28 (owner, Nov 14, 2026; Bare Knuckles was 18) */
+  if(out==='win'){const fast=(F.streak||0)>0,inc=fast?2:1;F.rating=Math.min(F.region==='rk'?RK_CAP:28,me+inc); /* both regions top out at 28 (owner, Nov 14, 2026; Bare Knuckles was 18) */
     /* training (owner, Nov 12, 2026): the points this win earns go, in order, to the primary program, the secondary program,
        and (fast track, winning streak only) the third program the manager picked before the fight */
     const slots=[F.train||'str',F.train2||F.train||'str',(fast&&F.train3)||F.train2||F.train||'str'];

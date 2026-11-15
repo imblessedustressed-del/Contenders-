@@ -89,6 +89,9 @@ pre.plan{font:14px 'Courier New',monospace;background:#fbf7ef;border:1px inset #
 .home .banner{display:block;width:100%;max-width:640px;margin:0 auto}
 .center{text-align:center}
 .tag{text-align:center;font-size:18px;color:#555;word-spacing:2px}.tag b{margin:0 14px;white-space:nowrap}
+.aiBox{margin:10px 0;padding:8px 10px;border:1px solid #c9d6ef;border-radius:8px;background:#f5f8ff}.aiBox summary{cursor:pointer}
+.rkgrad{display:inline-block;margin-top:4px;padding:4px 8px;background:#eaf7ee;border:1px solid #9bd3ad;border-radius:6px}
+.rktag{background:#1a3a2a!important;color:#b8f2c9!important}
 .bktag{display:inline-block;font:700 10px system-ui,sans-serif;background:#3a2a1a;color:#f2d29b;border-radius:4px;padding:1px 4px;vertical-align:middle;letter-spacing:.5px}
 .hero{position:relative;overflow:hidden;text-align:center;margin:0 0 18px;padding:34px 18px 28px;border-radius:18px;color:#fff;
   background:radial-gradient(120% 90% at 50% 0%,#2b3c58 0%,#141c2b 55%,#0b0f18 100%);box-shadow:0 10px 30px rgba(10,15,25,.35);border:1px solid rgba(255,255,255,.06)}
@@ -295,11 +298,20 @@ const SCHED_TABLE=()=>`<table class="grid"><tr><th>Fight night</th><th>Divisions
 const BELTS=['WBC','WBA','WBO'];
 /* Regions: the regular Contenders region and the Bare Knuckles region (25 rounds, decided by knockdowns; rating/status cap 28 like Contenders since Nov 14, 2026). */
 const isBK=F=>!!F&&F.region==='bk';
+/* Rookies region (owner, Nov 15, 2026): rating/status cap 18, no title fights, a rookie is done at status 18 or after 100 rookie fights
+   and his manager moves him up to Contenders or retires him. Fights use Contenders rules. */
+const isRK=F=>!!F&&F.region==='rk';
+const regOf=F=>F&&F.region==='bk'?'bk':F&&F.region==='rk'?'rk':'';
+const normReg=r=>r==='bk'||r==='rk'?r:'';
+const RK_CAP=18,RK_FIGHTS=100;
+const rkFights=F=>{const r=F.rec||[0,0,0,0];return r[0]+r[1]+r[2]};
+const rkDone=F=>isRK(F)&&((F.status||0)>=RK_CAP||rkFights(F)>=RK_FIGHTS);
 /* Only the owner sees which gyms are computer-run (owner, Nov 12, 2026: "keep em wondering"). */
 const OWNER='65fa7d27-200f-46d0-9788-85ea5dead857';
 const seeBots=()=>ME===OWNER;
-const REG_NAME=r=>r==='bk'?'Bare Knuckles':'Contenders';
-const bkTag=F=>isBK(F)?' <span class="bktag">BK</span>':'';
+const COACH='00000000-0000-0000-0000-0000000000d0'; /* the Corner Coach: sends post-fight notes, not a gym */
+const REG_NAME=r=>r==='bk'?'Bare Knuckles':r==='rk'?'Rookies':'Contenders';
+const bkTag=F=>isBK(F)?' <span class="bktag">BK</span>':isRK(F)?' <span class="bktag rktag">RK</span>':'';
 const ckey=b=>(b.region==='bk'?'BK ':'')+b.div;
 const boutRounds=(A,B)=>isBK(A)&&isBK(B)?25:12;
 const FORUMS=[
@@ -811,7 +823,7 @@ function condText(x,after){
 /* ================= SHARED DATA (Supabase: accounts, forums, messages) ================= */
 cleanSlate();
 const SB_URL='https://ojsphhzgzbxmnfcbitqb.supabase.co',SB_KEY='sb_publishable_SWO9WhiSkoVhflY5CmY08A_hlqCEJSi';
-const BUILD='1794744872';
+const BUILD='1794746055';
 /* A tab left open on an older build must not save over newer data: if the site has been updated, reload before anything else is saved. */
 let staleBuild=false;
 async function checkBuild(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
@@ -848,7 +860,7 @@ async function loadPublic(){
       const e=q.find(x=>x.error);if(e)return e;const seen=new Set(),data=[];q.forEach(x=>x.data.forEach(b=>{if(!seen.has(b.id)){seen.add(b.id);data.push(b)}}));
       data.sort((a,b)=>a.fight_date<b.fight_date?1:a.fight_date>b.fight_date?-1:b.id-a.id);return{data,error:null}})()]);
     if(p.error||t.error)throw p.error||t.error;
-    managers={};p.data.forEach(r=>managers[r.id]={gym:r.gym,desc:r.description,loc:r.location||'',bot:false,at:Date.parse(r.created_at),descBlocked:!!r.desc_blocked});
+    managers={};p.data.forEach(r=>managers[r.id]={hidden:r.id===COACH,gym:r.gym,desc:r.description,loc:r.location||'',bot:false,at:Date.parse(r.created_at),descBlocked:!!r.desc_blocked});
     /* sparring gyms: the gyms whose full records the database lets everyone read (which ones are computer-run is never sent to players) */
     /* sparring gyms (owner, Nov 14, 2026: nobody sees anyone else's plans): the spar edge function sends only names, records and weights;
        other gyms' abilities and plans stay on the server, and practice fights against them run there */
@@ -2167,13 +2179,15 @@ function fighterLine(side){
   const F=state[side],belts=[];
   for(const d in state.champs)for(const b in state.champs[d])if(state.champs[d][b]===F.name)belts.push(`${d}weight ${b}`);
   const wi=weighIn(F,divOf(F)),nb=myBout(side),tr=(PROGS.find(p=>p[0]===(F.train||'str'))||PROGS[0])[1];
-  return`<p class="fl"><a data-go="rec:${side}">${esc(F.name)}</a>${bkTag(F)}${STAR(belts.length)} Rank #${frankOf(side)} <b>Contenders</b> (${F.rec[0]}-${F.rec[1]}-${F.rec[2]}) ${F.rating||0}(${F.status||0}) <a data-go="pub:${side}">Bio</a><br>
+  return`<p class="fl"><a data-go="rec:${side}">${esc(F.name)}</a>${bkTag(F)}${STAR(belts.length)} Rank #${frankOf(side)} <b>${REG_NAME(regOf(F))}</b> (${F.rec[0]}-${F.rec[1]}-${F.rec[2]}) ${F.rating||0}(${F.status||0}) <a data-go="pub:${side}">Bio</a><br>
   Weight: ${natWeight(F)}/${minWeight(F)} pounds<br>
   Next Bout: ${nb?boutLine(nb):`none scheduled${nightOf(divOf(F))?` (${esc(divOf(F))}weights fight ${nightOf(divOf(F))}s)`:''}`}<br>
   Fight Plan: <a data-go="pf:edit:${encN(F.planName||'Basic')}">${esc(F.planName||'Basic')}</a>${planUpdated(F.planName||'Basic')} <a data-go="train:${side}">Training:</a> ${esc(tr)}<br>
   Options: <a data-go="forum:press">Talk Trash</a> | <a data-go="cdiv:${side}">Change Weight Division</a> | <a data-go="desc">Change Description</a> | ${state[side]&&state[side].retireAfter?`<span class="cr">Retiring after his next fight</span> (<a data-unretire-after="${side}">cancel</a>)`:`<a data-retire="${side}">Retire</a>`}${(()=>{const t=[reignLine(ME,side),champLine(ME,side)].filter(Boolean).join(', ');return t?`<br><b class="r">${esc(cap(t))}</b>${belts.length?` <span class="small">(holds the ${belts.map(esc).join(' and ')} title${belts.length>1?'s':''})</span>`:''}`:belts.length?`<br><b>Champion: ${belts.map(esc).join(', ')}</b>`:''})()}
-  ${wi.endMul<1?`<br><span class="cr small">May be fighting at a disadvantage due to weight.</span>`:''}</p>`;
+  ${wi.endMul<1?`<br><span class="cr small">May be fighting at a disadvantage due to weight.</span>`:''}${rkGradBox(side,F)}</p>`;
 }
+/* a rookie who reached status 18 or 100 rookie fights gets no more rookie fights: move him up or retire him (owner, Nov 15, 2026) */
+function rkGradBox(side,F){if(!rkDone(F))return'';return`<br><span class="rkgrad"><b>Rookie career complete!</b> ${esc(F.name)} ${(F.status||0)>=RK_CAP?'reached status '+RK_CAP:'has fought '+RK_FIGHTS+' rookie fights'}, so he gets no more Rookies bouts. ${myBout(side)?'After his booked fight you can ':''}<a data-graduate="${esc(side)}">Move him up to Contenders</a> or <a data-retire="${esc(side)}">retire him</a>.</span>`}
 function cdivHTML(side){
   const F=FTR(side);if(!F)return`<p>That fighter isn't in your gym. <a data-go="gym">Back to your gym</a></p>`;
   if(myBout(side))return`<h1>Change Weight Division</h1><p>${esc(F.name)} already has a bout scheduled, so he can't change divisions until it's fought.</p><p><a data-go="gym">Back to your gym</a></p>`;
@@ -2261,7 +2275,7 @@ function planFormHTML(arg){
     <p class="small">A "#" flags lines the parser didn't recognize. Old WeBL plans can be pasted in as they are.</p>
     <textarea id="pfText" class="planbox" data-keep rows="16" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off" data-gramm="false" data-gramm_editor="false" data-enable-grammarly="false">${esc(text)}</textarea>
     <div id="pfCheck">${planErrBox(text)}</div>
-    <p><button id="${isEdit?'pfSaveEdit':'pfSaveAdv'}" data-name="${esc(name)}">Submit Form</button> <button id="pfCheckBtn">Check Plan</button></p>${back}`;
+    <p><button id="${isEdit?'pfSaveEdit':'pfSaveAdv'}" data-name="${esc(name)}">Submit Form</button> <button id="pfCheckBtn">Check Plan</button></p>${aiBoxHTML(isEdit?name:'')}${back}`;
   }
   if(state.plans[name]==null)return`<h1>Fight Plans</h1><p>That plan no longer exists.</p>${back}`;
   if(mode==='copy')return`<h1>Copy Fight Plan</h1><p>Copy <b>${esc(name)}</b> to a new plan named:</p><p><input id="pfName" data-keep maxlength="40" style="width:280px" value="${esc(name)} 2"> <button id="pfDoCopy" data-name="${esc(name)}">Submit Form</button></p>${back}`;
@@ -2271,7 +2285,8 @@ function planFormHTML(arg){
   return back;
 }
 function planName_ok(n,except){n=(n||'').trim();if(!n)return'Give the plan a name.';if(n.length>40)return'Plan names can be up to 40 characters.';if(n!==except&&state.plans[n]!=null)return'You already have a plan with that name.';return''}
-function newDraft(){return{name:'',nick:'',home:'',build:'normal',str:12,kp:2,spd:12,agl:12,chn:11,cnd:13,hgt:6,cut:2,plan:'6/6/8',planName:'Basic'}}
+/* a brand-new gym's first fighter starts in the Rookies region (owner, Nov 15, 2026); the manager can pick another region */
+function newDraft(){const first=!ROSTER().length&&!(state.retired||[]).length;return{name:'',nick:'',home:'',build:'normal',str:12,kp:2,spd:12,agl:12,chn:11,cnd:13,hgt:6,cut:2,plan:'6/6/8',planName:'Basic',...(first?{region:'rk'}:{})}}
 function createHTML(){
   if(!state.draft)state.draft=newDraft();
   return cornerHTML('D');
@@ -2295,7 +2310,7 @@ function cornerHTML(side){
   <p>Please read our <a data-go="aup">policy on offensive names</a> before creating your first fighter.<br>Need advice? Read the <a data-go="newbie">fighter creation guide</a> for new players.</p>
   <div class="flex">
   <table class="grid" data-side="${side}">
-    <tr><td>Region:</td><td colspan="3"><select data-f="region">${opt([['','Contenders (12 rounds, judges decide)'],['bk','Bare Knuckles (25 rounds, knockdowns decide)']],F.region||'')}</select> <a data-go="help:bk" class="small">What's Bare Knuckles?</a></td></tr>
+    <tr><td>Region:</td><td colspan="3"><select data-f="region">${opt([['rk','Rookies (12 rounds, for learning, rating up to 18)'],['','Contenders (12 rounds, judges decide)'],['bk','Bare Knuckles (25 rounds, knockdowns decide)']],F.region||'')}</select> <a data-go="help:rookies" class="small">Rookies</a> | <a data-go="help:bk" class="small">Bare Knuckles</a></td></tr>
     <tr><td>Name (Max 40 characters):</td><td colspan="3"><input data-f="name" maxlength="40" value="${esc(F.name)}" style="width:95%"></td></tr>
     <tr><td>Nickname:</td><td><input data-f="nick" maxlength="30" value="${esc(F.nick)}" style="width:90%"></td><td>Hometown:</td><td><input data-f="home" maxlength="40" value="${esc(F.home||'')}" style="width:90%"></td></tr>
     <tr><td>Strength:</td>${statCell('str')}<td>KO Punch Bonus:</td>${statCell('kp')}</tr>
@@ -2346,7 +2361,7 @@ function recordHTML(side){
     ['Rank',frankOf(side),'Total Earnings',money(F.earn)],['Fan Following',F.fans||0,'PPV Buys',(F.ppv||0).toLocaleString('en-US')],['Injury Points',F.ip||0,'AP Loss',F.aploss||0]];
   const pf=primeF(F),prime=pf>=.999?'He is in his prime.':pf>.9?'He is close to his best.':pf>.8?'He is a step off his best.':'He is well past his best.';
   const tr={str:'strength',spd:'speed',agl:'agility',chn:'chin',cnd:'conditioning',kp:'knockout punch'};
-  return`<p><a data-go="pub:${side}" class="b red">${n}</a>${bkTag(F)} ${recStr(F)}${isBK(F)?' <span class="small mute">Bare Knuckles region: 25-round fights decided by knockdowns.</span>':''}</p>
+  return`<p><a data-go="pub:${side}" class="b red">${n}</a>${bkTag(F)} ${recStr(F)}${isBK(F)?' <span class="small mute">Bare Knuckles region: 25-round fights decided by knockdowns.</span>':isRK(F)?` <span class="small mute">Rookies region: rating and status top out at ${RK_CAP}, no title fights.</span>`:''}</p>
   <table class="grid">${rows.map(r=>`<tr><td>${r[0]}</td><td class="n">${r[1]}</td><td>${r[2]}</td><td class="n">${r[3]}</td></tr>`).join('')}
   <tr><td>Height</td><td colspan="3">${ht(HT(F))} (${cm(HT(F))} centimeters)</td></tr>
   <tr><td>Build</td><td colspan="3">${esc(F.build||'normal')}</td></tr>
@@ -2401,6 +2416,35 @@ function pubHTML(side){
   <p class="small"><a data-go="rec:${side}">Manager's page for ${n}</a></p>`;
 }
 function frankOf(side){if(ME&&cards[ME]){const i=rankedIn(divOf(state[side]),state[side].region).findIndex(x=>x.uid===ME&&x.f.id===side);if(i>=0)return i+1}const sc=s=>{const r=state[s].rec;return(r[0]+.5*r[2])/Math.max(1,r[0]+r[1]+r[2])+r[0]*.001};const d=divOf(state[side]);const peers=ROSTER().filter(k=>divOf(state[k])===d).sort((a,b)=>sc(b)-sc(a));return peers.indexOf(side)+1}
+/* "Ask your own AI" (owner, Nov 15, 2026: "they can hook up whatever AI they want and use it to write fight plans"): builds one prompt with
+   our plan rules, the manager's fighter and his next opponent's PUBLIC record, for the manager to paste into any AI he likes.
+   Nothing is sent anywhere by us; the box says that whatever he pastes elsewhere goes to that company. */
+const AI_RULES=`CONTENDERS FIGHT PLAN RULES (12 rounds unless noted)
+- A tactic is AGG/POW/DEF, e.g. 6/6/8. The three numbers add up to 20 or less; unused points are rest (each rest point adds 2% of lost endurance back between rounds, on top of a base 10%).
+- AGG: about 9 punches thrown per point; wins rounds; most tiring. POW: damage per punch; about 3 power and 3 regular punches per point, the rest jabs. DEF: damage taken is divided by it; both men's DEF cut how many punches land.
+- Fatigue per round = AGG + POW/2; CND/2 of it is free, the rest comes off endurance (starts at 10 x CND). STR, SPD and AGL shrink as endurance falls. A spent fighter gets stunned and knocked out easily.
+- Target letter after AGG: H head (+20% stun, -20% endurance damage), B body (+20% endurance, -20% stun), C go after cuts. Targeted punches land about 20% less. No letter = opportunistic.
+- Dirty fighting: ! after POW (6/7!/7): +10% damage, risks warnings, point deductions, disqualification.
+- One style in parentheses at the end: (inside) +1 STR and half his STR edge, takes 10% more damage; (clinch) +AGL (more if stronger), his AGG drops, DEF over 10 risks a point for holding; (feint) +1 SPD and half his SPD edge, +1 fatigue; (counter) if his SPD+height beats the other man's he gains AGL and the other loses it, AGG x0.8, backfires otherwise; (ring) +1.75 AGL and half his AGL edge, a little extra fatigue; (ropes) cuts a less agile opponent's AGL, -1 own AGL; (outside) +0.5 SPD/AGL, height edge counts more, -15% POW; (allout) double damage dealt, nearly triple taken.
+- Lines: a plain tactic applies every round. "N) tactic" and the lines under it count from round N on. "if CONDITION then TACTIC". Every round the plan is read top to bottom and the LAST true line is used.
+- Condition words: round, score (his points minus the other man's, one judge's view), roundswon, roundslost, decision_won, decision_lost (7 rounds won/lost on every card), endurance, endurance_percent (100 = fresh), opponent or opp (2 strong over 2/3 endurance, 1 tired, 0 exhausted under 1/3; words strong/tired/exhausted also work), opptiring (opponent under half), mystuns/hisstuns (times stunned so far), myknockdowns/hisknockdowns, mycuts/hiscuts, warnings, true, false.
+- Math and logic: + - * / ( ) < > = <= >= <> and or not. Comments start with #. Other commands: stop, towel (corner quits once he's under 50%), say "text".
+- Judges: a stun or knockdown wins the round; otherwise punches landed win it (power 2, regular 1.5, jab 1). Stunning damage of 1.5x chin in a round = stun, 2x = knockdown, 2.5x = KO.`;
+function aiPrompt(side,planText){const F=side?FTR(side):null;const L=[];
+  L.push('You are helping me write a fight plan for my boxer in Contenders, an online boxing strategy game where both managers write plans and the fight is simulated. Use only the rules below. Reply with the plan in a code block, one line per statement, then a short explanation of each line.');
+  L.push(AI_RULES);
+  if(F){const r=F.rec||[0,0,0,0];L.push(`MY FIGHTER: ${F.name}, ${REG_NAME(regOf(F))} region, ${divOf(F)}weight (limit ${(DIVS.find(d=>d[0]===divOf(F))||[0,0])[1]} lb). STR ${F.str}, KP ${F.kp||0}, SPD ${F.spd}, AGL ${F.agl}, CHN ${F.chn}, CND ${F.cnd}, height ${ht(HT(F))}, build ${F.build||'normal'}, weight ${natWeight(F)} lb (lightest safe ${minWeight(F)} lb), cut resistance ${['','low','normal','high'][F.cut]||'normal'}. Record ${r[0]}-${r[1]}-${r[2]} (${r[3]} KOs), rating ${F.rating||0}, status ${F.status||0}.${F.train?' Training '+F.train+' (+1 in fights).':''}`);
+    const x=myBout(side);if(x){const o=x.o,orc=o.rec||[0,0,0,0];L.push(`NEXT OPPONENT (public info only): ${o.name} from ${x.gym}, ${o.hgt!=null?ht(60+o.hgt):'height unknown'}${o.w?', about '+o.w+' lb':''}, record ${orc[0]}-${orc[1]}-${orc[2]} (${orc[3]||0} KOs), rating ${o.rating||0}/${o.status||0}. Fight on ${x.date}.`+((o.hist||[]).length?' Recent results: '+(o.hist||[]).slice(0,6).map(h=>`${h.res} vs ${h.opp}`).join('; ')+'.':''))}
+    else L.push('NEXT OPPONENT: not booked yet. Write a solid all-round plan.')}
+  if(planText&&planText.trim())L.push('MY CURRENT PLAN (improve it, keep what works):\n'+planText.trim());
+  L.push('Make sure every tactic adds up to 20 or less, includes a rest line for when he tires, a safety line for when he is hurt, and a way to win close late rounds.');
+  return L.join('\n\n')}
+function aiBoxHTML(name){const ros=ROSTER().filter(k=>state[k]);const pick=ros.find(k=>state[k].planName===name)||ros[0]||'';
+  return`<details class="aiBox"><summary><b>🤖 Ask your own AI</b> to write or improve this plan</summary>
+  <p class="small">Pick the fighter, copy the prompt, and paste it into ChatGPT, Claude, Gemini or any AI you use. It includes our plan rules, your fighter's numbers and his next opponent's public record. Paste the AI's plan back in the box above and press Check Plan.</p>
+  <p class="small cr">Your plans are private on Contenders. Whatever you paste into another AI goes to that company, so share only what you're comfortable with.</p>
+  <p>${ros.length?`Fighter: <select id="aiWho">${ros.map(k=>`<option value="${esc(k)}"${k===pick?' selected':''}>${esc(state[k].name)}</option>`).join('')}</select> `:''}<button id="aiCopy">Copy prompt</button></p>
+  <textarea id="aiOut" class="planbox" rows="8" readonly spellcheck="false" style="display:none"></textarea></details>`}
 function planEditHTML(side){if(!FTR(side))return planFormHTML('');return planFormHTML('edit:'+encN(state[side].planName||'Basic'))}
 /* ---------- Fights ---------- */
 let prPlan={red:'',blue:''}; // practice fights: '' = the fighter's own plan, else a saved plan name
@@ -2548,7 +2592,7 @@ function startFight(){
    at status 6 and every even level after, a bonus point. Points go to the primary, secondary and (fast track) third programs in that order. No random points. Streak grows only when status rises. */
 function ratingStatus(F,out,r){
   const me=F.rating||0,opp=r.oppRating!=null?r.oppRating:me;F.gains=[];
-  if(out==='win'){const fast=(F.streak||0)>0,inc=fast?2:1;F.rating=Math.min(28,me+inc); /* both regions top out at 28 (owner, Nov 14, 2026; Bare Knuckles was 18) */
+  if(out==='win'){const fast=(F.streak||0)>0,inc=fast?2:1;F.rating=Math.min(F.region==='rk'?RK_CAP:28,me+inc); /* both regions top out at 28 (owner, Nov 14, 2026; Bare Knuckles was 18) */
     /* training (owner, Nov 12, 2026): the points this win earns go, in order, to the primary program, the secondary program,
        and (fast track, winning streak only) the third program the manager picked before the fight */
     const slots=[F.train||'str',F.train2||F.train||'str',(fast&&F.train3)||F.train2||F.train||'str'];
@@ -2604,8 +2648,8 @@ const prDate=ms=>{const d=new Date(ms);return d.toLocaleDateString('en-US',{week
 function pressFighter(e){const c=cards[e.by]||{};const n=String(e.title||'').trim();return(c.fighters||[]).find(f=>String(f.name||'').trim()===n)||(c.retired||[]).find(f=>String(f.name||'').trim()===n)||null}
 function pressHTML(){
   if(pressFeed===null){loadPress();return`<h1>Press Releases</h1>${needDB()}<p class="mute">Loading...</p>`}
-  const opts=[['','Contenders'],['bk','Bare Knuckles']];
-  const list=pressFeed.filter(e=>{const f=pressFighter(e);return pressSel==='bk'?!!f&&f.region==='bk':!(f&&f.region==='bk')});
+  const opts=[['','Contenders'],['bk','Bare Knuckles'],['rk','Rookies']];
+  const list=pressFeed.filter(e=>{const f=pressFighter(e);return regOf(f)===normReg(pressSel)});
   const mine=ME?ROSTER().map(k=>[k,state[k]]).filter(([,F])=>F):[];
   const form=dbState!=='on'?'':!ME?needLogin('post a press release'):sanctionOf('gag')?sanctionNote('gag'):mine.length?`<div class="prForm"><select id="prWho">${mine.map(([k,F])=>`<option value="${esc(k)}">${esc(F.name)}</option>`).join('')}</select> <input id="prText" data-keep maxlength="280" placeholder="Say something to the league..."> <button id="prPost">Press</button></div>`:'<p class="small mute">Create a fighter to post press releases.</p>';
   return`<div class="center prTop"><p>Press releases for other regions:</p><select id="prSel">${opts.map(([v,l])=>`<option value="${esc(v)}"${v===pressSel?' selected':''}>${esc(l)}</option>`).join('')}</select> <button id="prGo">Press</button></div>
@@ -2644,7 +2688,7 @@ function topicHTML(tid){
 function msgsHTML(arg){
   if(dbState!=='on')return`<h1>Messages</h1>${needDB()}`;
   if(!ME)return`<h1>Messages</h1>${needLogin('send and read messages')}`;
-  const others=Object.keys(managers).filter(id=>id!==ME).sort((x,y)=>gymOf(x).localeCompare(gymOf(y)));
+  const others=Object.keys(managers).filter(id=>id!==ME&&!managers[id].hidden).sort((x,y)=>gymOf(x).localeCompare(gymOf(y)));
   const when=ms=>{const d=new Date(ms),n=new Date();return d.toDateString()===n.toDateString()?d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}):d.toLocaleDateString('en-US',{month:'short',day:'numeric'})};
   const gag=sanctionOf('gag');
   if(arg&&arg!=='new'){
@@ -2682,15 +2726,15 @@ const beltsHTML=b=>{const o=beltOrgs(b),bk=b&&(b.region==='bk'||/^BK\b/i.test(b.
 /* League week = number of fight dates already run */
 const leagueWeek=()=>new Set(bouts.filter(b=>b.status==='done').map(b=>b.fight_date)).size;
 function allFighters(){const out=[];for(const uid in cards){const m=managers[uid];if(!m)continue;((cards[uid]||{}).fighters||[]).forEach(f=>out.push({uid,f,m}))}return out}
-function rankedIn(div,reg){reg=reg==='bk'?'bk':'';return allFighters().filter(x=>x.f.div===div&&(x.f.region==='bk'?'bk':'')===reg).map(x=>{const r=x.f.rec||[0,0,0,0];return{...x,r,t:beltsOf(x.uid,x.f.id).length,dif:r[0]-r[1],pct:(r[0]+.5*r[2])/Math.max(1,r[0]+r[1]+r[2])}})
+function rankedIn(div,reg){reg=normReg(reg);return allFighters().filter(x=>x.f.div===div&&regOf(x.f)===reg).map(x=>{const r=x.f.rec||[0,0,0,0];return{...x,r,t:beltsOf(x.uid,x.f.id).length,dif:r[0]-r[1],pct:(r[0]+.5*r[2])/Math.max(1,r[0]+r[1]+r[2])}})
     .sort((a,b)=>b.t-a.t||(b.f.rating||0)-(a.f.rating||0)||(b.f.status||0)-(a.f.status||0)||(b.f.streak||0)-(a.f.streak||0)||b.pct-a.pct||a.f.name.localeCompare(b.f.name))}
 function frankHTML(arg){
-  let[div,reg]=decN(arg||'').split('@');reg=reg==='bk'?'bk':'';if(!DIVS.some(d=>d[0]===div)){const mine=ME?((cards[ME]||{}).fighters||[])[0]:null;div=(mine&&mine.div)||(ROSTER()[0]&&divOf(state[ROSTER()[0]]))||'Heavy'}
+  let[div,reg]=decN(arg||'').split('@');reg=normReg(reg);if(!DIVS.some(d=>d[0]===div)){const mine=ME?((cards[ME]||{}).fighters||[])[0]:null;div=(mine&&mine.div)||(ROSTER()[0]&&divOf(state[ROSTER()[0]]))||'Heavy'}
   const wk=leagueWeek();
   const rows=rankedIn(div,reg);
   return`<div class="center rksel"><p>Rankings for other divisions, regions, and past weeks:</p>
   <select id="rkDiv">${DIVS.map(([d])=>`<option value="${esc(d)}"${d===div?' selected':''}>${esc(d)}weight</option>`).join('')}</select>
-  <select id="rkReg"><option value="">Contenders</option><option value="bk"${reg?' selected':''}>Bare Knuckles</option></select>
+  <select id="rkReg"><option value="">Contenders</option><option value="bk"${reg==='bk'?' selected':''}>Bare Knuckles</option><option value="rk"${reg==='rk'?' selected':''}>Rookies</option></select>
   <select id="rkWk"><option>${wk}</option></select>
   <button id="rkGo">Rankings</button></div><hr>
   <h1 class="center rkh">${esc(div)}weight Rankings in ${REG_NAME(reg)} after Week ${wk}</h1>${needDB()}
@@ -2699,22 +2743,22 @@ function frankHTML(arg){
   `<p class="center mute">No active fighters in this division yet.</p>`}
   <p class="small mute center">Champions first, then ranked by rating, then status, then winning streak, then win percentage.</p>`;
 }
-function gymStats(uid,reg){const c=cards[uid]||{fighters:[],retired:[]},inR=f=>reg==null||(reg==='bk')===(f.region==='bk'),all=[...(c.fighters||[]),...(c.retired||[])].filter(inR);
+function gymStats(uid,reg){const c=cards[uid]||{fighters:[],retired:[]},inR=f=>reg==null||normReg(reg)===regOf(f),all=[...(c.fighters||[]),...(c.retired||[])].filter(inR);
   const r=[0,0,0,0];all.forEach(f=>(f.rec||[]).forEach((v,i)=>r[i]+=v));const titles=reg==null?(titleWins(uid)||all.reduce((a,f)=>a+(f.titles||[]).length,0)):all.reduce((a,f)=>a+(f.titles||[]).length,0);
   const n=r[0]+r[1]+r[2];return{earn:all.reduce((a,f)=>a+(f.earn||0),0),rec:r,titles,diff:r[0]-r[1],pct:n?Math.round(100*(r[0]+.5*r[2])/n):0,active:(c.fighters||[]).filter(inR).length}}
 function gymPubHTML(uid){
   const m=managers[uid];if(!m)return`<h1>Gym not found</h1><p>${needDB()}<a data-go="grank">Back to Gym Rankings</a></p>`;
   const c=cards[uid]||{fighters:[],retired:[]},g=gymStats(uid),rk={};(c.fighters||[]).forEach(f=>{const kk=f.div+(f.region||'');if(!rk[kk])rk[kk]=rankedIn(f.div,f.region)});const fl=(f,i,act)=>{const r=f.rec||[0,0,0,0];
-    return`<p class="fl">${act?`<a data-go="opub:${uid}:${encN(f.id)}">${esc(f.name)}</a>`:esc(f.name)}${(f.titles||[]).length?' <span style="color:#e8a400">&#9733;</span>':''} ${r[0]} wins (${r[3]} by knock out), ${r[1]} losses, and ${r[2]} draws. Rating ${f.rating||0}. Status ${f.status||0}.${(()=>{const t=act?[reignLine(uid,f.id),champLine(uid,f.id)].filter(Boolean).join(', '):'';return t?` <b class="r">${esc(cap(t))}!!</b>`:(f.titles||[]).length?` <b class="r">Winner of ${f.titles.length} world title${f.titles.length>1?'s':''}!!</b>`:''})()}${act&&rk[f.div+(f.region||'')]?(()=>{const n=rk[f.div+(f.region||'')].findIndex(x=>x.uid===uid&&x.f.id===f.id)+1;return n?` Rank #${n} in <a data-go="frank:${encN(f.div)}${f.region==='bk'?'@bk':''}">${REG_NAME(f.region)}</a>.`:''})():''} Career earnings ${money(f.earn)}.</p>`};
-  const rg=f=>f.region==='bk'?'bk':'';
-  const byDiv=(L,act)=>['','bk'].flatMap(R=>[...DIVS].reverse().map(([d])=>[d,R])).filter(([d,R])=>L.some(f=>f.div===d&&rg(f)===R)).map(([d,R])=>`<h3 class="divh">${R?'Bare Knuckles ':''}${esc(d)}weights</h3>${L.map((f,i)=>[f,i]).filter(([f])=>f.div===d&&rg(f)===R).sort((x,y)=>{const r=f=>{const n=act&&rk[d+R]?rk[d+R].findIndex(z=>z.uid===uid&&z.f.id===f.id):-1;return n<0?1e9:n};return r(x[0])-r(y[0])}).map(([f,i])=>fl(f,i,act)).join('')}`).join('');
+    return`<p class="fl">${act?`<a data-go="opub:${uid}:${encN(f.id)}">${esc(f.name)}</a>`:esc(f.name)}${(f.titles||[]).length?' <span style="color:#e8a400">&#9733;</span>':''} ${r[0]} wins (${r[3]} by knock out), ${r[1]} losses, and ${r[2]} draws. Rating ${f.rating||0}. Status ${f.status||0}.${(()=>{const t=act?[reignLine(uid,f.id),champLine(uid,f.id)].filter(Boolean).join(', '):'';return t?` <b class="r">${esc(cap(t))}!!</b>`:(f.titles||[]).length?` <b class="r">Winner of ${f.titles.length} world title${f.titles.length>1?'s':''}!!</b>`:''})()}${act&&rk[f.div+(f.region||'')]?(()=>{const n=rk[f.div+(f.region||'')].findIndex(x=>x.uid===uid&&x.f.id===f.id)+1;return n?` Rank #${n} in <a data-go="frank:${encN(f.div)}${regOf(f)?'@'+regOf(f):''}">${REG_NAME(regOf(f))}</a>.`:''})():''} Career earnings ${money(f.earn)}.</p>`};
+  const rg=regOf;
+  const byDiv=(L,act)=>['','bk','rk'].flatMap(R=>[...DIVS].reverse().map(([d])=>[d,R])).filter(([d,R])=>L.some(f=>f.div===d&&rg(f)===R)).map(([d,R])=>`<h3 class="divh">${R?REG_NAME(R)+' ':''}${esc(d)}weights</h3>${L.map((f,i)=>[f,i]).filter(([f])=>f.div===d&&rg(f)===R).sort((x,y)=>{const r=f=>{const n=act&&rk[d+R]?rk[d+R].findIndex(z=>z.uid===uid&&z.f.id===f.id):-1;return n<0?1e9:n};return r(x[0])-r(y[0])}).map(([f,i])=>fl(f,i,act)).join('')}`).join('');
   return`<h1 class="pubname">${esc(m.gym)}${m.bot&&seeBots()?' <span class="small mute">(bot gym)</span>':''}</h1>${m.bot&&seeBots()?'<p class="small mute">A computer-run gym that fills out the rankings. Spar with its fighters in Practice Fights.</p>':''}
   <p>${esc(m.gym)} trains fighters${m.loc?` in ${esc(m.loc)}`:''}. Managing since ${m.at?dt(m.at).slice(0,10):'recently'}.${uid!==ME&&!(m.bot&&seeBots())?` <a data-dm="${esc(uid)}">Send a message</a>`:''}</p>
   ${m.descBlocked?'<p class="small mute">This gym\'s description was removed by the Commissioner.</p>':m.desc?gymDescBox(m.desc,{uid}):''}
   <table class="plain" style="margin-top:12px"><tr><th>Region</th><th>Earnings</th><th>Record</th><th>Titles</th></tr>
-  ${(()=>{const all=[...(c.fighters||[]),...(c.retired||[])],bkA=all.filter(f=>f.region==='bk');if(!bkA.length)return`<tr><td><b>Contenders</b></td><td>${money(g.earn)}</td><td>${g.rec[0]}-${g.rec[1]}-${g.rec[2]}</td><td class="cr">${g.titles}</td></tr>`;
+  ${(()=>{const all=[...(c.fighters||[]),...(c.retired||[])],bkA=all.filter(f=>f.region==='bk'),rkA=all.filter(isRK);if(!bkA.length&&!rkA.length)return`<tr><td><b>Contenders</b></td><td>${money(g.earn)}</td><td>${g.rec[0]}-${g.rec[1]}-${g.rec[2]}</td><td class="cr">${g.titles}</td></tr>`;
     const row=(lab,L)=>{const r=[0,0,0];L.forEach(f=>(f.rec||[]).slice(0,3).forEach((v,i)=>r[i]+=v));return`<tr><td><b>${lab}</b></td><td>${money(L.reduce((a,f)=>a+(f.earn||0),0))}</td><td>${r[0]}-${r[1]}-${r[2]}</td><td class="cr">${L.reduce((a,f)=>a+(f.titles||[]).length,0)}</td></tr>`};
-    return row('Contenders',all.filter(f=>f.region!=='bk'))+row('Bare Knuckles',bkA)})()}</table>
+    return row('Contenders',all.filter(f=>!regOf(f)))+(bkA.length?row('Bare Knuckles',bkA):'')+(rkA.length?row('Rookies',rkA):'')})()}</table>
   <div class="gymLinks">${ME&&uid!==ME?`<p>&#9758; <a data-go="gymres:${uid}:vs"><b>Your record against ${esc(m.gym)}</b></a></p>`:''}
   <p>&#9758; <a data-go="gymh2h:${uid}"><b>Head to head record against other gyms</b></a></p>
   <p>&#9758; <a data-go="gymres:${uid}"><b>Recent results</b></a></p></div>
@@ -2734,7 +2778,7 @@ function gymResHTML(arg){const[uid,mode]=arg.split(':'),m=managers[uid];if(!m)re
   let w=0,l=0,d=0;const rows=L.slice(0,100).map(b=>{const red=b.red_user===uid,mf=red?b.red_fid:b.blue_fid,ou=red?b.blue_user:b.red_user,of=red?b.blue_fid:b.red_fid,s2=b.summary||{};
     if(s2.w==null)d++;else if((s2.w===0)===red)w++;else l++;
     const dte=new Date(b.fight_date+'T12:00:00').toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
-    return`<tr><td><a data-go="lreport:${b.id}" title="Read the fight report">${boutIcon(b,red)}</a>${sbvLink(b.id)}</td><td class="bl">${beltsHTML(b)}</td><td>${nm(uid,mf)} vs ${nm(ou,of)} (<a data-go="gympub:${ou}">${esc(gymOf(ou))}</a>) ${b.region==='bk'?'Bare Knuckles':'Contenders'} ${esc(b.div)}weight ${b.belt?esc(b.belt)+' title ':''}bout on ${esc(dte)}: ${esc(boutRes(b,red))}.${s2.score&&s2.decision?` (${esc(s2.score)})`:''}</td></tr>`}).join('');
+    return`<tr><td><a data-go="lreport:${b.id}" title="Read the fight report">${boutIcon(b,red)}</a>${sbvLink(b.id)}</td><td class="bl">${beltsHTML(b)}</td><td>${nm(uid,mf)} vs ${nm(ou,of)} (<a data-go="gympub:${ou}">${esc(gymOf(ou))}</a>) ${REG_NAME(b.region)} ${esc(b.div)}weight ${b.belt?esc(b.belt)+' title ':''}bout on ${esc(dte)}: ${esc(boutRes(b,red))}.${s2.score&&s2.decision?` (${esc(s2.score)})`:''}</td></tr>`}).join('');
   return`<h1>${vs?`Your record against ${esc(m.gym)}`:`Recent Results for ${esc(m.gym)}`}</h1>
   ${vs?`<p>${esc(m.gym)} is <b>${w}-${l}-${d}</b> against your gym (wins-losses-draws, from ${esc(m.gym)}'s side).</p>`:''}
   <p>Select any icon for a detailed account of a fight.</p>${rows?`<table class="hist">${rows}</table>`:`<p class="mute">${vs?'Your gyms have not met yet.':'No results yet.'}</p>`}
@@ -2784,12 +2828,12 @@ function oFighterHTML(arg){
   <p class="small"><a data-go="gympub:${uid}">Back to ${esc(m.gym)}</a></p>`;
 }
 /* Gym Rankings, one table per region (owner, Nov 14, 2026: Bare Knuckles records never count toward Contenders) */
-function grankHTML(arg){const reg=arg==='bk'?'bk':'',rname=reg?'Bare Knuckles':'Contenders';
-  const ids=Object.keys(managers).filter(id=>{const c=cards[id]||{};return[...(c.fighters||[]),...(c.retired||[])].some(f=>(f.region==='bk')===!!reg)||(!reg&&!(c.fighters||[]).length)});
+function grankHTML(arg){const reg=normReg(arg),rname=REG_NAME(reg);
+  const ids=Object.keys(managers).filter(id=>!managers[id].hidden).filter(id=>{const c=cards[id]||{};return[...(c.fighters||[]),...(c.retired||[])].some(f=>regOf(f)===reg)||(!reg&&!(c.fighters||[]).length)});
   if(!ids.length)return`<h1>Gym Rankings</h1>${needDB()}<p class="mute">No gyms registered yet.</p>`;
   const rows=ids.map(id=>({id,...gymStats(id,reg)})).sort((a,b)=>b.titles-a.titles||b.diff-a.diff||b.pct-a.pct||gymOf(a.id).localeCompare(gymOf(b.id)));
   return`<h1 class="center">Gym Rankings for ${rname}</h1>${needDB()}
-  <p class="center">Region: <select data-grank><option value=""${reg?'':' selected'}>Contenders</option><option value="bk"${reg?' selected':''}>Bare Knuckles</option></select></p>
+  <p class="center">Region: <select data-grank><option value=""${reg?'':' selected'}>Contenders</option><option value="bk"${reg==='bk'?' selected':''}>Bare Knuckles</option><option value="rk"${reg==='rk'?' selected':''}>Rookies</option></select></p>
   <table class="grid granks"><tr><th>Rank</th><th>Manager</th><th>Location</th><th>Titles</th><th>Record</th><th>+/-</th><th>Win %</th><th>Earnings</th><th>Fighters</th></tr>
   ${rows.map((r,i)=>`<tr><td class="n">${i+1}</td><td><a data-go="gympub:${r.id}">${esc(gymOf(r.id))}</a>${managers[r.id].bot&&seeBots()?' <span class="small mute">(bot gym)</span>':''}${r.id===ME?' <span class="small mute">(you)</span>':''}</td><td>${esc(managers[r.id].loc||'')}</td><td class="n">${r.titles}</td><td class="n">${r.rec[0]}-${r.rec[1]}-${r.rec[2]}</td><td class="n">${r.diff}</td><td class="n">${r.pct}%</td><td class="n">${money(r.earn)}</td><td class="n">${r.active}</td></tr>`).join('')}</table>
   <p class="small mute">Gyms are ranked by titles, then wins minus losses. A gym's numbers update when its manager is logged in. </p>`;
@@ -2809,7 +2853,7 @@ function resultIcon(h){if(h.icon==='l'&&/KO|TKO|stoppage|DQ/i.test(h.res||''))re
 function resultsHTML(){
   const L=myDone();
   return`<h1>Recent Results for ${esc(myGym())}</h1><p>Select any icon for a detailed account of a fight.</p>
-  ${L.length?`<table class="hist">${L.slice(0,50).map(({b,k,F,x})=>`<tr><td><a data-go="lreport:${b.id}">${boutIcon(b,x.red)}</a>${b.bot_only?'':`<br><a class="sbvLink" data-go="sbview:${b.id}" title="Watch this fight in the Simbot arena">Simbot View</a>`}</td><td class="bl">${beltsHTML(b)}</td><td>${FTR(k)?`<a data-go="pub:${k}">${esc(F.name)}</a>`:esc(F?F.name:'A retired fighter')} vs <a data-go="opub:${x.ou}:${encN(x.of)}">${esc(x.o.name)}</a> (<a data-go="gympub:${x.ou}">${esc(x.gym)}</a>) ${b.region==='bk'?'Bare Knuckles':'Contenders'} ${esc(b.div)}weight ${b.belt?esc(b.belt)+' title ':''}bout on ${esc(x.date)}: ${esc(boutRes(b,x.red))}. (${esc((b.summary||{}).score||'')}) ${money(pursePart(b,x.red)+((b.summary&&b.summary.tv&&b.summary.tv.pay)?b.summary.tv.pay[x.red?0:1]:0))}${b.venue&&b.summary&&b.summary.att?` <span class="small mute">${esc(b.venue.name)}, attendance ${b.summary.att.toLocaleString('en-US')}${tvResult(b)?', '+tvResult(b):''}</span>`:''}</td></tr>`).join('')}</table>`:
+  ${L.length?`<table class="hist">${L.slice(0,50).map(({b,k,F,x})=>`<tr><td><a data-go="lreport:${b.id}">${boutIcon(b,x.red)}</a>${b.bot_only?'':`<br><a class="sbvLink" data-go="sbview:${b.id}" title="Watch this fight in the Simbot arena">Simbot View</a>`}</td><td class="bl">${beltsHTML(b)}</td><td>${FTR(k)?`<a data-go="pub:${k}">${esc(F.name)}</a>`:esc(F?F.name:'A retired fighter')} vs <a data-go="opub:${x.ou}:${encN(x.of)}">${esc(x.o.name)}</a> (<a data-go="gympub:${x.ou}">${esc(x.gym)}</a>) ${REG_NAME(b.region)} ${esc(b.div)}weight ${b.belt?esc(b.belt)+' title ':''}bout on ${esc(x.date)}: ${esc(boutRes(b,x.red))}. (${esc((b.summary||{}).score||'')}) ${money(pursePart(b,x.red)+((b.summary&&b.summary.tv&&b.summary.tv.pay)?b.summary.tv.pay[x.red?0:1]:0))}${b.venue&&b.summary&&b.summary.att?` <span class="small mute">${esc(b.venue.name)}, attendance ${b.summary.att.toLocaleString('en-US')}${tvResult(b)?', '+tvResult(b):''}</span>`:''}</td></tr>`).join('')}</table>`:
   '<p class="mute">No league results yet. Practice fight reports stay on the Practice Fights page and never show here.</p>'}`;
 }
 function fightCardsHTML(){
@@ -2817,7 +2861,7 @@ function fightCardsHTML(){
   /* fought bouts first (newest on top, each ? opens its report), then the coming bouts in date order */
   C.sort((p,q)=>{const dp=p.b.status==='done',dq=q.b.status==='done';if(dp!==dq)return dp?-1:1;return dp?(q.b.fight_date.localeCompare(p.b.fight_date)||q.b.id-p.b.id):(p.b.fight_date.localeCompare(q.b.fight_date)||p.b.id-q.b.id)});
   return`<h1>Recent Fight Cards for ${esc(myGym())}</h1><p>Select the <b>?</b> on a fought bout to read its report.</p>
-  ${C.length?`<table class="hist">${C.slice(0,50).map(({b,k,F,x})=>`<tr><td>${b.status==='done'?`<a data-go="lreport:${b.id}" title="Read the fight report">${ICON.q}</a>${b.bot_only?'':`<br><a class="sbvLink" data-go="sbview:${b.id}" title="Watch this fight in the Simbot arena">Simbot View</a>`}`:`<span class="mute" title="Not fought yet">${ICON.q}</span>`}</td><td>${F?`<a data-go="pub:${k}">${esc(F.name)}</a>`:'A retired fighter'} vs <a data-go="opub:${x.ou}:${encN(x.of)}">${esc(x.o.name)}</a> (<a data-go="gympub:${x.ou}">${esc(x.gym)}</a>) ${b.region==='bk'?'Bare Knuckles':'Contenders'} ${esc(b.div)}weight ${b.belt?esc(b.belt)+' title ':''}bout on ${esc(x.date)}${venueAt(b)}${tvAt(b)}. Purse ${money(pursePart(b,x.red))}${b.summary&&b.summary.tv&&b.summary.tv.pay&&b.summary.tv.pay[x.red?0:1]?` + ${b.summary.tv.tier==='ppv'?'PPV':'TV'} ${money(b.summary.tv.pay[x.red?0:1])}`:''}.${F?` Fight Plan: ${esc((b.status==='done'&&((F.hist||[]).find(h=>h.bout===b.id)||{}).plan)||F.planName||'Basic')}`:''}</td></tr>`).join('')}</table>`:
+  ${C.length?`<table class="hist">${C.slice(0,50).map(({b,k,F,x})=>`<tr><td>${b.status==='done'?`<a data-go="lreport:${b.id}" title="Read the fight report">${ICON.q}</a>${b.bot_only?'':`<br><a class="sbvLink" data-go="sbview:${b.id}" title="Watch this fight in the Simbot arena">Simbot View</a>`}`:`<span class="mute" title="Not fought yet">${ICON.q}</span>`}</td><td>${F?`<a data-go="pub:${k}">${esc(F.name)}</a>`:'A retired fighter'} vs <a data-go="opub:${x.ou}:${encN(x.of)}">${esc(x.o.name)}</a> (<a data-go="gympub:${x.ou}">${esc(x.gym)}</a>) ${REG_NAME(b.region)} ${esc(b.div)}weight ${b.belt?esc(b.belt)+' title ':''}bout on ${esc(x.date)}${venueAt(b)}${tvAt(b)}. Purse ${money(pursePart(b,x.red))}${b.summary&&b.summary.tv&&b.summary.tv.pay&&b.summary.tv.pay[x.red?0:1]?` + ${b.summary.tv.tier==='ppv'?'PPV':'TV'} ${money(b.summary.tv.pay[x.red?0:1])}`:''}.${F?` Fight Plan: ${esc((b.status==='done'&&((F.hist||[]).find(h=>h.bout===b.id)||{}).plan)||F.planName||'Basic')}`:''}</td></tr>`).join('')}</table>`:
   `<p class="mute">None of your fighters have bouts scheduled yet.</p>`}`;
 }
 function schedHTML(){
@@ -2828,22 +2872,22 @@ function schedHTML(){
   const done=bouts.filter(b=>b.status==='done'&&b.summary).slice(0,60);
   const day=d=>new Date(d+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
   const groups={};up.forEach(b=>(groups[b.fight_date]||=[]).push(b));
-  const upHTML=Object.keys(groups).length?Object.entries(groups).map(([d,L],i)=>`<details${i===0?' open':''}><summary><b>${day(d)}</b>${d===today?' (tonight)':''} - ${L.length} bout${L.length>1?'s':''}</summary><table class="wranks">${L.map(b=>`<tr><td class="small">${b.region==='bk'?'<span class="bktag">BK</span> ':''}${esc(b.div)}</td><td>${who(b.red_user,b.red_fid)} vs ${who(b.blue_user,b.blue_fid)}</td><td class="small mute">${esc((b.venue||{}).name||'')}</td></tr>`).join('')}</table></details>`).join(''):'<p>No bouts are booked right now.</p>';
+  const upHTML=Object.keys(groups).length?Object.entries(groups).map(([d,L],i)=>`<details${i===0?' open':''}><summary><b>${day(d)}</b>${d===today?' (tonight)':''} - ${L.length} bout${L.length>1?'s':''}</summary><table class="wranks">${L.map(b=>`<tr><td class="small">${b.region==='bk'?'<span class="bktag">BK</span> ':b.region==='rk'?'<span class="bktag rktag">RK</span> ':''}${esc(b.div)}</td><td>${who(b.red_user,b.red_fid)} vs ${who(b.blue_user,b.blue_fid)}</td><td class="small mute">${esc((b.venue||{}).name||'')}</td></tr>`).join('')}</table></details>`).join(''):'<p>No bouts are booked right now.</p>';
   const res=done.length?`<table class="wranks">${done.map(b=>{const s=b.summary,w=s.w;const W=w==null?null:w===0?['red_user','red_fid']:['blue_user','blue_fid'],L=w==null?null:w===0?['blue_user','blue_fid']:['red_user','red_fid'];
-    return`<tr><td class="small">${esc(b.fight_date)}</td><td class="small">${b.region==='bk'?'<span class="bktag">BK</span> ':''}${esc(b.div)}</td><td>${w==null?`${who(b.red_user,b.red_fid)} and ${who(b.blue_user,b.blue_fid)} drew`:`${who(b[W[0]],b[W[1]])} beat ${who(b[L[0]],b[L[1]])}`} <span class="small">by ${esc(s.how)}</span>${b.bot_only?'':` <a data-go="lreport:${b.id}" class="small">report</a>`}</td></tr>`}).join('')}</table>`:'<p>No league results yet.</p>';
+    return`<tr><td class="small">${esc(b.fight_date)}</td><td class="small">${b.region==='bk'?'<span class="bktag">BK</span> ':b.region==='rk'?'<span class="bktag rktag">RK</span> ':''}${esc(b.div)}</td><td>${w==null?`${who(b.red_user,b.red_fid)} and ${who(b.blue_user,b.blue_fid)} drew`:`${who(b[W[0]],b[W[1]])} beat ${who(b[L[0]],b[L[1]])}`} <span class="small">by ${esc(s.how)}</span>${b.bot_only?'':` <a data-go="lreport:${b.id}" class="small">report</a>`}</td></tr>`}).join('')}</table>`:'<p>No league results yet.</p>';
   return`<h1>Fight Schedule</h1><p>Every division has its own fight night each week. Each card runs at about 10:45 PM Central the night before its date (Sunday's card runs Saturday night, Saturday's heavyweights run Friday night, and so on). Your fighter's next fight is booked 24 hours later, at about 10:45 PM the next night, for his division's night the following week. That gives you a full day after every fight to retire a fighter or create a new one. A brand-new fighter is booked as soon as he's created, on his division's next night that is at least 3 days away, so there's time to write his plan.</p>${SCHED_TABLE()}
   <h2>Upcoming Bouts</h2>${upHTML}<h2>Latest Results, All Gyms</h2>${res}<p class="small">See <a data-go="help:schedule">The Fight Schedule</a> for how it works.</p>`}
 function searchHTML(){return`<h1>Search Contenders</h1><p><input id="q" data-keep placeholder="Fighter, gym or topic" style="width:260px"> <button id="doSearch">Search</button></p><div id="sres"></div>`}
 function doSearch(q){
   q=q.trim().toLowerCase();if(!q){$('#sres').innerHTML='';return}
   const fs=ROSTER().filter(s=>state[s].name.toLowerCase().includes(q)).map(s=>`<p>Fighter: <a data-go="rec:${s}">${esc(state[s].name)}</a></p>`);
-  const gs=Object.keys(managers).filter(id=>gymOf(id).toLowerCase().includes(q)).map(id=>`<p>Gym: <b>${esc(gymOf(id))}</b></p>`);
+  const gs=Object.keys(managers).filter(id=>!managers[id].hidden&&gymOf(id).toLowerCase().includes(q)).map(id=>`<p>Gym: <b>${esc(gymOf(id))}</b></p>`);
   const ts=topics.filter(t=>t.title.toLowerCase().includes(q)).map(t=>`<p>Topic: <a data-go="topic:${t.id}">${esc(t.title)}</a></p>`);
   const rs=state.log.filter(l=>l.text.toLowerCase().includes(q)).map(l=>`<p>Result: ${esc(l.text)}</p>`);
   $('#sres').innerHTML=[...fs,...gs,...ts,...rs].join('')||'<p class="mute">Nothing found.</p>';
 }
 /* ---------- Help ---------- */
-const HELP_TOPICS=[['start','Getting Started'],['fighter','Creating a Fighter'],['plans','Writing Fight Plans'],['styles','Fighting Styles'],['conditions','Plan Conditions (Reference)'],['strategy','Fight Plan Strategy'],['examples','Sample Fight Plans'],['sim','How Fights Are Simulated'],['scouting','Scouting Opponents'],['training','Training, Rating and Status'],['career','Managing a Career'],['schedule','The Fight Schedule'],['titles','Rankings and World Titles'],['bk','The Bare Knuckles Region'],['glossary','Glossary'],['community','Forums, Messages and Press Releases'],['account','Your Account']];
+const HELP_TOPICS=[['start','Getting Started'],['rookies','The Rookies Region'],['fighter','Creating a Fighter'],['plans','Writing Fight Plans'],['styles','Fighting Styles'],['conditions','Plan Conditions (Reference)'],['strategy','Fight Plan Strategy'],['examples','Sample Fight Plans'],['sim','How Fights Are Simulated'],['scouting','Scouting Opponents'],['numbers','Building by the Numbers'],['ai','Using AI to Write Plans'],['coach','The Corner Coach'],['training','Training, Rating and Status'],['career','Managing a Career'],['schedule','The Fight Schedule'],['titles','Rankings and World Titles'],['bk','The Bare Knuckles Region'],['glossary','Glossary'],['community','Forums, Messages and Press Releases'],['account','Your Account']];
 function helpHTML(arg){
   const t=HELP_TOPICS.find(x=>x[0]===arg);
   const toc=`<p class="small">${HELP_TOPICS.map(x=>`<a data-go="help:${x[0]}">${x[1]}</a>`).join(' | ')}</p>`;
@@ -2855,6 +2899,33 @@ const HELP_BODY={
  start:()=>`<p>Contenders is a boxing strategy game. You're the manager: you build fighters, train them, write their fight plans, and watch every bout play out round by round. You never throw a punch yourself. Your decisions win or lose the fight.</p>
   <ol><li><a data-go="register">Sign up</a> and name your gym.</li><li><a data-go="create">Create a fighter</a> by spending his 70 points.</li><li>Write his <a data-go="help:plans">fight plan</a>.</li><li>Test it in <a data-go="simbot">Simbot</a> or a <a data-go="fight">practice fight</a>.</li><li>Fight on his division's <a data-go="help:schedule">fight night</a>, read the report, adjust, repeat.</li></ol>
   <p>There are two regions: <b>Contenders</b> (the regular game) and <b><a data-go="help:bk">Bare Knuckles</a></b>. You pick a fighter's region when you create him, and it can't be changed. Each region has its own rankings and its own WBC, WBA and WBO world titles in every division.</p>`,
+ rookies:()=>`<p>The Rookies region is where new managers learn the game. A new gym's first fighter starts here (you can pick another region on the <a data-go="create">Create a Fighter</a> page).</p>
+  <ul><li><b>Same fights as Contenders:</b> 12 rounds, judges decide, the same plans and styles. Everything you learn carries over.</li>
+  <li><b>Opponents:</b> rookie fighters from other gyms. They're beatable, but they won't hand you wins, and they learn from their own fights.</li>
+  <li><b>Rating and status top out at 18.</b> No title fights in Rookies.</li>
+  <li><b>Graduation:</b> once a rookie reaches status 18 or has fought 100 rookie fights, he gets no more Rookies bouts. His page then offers two choices: <b>move him up to Contenders</b> (he keeps his abilities, record and rating) or <b>retire him</b>.</li>
+  <li><b>The Corner Coach</b> sends you a private note after every fight saying what went wrong and what to try. See <a data-go="help:coach">The Corner Coach</a>.</li>
+  <li>Rookies have their own <a data-go="frank">fighter rankings</a>, <a data-go="grank:rk">gym rankings</a> and press releases.</li></ul>`,
+ numbers:()=>`<p>Small math choices decide a lot of fights. A fighter is "built right" when no point is wasted.</p>
+  <ul><li><b>KP needs STR in threes.</b> Each KP point needs 3 STR behind it. KP above STR/3 is wasted (it turns back into STR), and STR that isn't a multiple of 3 can't carry another KP. 12 STR = up to 4 KP; 13 or 14 STR is still 4 KP.</li>
+  <li><b>Make weight without drying out.</b> If his lightest safe weight is over the division limit, his starting endurance is multiplied by (limit / weight) squared. Check "Can make" on the Create a Fighter page and the Weight line on his page. STR adds about 1.5 lb per point, AGL takes off about 1 lb, and a lighter build or more CND (it lets him sweat off more) helps him make weight.</li>
+  <li><b>Be the bigger man if you can.</b> In the ring the heavier man gets 1 STR for every 10% he outweighs the other. A fighter near the top of his division has an edge on those near the bottom.</li>
+  <li><b>Height buys SPD and AGL.</b> The taller man gets half a point of each per inch of difference, but height adds weight.</li>
+  <li><b>Conditioning and the 12-round budget.</b> He starts with 10 x CND endurance and absorbs CND/2 of fatigue a round free. A plan whose average AGG + POW/2 is near CND/2 hardly tires him; every point above that comes off his tank every round.</li>
+  <li><b>Chin is a floor.</b> A stun takes 1.5 times his chin in stunning damage in one round. Below about 9 CHN, good punchers start dropping him; well above it, extra chin is worth less than speed or strength.</li>
+  <li><b>Train with a plan.</b> Decide the shape at status 6, 10 and 18 before he gets there, and point training at it (STR before KP, keep weight in mind).</li>
+  <li><b>Plans add up too.</b> AGG + POW + DEF can't pass 20, and whatever's left is rest. 4/8/8 is the efficient middle; every point moved away from it should buy something you need.</li></ul>`,
+ ai:()=>`<p>Any AI chat (ChatGPT, Claude, Gemini and others) can help you write and fix fight plans. Contenders makes it easy:</p>
+  <ol><li>Open a fight plan (<a data-go="pf">Fight Plans</a>, then edit one).</li>
+  <li>Open <b>🤖 Ask your own AI</b> under the plan box, pick the fighter, and press <b>Copy prompt</b>. It copies our plan rules, his numbers, his current plan and his next opponent's <i>public</i> record.</li>
+  <li>Paste it into your AI and ask for a plan. Ask follow-ups like "he's running out of gas by round 8" or "make it more aggressive late".</li>
+  <li>Paste the plan it gives you back into the box, press <b>Check Plan</b>, then test it in <a data-go="simbot">Simbot</a> before fight night.</li></ul>
+  <p><b>Tips:</b> AIs make mistakes, so always press Check Plan and run Simbot. Paste in the coach's notes or a fight report and ask what to change. Ask it to explain each line so you learn the game, not just the plan.</p>
+  <p class="small cr">Your plans are private on Contenders. Anything you paste into another company's AI goes to that company.</p>`,
+ coach:()=>`<p>After every league fight, the <b>Corner Coach</b> sends you a private message (see <a data-go="msgs">Messages</a>) reading your fighter's fight: punches thrown and landed, when he ran out of gas, whether his defense was too low when he got hurt, rounds he lost by being outworked, an opponent he should have finished, weight problems, and whether his KP and STR add up.</p>
+  <ul><li>The coach only uses your own fight data and the other man's public record. He never sees anyone else's plan.</li>
+  <li>Each note ends with a few concrete plan lines to try. Test them in <a data-go="simbot">Simbot</a> first.</li>
+  <li>It's automatic, so replies to the coach aren't read. Questions go to the <a data-go="forum:help">Help forum</a>.</li></ul>`,
  fighter:()=>`<p>Every new fighter gets exactly <b>${POOL} points</b> to spread over his abilities. Once you create him the points are <b>locked</b>; after that he only improves by winning (see <a data-go="help:training">Training</a>).</p>
   <table class="grid small"><tr><th>Ability</th><th>What it does</th><th>Fades when tired?</th></tr>
   <tr><td>Strength (STR)</td><td>The engine of all damage, both endurance damage and stunning damage. Each point adds about a pound and a half.</td><td>Yes</td></tr>
@@ -3156,7 +3227,7 @@ function fundingHTML(){return`<h1>Contenders Funding</h1><p>Contenders is free t
 
 /* ---------- events ---------- */
 document.addEventListener('click',async e=>{
-  const t=e.target.closest('[data-go],[data-v],[data-dm],[data-retire],[data-unretire-after],[data-activate],[data-descplain],[data-descblockall],button');if(!t)return;
+  const t=e.target.closest('[data-go],[data-v],[data-dm],[data-graduate],[data-retire],[data-unretire-after],[data-activate],[data-descplain],[data-descblockall],button');if(!t)return;
   if(t.closest('.gymDesc'))return; // nothing inside a manager's description can trigger site actions
   /* visitors without a gym: every sidebar link leads back to the home page (owner, Nov 12, 2026) */
   if(t.dataset.v){if(!ME&&t.dataset.v!=='login'&&t.dataset.v!=='simbot'&&t.dataset.v!=='lab'){$('#side').classList.remove('open');nav('home');return}nav(t.dataset.v);return}
@@ -3174,6 +3245,12 @@ document.addEventListener('click',async e=>{
     const slot='f'+Date.now().toString(36);ROSTER();
     ensurePlans();if(state.plans[D.planName]==null)state.plans[D.planName]=D.plan;
     state.roster.push(slot);state[slot]={...JSON.parse(JSON.stringify(D)),div:divOf(D),rec:[0,0,0,0],hist:[],locked:true,rating:0,status:0,train:'str',train2:'cnd',streak:0,ip:0};state.draft=null;save();nav('rec:'+slot)}
+  else if(t.dataset.graduate){const s0=t.dataset.graduate,F=FTR(s0);if(!F||!SB)return;
+    if(myBout(s0))return alertBox(`${F.name} has a rookie bout booked. Move him up after that fight.`);
+    if(!window.confirm(`Move ${F.name} up to the Contenders region? He keeps his abilities, record and rating, and from now on fights Contenders fighters. This can't be undone.`))return;
+    const{data,error}=await SB.rpc('graduate_rookie',{p_fid:s0});
+    if(error||data!=='ok')return alertBox('Could not move him up: '+(error?error.message:data));
+    delete F.region;render();alertBox(`${F.name} is now a Contenders fighter. He'll be booked against Contenders fighters on his division's next night.`)}
   else if(t.dataset.retire){const s0=t.dataset.retire,old=FTR(s0);if(!old)return;
     if(myBout(s0)){if(!window.confirm(`${old.name} is under contract for his scheduled bout, so he has to fight it. He'll retire right after that fight. Set him to retire after his next fight?`))return;old.retireAfter=true;save();render();return}
     if(!window.confirm(`Retire ${old.name}? He'll move to your retired fighters, and you can bring him back later.`))return;
@@ -3199,7 +3276,7 @@ document.addEventListener('click',async e=>{
   else if(t.id==='go'||t.id==='go2')startFight();
   else if(t.id==='next'){shown++;if(shown>=fight.rounds.length)finish();render();const r=document.querySelectorAll('.rnd');r[r.length-1].scrollIntoView({behavior:'smooth'})}
   else if(t.id==='skip'){shown=fight.rounds.length;finish();render()}
-  else if(t.id==='rkGo'){nav('frank:'+encN($('#rkDiv').value)+($('#rkReg').value==='bk'?'@bk':''))}
+  else if(t.id==='rkGo'){nav('frank:'+encN($('#rkDiv').value)+($('#rkReg').value?'@'+$('#rkReg').value:''))}
   else if(t.id==='cdivGo'){const sd=t.dataset.side,F=FTR(sd);if(F&&!myBout(sd)){F.div=$('#cdivSel').value;save();alertBox(`${F.name} now fights at ${F.div}weight.`);nav('gym')}}
   else if(t.id==='cleanPlans'){ensurePlans();if(state.plans['Basic']==null)state.plans['Basic']='6/6/8';ROSTER().forEach(s=>usePlan(s,'Basic'));save();alertBox('All fight plans have been cleaned.')}
   else if(t.id==='saveGym'){const v=$('#gymIn').value.trim().slice(0,40);if(v.length<2)return alertBox('Gym names need at least 2 characters.');
@@ -3236,6 +3313,8 @@ document.addEventListener('click',async e=>{
     const ok=await safeWrite(()=>SB.from('messages').insert({recipient:to,body}));
     if(ok){$('#dmBody').value='';await loadIms();nav('msgs:'+to)}t.disabled=false}
   else if(t.id==='doSearch')doSearch($('#q').value);
+  else if(t.id==='aiCopy'){const who=$('#aiWho'),box=$('#aiOut'),txt=aiPrompt(who?who.value:'',($('#pfText')||{}).value||'');box.value=txt;box.style.display='block';
+    try{await navigator.clipboard.writeText(txt);alertBox('Prompt copied. Paste it into your AI.')}catch(e){box.select();alertBox('Select the text in the box and copy it.')}}
 });
 /* ad tracking (owner, Nov 14, 2026): ?ref=reddit etc. is remembered on this device for 30 days and sent with sign-up */
 (function(){try{const r=new URLSearchParams(location.search).get('ref');if(r&&/^[a-z0-9_-]{1,32}$/i.test(r))localStorage.setItem('contenders_ref',JSON.stringify({r:r.toLowerCase(),t:Date.now()}))}catch(e){}})();
