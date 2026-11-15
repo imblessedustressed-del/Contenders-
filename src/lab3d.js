@@ -506,7 +506,7 @@ function labSfx(b){const c=labSndCtx();if(!c)return;const t=c.currentTime+.01;
     case 'cl':labNoise(c,t,.12,{f:400,g:.25});break;case 'i':labPunchSnd(c,t,'r');labCheer(c,t,.4,1.2);break;
     case 'st':labPunchSnd(c,t,'st');labRoar(c,t+.05,.9,2.6);break;
     case 'kd':labPunchSnd(c,t,'kd');labNoise(c,t+.35,.25,{f:250,g:.7});labRoar(c,t+.1,1.2,3.6);break; // the punch, the body hitting the canvas, the roar
-    case 'ko':labPunchSnd(c,t,'ko');labNoise(c,t+.4,.3,{f:220,g:.8});labRoar(c,t+.1,1.4,5);break; // the ten-count bell rings after the referee reaches ten
+    case 'ko':labPunchSnd(c,t,'kd');labNoise(c,t+.35,.25,{f:250,g:.7});labRoar(c,t+.1,1.2,3.6);break; // sounds exactly like a knockdown until the referee reaches ten (then the bell)
     case 'stop':labPunchSnd(c,t,'ko');labNoise(c,t+.4,.3,{f:220,g:.8});labRoar(c,t+.1,1.4,5);labBell(c,t+1.2,4);break;
     case 'cnt':labSay(b.out&&b.last?'Ten! You\'re out!':LAB_WORDS[b.n-1]);if(b.out&&b.last){labBell(c,t+.9,4);labRoar(c,t+.6,1.3,4.5)}break;
     case 'bell':labBell(c,t,1);labCheer(c,t,.2,1.2);break;case 'start':labBell(c,t,1);break;
