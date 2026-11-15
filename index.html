@@ -272,6 +272,12 @@ pre.plan{background:#fbfaf7;border:1px solid var(--line)}
 .dcEmpty{font-size:12px;color:#949ba4;padding:8px}
 @media(max-width:1000px){.dc{grid-template-columns:minmax(0,1fr) 220px}.dcNav{display:none}}
 @media(max-width:760px){.dc{grid-template-columns:1fr}.dc .dcOnBtn{display:inline-block}.dcSide{display:none;max-height:260px;border-top:1px solid #26272b}.dcSide.open{display:block}.dcMsgs{height:360px}.dcHeadSub{display:none}}
+.sbStart{border:2px solid #d4af37;border-radius:10px;padding:10px 14px;margin:10px 0 16px;background:#fffaf0}.sbStart h2{margin:2px 0 4px}
+.sbStartGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin:10px 0}
+.sbCard{background:#fff;border:1px solid var(--line);border-radius:8px;padding:8px 9px;display:flex;flex-direction:column;gap:2px}.sbEm{font-size:24px}.sbTag{font-size:11px;color:#8a6d3b;text-transform:uppercase;letter-spacing:.04em}.sbLine{font-size:12px;color:#444;flex:1}
+.sbNew{display:inline-block;vertical-align:2px;background:#1b7f2a;color:#fff;font-size:9px;font-weight:700;border-radius:3px;padding:0 4px}.sbBtns{display:flex;gap:4px;margin-top:5px}.sbBtns button{flex:1;padding:4px 2px;font-size:11px}
+.sbBtns .sbBlue{background:#1e4fd8!important;border-color:#1e4fd8!important}.sbHow summary{cursor:pointer;font-weight:600}.sbHow li{margin:4px 0}
+.labCard.flash{box-shadow:0 0 0 3px #d4af37}
 .sbLobby{border:2px solid #c62828;border-radius:10px;padding:10px 14px;margin:18px 0;background:#fff8f0}.sbLobby h3{margin:12px 0 4px;font-size:15px}
 .sbcWrap{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:14px;align-items:start}.sbcSide{position:sticky;top:8px}.sbcChat{max-height:520px;min-height:260px}
 .sbcVs{display:grid;grid-template-columns:1fr 46px 1fr;gap:10px;align-items:center;margin-bottom:6px}.sbcC{border:2px solid var(--line);border-radius:10px;padding:8px 12px;background:#fff;text-align:center}
@@ -864,7 +870,7 @@ function condText(x,after){
 /* ================= SHARED DATA (Supabase: accounts, forums, messages) ================= */
 cleanSlate();
 const SB_URL='https://ojsphhzgzbxmnfcbitqb.supabase.co',SB_KEY='sb_publishable_SWO9WhiSkoVhflY5CmY08A_hlqCEJSi';
-const BUILD='1794776858';
+const BUILD='1794777827';
 /* A tab left open on an older build must not save over newer data: if the site has been updated, reload before anything else is saved. */
 let staleBuild=false;
 async function checkBuild(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
@@ -1040,7 +1046,43 @@ function labScale(F,pool,max){const ks=['str','spd','agl','chn','cnd','kp'],lo=k
 /* Simbot title-level quick builds (110 points, rating 28), tuned the same way as the 70-point templates (Nov 15, 2026): 36-61% each vs the others */
 const PRESETS_T={"Slugger":[{"str":28,"kp":0,"spd":16,"agl":19,"chn":18,"cnd":22,"hgt":5,"cut":2},"# Slugger: steady pressure, empty the tank late\n8/7/5 (feint)\nif opponent <= tired then 9/8/3 (feint)\n10) 10/8/2\nif score >= 4 then 3/3/14\n1) if endurance_percent < 40 then 4/4/12 (clinch)"],"KP Slugger":[{"str":26,"kp":5,"spd":18,"agl":21,"chn":17,"cnd":19,"hgt":2,"cut":2},"# KP Slugger: hunt the knockout\n5H/8/7\nif hisstuns > 0 then 6H/10/4\nif score > 2*(1 + 12 - round) then 3/3/14\n1) if endurance_percent < 45 then 4/4/12 (clinch)"],"Agile Slugger":[{"str":24,"kp":0,"spd":19,"agl":22,"chn":20,"cnd":19,"hgt":4,"cut":2},"# Agile Slugger: work inside, slip out\n4/8/8 (inside)\nif score < 0 and round >= 6 then 5/9/6 (inside)\nif score > 2*(1 + 12 - round) then 3/3/14\n1) if endurance_percent < 45 then 4/4/12"],"Balanced":[{"str":23,"kp":0,"spd":18,"agl":19,"chn":21,"cnd":21,"hgt":6,"cut":2},"# Balanced boxer\n7/4/6 (outside)\nif score + 12 - round < 0 then 9/5/3\nif score > 2*(1 + 12 - round) then 2/2/16\n1) if endurance_percent < 40 then 4/4/12"],"Dancer":[{"str":17,"kp":0,"spd":25,"agl":23,"chn":17,"cnd":19,"hgt":7,"cut":2},"# Dancer: box from range and stay safe\n5H/2/13 (ring)\nif score < 0 and round >= 7 then 6H/3/11 (ring)\nif score > 2*(1 + 12 - round) then 2/2/16 (ring)\n1) if endurance_percent < 45 then 3/3/14"],"Counterpuncher":[{"str":20,"kp":0,"spd":21,"agl":22,"chn":13,"cnd":26,"hgt":6,"cut":2},"# Counterpuncher: make him miss, make him pay\n5/4/11 (counter)\nif score < 1 then 6/5/9 (counter)\nif score > 2*(1 + 12 - round) then 2/2/16\n1) if endurance_percent < 45 then 4/4/12 (counter)"],"Clincher":[{"str":25,"kp":0,"spd":20,"agl":16,"chn":20,"cnd":20,"hgt":7,"cut":2},"# Clincher: grind him down\n6B/6/8 (clinch)\nif opponent <= tired then 8B/8/4\nif opponent = exhausted then 9H/9/2\n1) if endurance_percent < 40 then 2/2/14 (clinch)"],"Flasher":[{"str":27,"kp":0,"spd":19,"agl":16,"chn":22,"cnd":14,"hgt":10,"cut":2},"# Flasher: blitz him early, then hold on\n1) 8H/9/3\n2) 7/6/7\nif hisstuns > 0 then 8H/10/2\nif opponent = exhausted then 8H/9/3\nif score > 2*(1 + 12 - round) then 2/2/16 (clinch)\n1) if endurance_percent < 40 then 3/3/14 (clinch)"]};
 const labPreset=(k,level)=>((level||'title')==='title'&&PRESETS_T[k])||PRESETS[k];
-function labMk(name,pre,home,level){const[st,pl]=labPreset(pre,level);const lv=LAB_LEVELS[level||'title'];return labScale({name,nick:'',home,build:'normal',...st,plan:pl,planName:pre,rec:[0,0,0,0],hist:[],rating:0,status:0},lv.pool,lv.max)}
+/* ---- Starter fighters for newcomers (owner, Nov 15, 2026: "a bunch of templates that are not crappy they can use to have some fun") ----
+   The first 8 are the tuned quick builds (same numbers, new names); the last 4 were tuned the same way for Simbot (both levels, 40-56% vs the others).
+   Every plan gets a plain-English note on each line (labNote), so a first-timer learns how fight plans work by reading one. */
+const SB_NEW={"title":{"Body Snatcher":[{"str":25,"kp":0,"spd":17,"agl":17,"chn":19,"cnd":23,"hgt":7,"cut":2},"7B/7/5 (inside)\nif opponent <= tired then 8B/8/3 (inside)\nif opponent = exhausted then 9H/9/1\nif score > 2*(1 + 12 - round) then 3/3/14\n1) if endurance_percent < 45 then 4/4/12 (clinch)"],"Closer":[{"str":22,"kp":0,"spd":20,"agl":18,"chn":17,"cnd":26,"hgt":5,"cut":2},"3/5/12\nif round >= 5 then 5/7/8\nif round >= 9 then 7/9/4\nif score > 2*(1 + 12 - round) then 2/2/16\n1) if endurance_percent < 45 then 4/4/12"],"Rope-a-Dope":[{"str":23,"kp":0,"spd":17,"agl":22,"chn":22,"cnd":21,"hgt":3,"cut":2},"6/5/9 (ropes)\nif opponent <= tired then 8/7/5\nif opponent = exhausted then 9H/8/3\nif score > 2*(1 + 12 - round) then 3/3/14 (ropes)\n1) if endurance_percent < 35 then 3/3/14 (clinch)"],"Ring General":[{"str":17,"kp":0,"spd":24,"agl":23,"chn":16,"cnd":21,"hgt":7,"cut":2},"3/7/10 (outside)\nif score < 0 and round >= 7 then 4/8/8 (outside)\nif score > 2*(1 + 12 - round) then 2/2/16 (ring)\n1) if endurance_percent < 35 then 3/3/14 (ring)"]},"basic":{"Body Snatcher":[{"str":15,"kp":0,"spd":10,"agl":10,"chn":12,"cnd":14,"hgt":7,"cut":2},"6B/6/7 (inside)\nif opponent <= tired then 7B/7/5 (inside)\nif opponent = exhausted then 8H/8/3\nif score > 2*(1 + 12 - round) then 3/3/14\n1) if endurance_percent < 45 then 4/4/12 (clinch)"],"Closer":[{"str":13,"kp":0,"spd":12,"agl":11,"chn":11,"cnd":16,"hgt":5,"cut":2},"4/6/10\nif round >= 5 then 6/8/6\nif round >= 9 then 8/10/2\nif score > 2*(1 + 12 - round) then 2/2/16\n1) if endurance_percent < 45 then 4/4/12"],"Rope-a-Dope":[{"str":14,"kp":0,"spd":10,"agl":14,"chn":14,"cnd":13,"hgt":3,"cut":2},"7/4/9 (ropes)\nif opponent <= tired then 9/6/5\nif opponent = exhausted then 10H/7/3\nif score > 2*(1 + 12 - round) then 3/3/14 (ropes)\n1) if endurance_percent < 35 then 3/3/14 (clinch)"],"Ring General":[{"str":10,"kp":0,"spd":14,"agl":14,"chn":10,"cnd":13,"hgt":7,"cut":2},"7/6/6 (outside)\nif score < 0 and round >= 7 then 8/7/4 (outside)\nif score > 2*(1 + 12 - round) then 2/2/16 (ring)\n1) if endurance_percent < 45 then 3/3/14 (ring)"]}};
+const STARTERS=[
+ {id:'Slugger',nm:'The Bulldozer',em:'🚜',tag:'Pressure',line:'Walks you down and empties the tank late.'},
+ {id:'KP Slugger',nm:'The Hitman',em:'🎯',tag:'Knockout power',line:'Head hunter with a knockout punch.'},
+ {id:'Agile Slugger',nm:'The Brawler',em:'💥',tag:'Inside fighter',line:'Works inside, then slips back out.'},
+ {id:'Balanced',nm:'The Technician',em:'🧠',tag:'All-rounder',line:'Steady and smart, turns it up when behind.'},
+ {id:'Dancer',nm:'The Dancer',em:'🕺',tag:'Mover',line:'Sticks, moves and never stands still.'},
+ {id:'Counterpuncher',nm:'The Sniper',em:'🔭',tag:'Counterpuncher',line:'Makes you miss, makes you pay.'},
+ {id:'Clincher',nm:'The Octopus',em:'🐙',tag:'Clincher',line:'Ties you up and drowns you late.'},
+ {id:'Flasher',nm:'The Blitz',em:'⚡',tag:'Fast starter',line:'All-out blitz early, then hangs on.'},
+ {id:'Body Snatcher',nm:'The Body Snatcher',em:'🫁',tag:'Body puncher',line:'Breaks the body, then goes upstairs.',isNew:1},
+ {id:'Closer',nm:'The Closer',em:'⏱️',tag:'Late finisher',line:'Starts slow, finishes like a storm.',isNew:1},
+ {id:'Rope-a-Dope',nm:'Rope-a-Dope',em:'🪢',tag:'Trickster',line:'Lies on the ropes, then pounces.',isNew:1},
+ {id:'Ring General',nm:'The Ring General',em:'🎖️',tag:'Point fighter',line:'Jabs from range and banks rounds.',isNew:1}];
+const starterOf=id=>STARTERS.find(x=>x.id===id||x.nm===id);
+/* a plain-English note for each line of a plan */
+const LAB_STY={inside:'fight inside',clinch:'tie him up',ring:'use the ring and move',counter:'counterpunch',outside:'box from range',ropes:'lay on the ropes',feint:'feint to open him up',allout:'go all out'};
+function labNote(line,sec){const raw=line.replace(/#.*$/,'').trim();if(!raw)return line;
+  let m=/^(\d+)\)\s*(.*)$/.exec(raw),from=m?+m[1]:(sec||0),rest=m?m[2]:raw,cond='',tac=rest;const c=/^if (.+) then (.+)$/.exec(rest);if(c){cond=c[1];tac=c[2]}
+  const when=[];if(from>1)when.push(`from round ${from} on`);
+  const C=[[/^opponent <= tired$/,"when he's tired"],[/^opponent = exhausted$/,"when he's out of gas"],[/^hisstuns > 0$/,"when you've hurt him"],[/^endurance_percent < (\d+)$/,"when you're under $1% gas"],
+    [/^score > 2\*\(1 \+ 12 - round\)$/,"when you're way ahead on the cards"],[/^score >= (\d+)$/,"when you're well ahead"],[/^score < 0 and round >= (\d+)$/,"when you're behind from round $1"],
+    [/^score \+ 12 - round < 0$/,"when you're behind and running out of rounds"],[/^score < 1$/,"when it's even or you're behind"],[/^round >= (\d+)$/,"from round $1 on"]];
+  if(cond){let hit=null;for(const[re,t]of C){const mm=re.exec(cond);if(mm){hit=t.replace('$1',mm[1]);break}}when.push(hit||'when '+cond)}
+  const t=/^(\d+)([HBC]?)\/(\d+)!?\/(\d+)\s*(?:\((\w+)\))?$/.exec(tac);let what=tac;
+  if(t){const a=+t[1],pw=+t[3],d=+t[4],r=Math.max(0,20-a-pw-d),tg=t[2]==='H'?', head hunting':t[2]==='B'?', to the body':t[2]==='C'?', go for the cut':'';
+    what=`aggression ${a}, power ${pw}, defense ${d}${r?', rest '+r:''}${tg}${t[5]&&LAB_STY[t[5]]?', '+LAB_STY[t[5]]:''}`}
+  const note=(when.length?when.join(', ')+': ':'every round: ')+what;return raw+'   # '+note}
+function labAnnotate(plan,st){const lines=String(plan).split('\n').filter(l=>!/^\s*#/.test(l));
+  return[`# ${st?st.nm.toUpperCase()+': '+st.line:'FIGHT PLAN'}`,`# Each line is AGGRESSION/POWER/DEFENSE (20 points at most; whatever is left over he rests).`,`# Every round he reads top to bottom and uses the LAST line that is true.`,...(()=>{let sec=0;return lines.map(l=>{const m=/^\s*(\d+)\)/.exec(l);if(m)sec=+m[1];return labNote(l,sec)})})()].join('\n')} /* lines under an "N)" line only count from round N on, so their notes say so */
+function starterBuild(id,level){const st=starterOf(id);if(!st)return null;const lv=level||'title';
+  const[stt,pl]=st.isNew?SB_NEW[lv==='basic'?'basic':'title'][st.id]:labPreset(st.id,lv);return{st,stats:{...stt},plan:labAnnotate(pl,st)}}
+function labApplyStarter(F,id,level){const b=starterBuild(id,level);if(!b)return;Object.assign(F,b.stats,{plan:b.plan,planName:b.st.nm});labScale(F,LAB_LEVELS[level||'title'].pool,LAB_LEVELS[level||'title'].max)}
+function labMk(name,pre,home,level){const[st,pl]=labPreset(pre,level);const lv=LAB_LEVELS[level||'title'],sto=starterOf(pre);return labScale({name,nick:'',home,build:'normal',...st,plan:sto?labAnnotate(pl,sto):pl,planName:sto?sto.nm:pre,rec:[0,0,0,0],hist:[],rating:0,status:0},lv.pool,lv.max)}
 function labState(){if(LABV)return LABV;if(SBC&&view.startsWith('sbch:'))return SBC.L;if(!LAB)LAB={A:labMk('Red Rocket','Slugger','Detroit, Michigan'),B:labMk('Blue Thunder','Counterpuncher','Philadelphia, Pennsylvania'),level:'title',div:'',rounds:'12',speed:30,fight:null,bout:null};return LAB}
 const labDiv=()=>{const L=labState();if(L.div)return L.div;const need=Math.max(minWeight(L.A),minWeight(L.B));return(DIVS.find(d=>d[1]>=need)||DIVS[DIVS.length-1])[0]};
 function labErr(){const L=labState();
@@ -1052,12 +1094,12 @@ function labErr(){const L=labState();
 function labFighters(){const L=labState(),bk=L.rounds==='bk';
   const rt=labLv().rating;return['A','B'].map(c=>({...L[c],name:L[c].name.trim()||(c==='A'?'Red Rocket':'Blue Thunder'),region:bk?'bk':undefined,rating:rt,status:rt}))}
 function labCornerHTML(c){const L=labState(),F=L[c],u=used(F),POOL=labPool();
-  const plans=[...Object.keys(PRESETS).map(k=>['t:'+k,k+' (template)'])];
+  const plans=[...STARTERS.map(x=>['t:'+x.id,x.nm+' plan'])];
   if(ME){ensurePlans();Object.keys(state.plans).sort().forEach(k=>{if(!PRESETS[k]||state.plans[k]!==PRESETS[k][1])plans.push(['m:'+k,k+' (my plan)'])})}
   return`<div class="labCard ${c==='A'?'labRed':'labBlue'}" id="labCard${c}">
   <div class="labHd">${c==='A'?'RED CORNER':'BLUE CORNER'}</div>
   <input class="labName" data-lf="name" data-c="${c}" maxlength="40" value="${esc(F.name)}" aria-label="Name">
-  <div class="labRow"><select data-lq="${c}"><option value="">Quick build...</option>${Object.keys(PRESETS).map(k=>`<option>${esc(k)}</option>`).join('')}</select>
+  <div class="labRow"><select data-lq="${c}"><option value="">Pick a starter fighter...</option>${STARTERS.map(x=>`<option value="${esc(x.id)}">${x.em} ${esc(x.nm)} (${esc(x.tag)})</option>`).join('')}</select>
   ${ME&&ROSTER().length?`<select data-lmine="${c}"><option value="">Copy one of my fighters...</option>${ROSTER().map(k=>`<option value="${k}">${esc(state[k].name)}</option>`).join('')}</select>`:''}</div>
   <table class="labStats">${LAB_ST.map(([k,lab])=>`<tr><td>${lab}</td><td><button class="pm" data-lpm="${k}" data-c="${c}" data-d="-1">-</button><b>${F[k]}</b><button class="pm" data-lpm="${k}" data-c="${c}" data-d="1">+</button>${k==='hgt'?` <span class="small mute">${Math.floor(HT(F)/12)}'${HT(F)%12}"</span>`:''}</td></tr>`).join('')}
   <tr><td>Cut Resistance</td><td><select data-lf="cut" data-c="${c}">${[1,2,3].map(v=>`<option${+F.cut===v?' selected':''}>${v}</option>`).join('')}</select></td></tr>
@@ -1075,9 +1117,19 @@ function labBarHTML(){const L=labState(),o=(arr,v)=>arr.map(([a,b])=>`<option va
   <label>Division <select data-lset="div"><option value="">Auto (${esc(labDiv())})</option>${o(DIVS.map(([d,l])=>[d,`${d} (${l})`]),L.div)}</select></label>
   <label>Bout <select data-lset="rounds">${o([['3','3 rounds'],['6','6 rounds'],['12','12 rounds'],['bk','Bare Knuckles, 25 rounds']],L.rounds)}</select></label>
   `}
+function labStartHTML(){return`<div class="sbStart"><h2>New here? Pick two fighters and hit FIGHT</h2>
+  <p class="small">Every fighter comes with a ready-made fight plan, with a note on every line telling you what it does. Put one in each corner, hit <b>FIGHT!</b>, then change a number in a plan and see what happens. That's the whole game.</p>
+  <div class="sbStartGrid">${STARTERS.map(x=>`<div class="sbCard"><div class="sbEm">${x.em}</div><div><b>${esc(x.nm)}</b>${x.isNew?' <span class="sbNew">NEW</span>':''}</div><div class="sbTag">${esc(x.tag)}</div><div class="sbLine">${esc(x.line)}</div><div class="sbBtns"><button data-starter="${esc(x.id)}" data-c="A" class="sbRed">Red corner</button><button data-starter="${esc(x.id)}" data-c="B" class="sbBlue">Blue corner</button></div></div>`).join('')}</div>
+  <details class="sbHow"><summary>How fight plans work (30 seconds)</summary><ul>
+  <li>Each line is three numbers: <tt>AGGRESSION/POWER/DEFENSE</tt>, like <tt>6/6/8</tt>. They add up to 20 at most; anything left over, he rests and gets his breath back.</li>
+  <li>More aggression = more punches. More power = harder punches (and more tiring). More defense = harder to hit.</li>
+  <li>Add a style in brackets: <tt>(inside)</tt>, <tt>(ring)</tt>, <tt>(clinch)</tt>, <tt>(counter)</tt>, <tt>(outside)</tt>, <tt>(ropes)</tt>, <tt>(feint)</tt>. Put <tt>H</tt> or <tt>B</tt> after aggression to go head or body: <tt>7H/7/6</tt>.</li>
+  <li>Lines can start with a condition: <tt>if opponent &lt;= tired then 8/8/4</tt>. Every round he reads the plan top to bottom and uses the <b>last</b> line that's true.</li>
+  <li>Anything after <tt>#</tt> is a note for you; the fighter ignores it. Full guide: <a data-go="help:plans">Writing Fight Plans</a>.</li></ul></details></div>`}
 function labHTML(){const L=labState();
   return`<div id="lab"><h1>Simbot</h1>
   <p class="labIntro">Build two fighters (title fighters at rating 28 with 110 points each, or new fighters with 70), give them fight plans, and watch them fight it out. Test a plan, settle an argument, or just have fun. Nothing here counts on any record.</p>
+  ${labStartHTML()}
   <div class="labGrid">${labCornerHTML('A')}<div class="labVs">VS</div>${labCornerHTML('B')}</div>
   <div class="labBar" id="labBar">${labBarHTML()}</div>
   <p class="labBtns"><button class="labGo" data-lab="fight">🥊 FIGHT!</button> <button data-lab="sim">Run it 100 times</button> <span class="cr" id="labErr"></span></p>
@@ -1113,16 +1165,17 @@ function labMount(){const root=$('#lab');if(!root)return;
 function labInput(e){const el=e.target,c=el.dataset.c;if(el.dataset.lf==='name'||el.dataset.lf==='plan'){labState()[c][el.dataset.lf]=el.value;if(el.dataset.lf==='plan')labState()[c].planName='Custom'}}
 function labChange(e){const el=e.target,L=labState(),c=el.dataset.c;
   if(el.dataset.lf==='cut'||el.dataset.lf==='build'){L[c][el.dataset.lf]=el.dataset.lf==='cut'?+el.value:el.value;labRefresh(c);return}
-  if(el.dataset.lq){const k=el.value;if(!k)return;const[st,pl]=labPreset(k,L.level);Object.assign(L[el.dataset.lq],st,{plan:pl,planName:k});labScale(L[el.dataset.lq],labPool(),labMaxS());labRefresh(el.dataset.lq);return}
+  if(el.dataset.lq){const k=el.value;if(!k)return;labApplyStarter(L[el.dataset.lq],k,L.level);labRefresh(el.dataset.lq);return}
   if(el.dataset.lmine){const F=state[el.value];if(!F)return;const t=L[el.dataset.lmine];
     ['str','kp','spd','agl','chn','cnd','hgt','cut','build','name','home'].forEach(k=>t[k]=F[k]);t.plan=F.plan;t.planName=F.planName;
     // trained fighters can have any number of points: grow or trim him to this level's pool, keeping his shape
     ['str','spd','agl','chn','cnd','kp'].forEach(k=>t[k]=Math.min(labMaxS(),t[k]));labScale(t,labPool(),labMaxS());labRefresh(el.dataset.lmine);return}
-  if(el.dataset.lp){const v=el.value,c2=el.dataset.lp;if(!v)return;const n=v.slice(2);L[c2].plan=v[0]==='t'?labPreset(n,L.level)[1]:state.plans[n];L[c2].planName=n;labRefresh(c2);return}
+  if(el.dataset.lp){const v=el.value,c2=el.dataset.lp;if(!v)return;const n=v.slice(2);L[c2].plan=v[0]==='t'?starterBuild(n,L.level).plan:state.plans[n];L[c2].planName=n;labRefresh(c2);return}
   if(el.dataset.lset){const k=el.dataset.lset;L[k]=k==='speed'?+el.value:el.value;if(k==='level'){['A','B'].forEach(c=>{if(!L[c])return;const pn=L[c].planName; /* a quick build switches to that level's own tuned build; anything custom grows or shrinks in shape */
-    if(PRESETS[pn]){const[st,pl]=labPreset(pn,L.level);Object.assign(L[c],st,{plan:pl})}else{['str','spd','agl','chn','cnd','kp'].forEach(q=>L[c][q]=Math.min(labMaxS(),L[c][q]));labScale(L[c],labPool(),labMaxS())}if($('#labCard'+c))labRefresh(c)})}const b=$('#labBar');if(b)b.innerHTML=labBarHTML()}
+    const so=starterOf(pn);if(so||PRESETS[pn]){if(so)labApplyStarter(L[c],so.id,L.level);else{const[st,pl]=labPreset(pn,L.level);Object.assign(L[c],st,{plan:pl})}}else{['str','spd','agl','chn','cnd','kp'].forEach(q=>L[c][q]=Math.min(labMaxS(),L[c][q]));labScale(L[c],labPool(),labMaxS())}if($('#labCard'+c))labRefresh(c)})}const b=$('#labBar');if(b)b.innerHTML=labBarHTML()}
 }
 function labClick(e){const t=e.target.closest('button');if(!t)return;const L=labState();
+  if(t.dataset.starter){const c=t.dataset.c;labApplyStarter(L[c],t.dataset.starter,L.level);labRefresh(c);const card=$('#labCard'+c);if(card){card.scrollIntoView({behavior:'smooth',block:'nearest'});card.classList.add('flash');setTimeout(()=>card.classList.remove('flash'),700)}return}
   if(t.dataset.lpm){const c=t.dataset.c,k=t.dataset.lpm,F=L[c],d=+t.dataset.d;
     const lo=MINS[k]??0,hi=k==='hgt'?21:labMaxS();F[k]=Math.max(lo,Math.min(hi,F[k]+d));
     if(k==='str'&&F.kp>Math.floor(F.str/3))F.kp=Math.floor(F.str/3);if(k==='kp'&&F.kp>Math.floor(F.str/3))F.kp=Math.floor(F.str/3);
