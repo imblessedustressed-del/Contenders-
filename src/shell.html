@@ -241,6 +241,13 @@ pre.plan{background:#fbfaf7;border:1px solid var(--line)}
 .labChat{max-height:320px;overflow-y:auto;border:1px solid var(--line);border-radius:8px;padding:6px 10px;background:#fffdf8}.labChat .lc{margin:6px 0;border-bottom:1px dotted #e3d6bf;padding-bottom:5px}
 .labSay{display:flex;gap:6px;margin-top:6px}.labGuest input{width:190px}.labSay input{flex:1}
 @media(max-width:760px){.labGrid{grid-template-columns:1fr}.labVs{font-size:22px}.labTick .lt:first-child{font-size:14px}}
+.sbLobby{border:2px solid #c62828;border-radius:10px;padding:10px 14px;margin:18px 0;background:#fff8f0}.sbLobby h3{margin:12px 0 4px;font-size:15px}
+.sbcWrap{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:14px;align-items:start}.sbcSide{position:sticky;top:8px}.sbcChat{max-height:520px;min-height:260px}
+.sbcVs{display:grid;grid-template-columns:1fr 46px 1fr;gap:10px;align-items:center;margin-bottom:6px}.sbcC{border:2px solid var(--line);border-radius:10px;padding:8px 12px;background:#fff;text-align:center}
+.sbReady{color:#1b7f2a;font-weight:bold}.sbcCount{font:900 22px Impact,'Arial Black',sans-serif;text-align:center;color:#c62828;margin:8px 0}.sbcCount:empty{display:none}
+.sbcOne{grid-template-columns:1fr;max-width:520px}.sbcLinkBox{width:100%;max-width:520px;font-size:12px}
+@media(max-width:900px){.sbcWrap{grid-template-columns:1fr}.sbcSide{position:static}.sbcChat{max-height:320px;min-height:160px}}
+
 .gymDescWrap{margin:12px 0}.gymDesc{border:1px solid var(--line);border-radius:8px;padding:12px 14px;max-height:900px;overflow:auto;position:relative;isolation:isolate;contain:layout paint;background:#fffdf8;word-wrap:break-word;overflow-wrap:anywhere}
 .gymDesc img{max-width:100%;height:auto}.gymDesc table{max-width:100%}.gymDesc a::after{content:" \2197";font-size:.85em}.gymDescCtl{margin-top:4px}
 </style>
@@ -410,7 +417,7 @@ async function initDB(){
   SB.auth.onAuthStateChange((ev,session)=>{
     if(ev==='PASSWORD_RECOVERY'){recovering=true;nav('newpass');return}
     const was=ME;ME=session?session.user.id:null;MYEMAIL=session?session.user.email:'';
-    if(ME!==was){if(labAnim){labAnim.stop=true;labAnim=null}LAB=null} // never leave one manager's Lab plans on screen for the next
+    if(ME!==was){if(labAnim){labAnim.stop=true;labAnim=null}LAB=null;SBC=null} // never leave one manager's Lab plans on screen for the next
     if(ME&&ME!==was){loadedGym=false;afterLogin()}
     if(!ME&&was){ims=[];loadedGym=false}
     updateTop();refresh();
@@ -546,11 +553,12 @@ function render(){
   const P={sbview:()=>sbViewHTML(arg),home:homeHTML,register:registerHTML,aup:aupHTML,gym:gymHTML,plans:plansHTML,fight:fightHTML,create:createHTML,cards:cardsHTML,
     retired:retiredHTML,clean:cleanHTML,short:shortHTML,changegym:changeGymHTML,desc:descHTML,
     login:loginHTML,logout:logoutHTML,forgot:forgotHTML,newpass:newPassHTML,changepw:changePwHTML,forums:forumsHTML,forum:()=>forumHTML(arg),topic:()=>topicHTML(arg),newtopic:()=>newTopicHTML(arg),msgs:()=>msgsHTML(arg),
-    simbot:labHTML,lab:labHTML,champs:()=>champsHTML(arg),frank:()=>frankHTML(arg),grank:()=>grankHTML(arg),results:resultsHTML,fcards:fightCardsHTML,sched:schedHTML,
+    simbot:labHTML,lab:labHTML,sbch:()=>sbchHTML(arg),champs:()=>champsHTML(arg),frank:()=>frankHTML(arg),grank:()=>grankHTML(arg),results:resultsHTML,fcards:fightCardsHTML,sched:schedHTML,
     discarded:()=>`<h1>Discarded Fighters</h1><p>No fighters have been discarded.</p>`,search:searchHTML,help:()=>helpHTML(arg),newbie:newbieHTML,funding:fundingHTML,retiregym:retireGymHTML,
     edit:()=>planEditHTML(arg),plan:()=>planEditHTML(arg),pf:()=>planFormHTML(arg),rec:()=>recordHTML(arg),gympub:()=>gymPubHTML(arg),gymret:()=>gymRetHTML(arg),gymres:()=>gymResHTML(arg),gymh2h:()=>gymH2HHTML(arg),opub:()=>oFighterHTML(arg),rpub:()=>retFighterHTML(arg),cdiv:()=>cdivHTML(arg),pub:()=>pubHTML(arg),train:()=>trainHTML(arg),report:()=>savedReportHTML(arg),lreport:()=>leagueReportHTML(arg),ppv:ppvHTML};
   $('#view').innerHTML=`<div id="flash" class="note cr" style="display:none;margin-bottom:10px"></div>`+(P[base]||homeHTML)();
-  if(base==='lab'||base==='simbot')setTimeout(labMount,0);else if(base==='sbview')setTimeout(sbMount,0);else if(labAnim){labAnim.stop=true;labAnim=null}
+  if(base!=='sbch')sbcStop();
+  if(base==='lab'||base==='simbot')setTimeout(labMount,0);else if(base==='sbview')setTimeout(sbMount,0);else if(base==='sbch')setTimeout(sbcMount,0);else if(labAnim){labAnim.stop=true;labAnim=null}
 }
 
 /* ---------- Fight Lab (owner, Nov 13, 2026: replaces Simbot) ----------
@@ -558,18 +566,32 @@ function render(){
    highlight of the fight, driven by the real engine's play-by-play. Nothing here touches any record. */
 const LAB_ST=[['str','Strength'],['kp','KO Punch'],['spd','Speed'],['agl','Agility'],['chn','Chin'],['cnd','Conditioning'],['hgt','Height']];
 let LABV=null,LAB=null,labChat=null,labChatBusy=false,labPoll=null,labAnim=null;
-function labMk(name,pre,home){const[st,pl]=PRESETS[pre];return{name,nick:'',home,build:'normal',...st,plan:pl,planName:pre,rec:[0,0,0,0],hist:[],rating:0,status:0}}
-function labState(){if(LABV)return LABV;if(!LAB)LAB={A:labMk('Red Rocket','Slugger','Detroit, Michigan'),B:labMk('Blue Thunder','Dancer','Philadelphia, Pennsylvania'),div:'',rounds:'12',speed:30,fight:null,bout:null};return LAB}
+/* Simbot levels (owner, Nov 15, 2026: "bump simbot up to title stats, rating 28/28"): title fighters have 110 points (70 + the 40 a status-28 fighter earns) and fight at rating/status 28; new fighters have 70 */
+const LAB_LEVELS={title:{pool:110,max:45,rating:28,name:'Title fighters (rating 28/28, 110 points)'},basic:{pool:70,max:30,rating:0,name:'New fighters (70 points)'}};
+const labLv=()=>LAB_LEVELS[(labState()||{}).level]||LAB_LEVELS.title,labPool=()=>labLv().pool,labMaxS=()=>labLv().max;
+/* grow or shrink a fighter to the pool, keeping his shape: height and cut stay, the six abilities move in proportion */
+function labScale(F,pool,max){const ks=['str','spd','agl','chn','cnd','kp'],lo=k=>k==='kp'?0:1;max=max||(pool>70?45:30);
+  const d=pool-used(F);if(!d)return F;const S0=ks.reduce((a,k)=>a+F[k],0),S1=S0+d,src={...F};
+  const tgt=ks.map(k=>({k,v:src[k]*S1/S0}));tgt.forEach(t=>{F[t.k]=Math.max(lo(t.k),Math.min(max,Math.floor(t.v)))});
+  let left=pool-used(F),guard=400;
+  while(left!==0&&guard--){const up=left>0,c=tgt.filter(t=>up?F[t.k]<max&&(t.k!=='kp'||src.kp>0):F[t.k]>lo(t.k)).sort((a,b)=>up?(b.v-F[b.k])-(a.v-F[a.k]):(F[b.k]-b.v)-(F[a.k]-a.v))[0];if(!c)break;F[c.k]+=up?1:-1;left+=up?-1:1}
+  while(F.kp>Math.floor(F.str/3)){F.kp--;F.str++}
+  return F}
+/* Simbot title-level quick builds (110 points, rating 28), tuned the same way as the 70-point templates (Nov 15, 2026): 36-61% each vs the others */
+const PRESETS_T={"Slugger":[{"str":28,"kp":0,"spd":16,"agl":19,"chn":18,"cnd":22,"hgt":5,"cut":2},"# Slugger: steady pressure, empty the tank late\n8/7/5 (feint)\nif opponent <= tired then 9/8/3 (feint)\n10) 10/8/2\nif score >= 4 then 3/3/14\n1) if endurance_percent < 40 then 4/4/12 (clinch)"],"KP Slugger":[{"str":26,"kp":5,"spd":18,"agl":21,"chn":17,"cnd":19,"hgt":2,"cut":2},"# KP Slugger: hunt the knockout\n5H/8/7\nif hisstuns > 0 then 6H/10/4\nif score > 2*(1 + 12 - round) then 3/3/14\n1) if endurance_percent < 45 then 4/4/12 (clinch)"],"Agile Slugger":[{"str":24,"kp":0,"spd":19,"agl":22,"chn":20,"cnd":19,"hgt":4,"cut":2},"# Agile Slugger: work inside, slip out\n4/8/8 (inside)\nif score < 0 and round >= 6 then 5/9/6 (inside)\nif score > 2*(1 + 12 - round) then 3/3/14\n1) if endurance_percent < 45 then 4/4/12"],"Balanced":[{"str":23,"kp":0,"spd":18,"agl":19,"chn":21,"cnd":21,"hgt":6,"cut":2},"# Balanced boxer\n7/4/6 (outside)\nif score + 12 - round < 0 then 9/5/3\nif score > 2*(1 + 12 - round) then 2/2/16\n1) if endurance_percent < 40 then 4/4/12"],"Dancer":[{"str":17,"kp":0,"spd":25,"agl":23,"chn":17,"cnd":19,"hgt":7,"cut":2},"# Dancer: box from range and stay safe\n5H/2/13 (ring)\nif score < 0 and round >= 7 then 6H/3/11 (ring)\nif score > 2*(1 + 12 - round) then 2/2/16 (ring)\n1) if endurance_percent < 45 then 3/3/14"],"Counterpuncher":[{"str":20,"kp":0,"spd":21,"agl":22,"chn":13,"cnd":26,"hgt":6,"cut":2},"# Counterpuncher: make him miss, make him pay\n5/4/11 (counter)\nif score < 1 then 6/5/9 (counter)\nif score > 2*(1 + 12 - round) then 2/2/16\n1) if endurance_percent < 45 then 4/4/12 (counter)"],"Clincher":[{"str":25,"kp":0,"spd":20,"agl":16,"chn":20,"cnd":20,"hgt":7,"cut":2},"# Clincher: grind him down\n6B/6/8 (clinch)\nif opponent <= tired then 8B/8/4\nif opponent = exhausted then 9H/9/2\n1) if endurance_percent < 40 then 2/2/14 (clinch)"],"Flasher":[{"str":27,"kp":0,"spd":19,"agl":16,"chn":22,"cnd":14,"hgt":10,"cut":2},"# Flasher: blitz him early, then hold on\n1) 8H/9/3\n2) 7/6/7\nif hisstuns > 0 then 8H/10/2\nif opponent = exhausted then 8H/9/3\nif score > 2*(1 + 12 - round) then 2/2/16 (clinch)\n1) if endurance_percent < 40 then 3/3/14 (clinch)"]};
+const labPreset=(k,level)=>((level||'title')==='title'&&PRESETS_T[k])||PRESETS[k];
+function labMk(name,pre,home,level){const[st,pl]=labPreset(pre,level);const lv=LAB_LEVELS[level||'title'];return labScale({name,nick:'',home,build:'normal',...st,plan:pl,planName:pre,rec:[0,0,0,0],hist:[],rating:0,status:0},lv.pool,lv.max)}
+function labState(){if(LABV)return LABV;if(SBC&&view.startsWith('sbch:'))return SBC.L;if(!LAB)LAB={A:labMk('Red Rocket','Slugger','Detroit, Michigan'),B:labMk('Blue Thunder','Counterpuncher','Philadelphia, Pennsylvania'),level:'title',div:'',rounds:'12',speed:30,fight:null,bout:null};return LAB}
 const labDiv=()=>{const L=labState();if(L.div)return L.div;const need=Math.max(minWeight(L.A),minWeight(L.B));return(DIVS.find(d=>d[1]>=need)||DIVS[DIVS.length-1])[0]};
 function labErr(){const L=labState();
   for(const c of['A','B']){const F=L[c],n=F.name.trim()||(c==='A'?'The red corner':'The blue corner'),u=used(F);
-    if(u!==POOL)return`${n} has ${u} points. He needs exactly ${POOL}.`;
+    if(u!==labPool())return`${n} has ${u} points. He needs exactly ${labPool()}.`;
     if(F.kp>Math.floor(F.str/3))return`${n} has too much KO Punch for his Strength (3 Strength per point).`;
     const e=parsePlan(F.plan).errors;if(e.length)return`${n}'s fight plan, line ${e[0].line}: ${e[0].msg}`}
   return''}
 function labFighters(){const L=labState(),bk=L.rounds==='bk';
-  return['A','B'].map(c=>({...L[c],name:L[c].name.trim()||(c==='A'?'Red Rocket':'Blue Thunder'),region:bk?'bk':undefined}))}
-function labCornerHTML(c){const L=labState(),F=L[c],u=used(F);
+  const rt=labLv().rating;return['A','B'].map(c=>({...L[c],name:L[c].name.trim()||(c==='A'?'Red Rocket':'Blue Thunder'),region:bk?'bk':undefined,rating:rt,status:rt}))}
+function labCornerHTML(c){const L=labState(),F=L[c],u=used(F),POOL=labPool();
   const plans=[...Object.keys(PRESETS).map(k=>['t:'+k,k+' (template)'])];
   if(ME){ensurePlans();Object.keys(state.plans).sort().forEach(k=>{if(!PRESETS[k]||state.plans[k]!==PRESETS[k][1])plans.push(['m:'+k,k+' (my plan)'])})}
   return`<div class="labCard ${c==='A'?'labRed':'labBlue'}" id="labCard${c}">
@@ -589,12 +611,13 @@ function labCornerHTML(c){const L=labState(),F=L[c],u=used(F);
   <p class="small">🔒 Private: this plan stays on your device. It is never saved or sent anywhere. <a data-go="help:plans">How fight plans work</a></p>
   </div>`}
 function labBarHTML(){const L=labState(),o=(arr,v)=>arr.map(([a,b])=>`<option value="${a}"${String(a)===String(v)?' selected':''}>${b}</option>`).join('');
-  return`<label>Division <select data-lset="div"><option value="">Auto (${esc(labDiv())})</option>${o(DIVS.map(([d,l])=>[d,`${d} (${l})`]),L.div)}</select></label>
+  return`<label>Fighters <select data-lset="level">${o(Object.entries(LAB_LEVELS).map(([k,v])=>[k,v.name]),L.level||'title')}</select></label>
+  <label>Division <select data-lset="div"><option value="">Auto (${esc(labDiv())})</option>${o(DIVS.map(([d,l])=>[d,`${d} (${l})`]),L.div)}</select></label>
   <label>Bout <select data-lset="rounds">${o([['3','3 rounds'],['6','6 rounds'],['12','12 rounds'],['bk','Bare Knuckles, 25 rounds']],L.rounds)}</select></label>
   `}
 function labHTML(){const L=labState();
   return`<div id="lab"><h1>Simbot</h1>
-  <p class="labIntro">Build two fighters with ${POOL} points each, give them fight plans, and watch them fight it out. Test a plan, settle an argument, or just have fun. Nothing here counts on any record.</p>
+  <p class="labIntro">Build two fighters (title fighters at rating 28 with 110 points each, or new fighters with 70), give them fight plans, and watch them fight it out. Test a plan, settle an argument, or just have fun. Nothing here counts on any record.</p>
   <div class="labGrid">${labCornerHTML('A')}<div class="labVs">VS</div>${labCornerHTML('B')}</div>
   <div class="labBar" id="labBar">${labBarHTML()}</div>
   <p class="labBtns"><button class="labGo" data-lab="fight">🥊 FIGHT!</button> <button data-lab="sim">Run it 100 times</button> <span class="cr" id="labErr"></span></p>
@@ -603,6 +626,7 @@ function labHTML(){const L=labState();
   <p class="labCtl"><button data-lab="pause" id="labPause">Pause</button> <button data-lab="skip">Skip to the end</button> <button data-lab="replay">Watch again</button> <button data-lab="report">Full report</button> <button data-lab="share">Share to Simbot Chat</button> <button data-lab="gfx" class="labGfx">${L3GFX_NAMES[l3gfx()]||'Graphics'}</button> <button data-lab="snd" class="labSnd">${labSndOn()?'🔊 Sound On':'🔇 Sound Off'}</button></p>
   <div id="labRep"></div></div>
   <div id="labSim"></div>
+  ${sbLobbyHTML()}
   <h2>Simbot Chat</h2><div id="labChat" class="labChat"><p class="mute">Loading...</p></div>
   ${ME?'':`<p class="small labGuest">Chatting as a guest: <input id="labNick" maxlength="20" placeholder="Pick a Simbot nickname" value="${esc(labNick())}" autocomplete="off"> <span class="mute">or <a data-go="register">sign up</a> to chat as your gym.</span></p>`}
   <div class="labSay"><input id="labMsg" maxlength="280" placeholder="Talk some trash..." autocomplete="off"><button data-lab="send">Send</button></div>
@@ -613,24 +637,25 @@ function labRefresh(c){const el=$('#labCard'+c),old=el&&el.querySelector('.labWt
 function labMount(){const root=$('#lab');if(!root)return;
   root.addEventListener('click',labClick);root.addEventListener('change',labChange);root.addEventListener('input',labInput);
   const m=$('#labMsg');if(m)m.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();labSend()}});
-  labLoadChat();if(!labPoll)labPoll=setInterval(()=>{if(view==='lab')labLoadChat();else{clearInterval(labPoll);labPoll=null}},15000);
+  const lb=$('#sbLobby');if(lb)lb.addEventListener('click',sbLobbyClick);sbLoadBoard(true);
+  labLoadChat();if(!labPoll)labPoll=setInterval(()=>{if(view==='lab'||view==='simbot'){labLoadChat();sbLoadBoard(true)}else{clearInterval(labPoll);labPoll=null}},15000);
   const L=labState();if(L.fight&&!labAnim)labDraw(1e9);
 }
 function labInput(e){const el=e.target,c=el.dataset.c;if(el.dataset.lf==='name'||el.dataset.lf==='plan'){labState()[c][el.dataset.lf]=el.value;if(el.dataset.lf==='plan')labState()[c].planName='Custom'}}
 function labChange(e){const el=e.target,L=labState(),c=el.dataset.c;
   if(el.dataset.lf==='cut'||el.dataset.lf==='build'){L[c][el.dataset.lf]=el.dataset.lf==='cut'?+el.value:el.value;labRefresh(c);return}
-  if(el.dataset.lq){const k=el.value;if(!k)return;const[st,pl]=PRESETS[k];Object.assign(L[el.dataset.lq],st,{plan:pl,planName:k});labRefresh(el.dataset.lq);return}
+  if(el.dataset.lq){const k=el.value;if(!k)return;const[st,pl]=labPreset(k,L.level);Object.assign(L[el.dataset.lq],st,{plan:pl,planName:k});labScale(L[el.dataset.lq],labPool(),labMaxS());labRefresh(el.dataset.lq);return}
   if(el.dataset.lmine){const F=state[el.value];if(!F)return;const t=L[el.dataset.lmine];
     ['str','kp','spd','agl','chn','cnd','hgt','cut','build','name','home'].forEach(k=>t[k]=F[k]);t.plan=F.plan;t.planName=F.planName;
-    // trained fighters can have more than 70 points; the Lab is a 70-point game, so trim the extras off his best stats
-    let over=used(t)-POOL;while(over>0){const k=['str','spd','agl','chn','cnd','kp'].sort((a,b)=>t[b]-t[a])[0];t[k]--;over--}
-    if(t.kp>Math.floor(t.str/3))t.kp=Math.floor(t.str/3);labRefresh(el.dataset.lmine);return}
-  if(el.dataset.lp){const v=el.value,c2=el.dataset.lp;if(!v)return;const n=v.slice(2);L[c2].plan=v[0]==='t'?PRESETS[n][1]:state.plans[n];L[c2].planName=n;labRefresh(c2);return}
-  if(el.dataset.lset){const k=el.dataset.lset;L[k]=k==='speed'?+el.value:el.value;const b=$('#labBar');if(b)b.innerHTML=labBarHTML()}
+    // trained fighters can have any number of points: grow or trim him to this level's pool, keeping his shape
+    ['str','spd','agl','chn','cnd','kp'].forEach(k=>t[k]=Math.min(labMaxS(),t[k]));labScale(t,labPool(),labMaxS());labRefresh(el.dataset.lmine);return}
+  if(el.dataset.lp){const v=el.value,c2=el.dataset.lp;if(!v)return;const n=v.slice(2);L[c2].plan=v[0]==='t'?labPreset(n,L.level)[1]:state.plans[n];L[c2].planName=n;labRefresh(c2);return}
+  if(el.dataset.lset){const k=el.dataset.lset;L[k]=k==='speed'?+el.value:el.value;if(k==='level'){['A','B'].forEach(c=>{if(!L[c])return;const pn=L[c].planName; /* a quick build switches to that level's own tuned build; anything custom grows or shrinks in shape */
+    if(PRESETS[pn]){const[st,pl]=labPreset(pn,L.level);Object.assign(L[c],st,{plan:pl})}else{['str','spd','agl','chn','cnd','kp'].forEach(q=>L[c][q]=Math.min(labMaxS(),L[c][q]));labScale(L[c],labPool(),labMaxS())}if($('#labCard'+c))labRefresh(c)})}const b=$('#labBar');if(b)b.innerHTML=labBarHTML()}
 }
 function labClick(e){const t=e.target.closest('button');if(!t)return;const L=labState();
   if(t.dataset.lpm){const c=t.dataset.c,k=t.dataset.lpm,F=L[c],d=+t.dataset.d;
-    const lo=MINS[k]??0,hi=k==='hgt'?21:MAX;F[k]=Math.max(lo,Math.min(hi,F[k]+d));
+    const lo=MINS[k]??0,hi=k==='hgt'?21:labMaxS();F[k]=Math.max(lo,Math.min(hi,F[k]+d));
     if(k==='str'&&F.kp>Math.floor(F.str/3))F.kp=Math.floor(F.str/3);if(k==='kp'&&F.kp>Math.floor(F.str/3))F.kp=Math.floor(F.str/3);
     labRefresh(c);return}
   const a=t.dataset.lab;if(!a)return;
@@ -688,9 +713,9 @@ function labBeats(f){const L=labState(),sched=f.rounds.length&&L.bout?L.bout.rou
   const replay=sb?{start:t+2.6,dur:3.4,from:sb.at-.55,rate:.32}:null;
   return{beats,rounds,replay,total:replay?replay.start+replay.dur+3.2:t+4};
 }
-function labPlay(){const L=labState();if(!L.fight)return;if(labAnim)labAnim.stop=true;
+function labPlay(off){const L=labState();if(!L.fight)return;if(labAnim)labAnim.stop=true;
   $('#labTick').innerHTML='';$('#labPause').textContent='Pause';
-  const tl=labBeats(L.fight);labAnim={tl,t0:performance.now(),at:0,shown:0,rs:0,paused:false,stop:false};const me=labAnim;
+  const tl=labBeats(L.fight);labAnim={tl,t0:performance.now()-(off>0?off*1000:0),at:0,shown:0,rs:0,paused:false,stop:false};const me=labAnim;
   labSndStop();labSndPause(false);labBedStart();
   const step=now=>{if(me.stop){if(!labAnim)labSndStop();return}if(!me.paused)me.at=(now-me.t0)/1000;
     while(me.rs<tl.rounds.length&&tl.rounds[me.rs].start<=me.at){if(me.at-tl.rounds[me.rs].start<.5)labSfx({k:'start'});me.rs++}
@@ -960,7 +985,7 @@ function labDraw(at,tl){const cv=$('#labCv');if(!cv)return;const g=cv.getContext
 /* --- Lab Chat --- */
 const labNick=()=>{try{return localStorage.getItem('contenders_simbot_nick')||''}catch(e){return''}};
 async function labLoadChat(){if(!SB||labChatBusy)return;labChatBusy=true;
-  try{const{data,error}=await SB.from('lab_chat').select('id,author,nick,body,created_at,hidden').order('created_at',{ascending:false}).limit(40);if(!error)labChat=data.reverse()}finally{labChatBusy=false}
+  try{const{data,error}=await SB.from('lab_chat').select('id,author,nick,body,created_at,hidden').is('room',null).order('created_at',{ascending:false}).limit(40);if(!error)labChat=data.reverse()}finally{labChatBusy=false}
   const el=$('#labChat');if(!el)return;const atBottom=el.scrollHeight-el.scrollTop-el.clientHeight<40;
   el.innerHTML=!labChat?needDB():labChat.length?labChat.map(m=>{const gm=managers[m.author];const when=new Date(m.created_at);
     return`<p class="lc"><b>${m.author&&gm?`<a data-go="gympub:${m.author}">${esc(gm.gym)}</a>`:m.nick?`${esc(m.nick)} <span class="small mute">(guest)</span>`:'A retired gym'}</b> <span class="small mute">${when.toLocaleDateString('en-US',{month:'short',day:'numeric'})} ${when.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}</span>${m.author===ME?` <a class="small" data-labdel="${m.id}">delete</a>`:''}${m.hidden?' <span class="small cr">(hidden pending review, only you see it)</span>':''}<br>${esc(m.body)}</p>`}).join(''):'<p class="mute">No messages yet. Say something!</p>';
@@ -981,6 +1006,189 @@ async function labSend(){const m=$('#labMsg');if(!m)return;if(await labPost(m.va
 function labShare(){const L=labState(),f=L.fight;if(!f)return;const r=f.result,[a,b]=L.names,[pa,pb]=L.plans;
   const txt=r.w==null?`🥊 ${a} and ${b} fought to a ${r.type.toLowerCase()} in Simbot.`:`🥊 ${L.names[r.w]} beat ${L.names[1-r.w]} by ${r.decision?r.type.toLowerCase():r.type+' in round '+r.round} in Simbot.`;
   labPost(txt)}
+
+
+/* ---------- Simbot Challenges (owner, Nov 15, 2026: "challenge somebody... they put in their plans and everyone can watch them... live chat") ----------
+   Route sbch:<id> (a seat link adds :a:<token> or :b:<token>; the page saves the token on this device and drops it from the address).
+   The simbot-match edge function keeps both plans and abilities private, runs the fight once both corners are ready, and stores
+   a public report with a fight_at time 10 s ahead, so everyone watching starts the highlight together. Room chat = lab_chat.room. */
+let SBC=null,sbcTimer=null,sbcBusy=false,sbBoard=null,sbBoardAt=0;
+const sbcSeats=()=>{try{return JSON.parse(localStorage.getItem('contenders_sbch')||'{}')}catch(e){return{}}};
+function sbcSaveSeat(id,s,t,inv){const m=sbcSeats();m[id]={s,t,...(inv?{inv}:{}),at:Date.now()};
+  const ks=Object.keys(m).sort((a,b)=>(m[b].at||0)-(m[a].at||0));ks.slice(40).forEach(k=>delete m[k]); /* keep the 40 newest */
+  try{localStorage.setItem('contenders_sbch',JSON.stringify(m))}catch(e){}}
+const sbcViewer=()=>{try{let v=localStorage.getItem('contenders_viewer');if(!v){v=Math.random().toString(36).slice(2)+Date.now().toString(36);localStorage.setItem('contenders_viewer',v)}return v.replace(/[^A-Za-z0-9]/g,'').slice(0,40)}catch(e){return'anon'+Math.floor(Math.random()*1e9)}};
+const sbcLink=(id,s,t)=>location.origin+location.pathname+'#sbch:'+id+(s?':'+s+':'+t:'');
+async function sbCall(body){if(!SB)return{error:'The league server is not reachable right now.'};
+  try{const{data,error}=await SB.functions.invoke('simbot-match',{body});
+    if(error){let m='';try{const j=await error.context.json();m=j&&j.error}catch(e){}return{error:m||'Something went wrong. Try again in a moment.'}}
+    if(data&&data.error)return{error:data.error};return data||{}}catch(e){return{error:'Something went wrong. Try again in a moment.'}}}
+/* a guest's Simbot nickname: whichever nickname box on the page has one (lobby, page or chat), else the saved one; copied into the other boxes */
+function sbNick(){if(ME)return null;const els=[...document.querySelectorAll('#sbcNick,#labNick')],ok=v=>/^[A-Za-z0-9 _.'-]{3,20}$/.test(v);
+  const vals=els.map(e=>e.value.trim().replace(/\s+/g,' '));let n=vals.find(ok)||labNick();
+  if(!ok(n)){const e=els.find(x=>!x.value.trim())||els[0];if(e){e.focus();e.scrollIntoView({block:'center'})}return false}
+  els.forEach(e=>{if(!e.value.trim())e.value=n});try{localStorage.setItem('contenders_simbot_nick',n)}catch(e){}return n}
+
+/* lobby on the Simbot page */
+function sbLobbyHTML(){return`<div class="sbLobby" id="sbLobby"><h2>🥊 Challenge Someone</h2>
+  <p class="small">Build your fighter and plan, your opponent builds his, and everyone watches the fight live with a chat on the side. Plans stay secret. No sign-up needed.</p>
+  <div class="labBar"><label>Fighters <select id="sbLevel">${Object.entries(LAB_LEVELS).map(([k,v])=>`<option value="${k}">${v.name}</option>`).join('')}</select></label>
+  <label>Bout <select id="sbRounds"><option value="12">12 rounds</option><option value="6">6 rounds</option><option value="3">3 rounds</option><option value="25">Bare Knuckles, 25 rounds</option></select></label>
+  <label><input type="checkbox" id="sbListed" checked> Post it on the board so anyone can accept</label></div>
+  ${ME?'':`<p class="small">Your Simbot nickname: <input id="sbcNick" maxlength="20" placeholder="Pick a nickname" value="${esc(labNick())}" autocomplete="off"></p>`}
+  <p><button class="labGo" data-sb="create">Create a challenge</button> <span class="cr" id="sbErr"></span></p>
+  <div id="sbBoard"><p class="mute">Loading the board...</p></div></div>`}
+async function sbLoadBoard(force){if(!SB)return;const el=$('#sbBoard');if(!el)return;
+  if(!force&&sbBoard&&Date.now()-sbBoardAt<8000){sbPaintBoard();return}
+  const since=new Date(Date.now()-36*3600e3).toISOString();
+  const{data,error}=await SB.from('sb_challenges').select('id,created_at,status,level,rounds,listed,a_who,b_who,a_name,b_name,a_ready,b_ready,b_taken,fight_at').gte('created_at',since).neq('status','cancelled').order('created_at',{ascending:false}).limit(60);
+  if(error){el.innerHTML='<p class="mute">The board is not available right now.</p>';return}
+  sbBoard=data;sbBoardAt=Date.now();sbPaintBoard()}
+function sbPaintBoard(){const el=$('#sbBoard');if(!el||!sbBoard)return;const mine=sbcSeats(),now=Date.now();
+  const lv=r=>r.level==='basic'?'70 pts':'Title';const rd=r=>r.rounds===25?'Bare Knuckles':r.rounds+' rds';
+  const open=sbBoard.filter(r=>r.status==='open'&&r.listed&&!r.b_taken),live=sbBoard.filter(r=>r.status==='open'&&r.b_taken||r.status==='fought'&&new Date(r.fight_at).getTime()>now-6*60e3),
+    done=sbBoard.filter(r=>r.status==='fought'&&new Date(r.fight_at).getTime()<=now-6*60e3).slice(0,10);
+  const row=(r,btn)=>`<tr><td>${esc(r.a_who||'?')}${r.a_name?` <span class="small mute">(${esc(r.a_name)})</span>`:''}</td><td>${r.b_who?esc(r.b_who)+(r.b_name?` <span class="small mute">(${esc(r.b_name)})</span>`:''):'<span class="mute">open</span>'}</td><td class="small">${lv(r)}, ${rd(r)}</td><td>${btn}</td></tr>`;
+  el.innerHTML=`<h3>Open challenges</h3>${open.length?`<table class="grid small"><tr><th>Red corner</th><th>Blue corner</th><th>Bout</th><th></th></tr>${open.map(r=>row(r,mine[r.id]?`<a data-go="sbch:${r.id}">Yours</a>`:`<button data-sbtake="${r.id}">Accept</button>`)).join('')}</table>`:'<p class="small mute">None right now. Create one!</p>'}
+  <h3>Live now</h3>${live.length?`<table class="grid small"><tr><th>Red corner</th><th>Blue corner</th><th>Bout</th><th></th></tr>${live.map(r=>row(r,`<a data-go="sbch:${r.id}">${r.status==='fought'?'🔴 Watch':'Watch'}</a>`)).join('')}</table>`:'<p class="small mute">Nothing on right now.</p>'}
+  ${done.length?`<h3>Recent fights</h3><table class="grid small"><tr><th>Red corner</th><th>Blue corner</th><th>Bout</th><th></th></tr>${done.map(r=>row(r,`<a data-go="sbch:${r.id}">Replay</a>`)).join('')}</table>`:''}`}
+async function sbLobbyClick(e){const t=e.target.closest('button');if(!t)return;
+  if(t.dataset.sb==='create'){const nick=sbNick();if(nick===false){$('#sbErr').textContent='Pick a Simbot nickname first (3-20 letters or numbers).';return}
+    t.disabled=true;$('#sbErr').textContent='';
+    const r=await sbCall({action:'create',level:$('#sbLevel').value,rounds:+$('#sbRounds').value,listed:$('#sbListed').checked,nick});t.disabled=false;
+    if(r.error){$('#sbErr').textContent=r.error;return}
+    sbcSaveSeat(r.id,'a',r.a,r.b);nav('sbch:'+r.id);return}
+  if(t.dataset.sbtake){const nick=sbNick();if(nick===false){$('#sbErr').textContent='Pick a Simbot nickname first (3-20 letters or numbers).';return}
+    t.disabled=true;const r=await sbCall({action:'take',id:t.dataset.sbtake,nick});t.disabled=false;
+    if(r.error){$('#sbErr').textContent=r.error;sbLoadBoard(true);return}
+    sbcSaveSeat(r.id,'b',r.token);nav('sbch:'+r.id)}}
+
+/* the challenge page */
+function sbchHTML(arg){const p=arg.split(':'),id=p[0];
+  if(p[1]&&p[2]&&/^[ab]$/.test(p[1])){sbcSaveSeat(id,p[1],p[2]);history.replaceState(null,'','#sbch:'+id);view='sbch:'+id}
+  if(!SBC||SBC.id!==id){sbcStop();const seat=sbcSeats()[id]||null;const lv=LAB_LEVELS.title;
+    SBC={id,row:null,seat,phase:'',chat:[],watch:0,mgr:null,joined:false,loadedMine:false,shownFor:null,
+      L:{A:labMk('Red Rocket','Slugger','Detroit, Michigan'),B:labMk('Blue Thunder','Counterpuncher','Philadelphia, Pennsylvania'),level:'title',div:'',rounds:'12',fight:null,bout:null,names:['',''],plans:['','']}}}
+  return`<div id="sbc"><h1>Simbot Challenge</h1><div id="sbcTop"><p class="mute">Loading...</p></div>
+  <div class="sbcWrap"><div class="sbcMain" id="sbcMain"></div>
+  <div class="sbcSide"><h2>Fight Chat <span class="small mute" id="sbcWatch"></span></h2><div id="sbcChat" class="labChat sbcChat"><p class="mute">Loading...</p></div>
+  ${ME?'':`<p class="small labGuest">Chatting as: <input id="labNick" maxlength="20" placeholder="Pick a nickname" value="${esc(labNick())}" autocomplete="off"></p>`}
+  <div class="labSay"><input id="sbcMsg" maxlength="280" placeholder="Talk some trash..." autocomplete="off"><button data-sbc="send">Send</button></div><p class="small cr" id="sbcChatErr"></p></div></div>
+  <p class="small"><a data-go="simbot">Back to Simbot</a></p></div>`}
+function sbcStop(){if(sbcTimer){clearInterval(sbcTimer);sbcTimer=null}}
+function sbcMount(){const root=$('#sbc');if(!root||!SBC)return;if(root.dataset.on)return;root.dataset.on='1';
+  root.addEventListener('click',sbcClick);root.addEventListener('change',e=>{if(e.target.closest('.labCard'))labChange(e)});root.addEventListener('input',e=>{if(e.target.closest('.labCard'))labInput(e)});
+  const m=$('#sbcMsg');if(m)m.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();sbcSend()}});
+  SBC.phase='';sbcTick(true);sbcStop();let n=0;sbcTimer=setInterval(()=>{if(!view.startsWith('sbch:')){sbcStop();return}n++;sbcTick(n%3===0)},3000)}
+async function sbcTick(ping){if(sbcBusy||!SB||!SBC)return;sbcBusy=true;const id=SBC.id;
+  try{const cols='id,status,level,rounds,listed,a_who,b_who,a_name,b_name,a_ready,b_ready,b_taken,div,fight_at,next_id,a_user,b_user';
+    const[{data:row},{data:chat}]=await Promise.all([SB.from('sb_challenges').select(cols).eq('id',id).maybeSingle(),
+      SB.from('lab_chat').select('id,author,nick,body,created_at,hidden').eq('room',id).order('created_at',{ascending:false}).limit(60)]);
+    if(!SBC||SBC.id!==id)return;
+    if(ping){const{data:w}=await SB.rpc('sb_ping',{p_id:id,p_viewer:sbcViewer()});if(typeof w==='number')SBC.watch=w}
+    SBC.row=row||false;if(chat)SBC.chat=chat.reverse();
+    const s=SBC.seat;
+    if(row&&s&&!SBC.joined&&row.status==='open'&&s.s==='b'&&!row.b_taken){const nick=ME?null:labNick();if(ME||/^[A-Za-z0-9 _.'-]{3,20}$/.test(nick)){SBC.joined=true;const r=await sbCall({action:'join',id,seat:'b',token:s.t,nick});if(r.error){SBC.joinErr=r.error;SBC.joined=false}}}
+    if(row&&s&&!SBC.loadedMine){SBC.loadedMine=true;const r=await sbCall({action:'mine',id,seat:s.s,token:s.t});
+      if(r.error){SBC.seatBad=r.error}else{if(r.fighter){const c=s.s==='a'?'A':'B';Object.assign(SBC.L[c],r.fighter);SBC.L[c].hist=[];SBC.L[c].rec=[0,0,0,0]}SBC.mgr=r.mgr||null}}
+    if(row){SBC.L.level=row.level;SBC.L.rounds=row.rounds===25?'bk':String(row.rounds)}
+    if(row&&row.status==='fought'&&!SBC.L.fight){const{data:full}=await SB.from('sb_challenges').select('result').eq('id',id).maybeSingle();
+      if(full&&full.result&&full.result.f){const f=full.result.f;SBC.L.fight=f;SBC.L.names=f.S.map(x=>x.F.name);
+        const d=new Date(row.fight_at);SBC.L.bout={rounds:row.rounds,belt:null,div:row.div,done:true,gym:'Simbot',gyms:[row.a_who||'',row.b_who||''],ids:['sbA','sbB'],recs:[[0,0,0,0],[0,0,0,0]],
+          date:d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'}).replace(/,/g,'').replace(/(\d+) (\d{4})$/,'$1, $2'),venue:{name:'Simbot Arena',city:'',cap:2400},att:Math.min(2400,600+300*Math.max(1,SBC.watch))};
+        if(s&&!SBC.mgr){const r=await sbCall({action:'mine',id,seat:s.s,token:s.t});SBC.mgr=r.mgr||null}}}
+  }catch(e){}finally{sbcBusy=false}
+  sbcPaint()}
+function sbcPhase(){const r=SBC.row;if(r===null)return'load';if(!r)return'gone';const s=SBC.seat;
+  if(r.status==='cancelled')return'cancelled';if(r.status==='fought')return SBC.L.fight?'fought':'load2';
+  return`open:${s?s.s:''}:${s?r[s.s+'_ready']:''}:${r.b_taken}`}
+function sbcPaint(){if(!SBC||!$('#sbc'))return;const r=SBC.row,s=SBC.seat,top=$('#sbcTop'),main=$('#sbcMain');
+  /* top line: corners, ready lights, watchers */
+  const w=$('#sbcWatch');if(w)w.textContent=SBC.watch?`👀 ${SBC.watch} watching`:'';
+  if(r===false){top.innerHTML='<p>That challenge doesn\'t exist any more.</p>';main.innerHTML='<p><a data-go="simbot">Back to Simbot</a></p>';sbcChatPaint();return}
+  if(!r){sbcChatPaint();return}
+  const lamp=(ok,on)=>ok?'<span class="sbReady">READY ✓</span>':on?'<span class="mute">building his fighter...</span>':'<span class="mute">waiting for an opponent</span>';
+  top.innerHTML=`<div class="sbcVs"><div class="sbcC labRed"><div class="labHd">RED CORNER</div><b>${esc(r.a_who||'?')}</b>${r.a_name?`<br>${esc(r.a_name)}`:''}<br>${r.status==='open'?lamp(r.a_ready,true):''}${s&&s.s==='a'?'<br><span class="small">(you)</span>':''}</div>
+    <div class="labVs">VS</div><div class="sbcC labBlue"><div class="labHd">BLUE CORNER</div><b>${esc(r.b_who||'Open')}</b>${r.b_name?`<br>${esc(r.b_name)}`:''}<br>${r.status==='open'?lamp(r.b_ready,r.b_taken):''}${s&&s.s==='b'?'<br><span class="small">(you)</span>':''}</div></div>
+    <p class="small mute" style="text-align:center">${LAB_LEVELS[r.level].name}, ${r.rounds===25?'Bare Knuckles, 25 rounds':r.rounds+' rounds'}${r.div?`, ${esc(r.div)}weight`:''}. Watch link: <a href="#sbch:${r.id}">${esc(location.host)}/#sbch:${r.id}</a> <button class="small" data-sbc="copywatch">Copy</button></p>`;
+  const ph=sbcPhase();
+  if(ph!==SBC.phase){SBC.phase=ph;
+    if(ph==='cancelled')main.innerHTML='<p>The red corner called this one off.</p>';
+    else if(ph==='load2')main.innerHTML='<p>Loading the fight...</p>';
+    else if(ph==='fought')main.innerHTML=sbcFightHTML();
+    else if(ph.startsWith('open'))main.innerHTML=sbcOpenHTML();}
+  if(ph==='fought')sbcFightTick();
+  if(r.next_id&&s){const k=r.next_id;if(!sbcSeats()[k])sbcSaveSeat(k,s.s,s.t);const nb=$('#sbcNext');if(nb)nb.innerHTML=`<p class="note"><b>Rematch is set!</b> <a data-go="sbch:${k}">Go to the rematch</a></p>`}
+  else if(r.next_id){const nb=$('#sbcNext');if(nb)nb.innerHTML=`<p class="small"><a data-go="sbch:${r.next_id}">Watch the rematch</a></p>`}
+  sbcChatPaint()}
+function sbcOpenHTML(){const r=SBC.row,s=SBC.seat;
+  if(SBC.seatBad)return`<p class="cr">${esc(SBC.seatBad)}</p><p>You can still watch and chat.</p>`;
+  if(!s){if(r.listed&&!r.b_taken)return`<p>This challenge is open. Want the blue corner?</p>${ME?'':`<p class="small">Your nickname: <input id="sbcNick" maxlength="20" value="${esc(labNick())}" placeholder="Pick a nickname"></p>`}<p><button class="labGo" data-sbc="take">Accept the challenge</button> <span class="cr" id="sbcErr"></span></p>`;
+    return`<p>${r.b_taken?'Both corners are building their fighters. Plans are secret: you\'ll see the fight the moment both are ready. Stick around and chat!':'Waiting for the blue corner to show up.'}</p>`}
+  const c=s.s==='a'?'A':'B',ready=r[s.s+'_ready'],inv=s.s==='a'&&!r.b_taken&&s.inv?`<div class="note"><b>Send this link to your opponent</b> (it gives him the blue corner):<br><input class="sbcLinkBox" readonly value="${esc(sbcLink(r.id,'b',s.inv))}"> <button data-sbc="copyinv">Copy</button>${r.listed?'<br><span class="small mute">Or wait: it\'s on the board, and anyone can accept.</span>':''}</div>`:'';
+  if(s.s==='b'&&!r.b_taken)return`${ME?'':`<p>Pick a nickname to take the blue corner: <input id="sbcNick" maxlength="20" value="${esc(labNick())}"> <button data-sbc="join">Take the corner</button></p>`}<p class="cr">${esc(SBC.joinErr||'')}</p>`;
+  if(ready)return`${inv}<p class="note">✅ <b>You're locked in.</b> Waiting for your opponent. The fight starts the moment he's ready.</p><p><button data-sbc="unready">Unlock: I want to change something</button>${s.s==='a'?' <button data-sbc="cancel">Call it off</button>':''} <span class="cr" id="sbcErr"></span></p>`;
+  return`${inv}<p>Build your fighter and write his plan. Your opponent can't see any of it, and nobody else can either.</p>
+    <div class="labGrid sbcOne">${labCornerHTML(c)}</div>
+    <p class="labBtns"><button class="labGo" data-sbc="ready">✅ READY! Lock in my fighter</button>${s.s==='a'?' <button data-sbc="cancel">Call it off</button>':''} <span class="cr" id="sbcErr"></span></p>
+    <p class="small mute">Tip: test your plan first in <a data-go="simbot">Simbot</a> against a fighter like the one you expect.</p>`}
+function sbcFightHTML(){return`<div id="sbcCount" class="sbcCount"></div><div id="labStage"><div class="labCvWrap"><canvas id="labCv" width="960" height="540"></canvas></div>
+  <div id="labTick" class="labTick"></div>
+  <p class="labCtl"><button data-lab="pause" id="labPause">Pause</button> <button data-lab="skip">Skip to the end</button> <button data-lab="replay">Watch again</button> <button data-lab="report">Full report</button> <button data-lab="gfx" class="labGfx">${L3GFX_NAMES[l3gfx()]||'Graphics'}</button> <button data-lab="snd" class="labSnd">${labSndOn()?'🔊 Sound On':'🔇 Sound Off'}</button></p>
+  <div id="sbcResult"></div><div id="sbcNext"></div>${SBC.seat?'<p><button data-sbc="rematch">🔁 Rematch</button> <span class="cr" id="sbcErr"></span></p>':''}<div id="labRep"></div></div>`}
+function sbcFightTick(){const r=SBC.row,L=SBC.L,at=new Date(r.fight_at).getTime(),now=Date.now(),cnt=$('#sbcCount');
+  if(now<at){if(cnt)cnt.innerHTML=`<b>Both corners are ready!</b> The fight starts in ${Math.ceil((at-now)/1000)}...`;
+    clearTimeout(SBC.cd);SBC.cd=setTimeout(()=>{if(view==='sbch:'+SBC.id)sbcFightTick()},Math.min(1000,at-now+20));return}
+  if(cnt)cnt.innerHTML='';
+  if(SBC.shownFor!==SBC.id){SBC.shownFor=SBC.id;const off=(now-at)/1000;labPlay(off);
+    const tot=labAnim?labAnim.tl.total:0;if(off>tot)labTickAll()}
+  const res=L.fight.result,el=$('#sbcResult');
+  if(el&&(!labAnim||labAnim.at>=labAnim.tl.total-1)&&!el.innerHTML)el.innerHTML=`<p class="note"><b>${res.w==null?`It's a ${esc(res.type.toLowerCase())}!`:`${esc(L.names[res.w])} (${esc(L.bout.gyms[res.w])}) wins by ${esc(res.decision?res.type.toLowerCase():res.type+' in round '+res.round)}!`}</b></p>`}
+function sbcChatPaint(){const el=$('#sbcChat');if(!el||!SBC)return;const atBottom=el.scrollHeight-el.scrollTop-el.clientHeight<40;
+  const sig=SBC.chat.map(m=>m.id).join(',');if(el.dataset.sig===sig)return;el.dataset.sig=sig;
+  el.innerHTML=SBC.chat.length?SBC.chat.map(m=>{const gm=managers[m.author];const when=new Date(m.created_at);
+    return`<p class="lc"><b>${m.author&&gm?`<a data-go="gympub:${m.author}">${esc(gm.gym)}</a>`:m.nick?`${esc(m.nick)} <span class="small mute">(guest)</span>`:'A retired gym'}</b> <span class="small mute">${when.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}</span>${m.author===ME&&ME?` <a class="small" data-sbcdel="${m.id}">delete</a>`:''}${m.hidden?' <span class="small cr">(hidden pending review)</span>':''}<br>${esc(m.body)}</p>`}).join(''):'<p class="mute">No messages yet. Say something!</p>';
+  if(atBottom||!el.dataset.seen){el.scrollTop=el.scrollHeight;el.dataset.seen=1}}
+async function sbcSend(){const m=$('#sbcMsg'),er=$('#sbcChatErr');if(!m||!SB||!SBC)return;const body=m.value.trim().slice(0,280);if(!body)return;
+  let nick=null;if(!ME){nick=sbNick();if(nick===false){er.textContent='Pick a nickname first (3-20 letters or numbers).';return}}
+  if(labLooksLikePlan(body)){er.textContent="That looks like part of a fight plan. This chat is public, so plans can't be posted.";return}
+  const{error}=await SB.from('lab_chat').insert(ME?{author:ME,body,room:SBC.id}:{nick,body,room:SBC.id});
+  if(error){er.textContent=/row-level/.test(error.message)?"You can't post right now.":/lab_chat_no_plans/.test(error.message)?"That looks like part of a fight plan.":error.message;return}
+  er.textContent='';m.value='';sbcTick(false)}
+async function sbcClick(e){const del=e.target.closest('[data-sbcdel]');if(del){await SB.from('lab_chat').delete().eq('id',+del.dataset.sbcdel);sbcTick(false);return}
+  const t=e.target.closest('button');if(!t||!SBC)return;
+  if(t.closest('.labCard')){labClick(e);return}
+  if(t.dataset.lab){const a=t.dataset.lab,L=SBC.L;
+    if(a==='replay')return labPlay();
+    if(a==='pause'){if(!labAnim)return;labAnim.paused=!labAnim.paused;labSndPause(labAnim.paused);if(!labAnim.paused)labAnim.t0=performance.now()-labAnim.at*1000;t.textContent=labAnim.paused?'Play':'Pause';return}
+    if(a==='skip'){if(labAnim){labAnim.stop=true;labAnim=null}labSndStop();labDraw(1e9);labTickAll();sbcFightTick();return}
+    if(a==='gfx')return labToggleGfx(t);
+    if(a==='snd')return labToggleSnd();
+    if(a==='report'){const r=$('#labRep');if(r.innerHTML){r.innerHTML='';return}
+      const side=SBC.seat?(SBC.seat.s==='a'?0:1):-1,mg=Array.isArray(SBC.mgr)?SBC.mgr:null;
+      const f={...L.fight,rounds:L.fight.rounds.map((R,i)=>{const m=side>=0&&mg?mg[i]:null;return{...R,mgr:m&&m.pre?(side===0?[m.pre,'']:['',m.pre]):null,dmg:m&&m.post?(side===0?[m.post,null]:[null,m.post]):null}})};
+      r.innerHTML=`<div class="rep">${reportHTML(f,{...L.bout,mine:[side===0,side===1]},f.rounds.length)}</div>`;return}
+    return}
+  const a=t.dataset.sbc,s=SBC.seat,er=$('#sbcErr');if(!a)return;
+  if(a==='send')return sbcSend();
+  if(a==='copywatch'||a==='copyinv'){const v=a==='copywatch'?sbcLink(SBC.id):sbcLink(SBC.id,'b',s.inv);try{await navigator.clipboard.writeText(v);t.textContent='Copied!'}catch(e){const i=$('.sbcLinkBox');if(i){i.select()}t.textContent='Select and copy'}setTimeout(()=>t.textContent='Copy',2000);return}
+  if(a==='take'){const nick=sbNick();if(nick===false){if(er)er.textContent='Pick a nickname first.';return}t.disabled=true;const r=await sbCall({action:'take',id:SBC.id,nick});t.disabled=false;
+    if(r.error){if(er)er.textContent=r.error;return}sbcSaveSeat(r.id,'b',r.token);SBC.seat=sbcSeats()[r.id];SBC.loadedMine=false;SBC.phase='';sbcTick(false);return}
+  if(a==='join'){const nick=sbNick();if(nick===false)return;SBC.joined=false;SBC.joinErr='';SBC.phase='';sbcTick(false);return}
+  if(a==='ready'){const c=s.s==='a'?'A':'B',F=SBC.L[c];const u=used(F);
+    if(!F.name.trim()){er.textContent='Give your fighter a name.';return}
+    if(u!==labPool()){er.textContent=`Your fighter has ${u} points. He needs exactly ${labPool()}.`;return}
+    const pe=parsePlan(F.plan).errors;if(pe.length){er.textContent=`Fight plan, line ${pe[0].line}: ${pe[0].msg}`;return}
+    t.disabled=true;er.textContent='';
+    const r=await sbCall({action:'submit',id:SBC.id,seat:s.s,token:s.t,fighter:{name:F.name,nick:F.nick,home:F.home,build:F.build,str:F.str,kp:F.kp,spd:F.spd,agl:F.agl,chn:F.chn,cnd:F.cnd,hgt:F.hgt,cut:F.cut,plan:F.plan,planName:F.planName}});
+    t.disabled=false;if(r.error){er.textContent=r.error;return}SBC.phase='';sbcTick(false);return}
+  if(a==='unready'){t.disabled=true;const r=await sbCall({action:'unready',id:SBC.id,seat:s.s,token:s.t});t.disabled=false;if(r.error){if(er)er.textContent=r.error;return}SBC.phase='';sbcTick(false);return}
+  if(a==='cancel'){if(!confirmInline(t,'Call it off?'))return;const r=await sbCall({action:'cancel',id:SBC.id,seat:s.s,token:s.t});if(r.error){if(er)er.textContent=r.error;return}SBC.phase='';sbcTick(false);return}
+  if(a==='rematch'){t.disabled=true;const r=await sbCall({action:'rematch',id:SBC.id,seat:s.s,token:s.t});t.disabled=false;if(r.error){if(er)er.textContent=r.error;return}
+    sbcSaveSeat(r.id,s.s,s.t,s.inv);nav('sbch:'+r.id);return}
+}
+/* two-tap confirm without a browser dialog (dialogs freeze some phones' web views) */
+function confirmInline(btn,q){if(btn.dataset.sure){delete btn.dataset.sure;return true}btn.dataset.sure='1';const old=btn.textContent;btn.textContent=q+' Tap again';setTimeout(()=>{if(btn.dataset.sure){delete btn.dataset.sure;btn.textContent=old}},4000);return false}
 
 /* ---------- Gym descriptions: old-school HTML, made safe (owner, Nov 13, 2026) ---------- */
 const GD_TAGS=['a','b','i','u','s','strike','em','strong','br','p','div','span','center','font','big','small','sub','sup','h1','h2','h3','h4','h5','h6','hr','blockquote','pre','tt','code','ul','ol','li','dl','dt','dd','table','thead','tbody','tfoot','tr','td','th','caption','img','marquee'];
