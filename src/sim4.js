@@ -18,7 +18,7 @@ const K_RATING=12;
 /* Simulator update 2 (owner-approved Nov 12, 2026): balanced so every style has a chance (engine tests: each type wins about 36-45%
    against the others, the rest draws); heavyweights capped at 6'9" and 280 lb ("Tyson Fury rule"); WeBL's heavyweight edges replaced. */
 const GX={pow:1.02,agl:1.02,jab:1.08,fat:.9,chin:1.1,ip:.85,rec:.02,hurt:.03};
-const BAL={tcStart:.35,tcFloor:.3,refEnd:.25,refLand:8,refRounds:2,counterDiv:6,counterStr:0,counterAgg:.8,counterFloor:.5,alloutGive:2,alloutTake:2.75,kpMul:3.75,wtPct:10,giantPer10:.5,smallMan:false,ringBase:1.75,ringFat:.4,clinchBase:.5,clinchAggLoss:.2,bkClinchBase:1.75,bkClinchAggLoss:.12,insideBase:1,tieDmg:.015};
+const BAL={tcStart:.35,tcFloor:.3,refEnd:.25,refLand:8,refRounds:2,counterDiv:6,counterStr:0,counterAgg:.8,counterFloor:.5,alloutGive:2,alloutTake:2.75,kpMul:3.75,wtPct:10,giantPer10:.5,smallMan:false,hvSpd:.45,hvClinchBase:-.5,hvClinchAggLoss:.4,hvCounterAgg:.94,hvInsideBase:2.25,hvRingBase:1.25,ringBase:1.75,ringFat:.4,clinchBase:.5,clinchAggLoss:.2,bkClinchBase:1.75,bkClinchAggLoss:.12,insideBase:1,tieDmg:.015};
 
 function newSev(){const r=rand();return r<2/3?1:r<8/9?2:r<26/27?3:4}
 function promote(l){if(l>=3)return 4;if(l===2)return rand()<2/3?3:4;const r=rand();return r<2/3?2:r<8/9?3:4}
@@ -55,6 +55,9 @@ function simulate(FA,FB,rounds){
   /* weight advantage: heavier man gets +1 STR per 5% (fractions kept), nothing above 300 lb */
   if(S[0].fw&&S[1].fw){const w0=Math.min(300,S[0].fw),w1=Math.min(300,S[1].fw),h=w0>=w1?0:1,lo=Math.min(w0,w1);if(lo>0&&w0!==w1)S[h].str+=(Math.abs(w0-w1)/lo*100)/BAL.wtPct}
   /* heavyweight small-man edge (owner rule, Nov 9, 2026): the shorter man gets +0.5 SPD per inch, the lighter man +1 AGL per 5% (300 lb cap) */
+  /* Heavyweight tuning (owner, Nov 15, 2026): Contenders heavyweights only (not BK): the shorter man gets +hvSpd SPD per inch; HV switches the style knobs below */
+  const HV=!(FA.bk&&FB.bk)&&(FA.divLim||0)>=280;
+  if(HV){const hd=S[0].hgt-S[1].hgt;if(hd)S[hd>0?1:0].spd+=Math.abs(hd)*BAL.hvSpd}
   if(BAL.smallMan&&(FA.divLim||0)>=1000){const hd=S[0].hgt-S[1].hgt;if(hd)S[hd>0?1:0].spd+=Math.abs(hd)*.5;
     if(S[0].fw&&S[1].fw){const w0=Math.min(300,S[0].fw),w1=Math.min(300,S[1].fw),lo=Math.min(w0,w1);if(lo>0&&w0!==w1)S[w0<w1?0:1].agl+=(Math.abs(w0-w1)/lo*100)/5}}
   /* Bare Knuckles region (both fighters BK): 25 rounds, 5% recovery, no doctor, eyes shut = forced clinch, decided by knockdowns then stuns */
@@ -76,13 +79,13 @@ function simulate(FA,FB,rounds){
     const A=base.map(b=>({...b}));
     for(let i=0;i<2;i++){const j=1-i,me=P[i],op=P[j],e=eff[i],o=eff[j],b=base[i],ob=base[j],a=A[i],oa=A[j];
       switch(me.style){
-        case'inside':a.str+=BAL.insideBase+Math.max(0,b.str-ob.str)/2;o.dmgMul*=1.1;e.notes.push('His STR is increased by fighting inside.');break;
-        case'clinch':{a.agl+=(BK?BAL.bkClinchBase:BAL.clinchBase)+(b.str>ob.str?(b.str-ob.str)/2:0);const lost=Math.min(e.agg,(BK?BAL.bkClinchAggLoss:BAL.clinchAggLoss)*op.agg);e.agg-=lost;e.rest+=lost;e.notes.push('His AGG is reduced by clinching.');break}
+        case'inside':a.str+=(HV?BAL.hvInsideBase:BAL.insideBase)+Math.max(0,b.str-ob.str)/2;o.dmgMul*=1.1;e.notes.push('His STR is increased by fighting inside.');break;
+        case'clinch':{a.agl+=(BK?BAL.bkClinchBase:HV?BAL.hvClinchBase:BAL.clinchBase)+(b.str>ob.str?(b.str-ob.str)/2:0);const lost=Math.min(e.agg,(BK?BAL.bkClinchAggLoss:HV?BAL.hvClinchAggLoss:BAL.clinchAggLoss)*op.agg);e.agg-=lost;e.rest+=lost;e.notes.push('His AGG is reduced by clinching.');break}
         case'feint':a.spd+=1+Math.max(0,b.spd-ob.spd)/2;e.fat+=1;e.notes.push('His SPD is increased by feinting.');break;
         case'counter':{a.str+=BAL.counterStr;const adv=(b.spd+S[i].hgt)-(ob.spd+S[j].hgt),q=BAL.counterDiv;
           if(adv>0){a.agl+=adv/q;oa.agl=Math.max(ob.agl*BAL.counterFloor,oa.agl-adv/q)}else if(adv<0){oa.agl+=-adv/q;a.agl=Math.max(b.agl*BAL.counterFloor,a.agl-(-adv)/q);e.notes.push('His counter-punching backfires!')}
-          e.agg*=BAL.counterAgg;e.notes.push('His AGG is reduced by counter-punching.');break}
-        case'ring':a.agl+=BAL.ringBase+Math.max(0,b.agl-ob.agl)/2;e.fat+=BAL.ringFat;e.notes.push('His AGL is increased by using the ring.');break;
+          e.agg*=HV?BAL.hvCounterAgg:BAL.counterAgg;e.notes.push('His AGG is reduced by counter-punching.');break}
+        case'ring':a.agl+=(HV?BAL.hvRingBase:BAL.ringBase)+Math.max(0,b.agl-ob.agl)/2;e.fat+=BAL.ringFat;e.notes.push('His AGL is increased by using the ring.');break;
         case'ropes':if(b.agl>ob.agl&&ob.agl>8)oa.agl=Math.max(8,oa.agl-(2/3)*(b.agl-ob.agl));a.agl-=1;e.notes.push('He is laying on the ropes.');break;
         case'outside':a.agl+=.5;a.spd+=.5;e.pow*=.85;e.notes.push('His POW is reduced by fighting outside.');break;
         case'allout':e.dmgMul*=BAL.alloutGive;o.dmgMul*=BAL.alloutTake;e.notes.push('He is punching all out!');break;
