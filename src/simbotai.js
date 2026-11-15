@@ -50,7 +50,8 @@ async function aiAct0(a,btn){
   if(a==='bubx')return aiFabBubble(false);
   if(a==='close')return aiClose();
   if(a==='send')return aiSendBox();
-  if(a==='fightme'){aiUser('Fight me');return aiSay(`Oh, you want some? 😤 Pick your fighter. Every one comes with a fight plan that has a note on every line, so you'll see exactly what he does. I'll pick mine, and I'm not telling you which.`,[...STARTERS.map(x=>[`${x.em} ${esc(x.nm)}`,'pick:'+x.id]),['🎲 Surprise me','pick:?']])}
+  if(a.startsWith('tbelt:'))return aiTitleFight(a.slice(6));
+  if(a==='fightme'){AI.titleOrg=null;aiUser('Fight me');return aiSay(`Oh, you want some? 😤 Pick your fighter. Every one comes with a fight plan that has a note on every line, so you'll see exactly what he does. I'll pick mine, and I'm not telling you which.`,[...STARTERS.map(x=>[`${x.em} ${esc(x.nm)}`,'pick:'+x.id]),['🎲 Surprise me','pick:?']])}
   if(a.startsWith('pick:')){let id=a.slice(5);if(id==='?')id=aiRand(STARTERS).id;const st=starterOf(id);if(!st)return;if(btn)btn.disabled=true;aiUser(st.nm);return aiFightMe(id)}
   if(a==='show'){if(AI.showing)return; /* one at a time: a second tap is ignored */
     document.querySelectorAll('.aiChip[data-ai=show]').forEach(c=>c.disabled=true);aiUser('Show me a fight');if(!AI.open)aiOpen();return aiShow()}
@@ -86,15 +87,17 @@ function aiShow(){const L=labState(),red=starterOf(aiRand(AI_PUNCHERS)),blue=aiR
   setTimeout(async()=>{const f=await best;if(!AI.showing||!$('#lab'))return;aiClose();aiSpotOff();labFight(f?{fight:f,title:T}:{title:T})},2600)}
 
 /* "Fight me": a real challenge vs Simbot's fighter, so other people can watch it live too */
-async function aiFightMe(stId,retry){let nick=null;
+async function aiFightMe(stId,retry){let nick=null;const org=AI.titleOrg||null;
   if(!ME){nick=labNick();if(!/^[A-Za-z0-9 _.'-]{3,20}$/.test(nick)||retry){nick='Rookie'+(1000+Math.floor(Math.random()*9000));try{localStorage.setItem('contenders_simbot_nick',nick)}catch(e){}
       document.querySelectorAll('#labNick,#sbcNick').forEach(i=>i.value=nick);if(!retry)aiSay(`I'll call you <b>${esc(nick)}</b> for now. Change it any time in the nickname box under the chat.`)}}
   const mine=aiRand(STARTERS.filter(x=>x.id!==stId)),F={name:'',nick:'The House Fighter',home:'The Simbot Gym',build:'normal'};
   labApplyStarter(F,mine.id,'title');F.name="Simbot's "+mine.nm.replace(/^The /,'');
   aiSay('Setting up the ring... 🔔',[],true);
-  const r=await sbCall({action:'vsbot',level:'title',rounds:12,nick,bot:{name:F.name,nick:F.nick,home:F.home,build:F.build,str:F.str,kp:F.kp,spd:F.spd,agl:F.agl,chn:F.chn,cnd:F.cnd,hgt:F.hgt,cut:F.cut,plan:F.plan,planName:F.planName}});
+  if(!ME&&(SB_TLOCK||SB_LOCK))nick=SB_TLOCK||SB_LOCK;const r=await sbCall({action:'vsbot',title:org||undefined,level:'title',rounds:12,nick,bot:{name:F.name,nick:F.nick,home:F.home,build:F.build,str:F.str,kp:F.kp,spd:F.spd,agl:F.agl,chn:F.chn,cnd:F.cnd,hgt:F.hgt,cut:F.cut,plan:F.plan,planName:F.planName}});
   if(r.error){if(/nickname/i.test(r.error)&&!ME&&!retry)return aiFightMe(stId,true);return aiSay(`Hmm, the ring wasn't ready: ${esc(r.error)}`,[['Try again','pick:'+stId]])}
-  sbcSaveSeat(r.id,'a',r.a);aiPre={id:r.id,st:stId};nav('sbch:'+r.id)}
+  AI.titleOrg=null;if(nick)sbLockNick(nick);sbcSaveSeat(r.id,'a',r.a);aiPre={id:r.id,st:stId};nav('sbch:'+r.id)}
+/* lobby button "Fight Simbot for it" and the chat chip: pick a fighter, then it's a title fight */
+function aiTitleFight(org){AI.titleOrg=org;if(!AI.open)aiOpen();aiUser(`Fight me for the ${org} belt`);aiSay(`Oh, you want my <b>${esc(org)}</b> belt? 😤 It's 12 rounds, title fighters, winner takes the belt. Pick your fighter:`,[...STARTERS.map(x=>[`${x.em} ${esc(x.nm)}`,'pick:'+x.id]),['🎲 Surprise me','pick:?']])}
 
 /* ---- after a Simbot fight: why the winner won, and one thing to try ---- */
 function aiFightNotes(f,N){const D=aiDiag(f);return[D.head,D.why]}
@@ -156,6 +159,7 @@ const AI_TOPICS={
   app:{q:'Is there an app?',a:()=>[`Yes! The site installs like an app: tap <b>Install the App</b> in the menu (on iPhone: Share, then Add to Home Screen). 📱`,[]]},
   webl:{q:'Is this like WeBL?',a:()=>[`It started as a tribute to the old Web Boxing League, the classic fight-plan boxing game. 🥊 Same idea, you're the manager and the plan does the fighting, but Contenders has its own rules now, plus Simbot, live challenges, Rookies and Bare Knuckles.`,[['🏆 The league','league']]]},
   bk:{q:'What is Bare Knuckles?',a:()=>[`Our hardcore region. 🩸 <b>25 rounds</b>, no gloves, no ringside doctor, slower recovery between rounds. Going the distance, the man with more knockdowns wins. You pick the region when you create a fighter, and it's permanent. In Simbot, pick <b>Bare Knuckles, 25 rounds</b> to try it.`,[['🏆 The league','league']]]},
+  titles:{q:'What are the Simbot titles?',a:()=>{const T=(sbTitles||[]).filter(t=>!t.who||t.bot);return[`🏆 Simbot has three belts: <b>WBC, WBA and WBO</b>. Title fights are 12 rounds with title fighters (rating 28, 110 points), and everybody in Simbot can watch. Win one and you're champion until somebody beats you for it. Guests can win them too, under their nickname. It's just for fun: nothing counts on a Contenders record.<br><br>Find them at the top of the challenge lobby. ${sbAlone&&T.length?'Since it\'s just us in here, you can fight <b>me</b> for one right now:':'When you\'re the only one in Simbot, you can fight me for a vacant belt.'}`,sbAlone?T.map(t=>[`🏆 Fight me for the ${t.org}`,'tbelt:'+t.org]):[]]}},
   gyms:{q:'Who runs the other gyms?',a:()=>[`I only run Simbot, I don't manage any league gym. 🤷 Every gym keeps its plans secret, so the only way to find out what they're made of is to fight them.`,[['🏆 The league','league']]]},
 };
 const AI_INTENTS=[
@@ -181,7 +185,8 @@ const AI_INTENTS=[
   [/\b(str|strength|kp|ko punch|spd|speed|agl|agility|chn|chin|abilit|stats?|height|reach|build|weight|cut)\b/,'abil'],
   [/\b(best|which|what) (build|fighter|type|style)|\b(beginner|start|first fighter|recommend)\b/,'build'],
   [/\b(tips?|advice|help me win|strategy|better|improve|how (do|can) i win)\b/,'tips'],
-  [/\b(league|rank|rankings|title|belt|champion|record|rookie|weekly|fight night|schedule|corner coach|training)\b/,'league'],
+  [/\b(simbot titles?|belts?|titles?|champ|champion|wbc|wba|wbo)\b/,'titles'],
+  [/\b(league|rank|rankings|record|rookie|weekly|fight night|schedule|corner coach|training)\b/,'league'],
   [/\b(plans?|aggression|power|defense|defence|numbers|how (does|do) (it|this|the game) work|how to play|what is this|what do i do)\b/,'plans'],
   [/\b(help|what can (i|you)|commands?)\b/,'help'],
 ];

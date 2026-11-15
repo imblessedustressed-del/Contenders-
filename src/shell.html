@@ -270,6 +270,11 @@ pre.plan{background:#fbfaf7;border:1px solid var(--line)}
 .dcDot{position:absolute;left:32px;top:29px;width:10px;height:10px;border-radius:50%;background:#23a55a;border:3px solid #2b2d31}.dcU:hover .dcDot{border-color:#35373c}
 .dcUT{min-width:0}.dcUN{color:#f2f3f5;font-weight:500;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dcSub{font-size:12px;color:#949ba4}.dcYou{color:#949ba4;font-size:12px}
 .dcEmpty{font-size:12px;color:#949ba4;padding:8px}
+.sbTitles{border:2px solid #d4af37;border-radius:12px;padding:12px 14px;margin:18px 0;background:linear-gradient(180deg,#fffaf0,#fff)}.sbTitles h2{margin-top:0}
+.sbBelts{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.sbBelt{border:1px solid #e3d3a0;border-radius:10px;padding:10px;text-align:center;background:#fff}.sbBelt.vac{opacity:.92;background:#fafafa}
+.sbBeltArt{display:flex;justify-content:center}.sbBeltArt svg.belt{width:120px;height:62px}.sbBelt button{font-size:14px!important;padding:6px 12px!important}.sbBeltOrg{font:900 20px Impact,'Arial Black',sans-serif;letter-spacing:.06em}.sbBeltWho{margin:4px 0}.sbYou{color:#1a7f37;font-weight:700}.sbBeltBtns{margin-top:8px;display:flex;flex-direction:column;gap:6px;align-items:center}
+.sbcTitleBar{text-align:center;font-size:17px;margin:6px 0}.sbcTitleBar svg.belt{width:54px;height:28px;vertical-align:middle}.sbLockT{font-size:12px;color:#666}
+@media(max-width:760px){.sbBelts{grid-template-columns:1fr}}
 /* Simbot AI (its own pop-up window; the Discord-style chat is untouched) */
 #aiFab{position:fixed;right:18px;bottom:18px;z-index:60;font-family:"gg sans","Segoe UI",Roboto,Helvetica,Arial,sans-serif}
 .aiFabBtn{width:62px;height:62px;border-radius:50%;border:0;background:linear-gradient(145deg,#5865f2,#3b44c4);color:#fff;font-size:30px;cursor:pointer;box-shadow:0 6px 22px rgba(0,0,0,.45),0 0 0 3px rgba(88,101,242,.35);position:relative;animation:aiPulse 2.4s ease-in-out infinite;padding:0}
@@ -635,6 +640,7 @@ function render(){
     edit:()=>planEditHTML(arg),plan:()=>planEditHTML(arg),pf:()=>planFormHTML(arg),rec:()=>recordHTML(arg),gympub:()=>gymPubHTML(arg),gymret:()=>gymRetHTML(arg),gymres:()=>gymResHTML(arg),gymh2h:()=>gymH2HHTML(arg),opub:()=>oFighterHTML(arg),rpub:()=>retFighterHTML(arg),cdiv:()=>cdivHTML(arg),pub:()=>pubHTML(arg),train:()=>trainHTML(arg),report:()=>savedReportHTML(arg),lreport:()=>leagueReportHTML(arg),ppv:ppvHTML};
   $('#view').innerHTML=`<div id="flash" class="note cr" style="display:none;margin-bottom:10px"></div>`+(P[base]||homeHTML)();
   if(base!=='sbch')sbcStop();
+  if(!['simbot','lab','sbch'].includes(base))SB_LOCK=null;
   if(base==='lab'||base==='simbot')setTimeout(labMount,0);else if(base==='sbview')setTimeout(sbMount,0);else if(base==='sbch')setTimeout(sbcMount,0);else if(labAnim){labAnim.stop=true;labAnim=null}
 }
 
@@ -766,7 +772,7 @@ function labRefresh(c){const el=$('#labCard'+c),old=el&&el.querySelector('.labWt
 function labMount(){const root=$('#lab');if(!root)return;
   root.addEventListener('click',labClick);root.addEventListener('change',labChange);root.addEventListener('input',labInput);
   const m=$('#labMsg');if(m)m.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();labSend()}});
-  const lb=$('#sbLobby');if(lb)lb.addEventListener('click',sbLobbyClick);sbLoadBoard(true);dcPrev=null;dcSys=[];sbHereTick();
+  const lb=$('#sbLobby');if(lb)lb.addEventListener('click',sbLobbyClick);const tb=$('#sbTitles');if(tb)tb.addEventListener('click',sbTitleClick);sbLockPaint();sbLoadBoard(true);dcPrev=null;dcSys=[];sbHereTick();
   const ln=$('#labNick');if(ln)ln.addEventListener('change',()=>{const v=ln.value.trim().replace(/\s+/g,' ');if(/^[A-Za-z0-9 _.'-]{3,20}$/.test(v)){try{localStorage.setItem('contenders_simbot_nick',v)}catch(e){}sbHereTick();dcNavPaint()}});
   const ob=$('[data-dc=side]');if(ob)ob.addEventListener('click',()=>$('#dcSide').classList.toggle('open'));
   const lc=$('[data-dc=lobby]');if(lc)lc.addEventListener('click',()=>{const l=$('#sbLobby');if(l)l.scrollIntoView({behavior:'smooth',block:'start'})});dcNavPaint();
@@ -1194,9 +1200,9 @@ const labLooksLikePlan=t=>/\d{1,2}\s*\/\s*\d{1,2}\s*\/\s*\d{1,2}/.test(t)||/\((i
 async function labPost(body){if(!SB)return;body=body.trim().slice(0,280);if(!body)return;
   let nick=null;if(!ME){const ni=$('#labNick');nick=((ni&&ni.value)||labNick()).trim().replace(/\s+/g,' ');
     if(!/^[A-Za-z0-9 _.'-]{3,20}$/.test(nick)){$('#labErr').textContent='Pick a Simbot nickname first (3-20 letters or numbers).';ni&&ni.focus();ni&&ni.scrollIntoView({block:'center'});return false}
-    try{localStorage.setItem('contenders_simbot_nick',nick)}catch(e){}}
+    try{localStorage.setItem('contenders_simbot_nick',nick)}catch(e){}if(SB_TLOCK||SB_LOCK)nick=SB_TLOCK||SB_LOCK}
   if(labLooksLikePlan(body)){$('#labErr').textContent="That looks like part of a fight plan. Simbot Chat is public, so plans can't be posted there.";return false}
-  const{error}=await SB.from('lab_chat').insert(ME?{author:ME,body}:{nick,body});if(error){$('#labErr').textContent='Chat: '+(/row-level/.test(error.message)?"you can't post right now.":/lab_chat_no_plans/.test(error.message)?"that looks like part of a fight plan, and plans can't be posted here.":error.message);return false}
+  const{error}=await SB.from('lab_chat').insert(ME?{author:ME,body}:{nick,body});if(!error&&!ME)sbLockNick(nick);if(error){$('#labErr').textContent='Chat: '+(/row-level/.test(error.message)?"you can't post right now.":/lab_chat_no_plans/.test(error.message)?"that looks like part of a fight plan, and plans can't be posted here.":error.message);return false}
   $('#labErr').textContent='';
   labLoadChat();return true}
 async function labSend(){const m=$('#labMsg');if(!m)return;if(await labPost(m.value))m.value=''}
@@ -1258,17 +1264,22 @@ function dcOnline(rows){const side=$('#dcSide');
   side.innerHTML=`<div class="dcGrp">IN THE LOBBY — ${lobby.length}</div>${lobby.map(one).join('')}${fight.length?`<div class="dcGrp">AT A FIGHT — ${fight.length}</div>${fight.map(one).join('')}`:''}${rows.length<=1?'<p class="dcEmpty">Nobody else here right now. Start a challenge and share the link, or hang out: the green number on Simbot tells everyone you\'re here.</p>':''}`}
 %%SIMBOTAI%%
 async function sbCall(body){if(!SB)return{error:'The league server is not reachable right now.'};
+  body={...body,viewer:sbcViewer()};
   try{const{data,error}=await SB.functions.invoke('simbot-match',{body});
     if(error){let m='';try{const j=await error.context.json();m=j&&j.error}catch(e){}return{error:m||'Something went wrong. Try again in a moment.'}}
     if(data&&data.error)return{error:data.error};return data||{}}catch(e){return{error:'Something went wrong. Try again in a moment.'}}}
 /* a guest's Simbot nickname: whichever nickname box on the page has one (lobby, page or chat), else the saved one; copied into the other boxes */
-function sbNick(){if(ME)return null;const els=[...document.querySelectorAll('#sbcNick,#labNick')],ok=v=>/^[A-Za-z0-9 _.'-]{3,20}$/.test(v);
+function sbNick(){if(ME)return null;if(SB_LOCK)return SB_LOCK;const els=[...document.querySelectorAll('#sbcNick,#labNick')],ok=v=>/^[A-Za-z0-9 _.'-]{3,20}$/.test(v);
   const vals=els.map(e=>e.value.trim().replace(/\s+/g,' '));let n=vals.find(ok)||labNick();
   if(!ok(n)){const e=els.find(x=>!x.value.trim())||els[0];if(e){e.focus();e.scrollIntoView({block:'center'})}return false}
-  els.forEach(e=>{if(!e.value.trim())e.value=n});try{localStorage.setItem('contenders_simbot_nick',n)}catch(e){}return n}
+  els.forEach(e=>{if(!e.value.trim())e.value=n});try{localStorage.setItem('contenders_simbot_nick',n)}catch(e){}sbLockNick(n);return n}
+/* owner, Nov 15, 2026: "once a guest typed in a nickname... that name is locked in until they leave the room... locked into the title underneath that name" */
+let SB_LOCK=null,SB_TLOCK=null;
+function sbLockNick(n){if(ME||!n)return;SB_LOCK=n;sbLockPaint()}
+function sbLockPaint(){if(ME)return;const n=SB_TLOCK||SB_LOCK;if(!n)return;document.querySelectorAll('#labNick,#sbcNick').forEach(e=>{e.value=n;e.disabled=true;e.title=SB_TLOCK?'Locked: you hold a Simbot title under this name':'Locked while you\'re in Simbot';if(!e.nextElementSibling||!e.nextElementSibling.classList.contains('sbLockT')){const t=document.createElement('span');t.className='sbLockT';t.textContent=SB_TLOCK?' 🔒🏆 title name':' 🔒';e.after(t)}})}
 
 /* lobby on the Simbot page */
-function sbLobbyHTML(){return`<div class="sbLobby" id="sbLobby"><h2>🥊 Challenge Someone</h2>
+function sbLobbyHTML(){return`<div class="sbTitles" id="sbTitles"><h2>🏆 Simbot Titles</h2><p class="mute">Loading the belts...</p></div><div class="sbLobby" id="sbLobby"><h2>🥊 Challenge Someone</h2>
   <p class="small">Build your fighter and plan, your opponent builds his, and everyone watches the fight live with a chat on the side. Plans stay secret. No sign-up needed.</p>
   <div class="labBar"><label>Fighters <select id="sbLevel">${Object.entries(LAB_LEVELS).map(([k,v])=>`<option value="${k}">${v.name}</option>`).join('')}</select></label>
   <label>Bout <select id="sbRounds"><option value="12">12 rounds</option><option value="6">6 rounds</option><option value="3">3 rounds</option><option value="25">Bare Knuckles, 25 rounds</option></select></label>
@@ -1279,17 +1290,42 @@ function sbLobbyHTML(){return`<div class="sbLobby" id="sbLobby"><h2>🥊 Challen
 async function sbLoadBoard(force){if(!SB)return;const el=$('#sbBoard');if(!el)return;
   if(!force&&sbBoard&&Date.now()-sbBoardAt<8000){sbPaintBoard();return}
   const since=new Date(Date.now()-36*3600e3).toISOString();
-  const{data,error}=await SB.from('sb_challenges').select('id,created_at,status,level,rounds,listed,a_who,b_who,a_name,b_name,a_ready,b_ready,b_taken,fight_at').gte('created_at',since).neq('status','cancelled').order('created_at',{ascending:false}).limit(60);
+  const{data,error}=await SB.from('sb_challenges').select('id,created_at,status,level,rounds,listed,a_who,b_who,a_name,b_name,a_ready,b_ready,b_taken,fight_at,title,title_champ').gte('created_at',since).neq('status','cancelled').order('created_at',{ascending:false}).limit(60);
   if(error){el.innerHTML='<p class="mute">The board is not available right now.</p>';return}
-  sbBoard=data;sbBoardAt=Date.now();sbPaintBoard();dcNavPaint()}
+  sbBoard=data;sbBoardAt=Date.now();sbPaintBoard();dcNavPaint();sbLoadTitles()}
 function sbPaintBoard(){const el=$('#sbBoard');if(!el||!sbBoard)return;const mine=sbcSeats(),now=Date.now();
-  const lv=r=>r.level==='basic'?'70 pts':'Title';const rd=r=>r.rounds===25?'Bare Knuckles':r.rounds+' rds';
+  const lv=r=>r.title?`${orgBelt(r.title)} <b>${r.title} title</b>${r.title_champ==null?' (vacant)':r.title_champ===1&&r.status==='open'&&!r.b_taken?' (title shot: champ only)':''}`:r.level==='basic'?'70 pts':'Title';const rd=r=>r.rounds===25?'Bare Knuckles':r.rounds+' rds';
   const open=sbBoard.filter(r=>r.status==='open'&&r.listed&&!r.b_taken),live=sbBoard.filter(r=>r.status==='open'&&r.b_taken||r.status==='fought'&&new Date(r.fight_at).getTime()>now-6*60e3),
     done=sbBoard.filter(r=>r.status==='fought'&&new Date(r.fight_at).getTime()<=now-6*60e3).slice(0,10);
   const row=(r,btn)=>`<tr><td>${esc(r.a_who||'?')}${r.a_name?` <span class="small mute">(${esc(r.a_name)})</span>`:''}</td><td>${r.b_who?esc(r.b_who)+(r.b_name?` <span class="small mute">(${esc(r.b_name)})</span>`:''):'<span class="mute">open</span>'}</td><td class="small">${lv(r)}, ${rd(r)}</td><td>${btn}</td></tr>`;
   el.innerHTML=`<h3>Open challenges</h3>${open.length?`<table class="grid small"><tr><th>Red corner</th><th>Blue corner</th><th>Bout</th><th></th></tr>${open.map(r=>row(r,mine[r.id]?`<a data-go="sbch:${r.id}">Yours</a>`:`<button data-sbtake="${r.id}">Accept</button>`)).join('')}</table>`:'<p class="small mute">None right now. Create one!</p>'}
   <h3>Live now</h3>${live.length?`<table class="grid small"><tr><th>Red corner</th><th>Blue corner</th><th>Bout</th><th></th></tr>${live.map(r=>row(r,`<a data-go="sbch:${r.id}">${r.status==='fought'?'🔴 Watch':'Watch'}</a>`)).join('')}</table>`:'<p class="small mute">Nothing on right now.</p>'}
   ${done.length?`<h3>Recent fights</h3><table class="grid small"><tr><th>Red corner</th><th>Blue corner</th><th>Bout</th><th></th></tr>${done.map(r=>row(r,`<a data-go="sbch:${r.id}">Replay</a>`)).join('')}</table>`:''}`}
+/* ---- Simbot titles (owner, Nov 15, 2026): WBC/WBA/WBO belts inside Simbot only, title level 28/28, 12 rounds, live defenses, guests too;
+   nothing counts on Contenders records. Lone visitors can fight Simbot AI for a vacant belt or one Simbot holds. ---- */
+let sbTitles=null,sbTitlesAt=0,sbAlone=false,sbTlog=[];
+async function sbLoadTitles(){if(!SB||!$('#sbTitles'))return;if(Date.now()-sbTitlesAt<8000&&sbTitles){sbPaintTitles();return}sbTitlesAt=Date.now();
+  const[r,lg]=await Promise.all([sbCall({action:'titles'}),SB.from('sb_title_log').select('org,at,winner_who,winner_fighter,loser_who,how,kind').order('at',{ascending:false}).limit(8)]);
+  if(r&&r.titles){sbTitles=r.titles;sbAlone=!!r.alone;const mine=sbTitles.find(t=>t.mine&&t.who);SB_TLOCK=!ME&&mine?String(mine.who).replace(/ \(guest\)$/,''):null;if(SB_TLOCK){try{localStorage.setItem('contenders_simbot_nick',SB_TLOCK)}catch(e){}}}
+  if(lg&&lg.data)sbTlog=lg.data;sbPaintTitles();sbLockPaint()}
+function sbPaintTitles(){const el=$('#sbTitles');if(!el||!sbTitles)return;const ord=['WBC','WBA','WBO'],T=ord.map(o=>sbTitles.find(t=>t.org===o)).filter(Boolean);
+  const card=t=>{const vac=!t.who,btns=[];
+    if(vac)btns.push(`<button class="labGo" data-sbt="create:${t.org}">🏆 Fight for the vacant belt</button>`);
+    else if(t.mine)btns.push(`<button class="labGo" data-sbt="create:${t.org}">🛡️ Put it on the line</button>`);
+    else if(!t.bot)btns.push(`<button data-sbt="create:${t.org}">🥊 Call out the champ</button>`);
+    if((vac||t.bot)&&sbAlone)btns.push(`<button data-sbt="bot:${t.org}">🤖 Fight Simbot for it</button>`);
+    return`<div class="sbBelt ${vac?'vac':''}"><div class="sbBeltArt">${orgBelt(t.org)}</div><div class="sbBeltOrg">${t.org}</div>
+      ${vac?'<div class="sbBeltWho mute">VACANT</div>':`<div class="sbBeltWho">👑 <b>${esc(t.who)}</b>${t.mine?' <span class="sbYou">(you)</span>':''}</div><div class="small">${esc(t.fighter||'')}${t.defenses?` · ${t.defenses} defense${t.defenses>1?'s':''}`:''}</div>`}
+      ${t.bot&&!sbAlone?'<div class="small mute">Be the only one in Simbot to fight him for it</div>':''}<div class="sbBeltBtns">${btns.join(' ')}</div></div>`};
+  el.innerHTML=`<h2>🏆 Simbot Titles</h2><p class="small">Three belts, just for fun inside Simbot: title fighters (rating 28, 110 points), 12 rounds, everyone watches. Win one and you're champion until somebody takes it. Guests can win them too. Nothing here counts on any Contenders record.</p>
+    <div class="sbBelts">${T.map(card).join('')}</div><p class="cr small" id="sbtErr"></p>
+    ${sbTlog.length?`<details class="small"><summary>Title history</summary><ul>${sbTlog.map(l=>`<li>${new Date(l.at).toLocaleDateString('en-US',{month:'short',day:'numeric'})}: <b>${esc(l.org)}</b> ${l.kind==='won'?`${esc(l.winner_who)} (${esc(l.winner_fighter||'')}) won it from ${esc(l.loser_who)}`:l.kind==='defended'?`${esc(l.winner_who)} defended against ${esc(l.loser_who)}`:`${esc(l.winner_who)} and ${esc(l.loser_who)} drew`} (${esc(l.how||'')})</li>`).join('')}</ul></details>`:''}`}
+async function sbTitleClick(e){const t=e.target.closest('[data-sbt]');if(!t)return;const[a,org]=t.dataset.sbt.split(':'),er=$('#sbtErr');
+  if(a==='bot'){aiTitleFight(org);return}
+  const nick=sbNick();if(nick===false){if(er)er.textContent='Pick a Simbot nickname first (3-20 letters or numbers).';const i=$('#sbcNick')||$('#labNick');if(i){i.focus();i.scrollIntoView({block:'center'})}return}
+  t.disabled=true;const r=await sbCall({action:'create',title:org,level:'title',rounds:12,listed:true,nick});t.disabled=false;
+  if(r.error){if(er)er.textContent=r.error;sbTitlesAt=0;sbLoadTitles();return}
+  sbcSaveSeat(r.id,'a',r.a,r.b);nav('sbch:'+r.id)}
 async function sbLobbyClick(e){const t=e.target.closest('button');if(!t)return;
   if(t.dataset.sb==='create'){const nick=sbNick();if(nick===false){$('#sbErr').textContent='Pick a Simbot nickname first (3-20 letters or numbers).';return}
     t.disabled=true;$('#sbErr').textContent='';
@@ -1304,7 +1340,7 @@ async function sbLobbyClick(e){const t=e.target.closest('button');if(!t)return;
 /* the challenge page */
 function sbchHTML(arg){const p=arg.split(':'),id=p[0];
   if(p[1]&&p[2]&&/^[ab]$/.test(p[1])){sbcSaveSeat(id,p[1],p[2]);history.replaceState(null,'','#sbch:'+id);view='sbch:'+id}
-  if(!SBC||SBC.id!==id){sbcStop();const seat=sbcSeats()[id]||null;const lv=LAB_LEVELS.title;
+  if(!SBC||SBC.id!==id){sbcStop();setTimeout(sbLockPaint,0);const seat=sbcSeats()[id]||null;const lv=LAB_LEVELS.title;
     SBC={id,row:null,seat,phase:'',chat:[],watch:0,mgr:null,joined:false,loadedMine:false,shownFor:null,
       L:{A:labMk('Red Rocket','Slugger','Detroit, Michigan'),B:labMk('Blue Thunder','Counterpuncher','Philadelphia, Pennsylvania'),level:'title',div:'',rounds:'12',fight:null,bout:null,names:['',''],plans:['','']}};
     if(aiPre&&aiPre.id===id){const st=starterOf(aiPre.st);labApplyStarter(SBC.L.A,aiPre.st,'title');if(st)SBC.L.A.name=st.nm.replace(/^The /,'Kid ')}}
@@ -1320,7 +1356,7 @@ function sbcMount(){const root=$('#sbc');if(!root||!SBC)return;if(root.dataset.o
   const m=$('#sbcMsg');if(m)m.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();sbcSend()}});
   SBC.phase='';sbcTick(true);sbHereTick();sbcStop();let n=0;sbcTimer=setInterval(()=>{if(!view.startsWith('sbch:')){sbcStop();return}n++;sbcTick(n%3===0)},3000)}
 async function sbcTick(ping){if(sbcBusy||!SB||!SBC)return;sbcBusy=true;const id=SBC.id;
-  try{const cols='id,status,level,rounds,listed,a_who,b_who,a_name,b_name,a_ready,b_ready,b_taken,div,fight_at,next_id,a_user,b_user';
+  try{const cols='id,status,level,rounds,listed,a_who,b_who,a_name,b_name,a_ready,b_ready,b_taken,div,fight_at,next_id,a_user,b_user,title,title_champ';
     const[{data:row},{data:chat}]=await Promise.all([SB.from('sb_challenges').select(cols).eq('id',id).maybeSingle(),
       SB.from('lab_chat').select('id,author,nick,body,created_at,hidden').eq('room',id).order('created_at',{ascending:false}).limit(60)]);
     if(!SBC||SBC.id!==id)return;
@@ -1334,7 +1370,7 @@ async function sbcTick(ping){if(sbcBusy||!SB||!SBC)return;sbcBusy=true;const id=
     if(row&&row.status==='fought'&&!SBC.L.fight){const{data:full}=await SB.from('sb_challenges').select('result').eq('id',id).maybeSingle();
       if(full&&full.result&&full.result.f){const f=full.result.f;SBC.L.fight=f;SBC.L.names=f.S.map(x=>x.F.name);
         const d=new Date(row.fight_at);SBC.L.bout={rounds:row.rounds,belt:null,div:row.div,done:true,gym:'Simbot',gyms:[row.a_who||'',row.b_who||''],ids:['sbA','sbB'],recs:[[0,0,0,0],[0,0,0,0]],
-          date:d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'}).replace(/,/g,'').replace(/(\d+) (\d{4})$/,'$1, $2'),venue:{name:'Simbot Arena',city:'',cap:2400},att:Math.min(2400,600+300*Math.max(1,SBC.watch))};
+          date:d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'}).replace(/,/g,'').replace(/(\d+) (\d{4})$/,'$1, $2'),venue:{name:'Simbot Arena',city:'',cap:row.title?16000:2400},att:row.title?16000:Math.min(2400,600+300*Math.max(1,SBC.watch)),title:row.title?{org:row.title,orgs:[row.title],champ:row.title_champ==null?null:row.title_champ}:null};
         if(s&&!SBC.mgr){const r=await sbCall({action:'mine',id,seat:s.s,token:s.t});SBC.mgr=r.mgr||null}}}
   }catch(e){}finally{sbcBusy=false}
   sbcPaint()}
@@ -1349,6 +1385,7 @@ function sbcPaint(){if(!SBC||!$('#sbc'))return;const r=SBC.row,s=SBC.seat,top=$(
   const lamp=(ok,on)=>ok?'<span class="sbReady">READY ✓</span>':on?'<span class="mute">building his fighter...</span>':'<span class="mute">waiting for an opponent</span>';
   top.innerHTML=`<div class="sbcVs"><div class="sbcC labRed"><div class="labHd">RED CORNER</div><b>${esc(r.a_who||'?')}</b>${r.a_name?`<br>${esc(r.a_name)}`:''}<br>${r.status==='open'?lamp(r.a_ready,true):''}${s&&s.s==='a'?'<br><span class="small">(you)</span>':''}</div>
     <div class="labVs">VS</div><div class="sbcC labBlue"><div class="labHd">BLUE CORNER</div><b>${esc(r.b_who||'Open')}</b>${r.b_name?`<br>${esc(r.b_name)}`:''}<br>${r.status==='open'?lamp(r.b_ready,r.b_taken):''}${s&&s.s==='b'?'<br><span class="small">(you)</span>':''}</div></div>
+    ${r.title?`<p class="sbcTitleBar">${orgBelt(r.title)} <b>SIMBOT ${r.title} TITLE FIGHT</b> ${r.title_champ==null?'· for the vacant belt':`· ${esc(r.title_champ===0?r.a_who:r.b_who||'the champion')} defends`} ${orgBelt(r.title)}</p>`:''}
     <p class="small mute" style="text-align:center">${LAB_LEVELS[r.level].name}, ${r.rounds===25?'Bare Knuckles, 25 rounds':r.rounds+' rounds'}${r.div?`, ${esc(r.div)}weight`:''}. Watch link: <a href="#sbch:${r.id}">${esc(location.host)}/#sbch:${r.id}</a> <button class="small" data-sbc="copywatch">Copy</button></p>`;
   const ph=sbcPhase();
   if(ph!==SBC.phase){SBC.phase=ph;
