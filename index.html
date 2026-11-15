@@ -797,7 +797,7 @@ function condText(x,after){
 /* ================= SHARED DATA (Supabase: accounts, forums, messages) ================= */
 cleanSlate();
 const SB_URL='https://ojsphhzgzbxmnfcbitqb.supabase.co',SB_KEY='sb_publishable_SWO9WhiSkoVhflY5CmY08A_hlqCEJSi';
-const BUILD='1794704433';
+const BUILD='1794704641';
 /* A tab left open on an older build must not save over newer data: if the site has been updated, reload before anything else is saved. */
 let staleBuild=false;
 async function checkBuild(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
@@ -946,7 +946,7 @@ function render(){
   const P={sbview:()=>sbViewHTML(arg),home:homeHTML,register:registerHTML,aup:aupHTML,gym:gymHTML,plans:plansHTML,fight:fightHTML,create:createHTML,cards:cardsHTML,
     retired:retiredHTML,clean:cleanHTML,short:shortHTML,changegym:changeGymHTML,desc:descHTML,
     login:loginHTML,logout:logoutHTML,forgot:forgotHTML,newpass:newPassHTML,changepw:changePwHTML,forums:forumsHTML,forum:()=>forumHTML(arg),topic:()=>topicHTML(arg),newtopic:()=>newTopicHTML(arg),msgs:()=>msgsHTML(arg),
-    simbot:labHTML,lab:labHTML,champs:()=>champsHTML(arg),frank:()=>frankHTML(arg),grank:grankHTML,results:resultsHTML,fcards:fightCardsHTML,sched:schedHTML,
+    simbot:labHTML,lab:labHTML,champs:()=>champsHTML(arg),frank:()=>frankHTML(arg),grank:()=>grankHTML(arg),results:resultsHTML,fcards:fightCardsHTML,sched:schedHTML,
     discarded:()=>`<h1>Discarded Fighters</h1><p>No fighters have been discarded.</p>`,search:searchHTML,help:()=>helpHTML(arg),newbie:newbieHTML,funding:fundingHTML,retiregym:retireGymHTML,
     edit:()=>planEditHTML(arg),plan:()=>planEditHTML(arg),pf:()=>planFormHTML(arg),rec:()=>recordHTML(arg),gympub:()=>gymPubHTML(arg),gymret:()=>gymRetHTML(arg),gymres:()=>gymResHTML(arg),gymh2h:()=>gymH2HHTML(arg),opub:()=>oFighterHTML(arg),rpub:()=>retFighterHTML(arg),cdiv:()=>cdivHTML(arg),pub:()=>pubHTML(arg),train:()=>trainHTML(arg),report:()=>savedReportHTML(arg),lreport:()=>leagueReportHTML(arg),ppv:ppvHTML};
   $('#view').innerHTML=`<div id="flash" class="note cr" style="display:none;margin-bottom:10px"></div>`+(P[base]||homeHTML)();
@@ -2411,9 +2411,9 @@ function frankHTML(arg){
   `<p class="center mute">No active fighters in this division yet.</p>`}
   <p class="small mute center">Champions first, then ranked by rating, then status, then winning streak, then win percentage.</p>`;
 }
-function gymStats(uid){const c=cards[uid]||{fighters:[],retired:[]},all=[...(c.fighters||[]),...(c.retired||[])];
-  const r=[0,0,0,0];all.forEach(f=>(f.rec||[]).forEach((v,i)=>r[i]+=v));const titles=titleWins(uid)||all.reduce((a,f)=>a+(f.titles||[]).length,0);
-  const n=r[0]+r[1]+r[2];return{earn:all.reduce((a,f)=>a+(f.earn||0),0),rec:r,titles,diff:r[0]-r[1],pct:n?Math.round(100*(r[0]+.5*r[2])/n):0,active:(c.fighters||[]).length}}
+function gymStats(uid,reg){const c=cards[uid]||{fighters:[],retired:[]},inR=f=>reg==null||(reg==='bk')===(f.region==='bk'),all=[...(c.fighters||[]),...(c.retired||[])].filter(inR);
+  const r=[0,0,0,0];all.forEach(f=>(f.rec||[]).forEach((v,i)=>r[i]+=v));const titles=reg==null?(titleWins(uid)||all.reduce((a,f)=>a+(f.titles||[]).length,0)):all.reduce((a,f)=>a+(f.titles||[]).length,0);
+  const n=r[0]+r[1]+r[2];return{earn:all.reduce((a,f)=>a+(f.earn||0),0),rec:r,titles,diff:r[0]-r[1],pct:n?Math.round(100*(r[0]+.5*r[2])/n):0,active:(c.fighters||[]).filter(inR).length}}
 function gymPubHTML(uid){
   const m=managers[uid];if(!m)return`<h1>Gym not found</h1><p>${needDB()}<a data-go="grank">Back to Gym Rankings</a></p>`;
   const c=cards[uid]||{fighters:[],retired:[]},g=gymStats(uid),rk={};(c.fighters||[]).forEach(f=>{const kk=f.div+(f.region||'');if(!rk[kk])rk[kk]=rankedIn(f.div,f.region)});const fl=(f,i,act)=>{const r=f.rec||[0,0,0,0];
@@ -2496,11 +2496,13 @@ function oFighterHTML(arg){
   ${(f.hist||[]).length?`<p>${n} ${TR[f.train]||TR.str}.</p><p class="small mute">Select any icon for a detailed account of a fight.</p><table class="hist">${f.hist.map(h=>`<tr><td>${h.bout?`<a data-go="lreport:${h.bout}" title="Read the fight report">${resultIcon(h)}</a>${sbvLink(h.bout)}`:resultIcon(h)}</td><td>vs ${vsOpp(h,uid)} - ${h.oh?esc(h.oh)+' - ':''}${esc(h.div)}weight ${h.belt?esc(h.belt)+' title ':''}bout on ${esc(h.date)}, week ${h.week}: ${esc(h.res)}. Score: ${esc(h.score)}</td></tr>`).join('')}</table>`:'<p class="mute">No fights yet.</p>'}
   <p class="small"><a data-go="gympub:${uid}">Back to ${esc(m.gym)}</a></p>`;
 }
-function grankHTML(){
-  const ids=Object.keys(managers);
+/* Gym Rankings, one table per region (owner, Nov 14, 2026: Bare Knuckles records never count toward Contenders) */
+function grankHTML(arg){const reg=arg==='bk'?'bk':'',rname=reg?'Bare Knuckles':'Contenders';
+  const ids=Object.keys(managers).filter(id=>{const c=cards[id]||{};return[...(c.fighters||[]),...(c.retired||[])].some(f=>(f.region==='bk')===!!reg)||(!reg&&!(c.fighters||[]).length)});
   if(!ids.length)return`<h1>Gym Rankings</h1>${needDB()}<p class="mute">No gyms registered yet.</p>`;
-  const rows=ids.map(id=>({id,...gymStats(id)})).sort((a,b)=>b.titles-a.titles||b.diff-a.diff||b.pct-a.pct||gymOf(a.id).localeCompare(gymOf(b.id)));
-  return`<h1 class="center">Gym Rankings for Contenders</h1>${needDB()}
+  const rows=ids.map(id=>({id,...gymStats(id,reg)})).sort((a,b)=>b.titles-a.titles||b.diff-a.diff||b.pct-a.pct||gymOf(a.id).localeCompare(gymOf(b.id)));
+  return`<h1 class="center">Gym Rankings for ${rname}</h1>${needDB()}
+  <p class="center">Region: <select data-grank><option value=""${reg?'':' selected'}>Contenders</option><option value="bk"${reg?' selected':''}>Bare Knuckles</option></select></p>
   <table class="grid granks"><tr><th>Rank</th><th>Manager</th><th>Location</th><th>Titles</th><th>Record</th><th>+/-</th><th>Win %</th><th>Earnings</th><th>Fighters</th></tr>
   ${rows.map((r,i)=>`<tr><td class="n">${i+1}</td><td><a data-go="gympub:${r.id}">${esc(gymOf(r.id))}</a>${managers[r.id].bot&&seeBots()?' <span class="small mute">(bot gym)</span>':''}${r.id===ME?' <span class="small mute">(you)</span>':''}</td><td>${esc(managers[r.id].loc||'')}</td><td class="n">${r.titles}</td><td class="n">${r.rec[0]}-${r.rec[1]}-${r.rec[2]}</td><td class="n">${r.diff}</td><td class="n">${r.pct}%</td><td class="n">${money(r.earn)}</td><td class="n">${r.active}</td></tr>`).join('')}</table>
   <p class="small mute">Gyms are ranked by titles, then wins minus losses. A gym's numbers update when its manager is logged in. </p>`;
@@ -2793,6 +2795,7 @@ document.addEventListener('submit',async e=>{
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='q')doSearch(e.target.value)});
 document.addEventListener('change',e=>{
   const el=e.target;
+  if(el.dataset.grank!=null){nav(el.value?'grank:'+el.value:'grank');return}
   if(el.id==='redPlan'||el.id==='bluePlan'){prPlan[el.id==='redPlan'?'red':'blue']=el.value;render();return}
   if(el.id==='redSel'||el.id==='blueSel'){state[el.id==='redSel'?'red':'blue']=el.value;save();render();return}
   if(el.id==='div'){state.div=el.value;save();return}
