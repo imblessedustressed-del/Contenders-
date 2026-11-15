@@ -798,7 +798,7 @@ function condText(x,after){
 /* ================= SHARED DATA (Supabase: accounts, forums, messages) ================= */
 cleanSlate();
 const SB_URL='https://ojsphhzgzbxmnfcbitqb.supabase.co',SB_KEY='sb_publishable_SWO9WhiSkoVhflY5CmY08A_hlqCEJSi';
-const BUILD='1794705475';
+const BUILD='1794705965';
 /* A tab left open on an older build must not save over newer data: if the site has been updated, reload before anything else is saved. */
 let staleBuild=false;
 async function checkBuild(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
@@ -1482,7 +1482,7 @@ function lab3D(g,o){const{at,realAt,P,X,tl,f,res,stopBeat,kdNow,big,zoom,inRepla
   const Xw=intro?[-200,200]:X.map(x=>(x-cx)/S),mid=(Xw[0]+Xw[1])/2;
   // camera: slow orbit, swoop in during the intro, low and close for the replay, shake on big shots
   const k=intro?Math.min(1,at/(LAB_INTRO-.2)):1,ease=1-(1-k)*(1-k);
-  const CAMS=[[.62,390,178],[-.62,390,178],[.3,440,200],[.95,410,168],[-.28,460,215]],between0=!intro&&!fin&&cur&&at>=cur.end-.05,cam=between0?[.1,760,340]:CAMS[((cur?cur.n:1)-1)%CAMS.length];
+  const CAMS=[[.4,325,180],[-.4,325,180],[.22,370,200],[.6,320,172],[-.25,385,210]],between0=!intro&&!fin&&cur&&at>=cur.end-.05,cam=between0?[.1,760,340]:CAMS[((cur?cur.n:1)-1)%CAMS.length];
   let yaw=cam[0]+Math.sin(realAt*.07)*.12+(1-ease)*1.1,dist=cam[1]+(1-ease)*520,hgt=cam[2]+(1-ease)*300,tx=mid;
   if(inReplay){const lo=res.w==null?0:1-res.w;tx=Xw[lo]*.6+mid*.4;dist=420;hgt=160;yaw=-.55+Math.sin(realAt*.4)*.12}
   if(fin&&!inReplay){yaw+=Math.min(1,(at-(tl.beats[tl.beats.length-1].at))*.15)*.25}
@@ -1491,6 +1491,10 @@ function lab3D(g,o){const{at,realAt,P,X,tl,f,res,stopBeat,kdNow,big,zoom,inRepla
   if(big&&!inReplay)C=l3add(C,[(Math.random()-.5)*14,(Math.random()-.5)*10,0]);
   const fw=l3norm(l3sub(T,C)),rt=l3norm(l3cross([0,1,0],fw)),up=l3cross(fw,rt),foc=L3H*1.32;
   const proj=v=>{const d=l3sub(v,C),z=l3dot(d,fw);if(z<20)return null;return[Math.round(L3W/2+l3dot(d,rt)*foc/z),Math.round(L3H/2-l3dot(d,up)*foc/z),z]};
+  const R=300,mat=48;let lamps=[],hits=[];
+  /* WebGL path (owner, Nov 14: "way more realistic"): smooth-shaded sculpted fighters on the graphics card; the software renderer below is the fallback */
+  const glr=labGLScene(g,{C,T,P,Xw,mid,at,realAt,intro,fin,res,stopBeat,kdNow,tl,cur,mat,R,dist,tx});
+  if(glr){lamps=glr.lamps;hits=glr.hits}else{
   const F=[];
   // arena floor and the dark bowl
   c.fillStyle='rgb(10,9,20)';c.fillRect(0,0,L3W,L3H);
@@ -1502,9 +1506,9 @@ function lab3D(g,o){const{at,realAt,P,X,tl,f,res,stopBeat,kdNow,big,zoom,inRepla
     for(const s of[-1,1]){const xx=s*(500+row*58);F.push({v:[[xx,y,-460],[xx,y,500],[xx+s*58,y,500],[xx+s*58,y,-460]],n:[0,1,0],c:row%2?[34,30,44]:[40,36,52],layer:0})}}
   // lighting rig with lamps
   l3box(F,[0,560,60],[900,10,10],[50,52,60],0);l3box(F,[0,560,-60],[900,10,10],[50,52,60],0);
-  const lamps=[];[-360,-180,0,180,360].forEach(x=>[-60,60].forEach(z=>{l3box(F,[x,548,z],[22,16,22],[255,246,214],0,true);lamps.push([x,540,z])}));
+  lamps=[];[-360,-180,0,180,360].forEach(x=>[-60,60].forEach(z=>{l3box(F,[x,548,z],[22,16,22],[255,246,214],0,true);lamps.push([x,540,z])}));
   // ring: apron skirt, mat, logo, posts, pads, ropes
-  const R=300,mat=48;
+
   {const E=R+20,mt=l3matTex(),N=6,st=2*E/N;for(let a=0;a<N;a++)for(let b=0;b<N;b++){const x1=-E+a*st,x2=x1+st,z1=-E+b*st,z2=z1+st,u=v=>v/(2*E)*256;
       F.push({v:[[x1,mat,z2],[x2,mat,z2],[x2,mat,z1],[x1,mat,z1]],uv:[[u(x1+E),u(E-z2)],[u(x2+E),u(E-z2)],[u(x2+E),u(E-z1)],[u(x1+E),u(E-z1)]],tex:mt,n:[0,1,0],c:[255,255,255],layer:1})}
     [[[-E,-E],[E,-E],[0,0,-1]],[[E,-E],[E,E],[1,0,0]],[[E,E],[-E,E],[0,0,1]],[[-E,E],[-E,-E],[-1,0,0]]].forEach(([A,B,n],k)=>{const tx2=l3apronTex(k);for(let q=0;q<3;q++){const a=q/3,b=(q+1)/3,P1=[A[0]+(B[0]-A[0])*a,A[1]+(B[1]-A[1])*a],P2=[A[0]+(B[0]-A[0])*b,A[1]+(B[1]-A[1])*b];
@@ -1525,7 +1529,7 @@ function lab3D(g,o){const{at,realAt,P,X,tl,f,res,stopBeat,kdNow,big,zoom,inRepla
     shadow(0,-40,36,24);const before=F.length;const ab=l3body(F,{cam:C,p:ann,x0:0,z0:-40,fx:0,fz:-1,sx:1,sz:0,dirX:1,Lz:-1,at,ref:true,col:l3col({sk:'#c68e5d',skD:'#8d5524'},true,{torso:[22,22,26],armU:[22,22,26],chest:[240,240,240],trunk:[22,22,26],band:[22,22,26],leg:[22,22,26],legD:[18,18,22],tie:[200,16,46],hair:[30,20,12]})});
     for(let q=before;q<F.length;q++){F[q].v=F[q].v.map(v=>[v[0],v[1]+mat,v[2]]);if(F[q].pc)F[q].pc=[F[q].pc[0],F[q].pc[1]+mat,F[q].pc[2]];F[q].layer=2}}
   // fighters and referee (moved up onto the mat)
-  const lift=v=>[v[0],v[1]+mat,v[2]];const hits=[];
+  const lift=v=>[v[0],v[1]+mat,v[2]];hits=[];
   [0,1].forEach(i=>{const before=F.length,b=l3body(F,{cam:C,p:P[i],x0:Xw[i],dirX:i?-1:1,Lz:i?1:-1,at,col:l3col(LAB_SKIN[i],false,{flat:i===1})});for(let q=before;q<F.length;q++){F[q].v=F[q].v.map(lift);if(F[q].pc)F[q].pc=lift(F[q].pc);F[q].layer=2}
     hits[i]={head:lift(b.head),chest:lift(b.chest),hip:lift(b.hip)}});
   {const kdF=kdNow?1-kdNow.a:null,stopX=stopBeat&&at>=stopBeat.at&&!res.decision?Xw[1-res.w]+(res.w?-70:70):null,rx=kdNow?Xw[kdF]+(kdF?60:-60):stopX!=null?stopX:mid-(C[0]-tx)/Math.max(1,dist)*150+Math.sin(at*.37)*40; // the referee works the far side, away from the camera
@@ -1574,7 +1578,7 @@ function lab3D(g,o){const{at,realAt,P,X,tl,f,res,stopBeat,kdNow,big,zoom,inRepla
   const id=c.getImageData(0,0,L3W,L3H),dd=id.data,BAY=[0,8,2,10,12,4,14,6,3,11,1,9,15,7,13,5];
   for(let y=0;y<L3H;y++)for(let x=0;x<L3W;x++){const q=(y*L3W+x)*4,b=(BAY[(y&3)*4+(x&3)]-7.5)*.9;for(let j=0;j<3;j++)dd[q+j]=Math.max(0,Math.min(255,dd[q+j]+b))&0xF8}
   c.putImageData(id,0,0);
-  g.imageSmoothingEnabled=false;g.drawImage(L3C,0,0,L3W,L3H,0,0,W,H);g.imageSmoothingEnabled=true;
+  g.imageSmoothingEnabled=false;g.drawImage(L3C,0,0,L3W,L3H,0,0,W,H);g.imageSmoothingEnabled=true;}
   // lamp glare (full resolution, additive)
   g.save();g.globalCompositeOperation='lighter';lamps.forEach(l=>{const pp=proj(l);if(!pp)return;const sx=pp[0]*3,sy=pp[1]*3,r=Math.max(10,9000/pp[2]);const gr=g.createRadialGradient(sx,sy,1,sx,sy,r);gr.addColorStop(0,'rgba(255,245,220,.55)');gr.addColorStop(1,'rgba(255,245,220,0)');g.fillStyle=gr;g.beginPath();g.arc(sx,sy,r,0,7);g.fill()});g.restore();
   // follow spots: sweeping during the introductions, locked on the winner at the end
@@ -1623,6 +1627,157 @@ function labHud32(g,o){const{P,at,cur,res,tl,names,W,cx}=o,rounds=(labState().bo
   g.font="bold 15px 'Courier New', monospace";g.textAlign='center';g.fillStyle='#b8ff4a';g.fillText(`R ${String(cur.n).padStart(2,'0')}/${String(rounds).padStart(2,'0')}`,cx,33);
   g.font="bold 28px 'Courier New', monospace";g.fillStyle='#d6ff7a';g.fillText(`${Math.floor(sec/60)}:${String(sec%60).padStart(2,'0')}`,cx,62);
   g.fillStyle='rgba(184,255,74,.12)';g.fillRect(cx-42,16,84,26);g.fillStyle='#c8102e';g.font="italic 900 9px Verdana, sans-serif";g.fillText('CONTENDERS',cx,82);g.restore()}
+
+/* ===== WebGL arena (owner, Nov 14, 2026: "way more realistic"): smooth-shaded, sculpted fighters drawn on the graphics card.
+   Original fighters and ring art (no characters, logos or art from any real game). Falls back to the software renderer when
+   WebGL isn't available. Bodies are built every frame from the same poses as the other arenas, so the fight looks identical. ===== */
+let LGL=null;
+const glV=(a,b,k)=>[a[0]+(b[0]-a[0])*k,a[1]+(b[1]-a[1])*k,a[2]+(b[2]-a[2])*k];
+function glMesh(){return{p:[],n:[],c:[],t:[]}}
+function glTri(M,a,b,c,na,nb,nc,col,ua,ub,uc){M.p.push(...a,...b,...c);M.n.push(...na,...nb,...nc);for(let i=0;i<3;i++)M.c.push(col[0]/255,col[1]/255,col[2]/255,col[3]==null?.15:col[3]);
+  M.t.push(...(ua||[0,0]),...(ub||[0,0]),...(uc||[0,0]))}
+function glQuad(M,a,b,c,d,na,nb,nc,nd,col,uv){glTri(M,a,b,c,na,nb,nc,col,uv&&uv[0],uv&&uv[1],uv&&uv[2]);glTri(M,a,c,d,na,nc,nd,col,uv&&uv[0],uv&&uv[2],uv&&uv[3])}
+/* rings of points around a path: each section {c (center), u, v (unit axes), ru, rv (radii), front (extra depth on +v side)} */
+function glLoft(M,S,col,seg,capA,capB){seg=seg||14;const R=S.map(s=>{const pts=[],nrm=[];for(let k=0;k<=seg;k++){const a=k/seg*Math.PI*2,ca=Math.cos(a),sa=Math.sin(a),rv=s.rv*(sa>0&&s.front?s.front:1);
+    pts.push(l3add(s.c,l3add(l3mul(s.u,ca*s.ru),l3mul(s.v,sa*rv))));nrm.push(l3norm(l3add(l3mul(s.u,ca/s.ru),l3mul(s.v,sa/rv))))}return{pts,nrm,col:s.col||col}});
+  for(let i=0;i<R.length-1;i++){const A=R[i],B=R[i+1];for(let k=0;k<seg;k++)glQuad(M,A.pts[k],A.pts[k+1],B.pts[k+1],B.pts[k],A.nrm[k],A.nrm[k+1],B.nrm[k+1],B.nrm[k],A.col)}
+  const cap=(r,s,flip)=>{const n=l3norm(l3cross(s.u,s.v)),nn=flip?l3mul(n,-1):n;for(let k=0;k<seg;k++)flip?glTri(M,s.c,r.pts[k],r.pts[k+1],nn,nn,nn,r.col):glTri(M,s.c,r.pts[k+1],r.pts[k],nn,nn,nn,r.col)};
+  if(capA)cap(R[0],S[0],true);if(capB)cap(R[R.length-1],S[S.length-1],false)}
+function glFrame(d){const up=Math.abs(d[1])>.9?[1,0,0]:[0,1,0],u=l3norm(l3cross(d,up)),v=l3cross(u,d);return[u,v]}
+/* a limb from A to B; prof(t) gives the radius (muscle bulges live here) */
+function glTube(M,A,B,prof,col,segL,seg){const d=l3norm(l3sub(B,A)),[u,v]=glFrame(d);segL=segL||6;const S=[];for(let i=0;i<=segL;i++){const t=i/segL,r=prof(t);S.push({c:glV(A,B,t),u,v,ru:r,rv:r})}glLoft(M,S,col,seg||12,true,true)}
+/* an ellipsoid with three (orthogonal) axis vectors */
+function glEll(M,c,ax,ay,az,col,seg,rings,colFn){seg=seg||12;rings=rings||8;const a2=[ax,ay,az].map(a=>l3dot(a,a));
+  const P=(i,j)=>{const th=j/rings*Math.PI,ph=i/seg*Math.PI*2,x=Math.sin(th)*Math.cos(ph),y=Math.cos(th),z=Math.sin(th)*Math.sin(ph);
+    return{p:l3add(c,l3add(l3add(l3mul(ax,x),l3mul(ay,y)),l3mul(az,z))),n:l3norm(l3add(l3add(l3mul(ax,x/a2[0]),l3mul(ay,y/a2[1])),l3mul(az,z/a2[2]))),y}};
+  for(let j=0;j<rings;j++)for(let i=0;i<seg;i++){const a=P(i,j),b=P(i+1,j),d=P(i,j+1),e=P(i+1,j+1),cl=colFn?colFn((a.y+e.y)/2,i/seg):col;if(!cl)continue;glQuad(M,a.p,b.p,e.p,d.p,a.n,b.n,e.n,d.n,cl)}}
+function glBox(M,c,s,col,uvFn){const[x,y,z]=c,[w,h,d]=[s[0]/2,s[1]/2,s[2]/2],V=(i,j,k)=>[x+i*w,y+j*h,z+k*d];
+  [[[1,-1,-1],[1,1,-1],[1,1,1],[1,-1,1],[1,0,0]],[[-1,-1,1],[-1,1,1],[-1,1,-1],[-1,-1,-1],[-1,0,0]],[[-1,1,-1],[-1,1,1],[1,1,1],[1,1,-1],[0,1,0]],
+   [[-1,-1,1],[-1,-1,-1],[1,-1,-1],[1,-1,1],[0,-1,0]],[[-1,-1,1],[1,-1,1],[1,1,1],[-1,1,1],[0,0,1]],[[1,-1,-1],[-1,-1,-1],[-1,1,-1],[1,1,-1],[0,0,-1]]]
+   .forEach((q,fi)=>{const n=q[4];glQuad(M,V(...q[0]),V(...q[1]),V(...q[2]),V(...q[3]),n,n,n,n,col,uvFn&&uvFn(fi))})}
+/* one fighter (or the referee / announcer), sculpted from the pose */
+function glBody(M,o){const{p,x0,dirX,Lz,at,K}=o,ref=!!o.ref,z0=o.z0||0,y0=o.y0||0,fx=o.fx!=null?o.fx:dirX,fz=o.fz||0,sx=o.sx||0,sz=o.sz!=null?o.sz:1;
+  const bob=Math.sin(at*6.3+p.seed)*3*(1-p.fall)*(p.cel?0:1),lean=p.lean*14+p.hug*16+p.lunge*10-p.snap*10+p.tired*7-p.bodyHit*6,crouch=p.bodyHit*14+p.tired*6;
+  const hip=[0,-112+bob*.5+crouch*.5],sh=[[14+lean,-186+bob+crouch],[-12+lean*.8,-189+bob+crouch]],head=[10+lean*1.15-p.snap*16,-214+bob+crouch+p.tired*4+p.bodyHit*8];
+  const fk=[26+p.lunge*8,-56],bk=[-26,-54],ff=[34+p.lunge*22,0],bf=[-38,0];
+  const guardR=[30+lean,-200+bob+crouch+p.guardDrop],guardL=[46+lean,-206+bob+crouch+p.guardDrop],hR=p.rear||guardR,hL=p.lead||guardL;
+  const armR=labIK(sh[1],hR,36,34,p.rearUp),armL=labIK(sh[0],hL,36,34,p.leadUp);
+  const fall=p.fall||0,th=-fall*1.42,cs=Math.cos(th),sn=Math.sin(th),wob=Math.sin(at*13)*(p.wob||0)*8;
+  const W=(q,z)=>{let x=q[0],y=q[1]+fall*6;const xr=x*cs-y*sn,yr=x*sn+y*cs;x=xr-fall*20;return[x0+wob+fx*x+sx*z,y0-yr,z0+fz*x+sz*z]};
+  const O=W([0,0],0),FW=l3norm(l3sub(W([1,0],0),O)),UP=l3norm(l3sub(W([0,-1],0),O)),SD=l3norm(l3sub(W([0,0],1),O));
+  const pe=h=>p.punch&&p.punch.hand===h?p.punch.e:0,side=s=>Lz*s;
+  const sec=(c,ru,rv,front,col)=>({c,u:SD,v:FW,ru,rv,front,col});
+  // legs: thighs (inside the shorts), knees, calves, laced boots
+  [[bk,bf,-1],[fk,ff,1]].forEach(([k,ft,s])=>{const z=side(s*11),H=W([hip[0]+s*5,hip[1]+6],z),Kn=W(k,z),Fp=W(ft,z),An=l3add(Fp,l3mul(UP,10));
+    glTube(M,H,Kn,t=>14.5-3.5*t+2.5*Math.sin(Math.PI*Math.min(1,t*1.4)),K.skin,6,12);glEll(M,Kn,l3mul(SD,10),l3mul(UP,10),l3mul(FW,10.5),K.skin,10,6);
+    glTube(M,Kn,An,t=>10-3*t+2.2*Math.sin(Math.PI*Math.min(1,t*1.8)),K.skin,6,12);
+    const bt=l3add(Fp,l3mul(UP,48));glTube(M,bt,l3add(Fp,l3mul(UP,5)),t=>10.2-1.2*t,K.boot,4,12);glTube(M,l3add(bt,l3mul(UP,2)),l3add(bt,l3mul(UP,-6)),()=>10.8,K.bootBand,1,12);
+    for(let l=0;l<5;l++){const lc=l3add(l3add(Fp,l3mul(UP,12+l*7.5)),l3mul(FW,9.6));glBox(M,lc,[3,1.4,3].map((v,i)=>v),K.lace)}
+    glEll(M,l3add(l3add(Fp,l3mul(FW,6)),l3mul(UP,4)),l3mul(FW,16),l3mul(UP,6.5),l3mul(SD,8),K.boot,12,6,(y)=>y<-.55?K.sole:K.boot)});
+  // shorts: a loft around the pelvis plus two short legs, waistband on top
+  const HP=W(hip,0);{const S=[];[[-30,27,19],[-14,28.5,20],[2,27.5,19.5],[12,25.5,17.5],[19,25.8,17.8]].forEach(([dy,w,d],i)=>S.push(sec(l3add(HP,l3mul(UP,dy)),w,d,0,i>=3?K.band:K.trunk)));glLoft(M,S,K.trunk,16,true,false);
+    [[-1],[1]].forEach(([s])=>{const z=side(s*11),H=W([hip[0]+s*5,hip[1]+6],z),Kn=W(s>0?fk:bk,z),e=glV(H,Kn,.42);glTube(M,l3add(H,l3mul(UP,4)),e,t=>17.2-1.5*t,K.trunk,2,14)});
+}
+  // torso: hips -> waist -> chest -> shoulders, a V-taper with pecs and lats
+  const CH=W([lean*.9,-176+bob+crouch],0),NK=W([head[0]-3,head[1]+18],0);
+  {const S=[];const prof=[[0,24.5,16.5,1],[.18,22.5,15.5,1.02],[.38,24,15.5,1.04],[.58,29,16.5,1.12],[.76,32.5,17,1.16],[.9,31,14.5,1.06],[1,15,11,1]];
+    prof.forEach(([t,w,d,fr])=>{const c=t<.6?glV(l3add(HP,l3mul(UP,14)),CH,t/.6):glV(CH,NK,(t-.6)/.4);S.push(sec(c,w*(ref?.95:1),d*(ref?1.05:1),ref?1.04:fr,ref?K.shirt:K.skin))});glLoft(M,S,K.skin,18,false,true)}
+  if(!ref){// abs: three soft rows of bumps on the stomach
+    for(let r=0;r<3;r++)for(const s of[-1,1]){const c=l3add(l3add(glV(l3add(HP,l3mul(UP,16)),CH,.25+r*.18),l3mul(FW,14.2)),l3mul(SD,s*5));glEll(M,c,l3mul(SD,4.6),l3mul(UP,4.2),l3mul(FW,2.2),K.skin,8,5)}}
+  else{glBox(M,l3add(l3add(NK,l3mul(FW,11)),l3mul(UP,-6)),[8,4,8],K.tie)}
+  // neck, head, jaw, nose, ears, hair, eyes
+  const HC=W(head,0);glTube(M,NK,l3add(HC,l3mul(UP,-6)),()=>8.6,K.skin,2,12);
+  glEll(M,HC,l3mul(FW,15.5),l3mul(UP,18),l3mul(SD,14.2),K.skin,16,10);
+  glEll(M,l3add(l3add(HC,l3mul(FW,5)),l3mul(UP,-9)),l3mul(FW,11),l3mul(UP,8.5),l3mul(SD,11.5),K.skin,12,6);
+  glEll(M,l3add(l3add(HC,l3mul(FW,15.6)),l3mul(UP,-1.5)),l3mul(FW,3.8),l3mul(UP,5.5),l3mul(SD,3.2),K.skin,8,5);
+  for(const s of[-1,1])glEll(M,l3add(HC,l3mul(SD,s*14)),l3mul(FW,3.5),l3mul(UP,5.5),l3mul(SD,2.4),K.skin,8,5);
+  const ko=p.fall>.6||p.wob>.5,blink=((at*.8+p.seed)%3.7)<.09;
+  for(const s of[-1,1]){const e=l3add(l3add(l3add(HC,l3mul(FW,13.2)),l3mul(UP,3)),l3mul(SD,s*5.6));
+    if(ko||blink)glEll(M,e,l3mul(FW,1.2),l3mul(UP,.8),l3mul(SD,3),[40,22,14],6,4);else{glEll(M,e,l3mul(FW,1.8),l3mul(UP,2.2),l3mul(SD,3),[245,245,240,.6],8,5);glEll(M,l3add(e,l3mul(FW,1.4)),l3mul(FW,.8),l3mul(UP,1.4),l3mul(SD,1.4),[25,15,10,.6],6,4)}
+    glBox(M,l3add(l3add(l3add(HC,l3mul(FW,13.6)),l3mul(UP,7.5)),l3mul(SD,s*5.8)),[2,1.6,2].map(v=>v),K.hair)}
+  glEll(M,l3add(l3add(HC,l3mul(FW,4.5)),l3mul(UP,-12.5)),l3mul(FW,1.5),l3mul(UP,1.2),l3mul(SD,5),[90,30,30],8,4);
+  if(K.hairStyle==='flat'){glBox(M,l3add(HC,l3mul(UP,15)),[22,14,22],K.hair)}
+  else if(K.hairStyle==='bald'){}else glEll(M,l3add(l3add(HC,l3mul(UP,4.5)),l3mul(FW,-2.5)),l3mul(FW,15.2),l3mul(UP,15.2),l3mul(SD,15),K.hair,14,8,(y)=>y<-.05?null:K.hair);
+  // arms: deltoid, biceps, forearm, glove with thumb and cuff
+  const hands=[];
+  [[sh[1],armR,-1,pe('rear')],[sh[0],armL,1,pe('lead')]].forEach(([S0,arm,s,e])=>{const zs=side(s*20),zh=zs*(1-e*.85)+(e?0:side(s*-4)),zm=(zs+zh)/2;
+    const A=W(S0,zs),E=W(arm[0],zm),Hh=W(arm[1],zh);glEll(M,A,l3mul(FW,13),l3mul(UP,12),l3mul(SD,12.5),ref?K.shirt:K.skin,12,8);
+    glTube(M,A,E,t=>(ref&&t<.5?12.5:11.5)-2.2*t+(ref?0:2.4*Math.sin(Math.PI*Math.max(0,Math.min(1,(t-.25)/.6)))),ref?K.shirt:K.skin,6,12);glEll(M,E,l3mul(FW,8.6),l3mul(UP,8.6),l3mul(SD,8.6),K.skin,10,6);
+    glTube(M,E,Hh,t=>9.6-2*t+1.4*Math.sin(Math.PI*Math.min(1,t*1.6)),K.skin,6,12);
+    if(ref){glEll(M,Hh,l3mul(FW,6),l3mul(UP,6),l3mul(SD,6),K.skin,8,6)}else{const d=l3norm(l3sub(Hh,E)),[u,v]=glFrame(d),gc=l3add(Hh,l3mul(d,6));
+      glEll(M,gc,l3mul(d,17),l3mul(u,15),l3mul(v,14),K.glove,16,10);glEll(M,l3add(l3add(gc,l3mul(u,side(s)*-10)),l3mul(d,2)),l3mul(d,7),l3mul(u,4.5),l3mul(v,5.5),K.glove,10,6);
+      glTube(M,l3add(Hh,l3mul(d,-4)),l3add(Hh,l3mul(d,-14)),()=>10.6,K.cuff,2,14);glTube(M,l3add(Hh,l3mul(d,-8.5)),l3add(Hh,l3mul(d,-10.5)),()=>11,K.glove,1,14)}
+    hands.push(Hh)});
+  return{head:HC,chest:CH,hip:HP}}
+function glKit(c,i){const rgb=h=>l3rgb(h),sk=rgb(c.sk);return{skin:[...sk,.28],boot:i?[29,64,175,.5]:[200,16,46,.5],bootBand:[245,245,245,.3],lace:[250,250,250,.2],sole:[240,240,240,.2],
+  trunk:i?[22,52,170,.35]:[185,14,38,.35],band:i?[240,240,240,.4]:[235,190,40,.55],glove:i?[28,80,220,.85]:[214,22,38,.85],cuff:[245,245,245,.4],hair:i?[22,14,8,.1]:[48,28,14,.1],hairStyle:i?'flat':'cap'}}
+function glRefKit(sk){const s=l3rgb(sk);return{skin:[...s,.2],shirt:[236,236,236,.1],trunk:[30,30,34,.1],band:[30,30,34,.1],boot:[18,18,20,.5],bootBand:[18,18,20,.5],lace:[18,18,20,.1],sole:[18,18,20,.1],tie:[20,20,24,.2],hair:[90,90,92,.1],hairStyle:'cap',glove:s,cuff:s}}
+const GL_VS=`attribute vec3 aP;attribute vec3 aN;attribute vec4 aC;attribute vec2 aT;uniform mat4 uVP;varying vec3 vN;varying vec4 vC;varying vec3 vW;varying vec2 vT;
+void main(){vN=aN;vC=aC;vW=aP;vT=aT;gl_Position=uVP*vec4(aP,1.0);}`;
+const GL_FS=`precision mediump float;varying vec3 vN;varying vec4 vC;varying vec3 vW;varying vec2 vT;uniform sampler2D uTex;uniform float uUseTex;uniform vec3 uEye;uniform float uAlpha;uniform float uEmis;uniform float uFlash;
+void main(){vec3 n=normalize(vN);vec3 V=normalize(uEye-vW);if(dot(n,V)<0.0&&uUseTex<0.5)n=-n;
+vec3 L1=normalize(vec3(-0.35,0.9,-0.45));vec3 L2=normalize(vec3(0.7,0.35,0.45));vec3 base=vC.rgb;if(uUseTex>0.5)base*=texture2D(uTex,vT).rgb;
+float d1=max(dot(n,L1),0.0),d2=max(dot(n,L2),0.0),rim=pow(1.0-max(dot(n,V),0.0),2.5);vec3 H=normalize(L1+V);float sp=pow(max(dot(n,H),0.0),28.0)*vC.a;
+vec3 c=base*(0.30+0.78*d1+0.28*d2)+vec3(1.0,0.96,0.88)*sp*0.9+base*rim*0.45+vec3(uFlash);if(uEmis>0.5)c=base;
+float fog=clamp((length(uEye-vW)-950.0)/1700.0,0.0,0.72);c=mix(c,vec3(0.04,0.035,0.08),fog);gl_FragColor=vec4(c,uAlpha);}`;
+function glInit(){if(LGL!==null)return LGL;try{const cv=document.createElement('canvas');cv.width=960;cv.height=540;
+    const gl=cv.getContext('webgl',{antialias:true,preserveDrawingBuffer:true,alpha:false});if(!gl)return LGL=false;
+    const sh=(t,s)=>{const x=gl.createShader(t);gl.shaderSource(x,s);gl.compileShader(x);if(!gl.getShaderParameter(x,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(x));return x};
+    const pr=gl.createProgram();gl.attachShader(pr,sh(gl.VERTEX_SHADER,GL_VS));gl.attachShader(pr,sh(gl.FRAGMENT_SHADER,GL_FS));gl.linkProgram(pr);if(!gl.getProgramParameter(pr,gl.LINK_STATUS))throw new Error('link');
+    const loc={};['aP','aN','aC','aT'].forEach(a=>loc[a]=gl.getAttribLocation(pr,a));['uVP','uTex','uUseTex','uEye','uAlpha','uEmis','uFlash'].forEach(u=>loc[u]=gl.getUniformLocation(pr,u));
+    const tex=img=>{const t=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,t);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,img);
+      const pot=x=>(x&(x-1))===0;if(pot(img.width)&&pot(img.height)){gl.generateMipmap(gl.TEXTURE_2D);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.REPEAT)}
+      else{gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE)}return t};
+    const buf=M=>{const b={n:M.p.length/3,bufs:[]};[['aP',M.p,3],['aN',M.n,3],['aC',M.c,4],['aT',M.t,2]].forEach(([a,d,k])=>{const x=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,x);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(d),gl.STATIC_DRAW);b.bufs.push([a,x,k])});return b};
+    // ---- static arena
+    const R=300,mat=48,E=R+20;
+    const mm=glMesh();for(let a=0;a<8;a++)for(let b=0;b<8;b++){const st=2*E/8,x1=-E+a*st,x2=x1+st,z1=-E+b*st,z2=z1+st,u=v=>v/(2*E);glQuad(mm,[x1,mat,z2],[x2,mat,z2],[x2,mat,z1],[x1,mat,z1],[0,1,0],[0,1,0],[0,1,0],[0,1,0],[255,255,255,.05],[[u(E-x1),u(E-z2)],[u(E-x2),u(E-z2)],[u(E-x2),u(E-z1)],[u(E-x1),u(E-z1)]])}
+    const ap=[0,1,2,3].map(()=>glMesh());[[[-E,-E],[E,-E],[0,0,-1]],[[E,-E],[E,E],[1,0,0]],[[E,E],[-E,E],[0,0,1]],[[-E,E],[-E,-E],[-1,0,0]]].forEach(([A,B,n],k)=>glQuad(ap[k],[A[0],mat,A[1]],[B[0],mat,B[1]],[B[0],-8,B[1]],[A[0],-8,A[1]],n,n,n,n,[255,255,255,0],[[0,0],[1,0],[1,1],[0,1]]));
+    const st=glMesh();glQuad(st,[-1600,-60,-1600],[-1600,-60,1800],[1600,-60,1800],[1600,-60,-1600],[0,1,0],[0,1,0],[0,1,0],[0,1,0],[26,24,32,0]);
+    // corner posts, pads, ropes, steps, lighting rig, jumbotron
+    const corners=[[-R,-R],[R,-R],[R,R],[-R,R]],pad=[[200,16,46,.3],[235,235,235,.3],[29,78,216,.3],[235,235,235,.3]];
+    corners.forEach(([x,z],i)=>{glTube(st,[x,mat-4,z],[x,mat+160,z],()=>6.5,[175,178,186,.9],2,12);glTube(st,[x,mat+50,z],[x,mat+150,z],()=>13,pad[i],3,12)});
+    const ropeC=[[240,240,240,.4],[200,16,46,.4],[240,240,240,.4],[29,78,216,.4]];
+    for(let s=0;s<4;s++){const A=corners[s],B=corners[(s+1)%4];[0,1,2].forEach(r=>{const y=mat+66+r*36;glTube(st,[A[0],y,A[1]],[B[0],y,B[1]],()=>3.2,r===1?(s%2?ropeC[3]:ropeC[1]):ropeC[0],8,8)})}
+    for(let k=-2;k<=2;k++)for(const z of[-70,70]){glBox(st,[k*190,560,z],[26,18,26],[255,246,214,0])}
+    // stands: three banks of seats with a painted crowd
+    const crowdT=l3tex('crowdGL',1024,512,(t,w,h)=>{t.fillStyle='#141a33';t.fillRect(0,0,w,h);const r=LAB_RNG(77),sh=['#b23a3a','#2f4fa8','#2f7d4a','#c7a33c','#6c6c6c','#7a3f8c','#d8d8d8','#a8642c','#1f6f7f','#c94f7c','#e2e2e2','#333'],sk=['#e8b98a','#c68e5d','#8d5524','#5c3a1e','#f1c9a5','#a8703f'];
+      for(let row=0;row<8;row++){const y=h-row*64-6;for(let x=0;x<w;x+=32){const jx=x+4+r()*6;t.fillStyle='#2849a8';t.fillRect(jx-3,y-44,30,44);t.fillStyle='#1b2f6e';t.fillRect(jx-3,y-8,30,8);
+        if(r()<.9){t.fillStyle=sh[Math.floor(r()*sh.length)];t.beginPath();t.roundRect(jx,y-34,24,30,6);t.fill();t.fillStyle=sk[Math.floor(r()*sk.length)];t.beginPath();t.arc(jx+12,y-42,8,0,7);t.fill();
+          if(r()<.5){t.fillStyle=['#2a1a0e','#111','#6b4b2a','#d8c070'][Math.floor(r()*4)];t.beginPath();t.arc(jx+12,y-46,8,Math.PI,2*Math.PI);t.fill()}
+          if(r()<.03){t.fillStyle='#fffbe6';t.fillRect(jx-6,y-70,36,16);t.fillStyle=r()<.5?'#c8102e':'#1d4ed8';t.font='bold 11px Impact,sans-serif';t.fillText(['KO!','#1','WAR!','10-9'][Math.floor(r()*4)],jx-2,y-58)}}}}});
+    const cr=glMesh();const bank=(A,B,C2,D,rep)=>{const n=l3norm(l3cross(l3sub(B,A),l3sub(D,A)));glQuad(cr,A,B,C2,D,n,n,n,n,[255,255,255,0],[[0,1],[rep,1],[rep,0],[0,0]])};
+    bank([-1300,-40,470],[1300,-40,470],[1300,560,1150],[-1300,560,1150],2.3);bank([-470,-40,-900],[-470,-40,900],[-1150,560,900],[-1150,560,-900],1.6);bank([470,-40,900],[470,-40,-900],[1150,560,-900],[1150,560,900],1.6);
+    LGL={cv,gl,pr,loc,tex,buf,st:buf(st),mat:buf(mm),apron:ap.map(buf),crowd:buf(cr),tMat:tex(l3matTex()),tApron:[0,1,2,3].map(k=>tex(l3apronTex(k))),tCrowd:tex(crowdT),dyn:null};
+    return LGL}catch(e){console.warn('3D arena: WebGL unavailable, using the software renderer',e);return LGL=false}}
+function glMat4(C,T,fovy,asp,near,far){const f=l3norm(l3sub(T,C)),r=l3norm(l3cross(f,[0,1,0])),u=l3cross(r,f);
+  const V=[r[0],u[0],-f[0],0, r[1],u[1],-f[1],0, r[2],u[2],-f[2],0, -l3dot(r,C),-l3dot(u,C),l3dot(f,C),1];
+  const t=1/Math.tan(fovy/2),P=[t/asp,0,0,0, 0,t,0,0, 0,0,(far+near)/(near-far),-1, 0,0,2*far*near/(near-far),0];
+  const o=new Float32Array(16);for(let i=0;i<4;i++)for(let j=0;j<4;j++){let s=0;for(let k=0;k<4;k++)s+=P[k*4+j]*V[i*4+k];o[i*4+j]=s}return o}
+function labGLScene(g,o){const G=glInit();if(!G)return null;const{gl,loc}=G,{C,T,P,Xw,mid,at,realAt,intro,fin,res,stopBeat,kdNow,tl,cur,mat}=o;
+  gl.viewport(0,0,960,540);gl.clearColor(.03,.03,.06,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.enable(gl.DEPTH_TEST);gl.useProgram(G.pr);
+  const VP=glMat4(C,T,2*Math.atan(.5/1.32),16/9,30,6000);gl.uniformMatrix4fv(loc.uVP,false,VP);gl.uniform3fv(loc.uEye,C);gl.uniform1f(loc.uAlpha,1);gl.uniform1f(loc.uFlash,0);gl.uniform1i(loc.uTex,0);
+  const draw=(b,tex,emis)=>{b.bufs.forEach(([a,x,k])=>{gl.bindBuffer(gl.ARRAY_BUFFER,x);gl.enableVertexAttribArray(loc[a]);gl.vertexAttribPointer(loc[a],k,gl.FLOAT,false,0,0)});
+    gl.uniform1f(loc.uUseTex,tex?1:0);gl.uniform1f(loc.uEmis,emis?1:0);if(tex){gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,tex)}gl.drawArrays(gl.TRIANGLES,0,b.n)};
+  draw(G.st,null,false);draw(G.mat,G.tMat,false);G.apron.forEach((b,k)=>draw(b,G.tApron[k],false));draw(G.crowd,G.tCrowd,true);
+  // the people and their shadows
+  const M=glMesh(),hits=[];
+  [0,1].forEach(i=>{const b=glBody(M,{p:P[i],x0:Xw[i],y0:mat,dirX:i?-1:1,Lz:i?1:-1,at,K:glKit(LAB_SKIN[i],i)});hits[i]={head:b.head,chest:b.chest,hip:b.hip}});
+  const kdF=kdNow?1-kdNow.a:null,stopX=stopBeat&&at>=stopBeat.at&&!res.decision?Xw[1-res.w]+(res.w?-70:70):null,tx=o.tx,dist=o.dist,rx=kdNow?Xw[kdF]+(kdF?60:-60):stopX!=null?stopX:mid-(C[0]-tx)/Math.max(1,dist)*150+Math.sin(at*.37)*40;
+  const count=!!kdNow||(stopBeat&&at>=stopBeat.at&&res.type==='KO');
+  glBody(M,{p:{seed:5,lean:0,hug:0,lunge:0,snap:0,tired:0,bodyHit:0,guardDrop:30,fall:0,wob:0,cel:0,rear:count?[24,-200+Math.abs(Math.sin(at*5.5))*-60]:[18,-130],lead:[22,-135],rearUp:!!count},x0:rx,y0:mat,z0:200,dirX:rx<mid?1:-1,Lz:-1,at,ref:true,K:glRefKit('#d9a066')});
+  if(intro)glBody(M,{p:{seed:9,lean:0,hug:0,lunge:0,snap:0,tired:0,bodyHit:0,guardDrop:0,fall:0,wob:0,cel:0,rear:[8,-262+Math.sin(realAt*4)*6],lead:[16,-130],rearUp:true},x0:0,y0:mat,z0:-40,fx:0,fz:-1,sx:1,sz:0,dirX:1,Lz:-1,at,ref:true,K:{...glRefKit('#c68e5d'),shirt:[24,24,28,.2],trunk:[24,24,28,.1],band:[24,24,28,.1],tie:[200,16,46,.3],hair:[28,18,10,.1]}});
+  const dyn=G.dyn||(G.dyn={bufs:['aP','aN','aC','aT'].map((a,i)=>[a,gl.createBuffer(),[3,3,4,2][i]])});
+  [M.p,M.n,M.c,M.t].forEach((d,i)=>{gl.bindBuffer(gl.ARRAY_BUFFER,dyn.bufs[i][1]);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(d),gl.DYNAMIC_DRAW)});dyn.n=M.p.length/3;
+  draw(dyn,null,false);
+  // soft shadows on the canvas
+  {const S=glMesh(),disc=(x,z,rx,rz)=>{for(let k=0;k<20;k++){const a=k/20*Math.PI*2,b=(k+1)/20*Math.PI*2,n=[0,1,0];glTri(S,[x,mat+.6,z],[x+Math.cos(b)*rx,mat+.6,z+Math.sin(b)*rz],[x+Math.cos(a)*rx,mat+.6,z+Math.sin(a)*rz],n,n,n,[0,0,0,0])}};
+    [0,1].forEach(i=>{const fl=P[i].fall||0,dir=i?-1:1;disc(Xw[i]-dir*fl*70,0,50+fl*70,30)});disc(rx,200,34,22);
+    const sb=G.sh||(G.sh={bufs:['aP','aN','aC','aT'].map((a,i)=>[a,gl.createBuffer(),[3,3,4,2][i]])});[S.p,S.n,S.c,S.t].forEach((d,i)=>{gl.bindBuffer(gl.ARRAY_BUFFER,sb.bufs[i][1]);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(d),gl.DYNAMIC_DRAW)});sb.n=S.p.length/3;
+    gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);gl.uniform1f(loc.uAlpha,.38);draw(sb,null,true);gl.depthMask(true);gl.disable(gl.BLEND);gl.uniform1f(loc.uAlpha,1)}
+  g.setTransform(1,0,0,1,0,0);g.drawImage(G.cv,0,0,960,540);
+  const lamps=[];for(let k=-2;k<=2;k++)for(const z of[-70,70])lamps.push([k*190,552,z]);
+  return{hits,lamps}}
 
 /* --- Lab Chat --- */
 const labNick=()=>{try{return localStorage.getItem('contenders_simbot_nick')||''}catch(e){return''}};
