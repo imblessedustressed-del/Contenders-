@@ -18,7 +18,7 @@ const K_RATING=12;
 /* Simulator update 2 (owner-approved Nov 12, 2026): balanced so every style has a chance (engine tests: each type wins about 36-45%
    against the others, the rest draws); heavyweights capped at 6'9" and 280 lb ("Tyson Fury rule"); WeBL's heavyweight edges replaced. */
 const GX={pow:1.02,agl:1.02,jab:1.08,fat:.9,chin:1.1,ip:.85,rec:.02,hurt:.03};
-const BAL={counterDiv:6,counterStr:0,counterAgg:.8,counterFloor:.5,alloutGive:2,alloutTake:2.75,kpMul:3.75,wtPct:10,giantPer10:.5,smallMan:false,ringBase:1.75,ringFat:.4,clinchBase:1.75,clinchAggLoss:.12,insideBase:1};
+const BAL={counterDiv:6,counterStr:0,counterAgg:.8,counterFloor:.5,alloutGive:2,alloutTake:2.75,kpMul:3.75,wtPct:10,giantPer10:.5,smallMan:false,ringBase:1.75,ringFat:.4,clinchBase:.5,clinchAggLoss:.2,bkClinchBase:1.75,bkClinchAggLoss:.12,insideBase:1,tieDmg:.015};
 
 function newSev(){const r=rand();return r<2/3?1:r<8/9?2:r<26/27?3:4}
 function promote(l){if(l>=3)return 4;if(l===2)return rand()<2/3?3:4;const r=rand();return r<2/3?2:r<8/9?3:4}
@@ -74,7 +74,7 @@ function simulate(FA,FB,rounds){
     for(let i=0;i<2;i++){const j=1-i,me=P[i],op=P[j],e=eff[i],o=eff[j],b=base[i],ob=base[j],a=A[i],oa=A[j];
       switch(me.style){
         case'inside':a.str+=BAL.insideBase+Math.max(0,b.str-ob.str)/2;o.dmgMul*=1.1;e.notes.push('His STR is increased by fighting inside.');break;
-        case'clinch':{a.agl+=BAL.clinchBase+(b.str>ob.str?(b.str-ob.str)/2:0);const lost=Math.min(e.agg,BAL.clinchAggLoss*op.agg);e.agg-=lost;e.rest+=lost;e.notes.push('His AGG is reduced by clinching.');break}
+        case'clinch':{a.agl+=(BK?BAL.bkClinchBase:BAL.clinchBase)+(b.str>ob.str?(b.str-ob.str)/2:0);const lost=Math.min(e.agg,(BK?BAL.bkClinchAggLoss:BAL.clinchAggLoss)*op.agg);e.agg-=lost;e.rest+=lost;e.notes.push('His AGG is reduced by clinching.');break}
         case'feint':a.spd+=1+Math.max(0,b.spd-ob.spd)/2;e.fat+=1;e.notes.push('His SPD is increased by feinting.');break;
         case'counter':{a.str+=BAL.counterStr;const adv=(b.spd+S[i].hgt)-(ob.spd+S[j].hgt),q=BAL.counterDiv;
           if(adv>0){a.agl+=adv/q;oa.agl=Math.max(ob.agl*BAL.counterFloor,oa.agl-adv/q)}else if(adv<0){oa.agl+=-adv/q;a.agl=Math.max(b.agl*BAL.counterFloor,a.agl-(-adv)/q);e.notes.push('His counter-punching backfires!')}
@@ -213,7 +213,12 @@ function simulate(FA,FB,rounds){
     out.result={type,w:type==='Draw'?null:kd[0]!==kd[1]?(kd[0]>kd[1]?0:1):(sn[0]>sn[1]?0:1),round:rounds,t:180,decision:true};
   }
   if(!out.result){
-    let wa=0,wb=0,dr=0;tot.forEach(t=>t[0]>t[1]?wa++:t[1]>t[0]?wb++:dr++);
+    /* fewer draws (owner, Nov 15, 2026: draws about 2% of decisions): a judge whose card is level gives the fight to the busier
+       man, the one who threw more punches over the whole fight (more than BAL.tieDmg apart); only a truly even fight stays a draw.
+       Contenders clinching toned down with it (clinchBase 1.75 -> .5, clinchAggLoss .12 -> .2; Bare Knuckles keeps the old bk* values) so clinchers don't turn their old draws into a 60% win rate. */
+    const dd=[0,1].map(i=>out.rounds.reduce((a,R)=>a+(R.st?R.st[i].pt+R.st[i].rt+R.st[i].jt:0),0));
+    out.tieBreak=tot.map(t=>t[0]!==t[1]||Math.abs(dd[0]-dd[1])<=BAL.tieDmg*Math.max(1,dd[0],dd[1])?null:(dd[0]>dd[1]?0:1));
+    let wa=0,wb=0,dr=0;tot.forEach((t,j)=>{const w=t[0]!==t[1]?(t[0]>t[1]?0:1):out.tieBreak[j];w===0?wa++:w===1?wb++:dr++});
     let type;
     if(wa===3||wb===3)type='Unanimous Decision';
     else if((wa===2&&wb===1)||(wb===2&&wa===1))type='Split Decision';
