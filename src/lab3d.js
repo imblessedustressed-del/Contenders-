@@ -130,9 +130,14 @@ function lab3D(g,o){const{at,realAt,P,X,tl,f,res,stopBeat,kdNow,big,zoom,inRepla
   const CAMS=[[.4,325,180],[-.4,325,180],[.22,370,200],[.6,320,172],[-.25,385,210]],between0=!intro&&!fin&&cur&&at>=cur.end-.05,cam=between0?[.1,760,340]:CAMS[((cur?cur.n:1)-1)%CAMS.length];
   let yaw=cam[0]+Math.sin(realAt*.07)*.12+(1-ease)*1.1,dist=cam[1]+(1-ease)*520,hgt=cam[2]+(1-ease)*300,tx=mid;
   if(inReplay){const lo=res.w==null?0:1-res.w;tx=Xw[lo]*.6+mid*.4;dist=420;hgt=160;yaw=-.55+Math.sin(realAt*.4)*.12}
+  /* during a referee's count the camera eases back and down to frame the man on the canvas and the referee over him (owner, Nov 15, 2026) */
+  let lookY=intro?170:198;
+  {const cb=!inReplay&&tl.beats.find(b=>(b.k==='kd'||b.k==='ko')&&b.cs!=null&&at>=b.at+.3&&at<b.at+b.dur+(b.k==='ko'?1.5:0));
+    if(cb){const dn=1-cb.a,dir=dn?-1:1,w=Math.min(1,(at-cb.at-.3)/.5,(cb.at+(cb.dur+(cb.k==='ko'?1.5:0))-at)/.5),e=w*w*(3-2*w);
+      tx=tx+(Xw[dn]-dir*45-tx)*e;dist=dist+(470-dist)*e;yaw=yaw+(.12-yaw)*e;hgt=hgt+(250-hgt)*e;lookY=lookY+(120-lookY)*e}}
   if(fin&&!inReplay){yaw+=Math.min(1,(at-(tl.beats[tl.beats.length-1].at))*.15)*.25}
   dist/=zoom;
-  const T=[tx,intro?170:198,0];let C=[tx+Math.sin(yaw)*dist,hgt,-Math.cos(yaw)*dist];
+  const T=[tx,lookY,0];let C=[tx+Math.sin(yaw)*dist,hgt,-Math.cos(yaw)*dist];
   if(big&&!inReplay)C=l3add(C,[(Math.random()-.5)*14,(Math.random()-.5)*10,0]);
   const fw=l3norm(l3sub(T,C)),rt=l3norm(l3cross([0,1,0],fw)),up=l3cross(fw,rt),foc=L3H*1.32;
   const proj=v=>{const d=l3sub(v,C),z=l3dot(d,fw);if(z<20)return null;return[Math.round(L3W/2+l3dot(d,rt)*foc/z),Math.round(L3H/2-l3dot(d,up)*foc/z),z]};
@@ -179,7 +184,7 @@ function lab3D(g,o){const{at,realAt,P,X,tl,f,res,stopBeat,kdNow,big,zoom,inRepla
     hits[i]={head:lift(b.head),chest:lift(b.chest),hip:lift(b.hip)}});
   {const kdF=kdNow?1-kdNow.a:null,stopX=stopBeat&&at>=stopBeat.at&&!res.decision?Xw[1-res.w]+(res.w?-70:70):null,rx=kdNow?Xw[kdF]+(kdF?60:-60):stopX!=null?stopX:mid-(C[0]-tx)/Math.max(1,dist)*150+Math.sin(at*.37)*40; // the referee works the far side, away from the camera
     const count=!!kdNow||(stopBeat&&at>=stopBeat.at&&res.type==='KO'),rp={seed:5,lean:0,hug:0,lunge:0,snap:0,tired:0,bodyHit:0,guardDrop:30,fall:0,wob:0,cel:0,
-      rear:count?[24,-200+Math.abs(Math.sin(at*5.5))*-60]:[18,-130],lead:[22,-135],rearUp:!!count};
+      rear:count?[24,-200+labRefArm(at)*-60]:[18,-130],lead:[22,-135],rearUp:!!count};
     shadow(rx,200,36,22);const before=F.length;l3body(F,{cam:C,zoff:200,p:rp,x0:rx,dirX:rx<mid?1:-1,Lz:-1,at,col:l3col({sk:'#d9a066',skD:'#a8714a'},true),ref:true});
     for(let q=before;q<F.length;q++){F[q].v=F[q].v.map(v=>[v[0],v[1]+mat,v[2]+200]);if(F[q].pc)F[q].pc=[F[q].pc[0],F[q].pc[1]+mat,F[q].pc[2]+200];F[q].layer=2}}
   // shade, cull, fog, sort and draw
@@ -434,7 +439,7 @@ function labGLScene(g,o){const G=glInit();if(!G)return null;const{gl,loc}=G,{C,T
   [0,1].forEach(i=>{const b=glBody(M,{p:P[i],x0:Xw[i],y0:mat,dirX:i?-1:1,Lz:i?1:-1,at,K:glKit(LAB_SKIN[i],i)});hits[i]={head:b.head,chest:b.chest,hip:b.hip}});
   const kdF=kdNow?1-kdNow.a:null,stopX=stopBeat&&at>=stopBeat.at&&!res.decision?Xw[1-res.w]+(res.w?-70:70):null,tx=o.tx,dist=o.dist,rx=kdNow?Xw[kdF]+(kdF?60:-60):stopX!=null?stopX:mid-(C[0]-tx)/Math.max(1,dist)*150+Math.sin(at*.37)*40;
   const count=!!kdNow||(stopBeat&&at>=stopBeat.at&&res.type==='KO');
-  glBody(M,{p:{seed:5,lean:0,hug:0,lunge:0,snap:0,tired:0,bodyHit:0,guardDrop:30,fall:0,wob:0,cel:0,rear:count?[24,-200+Math.abs(Math.sin(at*5.5))*-60]:[18,-130],lead:[22,-135],rearUp:!!count},x0:rx,y0:mat,z0:200,dirX:rx<mid?1:-1,Lz:-1,at,ref:true,K:glRefKit('#d9a066')});
+  glBody(M,{p:{seed:5,lean:0,hug:0,lunge:0,snap:0,tired:0,bodyHit:0,guardDrop:30,fall:0,wob:0,cel:0,rear:count?[24,-200+labRefArm(at)*-60]:[18,-130],lead:[22,-135],rearUp:!!count},x0:rx,y0:mat,z0:200,dirX:rx<mid?1:-1,Lz:-1,at,ref:true,K:glRefKit('#d9a066')});
   if(intro)glBody(M,{p:{seed:9,lean:0,hug:0,lunge:0,snap:0,tired:0,bodyHit:0,guardDrop:0,fall:0,wob:0,cel:0,rear:[8,-262+Math.sin(realAt*4)*6],lead:[16,-130],rearUp:true},x0:0,y0:mat,z0:-40,fx:0,fz:-1,sx:1,sz:0,dirX:1,Lz:-1,at,ref:true,K:{...glRefKit('#c68e5d'),shirt:[24,24,28,.2],trunk:[24,24,28,.1],band:[24,24,28,.1],tie:[200,16,46,.3],hair:[28,18,10,.1]}});
   const dyn=G.dyn||(G.dyn={bufs:['aP','aN','aC','aT'].map((a,i)=>[a,gl.createBuffer(),[3,3,4,2][i]])});
   [M.p,M.n,M.c,M.t].forEach((d,i)=>{gl.bindBuffer(gl.ARRAY_BUFFER,dyn.bufs[i][1]);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(d),gl.DYNAMIC_DRAW)});dyn.n=M.p.length/3;
@@ -487,8 +492,13 @@ function labBedStart(){const c=labSndCtx();if(!c||LSND.bed)return;const f=labCro
   const l2=c.createBiquadFilter();l2.type='lowpass';l2.frequency.value=1800;const g=c.createGain();g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(.05+f*.17,t+1.2);
   const lfo=c.createOscillator(),lg=c.createGain();lfo.frequency.value=.23;lg.gain.value=.02+f*.04;lfo.connect(lg);lg.connect(g.gain);lfo.start(); // the murmur rises and falls
   s.connect(l);l.connect(l2);l2.connect(g);g.connect(LSND.master);s.start();LSND.bed={s,lfo};LSND.bedG=g}
-function labSndStop(){if(LSND.bed&&LSND.ctx){const t=LSND.ctx.currentTime,b=LSND.bed;LSND.bedG.gain.cancelScheduledValues(t);LSND.bedG.gain.setTargetAtTime(0.0001,t,.3);setTimeout(()=>{try{b.s.stop();b.lfo.stop()}catch(e){}},1500)}LSND.bed=null}
-function labSndPause(p){if(LSND.ctx){if(p)LSND.ctx.suspend();else if(labSndOn())LSND.ctx.resume()}}
+/* the referee's voice: the browser's own speech (no recorded files); off with the Sound button */
+const LAB_WORDS=['One!','Two!','Three!','Four!','Five!','Six!','Seven!','Eight!','Nine!','Ten!'];let labVoice;
+function labSay(w){if(!labSndOn())return;const S=window.speechSynthesis;if(!S||typeof SpeechSynthesisUtterance==='undefined')return;
+  try{if(labVoice===undefined){const vs=S.getVoices().filter(v=>/^en/i.test(v.lang));labVoice=vs.find(v=>/male|david|daniel|fred|alex|guy|george|james/i.test(v.name)&&!/female/i.test(v.name))||vs[0]||null;if(!S.getVoices().length)labVoice=undefined}
+    S.cancel();const u=new SpeechSynthesisUtterance(w);if(labVoice)u.voice=labVoice;u.lang='en-US';u.rate=1.15;u.pitch=.7;u.volume=1;S.speak(u)}catch(e){}}
+function labSndStop(){try{window.speechSynthesis&&speechSynthesis.cancel()}catch(e){}if(LSND.bed&&LSND.ctx){const t=LSND.ctx.currentTime,b=LSND.bed;LSND.bedG.gain.cancelScheduledValues(t);LSND.bedG.gain.setTargetAtTime(0.0001,t,.3);setTimeout(()=>{try{b.s.stop();b.lfo.stop()}catch(e){}},1500)}LSND.bed=null}
+function labSndPause(p){try{if(window.speechSynthesis)p?speechSynthesis.pause():speechSynthesis.resume()}catch(e){}if(LSND.ctx){if(p)LSND.ctx.suspend();else if(labSndOn())LSND.ctx.resume()}}
 /* one call per beat from the playback loop */
 function labSfx(b){const c=labSndCtx();if(!c)return;const t=c.currentTime+.01;
   switch(b.k){case 'j':labPunchSnd(c,t,'j');break;case 'r':labPunchSnd(c,t,'r');break;case 'p':labPunchSnd(c,t,'p');labCheer(c,t+.05,.25,.9);break;
@@ -496,6 +506,8 @@ function labSfx(b){const c=labSndCtx();if(!c)return;const t=c.currentTime+.01;
     case 'cl':labNoise(c,t,.12,{f:400,g:.25});break;case 'i':labPunchSnd(c,t,'r');labCheer(c,t,.4,1.2);break;
     case 'st':labPunchSnd(c,t,'st');labRoar(c,t+.05,.9,2.6);break;
     case 'kd':labPunchSnd(c,t,'kd');labNoise(c,t+.35,.25,{f:250,g:.7});labRoar(c,t+.1,1.2,3.6);break; // the punch, the body hitting the canvas, the roar
-    case 'ko':case 'stop':labPunchSnd(c,t,'ko');labNoise(c,t+.4,.3,{f:220,g:.8});labRoar(c,t+.1,1.4,5);labBell(c,t+1.2,4);break;
+    case 'ko':labPunchSnd(c,t,'ko');labNoise(c,t+.4,.3,{f:220,g:.8});labRoar(c,t+.1,1.4,5);break; // the ten-count bell rings after the referee reaches ten
+    case 'stop':labPunchSnd(c,t,'ko');labNoise(c,t+.4,.3,{f:220,g:.8});labRoar(c,t+.1,1.4,5);labBell(c,t+1.2,4);break;
+    case 'cnt':labSay(b.out&&b.last?'Ten! You\'re out!':LAB_WORDS[b.n-1]);if(b.out&&b.last){labBell(c,t+.9,4);labRoar(c,t+.6,1.3,4.5)}break;
     case 'bell':labBell(c,t,1);labCheer(c,t,.2,1.2);break;case 'start':labBell(c,t,1);break;
     case 'final':if(b.win===false){labCheer(c,t,.5,2.5);break}labRoar(c,t,1.5,5.5);labRoar(c,t+1.6,1.1,4);labCheer(c,t+.3,1,5);break}}

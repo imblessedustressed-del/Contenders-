@@ -833,7 +833,7 @@ function condText(x,after){
 /* ================= SHARED DATA (Supabase: accounts, forums, messages) ================= */
 cleanSlate();
 const SB_URL='https://ojsphhzgzbxmnfcbitqb.supabase.co',SB_KEY='sb_publishable_SWO9WhiSkoVhflY5CmY08A_hlqCEJSi';
-const BUILD='1794771554';
+const BUILD='1794772011';
 /* A tab left open on an older build must not save over newer data: if the site has been updated, reload before anything else is saved. */
 let staleBuild=false;
 async function checkBuild(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
@@ -1120,7 +1120,12 @@ function labSim(){const L=labState(),err=labErr();$('#labErr').textContent=err;i
 }
 /* --- the highlight reel --- */
 const labTxt=h=>String(h).replace(/<\/p>\s*<p[^>]*>/g,' ').replace(/<[^>]+>/g,'').replace(/&amp;/g,'&').replace(/&quot;/g,'"').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/\s+/g,' ').trim();
-function labBeats(f){const L=labState(),sched=f.rounds.length&&L.bout?L.bout.rounds:12,per=6; /* each round plays in 6 seconds (owner, Nov 14, 2026) */
+/* the referee's count (owner, Nov 15, 2026: a count you can hear, to the number in the fight report): the fighter falls, the count starts, one number every LAB_CNT seconds, then he climbs back up */
+const LAB_CNT=.7,LAB_FALL=.5,LAB_RISE=1;let labRefPh=null;
+/* referee's counting arm, 0 = down: it comes down on every number while a count is on, else a steady wave */
+const labRefArm=t=>labRefPh!=null?Math.abs(Math.sin(Math.PI*labRefPh)):Math.abs(Math.sin(t*5.5));
+const labKdCount=x=>{const m=/back on his feet at (\d+)/.exec(x.html||'');return m?+m[1]:x.k==='ko'?10:0};
+function labBeats(f){const L=labState(),sched=f.rounds.length&&L.bout?L.bout.rounds:12,per=11; /* each round plays in 11 seconds (owner, Nov 15, 2026: 5 seconds longer than the 6 s set Nov 14) */
   const beats=[],rounds=[];let t=LAB_INTRO;
   f.rounds.forEach((R,ri)=>{const last=ri===f.rounds.length-1,end=last&&f.result&&!f.result.decision?f.result.t:180;
     const ev=(R.lines||[]).filter(x=>x.k);
@@ -1130,8 +1135,10 @@ function labBeats(f){const L=labState(),sched=f.rounds.length&&L.bout?L.bout.rou
     const pick=[...must,...inj,...pool].sort((a,b)=>a.t-b.t);
     const start=t;let extra=0;
     pick.forEach(x=>{const at=start+.25+(Math.min(x.t,end)/Math.max(end,1))*(per-.5)+extra;
-      beats.push({at,k:x.k,a:x.a,txt:labTxt(x.html),round:R.n});
-      if(x.k==='kd')extra+=1.6;else if(x.k==='st')extra+=.5});
+      const b={at,k:x.k,a:x.a,txt:labTxt(x.html),round:R.n};beats.push(b);
+      if(x.k==='kd'||x.k==='ko'){const n=labKdCount(x);b.cnt=n;b.cs=at+LAB_FALL;b.dur=LAB_FALL+n*LAB_CNT+(x.k==='ko'?.6:LAB_RISE);
+        for(let k=1;k<=n;k++)beats.push({at:b.cs+k*LAB_CNT,k:'cnt',n:k,last:k===n,out:x.k==='ko',round:R.n});extra+=b.dur+(x.k==='ko'?.4:.2)}
+      else if(x.k==='st')extra+=.5});
     const dur=per+extra;rounds.push({n:R.n,start,end:start+dur,R,last,clockEnd:end});t=start+dur;
     if(!last||f.result.decision){beats.push({at:t,k:'bell',round:R.n,txt:R.cc?`End of round ${R.n}. The judges: ${R.cards.map(c=>c.join('-')).join(', ')}.`:`End of round ${R.n}.`});t+=3.2} /* the break with the punch stats lasts about 3 seconds */
   });
@@ -1238,7 +1245,7 @@ function labRef(g,x,y,s,t,count){g.save();g.translate(x,y);g.scale(s,s);
   g.fillStyle='#1b1b1b';g.beginPath();g.moveTo(-14,-112);g.lineTo(14,-112);g.lineTo(26,0);g.lineTo(10,0);g.lineTo(0,-70);g.lineTo(-10,0);g.lineTo(-26,0);g.closePath();g.fill();
   g.fillStyle='#f6f6f6';g.beginPath();g.moveTo(-20,-112);g.lineTo(20,-112);g.lineTo(24,-182);g.quadraticCurveTo(0,-196,-24,-182);g.closePath();g.fill();
   g.fillStyle='#111';g.fillRect(-6,-186,12,5);g.fillStyle='#d9a066';g.beginPath();g.arc(0,-204,14,0,7);g.fill();g.fillStyle='#777';g.beginPath();g.arc(0,-210,14,Math.PI,2*Math.PI);g.fill();
-  const arm=count?Math.abs(Math.sin(t*5.5)):0;g.strokeStyle='#f0f0f0';g.lineWidth=9;g.lineCap='round';
+  const arm=count?labRefArm(t):0;g.strokeStyle='#f0f0f0';g.lineWidth=9;g.lineCap='round';
   g.beginPath();g.moveTo(-18,-176);g.lineTo(-30,-140);g.moveTo(18,-176);g.lineTo(32,count?-200+arm*70:-138);g.stroke();
   g.restore()}
 function labBigText(g,txt,x,y,size,c1,c2){g.save();g.font=`italic 900 ${size}px Impact, 'Arial Black', sans-serif`;g.textAlign='center';
@@ -1253,7 +1260,7 @@ function labDraw(at,tl){const cv=$('#labCv');if(!cv)return;const g=cv.getContext
   const res=f.result,stopBeat=tl.beats.find(b=>b.k==='ko'||b.k==='stop');
   // poses from the beats
   const pose=i=>{const o={lead:null,rear:null,leadUp:false,rearUp:false,lunge:0,snap:0,lean:0,fall:0,wob:0,hug:0,cut:0,bodyHit:0,guardDrop:0,tired:0,sweat:0,sweatT:0,cel:0,seed:i*2.1,hitAt:-9};
-    tl.beats.forEach((b,bi)=>{const d=at-b.at;if(d<0||d>2.4)return;const att=b.a===i,def=b.a===1-i;
+    tl.beats.forEach((b,bi)=>{const d=at-b.at;if(d<0||d>Math.max(2.4,b.dur||0))return;const att=b.a===i,def=b.a===1-i;
       if(['p','r','j','m','c','st','kd'].includes(b.k)&&att&&d<.42){const e=Math.sin(Math.PI*d/.42),type=b.k==='st'||b.k==='kd'?(bi%2?'hook':'cross'):labPunchType(b),low=b.low&&type!=='jab';
         const hand=type==='jab'?'lead':type==='hook'?(bi%2?'lead':'rear'):type==='upper'?(bi%2?'rear':'lead'):'rear';
         o.punch={hand,type,e,low};o.lunge=Math.max(o.lunge,e)}
@@ -1262,7 +1269,9 @@ function labDraw(at,tl){const cv=$('#labCv');if(!cv)return;const g=cv.getContext
       if(b.k==='cl'&&d<.9)o.hug=Math.max(o.hug,Math.sin(Math.PI*d/.9));
       if(b.k==='i'&&def)o.cut=Math.max(o.cut,1-d/2.4);
       if(b.k==='st'&&def&&d<1.5)o.wob=Math.max(o.wob,1-d/1.5);
-      if(b.k==='kd'&&def)o.fall=Math.max(o.fall,d<.3?d/.3:d<1.55?1:d<1.9?1-(d-1.55)/.35:0)});
+      if(b.k==='kd'&&def){const up=LAB_FALL+b.cnt*LAB_CNT,ss=x=>x*x*(3-2*x);let fl; /* down, stirs late in the count, gets to a knee, then to his feet */
+        if(d<.3)fl=d/.3;else if(d<up)fl=1-(d>up-1.4?.06*Math.max(0,Math.sin((d-up+1.4)*5)):0);else{const r=Math.min(1,(d-up)/LAB_RISE);fl=r<.45?1-.48*ss(r/.45):r<.6?.52:.52*(1-ss((r-.6)/.4))}
+        o.fall=Math.max(o.fall,fl);if(d>=up)o.wob=Math.max(o.wob,.5*(1-Math.min(1,(d-up)/(LAB_RISE+.8))))}});
     if(stopBeat&&at>=stopBeat.at&&!res.decision){const d=at-stopBeat.at;
       if(res.w===1-i){if(res.type==='KO')o.fall=Math.min(1,d/.35);else o.wob=Math.max(o.wob,.7)}
       if(res.w===i&&d<.42){o.punch={hand:'rear',type:'cross',e:Math.sin(Math.PI*d/.42),low:false};o.lunge=o.punch.e}
@@ -1286,7 +1295,9 @@ function labDraw(at,tl){const cv=$('#labCv');if(!cv)return;const g=cv.getContext
   P.forEach(p=>{if(p.cel){p.lead=[30,-292+Math.sin(at*7)*6];p.rear=[2,-288+Math.cos(at*7)*6];p.leadUp=p.rearUp=true}});
   // camera shake and zoom on big shots
   const big=tl.beats.find(b=>['kd','st','ko'].includes(b.k)&&at-b.at>.15&&at-b.at<.45);
-  const kdNow=tl.beats.find(b=>b.k==='kd'&&at-b.at>=0&&at-b.at<1.6);
+  const kdNow=tl.beats.find(b=>b.k==='kd'&&at-b.at>=0&&at-b.at<(b.dur||1.6));
+  /* the count on screen and the referee's arm: one drop per number */
+  const cntB=tl.beats.find(b=>(b.k==='kd'||b.k==='ko')&&b.cs!=null&&at>=b.cs&&at<b.cs+b.cnt*LAB_CNT+.35);labRefPh=cntB?(at-cntB.cs)/LAB_CNT:null;
   const zoom=1+(kdNow?.06*Math.min(1,(at-kdNow.at)*4):0)+(fin&&res&&!res.decision?.04:0)+(inReplay?.22:0)+(intro?.05*(1-at/LAB_INTRO):0);
   g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,W,H);
   const gfx=l3gfx();
@@ -1395,7 +1406,7 @@ function labDraw(at,tl){const cv=$('#labCv');if(!cv)return;const g=cv.getContext
   const st=tl.beats.find(b=>b.k==='st'&&at-b.at>=0&&at-b.at<1.1),bell=tl.beats.find(b=>b.k==='bell'&&at-b.at>=0&&at-b.at<3.1);
   if(!fin){
     if(at-cur.start>=0&&at-cur.start<.6&&!bell){const k=(at-cur.start)/.6;g.globalAlpha=Math.min(1,(1-k)*3);labBigText(g,at-cur.start<.35?'ROUND '+cur.n:'FIGHT!',cx,150,52+k*10,'#ffd23f','#c47f00');g.globalAlpha=1}
-    if(kdNow){labBigText(g,'KNOCKDOWN!',cx,210,78,'#ffd23f','#c47f00');const n=Math.min(9,Math.floor((at-kdNow.at)/.16)+1);labBigText(g,String(n),cx,290,64,'#ffffff','#9aa0aa')}
+    if(kdNow){labBigText(g,'KNOCKDOWN!',cx,105,62,'#ffd23f','#c47f00');const n=Math.min(kdNow.cnt||9,Math.floor((at-kdNow.cs)/LAB_CNT));if(n>=1)labBigText(g,String(n),cx+300,200,72,'#ffffff','#9aa0aa')}
     else if(st)labBigText(g,'STUNNED!',cx,220,62,'#ff9e4a','#c4121f');
     else if(bell){if(at-bell.at<1.1)labBigText(g,'DING DING!',cx,212,50,'#ffffff','#9aa0aa');const R=(tl.rounds.find(r=>r.n===bell.round)||{}).R;
       if(R&&R.st){g.save();g.fillStyle='rgba(8,10,16,.82)';g.beginPath();g.roundRect(cx-210,236,420,78,8);g.fill();g.strokeStyle='#d4af37';g.lineWidth=2;g.stroke();
@@ -1542,9 +1553,14 @@ function lab3D(g,o){const{at,realAt,P,X,tl,f,res,stopBeat,kdNow,big,zoom,inRepla
   const CAMS=[[.4,325,180],[-.4,325,180],[.22,370,200],[.6,320,172],[-.25,385,210]],between0=!intro&&!fin&&cur&&at>=cur.end-.05,cam=between0?[.1,760,340]:CAMS[((cur?cur.n:1)-1)%CAMS.length];
   let yaw=cam[0]+Math.sin(realAt*.07)*.12+(1-ease)*1.1,dist=cam[1]+(1-ease)*520,hgt=cam[2]+(1-ease)*300,tx=mid;
   if(inReplay){const lo=res.w==null?0:1-res.w;tx=Xw[lo]*.6+mid*.4;dist=420;hgt=160;yaw=-.55+Math.sin(realAt*.4)*.12}
+  /* during a referee's count the camera eases back and down to frame the man on the canvas and the referee over him (owner, Nov 15, 2026) */
+  let lookY=intro?170:198;
+  {const cb=!inReplay&&tl.beats.find(b=>(b.k==='kd'||b.k==='ko')&&b.cs!=null&&at>=b.at+.3&&at<b.at+b.dur+(b.k==='ko'?1.5:0));
+    if(cb){const dn=1-cb.a,dir=dn?-1:1,w=Math.min(1,(at-cb.at-.3)/.5,(cb.at+(cb.dur+(cb.k==='ko'?1.5:0))-at)/.5),e=w*w*(3-2*w);
+      tx=tx+(Xw[dn]-dir*45-tx)*e;dist=dist+(470-dist)*e;yaw=yaw+(.12-yaw)*e;hgt=hgt+(250-hgt)*e;lookY=lookY+(120-lookY)*e}}
   if(fin&&!inReplay){yaw+=Math.min(1,(at-(tl.beats[tl.beats.length-1].at))*.15)*.25}
   dist/=zoom;
-  const T=[tx,intro?170:198,0];let C=[tx+Math.sin(yaw)*dist,hgt,-Math.cos(yaw)*dist];
+  const T=[tx,lookY,0];let C=[tx+Math.sin(yaw)*dist,hgt,-Math.cos(yaw)*dist];
   if(big&&!inReplay)C=l3add(C,[(Math.random()-.5)*14,(Math.random()-.5)*10,0]);
   const fw=l3norm(l3sub(T,C)),rt=l3norm(l3cross([0,1,0],fw)),up=l3cross(fw,rt),foc=L3H*1.32;
   const proj=v=>{const d=l3sub(v,C),z=l3dot(d,fw);if(z<20)return null;return[Math.round(L3W/2+l3dot(d,rt)*foc/z),Math.round(L3H/2-l3dot(d,up)*foc/z),z]};
@@ -1591,7 +1607,7 @@ function lab3D(g,o){const{at,realAt,P,X,tl,f,res,stopBeat,kdNow,big,zoom,inRepla
     hits[i]={head:lift(b.head),chest:lift(b.chest),hip:lift(b.hip)}});
   {const kdF=kdNow?1-kdNow.a:null,stopX=stopBeat&&at>=stopBeat.at&&!res.decision?Xw[1-res.w]+(res.w?-70:70):null,rx=kdNow?Xw[kdF]+(kdF?60:-60):stopX!=null?stopX:mid-(C[0]-tx)/Math.max(1,dist)*150+Math.sin(at*.37)*40; // the referee works the far side, away from the camera
     const count=!!kdNow||(stopBeat&&at>=stopBeat.at&&res.type==='KO'),rp={seed:5,lean:0,hug:0,lunge:0,snap:0,tired:0,bodyHit:0,guardDrop:30,fall:0,wob:0,cel:0,
-      rear:count?[24,-200+Math.abs(Math.sin(at*5.5))*-60]:[18,-130],lead:[22,-135],rearUp:!!count};
+      rear:count?[24,-200+labRefArm(at)*-60]:[18,-130],lead:[22,-135],rearUp:!!count};
     shadow(rx,200,36,22);const before=F.length;l3body(F,{cam:C,zoff:200,p:rp,x0:rx,dirX:rx<mid?1:-1,Lz:-1,at,col:l3col({sk:'#d9a066',skD:'#a8714a'},true),ref:true});
     for(let q=before;q<F.length;q++){F[q].v=F[q].v.map(v=>[v[0],v[1]+mat,v[2]+200]);if(F[q].pc)F[q].pc=[F[q].pc[0],F[q].pc[1]+mat,F[q].pc[2]+200];F[q].layer=2}}
   // shade, cull, fog, sort and draw
@@ -1846,7 +1862,7 @@ function labGLScene(g,o){const G=glInit();if(!G)return null;const{gl,loc}=G,{C,T
   [0,1].forEach(i=>{const b=glBody(M,{p:P[i],x0:Xw[i],y0:mat,dirX:i?-1:1,Lz:i?1:-1,at,K:glKit(LAB_SKIN[i],i)});hits[i]={head:b.head,chest:b.chest,hip:b.hip}});
   const kdF=kdNow?1-kdNow.a:null,stopX=stopBeat&&at>=stopBeat.at&&!res.decision?Xw[1-res.w]+(res.w?-70:70):null,tx=o.tx,dist=o.dist,rx=kdNow?Xw[kdF]+(kdF?60:-60):stopX!=null?stopX:mid-(C[0]-tx)/Math.max(1,dist)*150+Math.sin(at*.37)*40;
   const count=!!kdNow||(stopBeat&&at>=stopBeat.at&&res.type==='KO');
-  glBody(M,{p:{seed:5,lean:0,hug:0,lunge:0,snap:0,tired:0,bodyHit:0,guardDrop:30,fall:0,wob:0,cel:0,rear:count?[24,-200+Math.abs(Math.sin(at*5.5))*-60]:[18,-130],lead:[22,-135],rearUp:!!count},x0:rx,y0:mat,z0:200,dirX:rx<mid?1:-1,Lz:-1,at,ref:true,K:glRefKit('#d9a066')});
+  glBody(M,{p:{seed:5,lean:0,hug:0,lunge:0,snap:0,tired:0,bodyHit:0,guardDrop:30,fall:0,wob:0,cel:0,rear:count?[24,-200+labRefArm(at)*-60]:[18,-130],lead:[22,-135],rearUp:!!count},x0:rx,y0:mat,z0:200,dirX:rx<mid?1:-1,Lz:-1,at,ref:true,K:glRefKit('#d9a066')});
   if(intro)glBody(M,{p:{seed:9,lean:0,hug:0,lunge:0,snap:0,tired:0,bodyHit:0,guardDrop:0,fall:0,wob:0,cel:0,rear:[8,-262+Math.sin(realAt*4)*6],lead:[16,-130],rearUp:true},x0:0,y0:mat,z0:-40,fx:0,fz:-1,sx:1,sz:0,dirX:1,Lz:-1,at,ref:true,K:{...glRefKit('#c68e5d'),shirt:[24,24,28,.2],trunk:[24,24,28,.1],band:[24,24,28,.1],tie:[200,16,46,.3],hair:[28,18,10,.1]}});
   const dyn=G.dyn||(G.dyn={bufs:['aP','aN','aC','aT'].map((a,i)=>[a,gl.createBuffer(),[3,3,4,2][i]])});
   [M.p,M.n,M.c,M.t].forEach((d,i)=>{gl.bindBuffer(gl.ARRAY_BUFFER,dyn.bufs[i][1]);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(d),gl.DYNAMIC_DRAW)});dyn.n=M.p.length/3;
@@ -1899,8 +1915,13 @@ function labBedStart(){const c=labSndCtx();if(!c||LSND.bed)return;const f=labCro
   const l2=c.createBiquadFilter();l2.type='lowpass';l2.frequency.value=1800;const g=c.createGain();g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(.05+f*.17,t+1.2);
   const lfo=c.createOscillator(),lg=c.createGain();lfo.frequency.value=.23;lg.gain.value=.02+f*.04;lfo.connect(lg);lg.connect(g.gain);lfo.start(); // the murmur rises and falls
   s.connect(l);l.connect(l2);l2.connect(g);g.connect(LSND.master);s.start();LSND.bed={s,lfo};LSND.bedG=g}
-function labSndStop(){if(LSND.bed&&LSND.ctx){const t=LSND.ctx.currentTime,b=LSND.bed;LSND.bedG.gain.cancelScheduledValues(t);LSND.bedG.gain.setTargetAtTime(0.0001,t,.3);setTimeout(()=>{try{b.s.stop();b.lfo.stop()}catch(e){}},1500)}LSND.bed=null}
-function labSndPause(p){if(LSND.ctx){if(p)LSND.ctx.suspend();else if(labSndOn())LSND.ctx.resume()}}
+/* the referee's voice: the browser's own speech (no recorded files); off with the Sound button */
+const LAB_WORDS=['One!','Two!','Three!','Four!','Five!','Six!','Seven!','Eight!','Nine!','Ten!'];let labVoice;
+function labSay(w){if(!labSndOn())return;const S=window.speechSynthesis;if(!S||typeof SpeechSynthesisUtterance==='undefined')return;
+  try{if(labVoice===undefined){const vs=S.getVoices().filter(v=>/^en/i.test(v.lang));labVoice=vs.find(v=>/male|david|daniel|fred|alex|guy|george|james/i.test(v.name)&&!/female/i.test(v.name))||vs[0]||null;if(!S.getVoices().length)labVoice=undefined}
+    S.cancel();const u=new SpeechSynthesisUtterance(w);if(labVoice)u.voice=labVoice;u.lang='en-US';u.rate=1.15;u.pitch=.7;u.volume=1;S.speak(u)}catch(e){}}
+function labSndStop(){try{window.speechSynthesis&&speechSynthesis.cancel()}catch(e){}if(LSND.bed&&LSND.ctx){const t=LSND.ctx.currentTime,b=LSND.bed;LSND.bedG.gain.cancelScheduledValues(t);LSND.bedG.gain.setTargetAtTime(0.0001,t,.3);setTimeout(()=>{try{b.s.stop();b.lfo.stop()}catch(e){}},1500)}LSND.bed=null}
+function labSndPause(p){try{if(window.speechSynthesis)p?speechSynthesis.pause():speechSynthesis.resume()}catch(e){}if(LSND.ctx){if(p)LSND.ctx.suspend();else if(labSndOn())LSND.ctx.resume()}}
 /* one call per beat from the playback loop */
 function labSfx(b){const c=labSndCtx();if(!c)return;const t=c.currentTime+.01;
   switch(b.k){case 'j':labPunchSnd(c,t,'j');break;case 'r':labPunchSnd(c,t,'r');break;case 'p':labPunchSnd(c,t,'p');labCheer(c,t+.05,.25,.9);break;
@@ -1908,7 +1929,9 @@ function labSfx(b){const c=labSndCtx();if(!c)return;const t=c.currentTime+.01;
     case 'cl':labNoise(c,t,.12,{f:400,g:.25});break;case 'i':labPunchSnd(c,t,'r');labCheer(c,t,.4,1.2);break;
     case 'st':labPunchSnd(c,t,'st');labRoar(c,t+.05,.9,2.6);break;
     case 'kd':labPunchSnd(c,t,'kd');labNoise(c,t+.35,.25,{f:250,g:.7});labRoar(c,t+.1,1.2,3.6);break; // the punch, the body hitting the canvas, the roar
-    case 'ko':case 'stop':labPunchSnd(c,t,'ko');labNoise(c,t+.4,.3,{f:220,g:.8});labRoar(c,t+.1,1.4,5);labBell(c,t+1.2,4);break;
+    case 'ko':labPunchSnd(c,t,'ko');labNoise(c,t+.4,.3,{f:220,g:.8});labRoar(c,t+.1,1.4,5);break; // the ten-count bell rings after the referee reaches ten
+    case 'stop':labPunchSnd(c,t,'ko');labNoise(c,t+.4,.3,{f:220,g:.8});labRoar(c,t+.1,1.4,5);labBell(c,t+1.2,4);break;
+    case 'cnt':labSay(b.out&&b.last?'Ten! You\'re out!':LAB_WORDS[b.n-1]);if(b.out&&b.last){labBell(c,t+.9,4);labRoar(c,t+.6,1.3,4.5)}break;
     case 'bell':labBell(c,t,1);labCheer(c,t,.2,1.2);break;case 'start':labBell(c,t,1);break;
     case 'final':if(b.win===false){labCheer(c,t,.5,2.5);break}labRoar(c,t,1.5,5.5);labRoar(c,t+1.6,1.1,4);labCheer(c,t+.3,1,5);break}}
 
