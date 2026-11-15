@@ -813,7 +813,8 @@ var RunnerLib = (() => {
         unmatched = [];
         for (const h of free(false)) {
           if (h.F.deleteAfter) continue;
-          const date = humanNight(C, h.F.div, today, mins);
+          const debut = h.reg === "rk" && !(h.F.rec || []).slice(0, 3).some((x) => x > 0) && !(h.F.hist || []).some((x) => x.bout);
+          const date = debut ? mins <= 10 * 60 + 40 ? today : addDays(today, 1) : humanNight(C, h.F.div, today, mins);
           if (!date) continue;
           const seen = new Set((h.F.hist || []).filter((x) => x.bout).map((x) => x.opp + "|" + x.ogym));
           const lastGym = ((h.F.hist || []).find((x) => x.bout) || {}).ogym;

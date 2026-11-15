@@ -823,7 +823,7 @@ function condText(x,after){
 /* ================= SHARED DATA (Supabase: accounts, forums, messages) ================= */
 cleanSlate();
 const SB_URL='https://ojsphhzgzbxmnfcbitqb.supabase.co',SB_KEY='sb_publishable_SWO9WhiSkoVhflY5CmY08A_hlqCEJSi';
-const BUILD='1794746055';
+const BUILD='1794746662';
 /* A tab left open on an older build must not save over newer data: if the site has been updated, reload before anything else is saved. */
 let staleBuild=false;
 async function checkBuild(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
@@ -2901,6 +2901,7 @@ const HELP_BODY={
   <p>There are two regions: <b>Contenders</b> (the regular game) and <b><a data-go="help:bk">Bare Knuckles</a></b>. You pick a fighter's region when you create him, and it can't be changed. Each region has its own rankings and its own WBC, WBA and WBO world titles in every division.</p>`,
  rookies:()=>`<p>The Rookies region is where new managers learn the game. A new gym's first fighter starts here (you can pick another region on the <a data-go="create">Create a Fighter</a> page).</p>
   <ul><li><b>Same fights as Contenders:</b> 12 rounds, judges decide, the same plans and styles. Everything you learn carries over.</li>
+  <li><b>Fast debut:</b> a brand-new rookie doesn't wait for his division's night. His first fight goes on the next nightly card with at least 12 hours' notice, usually the same night or the next. After that he fights once a week on his division's night.</li>
   <li><b>Opponents:</b> rookie fighters from other gyms. They're beatable, but they won't hand you wins, and they learn from their own fights.</li>
   <li><b>Rating and status top out at 18.</b> No title fights in Rookies.</li>
   <li><b>Graduation:</b> once a rookie reaches status 18 or has fought 100 rookie fights, he gets no more Rookies bouts. His page then offers two choices: <b>move him up to Contenders</b> (he keeps his abilities, record and rating) or <b>retire him</b>.</li>

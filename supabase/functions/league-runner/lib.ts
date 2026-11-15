@@ -324,7 +324,10 @@ export async function handle(req: Request, client: any, C: any): Promise<Respons
       unmatched = [];
       for (const h of free(false)) {
         if (h.F.deleteAfter) continue;
-        const date = humanNight(C, h.F.div, today, mins); if (!date) continue;
+        // fast debut (owner, Nov 15, 2026): a brand-new rookie fights on the next nightly card, whatever his division's night,
+        // with at least 12 hours' notice (tonight's card if it's before 10:40 AM, otherwise tomorrow night's)
+        const debut = h.reg === "rk" && !(h.F.rec || []).slice(0, 3).some((x: number) => x > 0) && !(h.F.hist || []).some((x: any) => x.bout);
+        const date = debut ? (mins <= 10 * 60 + 40 ? today : addDays(today, 1)) : humanNight(C, h.F.div, today, mins); if (!date) continue;
         const seen = new Set((h.F.hist || []).filter((x: any) => x.bout).map((x: any) => x.opp + "|" + x.ogym));
         const lastGym = ((h.F.hist || []).find((x: any) => x.bout) || {}).ogym;
         // a bot is open if he's free, or his last booked fight is 3+ days before this one, or his bot-vs-bot bout is on/after this night (it gets cancelled)
