@@ -588,7 +588,7 @@ function labHTML(){const L=labState();
   <p class="labBtns"><button class="labGo" data-lab="fight">🥊 FIGHT!</button> <button data-lab="sim">Run it 100 times</button> <span class="cr" id="labErr"></span></p>
   <div id="labStage"${L.fight?'':' style="display:none"'}><div class="labCvWrap"><canvas id="labCv" width="960" height="540"></canvas></div>
   <div id="labTick" class="labTick"></div>
-  <p class="labCtl"><button data-lab="pause" id="labPause">Pause</button> <button data-lab="skip">Skip to the end</button> <button data-lab="replay">Watch again</button> <button data-lab="report">Full report</button> <button data-lab="share">Share to Simbot Chat</button> <button data-lab="gfx" class="labGfx">${L3GFX_NAMES[l3gfx()]||'Graphics'}</button></p>
+  <p class="labCtl"><button data-lab="pause" id="labPause">Pause</button> <button data-lab="skip">Skip to the end</button> <button data-lab="replay">Watch again</button> <button data-lab="report">Full report</button> <button data-lab="share">Share to Simbot Chat</button> <button data-lab="gfx" class="labGfx">${L3GFX_NAMES[l3gfx()]||'Graphics'}</button> <button data-lab="snd" class="labSnd">${labSndOn()?'🔊 Sound On':'🔇 Sound Off'}</button></p>
   <div id="labRep"></div></div>
   <div id="labSim"></div>
   <h2>Simbot Chat</h2><div id="labChat" class="labChat"><p class="mute">Loading...</p></div>
@@ -624,10 +624,11 @@ function labClick(e){const t=e.target.closest('button');if(!t)return;const L=lab
   const a=t.dataset.lab;if(!a)return;
   if(a==='fight'||a==='replay'&&!L.fight)return labFight();
   if(a==='replay')return labPlay();
-  if(a==='pause'){if(!labAnim)return;labAnim.paused=!labAnim.paused;if(!labAnim.paused)labAnim.t0=performance.now()-labAnim.at*1000;t.textContent=labAnim.paused?'Play':'Pause';return}
-  if(a==='skip'){if(labAnim){labAnim.stop=true;labAnim=null}labDraw(1e9);labTickAll();return}
+  if(a==='pause'){if(!labAnim)return;labAnim.paused=!labAnim.paused;labSndPause(labAnim.paused);if(!labAnim.paused)labAnim.t0=performance.now()-labAnim.at*1000;t.textContent=labAnim.paused?'Play':'Pause';return}
+  if(a==='skip'){if(labAnim){labAnim.stop=true;labAnim=null}labSndStop();labDraw(1e9);labTickAll();return}
   if(a==='report'){const r=$('#labRep');if(r.innerHTML){r.innerHTML='';return}r.innerHTML=`<div class="rep">${reportHTML(L.fight,L.bout,L.fight.rounds.length)}</div>`;return}
   if(a==='gfx')return labToggleGfx(t);
+  if(a==='snd')return labToggleSnd();
   if(a==='sim')return labSim();
   if(a==='send')return labSend();
   if(a==='share')return labShare();
@@ -677,12 +678,15 @@ function labBeats(f){const L=labState(),sched=f.rounds.length&&L.bout?L.bout.rou
 }
 function labPlay(){const L=labState();if(!L.fight)return;if(labAnim)labAnim.stop=true;
   $('#labTick').innerHTML='';$('#labPause').textContent='Pause';
-  const tl=labBeats(L.fight);labAnim={tl,t0:performance.now(),at:0,shown:0,paused:false,stop:false};const me=labAnim;
-  const step=now=>{if(me.stop)return;if(!me.paused)me.at=(now-me.t0)/1000;
-    while(me.shown<tl.beats.length&&tl.beats[me.shown].at<=me.at)labTick(tl.beats[me.shown++]);
-    labDraw(me.at,tl);if(me.at<tl.total)requestAnimationFrame(step);else if(labAnim===me)labAnim=null};
+  const tl=labBeats(L.fight);labAnim={tl,t0:performance.now(),at:0,shown:0,rs:0,paused:false,stop:false};const me=labAnim;
+  labSndStop();labSndPause(false);labBedStart();
+  const step=now=>{if(me.stop){if(!labAnim)labSndStop();return}if(!me.paused)me.at=(now-me.t0)/1000;
+    while(me.rs<tl.rounds.length&&tl.rounds[me.rs].start<=me.at){if(me.at-tl.rounds[me.rs].start<.5)labSfx({k:'start'});me.rs++}
+    while(me.shown<tl.beats.length&&tl.beats[me.shown].at<=me.at){const b=tl.beats[me.shown++];labTick(b);if(me.at-b.at<.5)labSfx(b)}
+    labDraw(me.at,tl);if(me.at<tl.total)requestAnimationFrame(step);else{labSndStop();if(labAnim===me)labAnim=null}};
   requestAnimationFrame(step);
 }
+function labToggleSnd(){labSndSet(!labSndOn());document.querySelectorAll('.labSnd').forEach(b=>b.textContent=labSndOn()?'🔊 Sound On':'🔇 Sound Off');if(labSndOn()&&labAnim&&!labAnim.paused){labSndCtx();labBedStart()}}
 function labToggleGfx(t){l3setGfx(l3nextGfx());document.querySelectorAll('.labGfx').forEach(b=>b.textContent=L3GFX_NAMES[l3gfx()]);if(!labAnim)labDraw(1e9)}
 function labTick(b){const el=$('#labTick');if(!el||!b.txt)return;const p=document.createElement('p');
   p.className='lt '+(b.k==='final'?'ltF':b.k==='bell'?'ltB':['kd','ko','stop','st'].includes(b.k)?'ltBig':b.a===0?'ltR':b.a===1?'ltBl':'');
@@ -832,7 +836,7 @@ function labDraw(at,tl){const cv=$('#labCv');if(!cv)return;const g=cv.getContext
   [[170,'rgba(255,236,190,'],[480,'rgba(255,250,235,'],[790,'rgba(255,236,190,']].forEach(([x,c])=>{const gr=g.createLinearGradient(0,16,0,330);gr.addColorStop(0,c+'.22)');gr.addColorStop(1,c+'0)');g.fillStyle=gr;
     g.beginPath();g.moveTo(x-16,16);g.lineTo(x+16,16);g.lineTo(x+150,330);g.lineTo(x-150,330);g.closePath();g.fill();g.fillStyle='#fffbe8';g.beginPath();g.ellipse(x,17,14,5,0,0,7);g.fill()});
   const flash=tl.beats.some(b=>['kd','ko','st'].includes(b.k)&&at>=b.at&&at-b.at<1.3)||(fin&&at-lastBeat.at<2);
-  LAB_CROWD.forEach(q=>{const jump=flash?Math.abs(Math.sin(at*10+q.f*20))*5*q.sz:Math.sin(at*2+q.f*9)*q.sz;const y=q.y-jump;
+  const fill2=labCrowdFill();LAB_CROWD.forEach(q=>{if(q.f>fill2*1.15-(q.y-74)/700)return;const jump=flash?Math.abs(Math.sin(at*10+q.f*20))*5*q.sz:Math.sin(at*2+q.f*9)*q.sz;const y=q.y-jump;
     g.fillStyle=q.sh;g.beginPath();g.ellipse(q.x,y+16*q.sz,13*q.sz,11*q.sz,0,Math.PI,2*Math.PI);g.fill();g.fillRect(q.x-13*q.sz,y+16*q.sz,26*q.sz,10*q.sz);
     g.fillStyle=q.sk;g.beginPath();g.arc(q.x,y,7*q.sz,0,7);g.fill();if(q.hat){g.fillStyle='#222';g.fillRect(q.x-8*q.sz,y-8*q.sz,16*q.sz,4*q.sz)}
     if(q.sign){const sy=y-26*q.sz-(flash?Math.abs(Math.sin(at*8+q.f*9))*6:0);g.fillStyle='#fdfdf5';g.fillRect(q.x-22*q.sz,sy-12*q.sz,44*q.sz,18*q.sz);g.strokeStyle='#333';g.lineWidth=1;g.strokeRect(q.x-22*q.sz,sy-12*q.sz,44*q.sz,18*q.sz);
@@ -901,7 +905,7 @@ function labDraw(at,tl){const cv=$('#labCv');if(!cv)return;const g=cv.getContext
       g.textAlign=i?'right':'left';const tx=i?380:20;g.fillStyle='#fff';g.font="italic 900 30px Impact, 'Arial Black', sans-serif";g.fillText((L.names[i]||'').toUpperCase().slice(0,20),tx,46);
       g.font="bold 15px Verdana, sans-serif";g.fillStyle='#ffd23f';g.fillText(i?'BLUE CORNER':'RED CORNER',tx,74);g.fillStyle='#eee';g.font="14px Verdana, sans-serif";
       g.fillText(`Record ${r[0]}-${r[1]}-${r[2]}`,tx,100);if(F.hgt!=null)g.fillText(`Height ${Math.floor(HT(F)/12)}' ${HT(F)%12}"`+(F.fightW?`   Weight ${F.fightW} lb`:''),tx,122);if(gy[i])g.fillText(String(gy[i]).slice(0,34),tx,144);g.restore()});
-    g.globalAlpha=1-out;labBigText(g,'VS',cx,258,86,'#ffd23f','#c47f00');g.font="italic 900 18px Impact, 'Arial Black', sans-serif";g.textAlign='center';g.fillStyle='#fff';g.fillText('TALE OF THE TAPE',cx,348);g.globalAlpha=1}
+    g.globalAlpha=1-out;labBigText(g,'VS',cx,258,86,'#ffd23f','#c47f00');g.font="italic 900 18px Impact, 'Arial Black', sans-serif";g.textAlign='center';g.fillStyle='#fff';g.fillText('TALE OF THE TAPE',cx,348);{const v=labVenue(),so=v.att>=v.cap;g.font="bold 16px Verdana, sans-serif";g.fillStyle='#ffd23f';g.fillText(`${v.name}${v.city?', '+v.city:''}`,cx,384);g.fillStyle=so?'#ff5a5a':'#ffffff';g.font="bold 15px Verdana, sans-serif";g.fillText(so?`SOLD OUT: ${v.cap.toLocaleString('en-US')} seats`:`Attendance ${v.att.toLocaleString('en-US')} of ${v.cap.toLocaleString('en-US')} seats`,cx,408)}g.globalAlpha=1}
   // HUD: arcade energy bars and round badge (3D mode: a slim late-'90s console HUD across the top instead)
   if(gfx==='3d')labHud32(g,{P,at,cur,res,tl,names:L.names,W,cx});else{
   const bar=(x,al,i)=>{const p=P[i],e=Math.max(0,Math.min(1,p.en));g.save();
@@ -1556,22 +1560,23 @@ function sbViewHTML(id){
   if(!r.result||!r.result.f||!(r.result.f.rounds||[]).some(R=>(R.lines||[]).some(x=>x.k)))
     return`<h1>Simbot View</h1><p>This fight can't be shown in the arena (no round-by-round report was kept for it).</p><p><a data-go="lreport:${id}">Read the fight report</a></p>`;
   const f=r.result.f,b=r.result.b,names=f.S.map(x=>x.F.name);
-  if(!LABV||sbvKey!==String(id)){sbvKey=String(id);LABV={fight:f,names,bout:{...b,rounds:b.rounds||r.rounds||12},speed:(LABV&&LABV.speed)||60,plans:['','']}}
+  if(!LABV||sbvKey!==String(id)){sbvKey=String(id);LABV={fight:f,names,bout:{...b,rounds:b.rounds||r.rounds||12,venue:r.venue||null,att:(r.summary||{}).att||null},speed:(LABV&&LABV.speed)||60,plans:['','']}}
   const sp=LABV.speed,res=f.result;
   return`<div id="sbv"><h1>Simbot View</h1>
   <p class="labIntro"><b class="red">${esc(names[0])}</b> (${esc((b.gyms||[])[0]||'')}) vs <b class="navy">${esc(names[1])}</b> (${esc((b.gyms||[])[1]||'')}), ${esc(r.div)}weight, ${esc(b.date||'')}.</p>
   <div id="labStage"><div class="labCvWrap"><canvas id="labCv" width="960" height="540"></canvas></div>
   <div id="labTick" class="labTick"></div>
   <p class="labCtl"><button data-lab="pause" id="labPause">Pause</button> <button data-lab="skip">Skip to the end</button> <button data-lab="replay">Watch again</button>
-  <button data-lab="gfx" class="labGfx">${L3GFX_NAMES[l3gfx()]||'Graphics'}</button> </p>
+  <button data-lab="gfx" class="labGfx">${L3GFX_NAMES[l3gfx()]||'Graphics'}</button> <button data-lab="snd" class="labSnd">${labSndOn()?'🔊 Sound On':'🔇 Sound Off'}</button> </p>
   <p><a data-go="lreport:${id}">Read the full fight report</a> | <a data-go="fcards">Recent Fight Cards</a> | <a data-go="simbot">Simbot</a></p></div></div>`}
-function sbMount(){const root=$('#sbv');if(!root||!LABV)return;
+function sbMount(){const root=$('#sbv');if(!root||!LABV)return;if(root.dataset.on)return;root.dataset.on='1';
   root.addEventListener('click',e=>{const a=e.target.closest('[data-sbspeed]');if(a){LABV.speed=+a.dataset.sbspeed;if(labAnim){labAnim.stop=true;labAnim=null}render();return}
     const t=e.target.closest('button');if(!t)return;const d=t.dataset.lab;
     if(d==='gfx')return labToggleGfx(t);
+    if(d==='snd')return labToggleSnd();
     if(d==='replay')return labPlay();
-    if(d==='pause'){if(!labAnim)return;labAnim.paused=!labAnim.paused;if(!labAnim.paused)labAnim.t0=performance.now()-labAnim.at*1000;t.textContent=labAnim.paused?'Play':'Pause';return}
-    if(d==='skip'){if(labAnim){labAnim.stop=true;labAnim=null}labDraw(1e9);labTickAll();return}});
+    if(d==='pause'){if(!labAnim)return;labAnim.paused=!labAnim.paused;labSndPause(labAnim.paused);if(!labAnim.paused)labAnim.t0=performance.now()-labAnim.at*1000;t.textContent=labAnim.paused?'Play':'Pause';return}
+    if(d==='skip'){if(labAnim){labAnim.stop=true;labAnim=null}labSndStop();labDraw(1e9);labTickAll();return}});
   if(!labAnim)labPlay()} /* a data refresh re-renders the page; the running highlight keeps going on the new canvas */
 function leagueReportHTML(id){
   const r=lrep[id];

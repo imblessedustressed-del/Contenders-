@@ -138,7 +138,7 @@ function lab3D(g,o){const{at,realAt,P,X,tl,f,res,stopBeat,kdNow,big,zoom,inRepla
   const proj=v=>{const d=l3sub(v,C),z=l3dot(d,fw);if(z<20)return null;return[Math.round(L3W/2+l3dot(d,rt)*foc/z),Math.round(L3H/2-l3dot(d,up)*foc/z),z]};
   const R=300,mat=48;let lamps=[],hits=[];
   /* WebGL path (owner, Nov 14: "way more realistic"): smooth-shaded sculpted fighters on the graphics card; the software renderer below is the fallback */
-  const glr=labGLScene(g,{C,T,P,Xw,mid,at,realAt,intro,fin,res,stopBeat,kdNow,tl,cur,mat,R,dist,tx});
+  const glr=labGLScene(g,{C,T,P,Xw,mid,at,realAt,intro,fin,res,stopBeat,kdNow,tl,cur,mat,R,dist,tx,fill:labCrowdFill()});
   if(glr){lamps=glr.lamps;hits=glr.hits}else{
   const F=[];
   // arena floor and the dark bowl
@@ -195,7 +195,7 @@ function lab3D(g,o){const{at,realAt,P,X,tl,f,res,stopBeat,kdNow,big,zoom,inRepla
   out.sort((a,b)=>a.layer-b.layer||b.z-a.z);
   let crowdDone=false;
   const crowd=()=>{crowdDone=true;const fl=tl.beats.some(b=>['kd','ko','st'].includes(b.k)&&at>=b.at&&at-b.at<1.3)||fin;
-    const cs=L3CROWD.map(q=>{const jump=fl?Math.abs(Math.sin(realAt*10+q.f*20))*7:Math.sin(realAt*2+q.f*9)*1.5;const pp=proj([q.p[0],q.p[1]+18+jump,q.p[2]]);return pp?{q,pp}:null}).filter(Boolean).sort((a,b)=>b.pp[2]-a.pp[2]);
+    const fillS=labCrowdFill();const cs=L3CROWD.filter(q=>q.f<=fillS*1.15-(q.p[1]/1400)).map(q=>{const jump=fl?Math.abs(Math.sin(realAt*10+q.f*20))*7:Math.sin(realAt*2+q.f*9)*1.5;const pp=proj([q.p[0],q.p[1]+18+jump,q.p[2]]);return pp?{q,pp}:null}).filter(Boolean).sort((a,b)=>b.pp[2]-a.pp[2]);
     cs.forEach(({q,pp})=>{const sc=foc/pp[2],fog=Math.max(0,Math.min(.8,(pp[2]-900)/1500)),mix=(cc,s)=>`rgb(${cc.map((x,j)=>Math.round(x*s*(1-fog)+L3FOG[j]*fog)).join(',')})`;
       const bw=Math.max(1,Math.round(22*sc)),bh=Math.max(1,Math.round(22*sc)),hd=Math.max(1,Math.round(11*sc));
       c.fillStyle=mix([40,70,170],.8);c.fillRect(pp[0]-bw*.7|0,pp[1]-bh*.9|0,Math.max(1,bw*1.4|0),Math.max(1,bh*1.5|0));
@@ -359,8 +359,8 @@ function glKit(c,i){const rgb=h=>l3rgb(h),sk=rgb(c.sk);return{skin:[...sk,.28],b
 function glRefKit(sk){const s=l3rgb(sk);return{skin:[...s,.2],shirt:[236,236,236,.1],trunk:[30,30,34,.1],band:[30,30,34,.1],boot:[18,18,20,.5],bootBand:[18,18,20,.5],lace:[18,18,20,.1],sole:[18,18,20,.1],tie:[20,20,24,.2],hair:[90,90,92,.1],hairStyle:'cap',glove:s,cuff:s}}
 const GL_VS=`attribute vec3 aP;attribute vec3 aN;attribute vec4 aC;attribute vec2 aT;uniform mat4 uVP;varying vec3 vN;varying vec4 vC;varying vec3 vW;varying vec2 vT;
 void main(){vN=aN;vC=aC;vW=aP;vT=aT;gl_Position=uVP*vec4(aP,1.0);}`;
-const GL_FS=`precision mediump float;varying vec3 vN;varying vec4 vC;varying vec3 vW;varying vec2 vT;uniform sampler2D uTex;uniform float uUseTex;uniform vec3 uEye;uniform float uAlpha;uniform float uEmis;uniform float uFlash;uniform float uScroll;
-void main(){vec3 n=normalize(vN);vec4 tx=vec4(1.0);if(uUseTex>0.5){tx=texture2D(uTex,vec2(vT.x+uScroll,vT.y));if(tx.a<0.5)discard;}vec3 V=normalize(uEye-vW);if(dot(n,V)<0.0&&uUseTex<0.5)n=-n;
+const GL_FS=`precision mediump float;varying vec3 vN;varying vec4 vC;varying vec3 vW;varying vec2 vT;uniform sampler2D uTex;uniform float uUseTex;uniform vec3 uEye;uniform float uAlpha;uniform float uEmis;uniform float uFlash;uniform float uScroll;uniform float uFill;uniform float uPeople;
+void main(){vec3 n=normalize(vN);vec4 tx=vec4(1.0);if(uUseTex>0.5){tx=texture2D(uTex,vec2(vT.x+uScroll,vT.y));if(tx.a<0.5)discard;if(uPeople>0.5&&uFill<0.985){float h=fract(sin(dot(vec2(floor((vT.x+uScroll)*32.0),floor(vW.y/30.0)+floor(vW.x/97.0)*0.0+floor(vW.z/1900.0)*13.0+floor(vW.x/2400.0)*7.0),vec2(12.9898,78.233)))*43758.5453);if(h>clamp(uFill*1.2+0.15-vW.y/1600.0,0.03,1.0))discard;}}vec3 V=normalize(uEye-vW);if(dot(n,V)<0.0&&uUseTex<0.5)n=-n;
 vec3 L1=normalize(vec3(-0.35,0.9,-0.45));vec3 L2=normalize(vec3(0.7,0.35,0.45));vec3 base=vC.rgb;if(uUseTex>0.5)base*=tx.rgb;
 float d1=max(dot(n,L1),0.0),d2=max(dot(n,L2),0.0),rim=pow(1.0-max(dot(n,V),0.0),2.5);vec3 H=normalize(L1+V);float sp=pow(max(dot(n,H),0.0),28.0)*vC.a;
 vec3 c=base*(0.30+0.78*d1+0.28*d2)+vec3(1.0,0.96,0.88)*sp*0.9+base*rim*0.45+vec3(uFlash);if(uEmis>0.5)c=base;
@@ -369,7 +369,7 @@ function glInit(){if(LGL!==null)return LGL;try{const cv=document.createElement('
     const gl=cv.getContext('webgl',{antialias:true,preserveDrawingBuffer:true,alpha:false});if(!gl)return LGL=false;
     const sh=(t,s)=>{const x=gl.createShader(t);gl.shaderSource(x,s);gl.compileShader(x);if(!gl.getShaderParameter(x,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(x));return x};
     const pr=gl.createProgram();gl.attachShader(pr,sh(gl.VERTEX_SHADER,GL_VS));gl.attachShader(pr,sh(gl.FRAGMENT_SHADER,GL_FS));gl.linkProgram(pr);if(!gl.getProgramParameter(pr,gl.LINK_STATUS))throw new Error('link');
-    const loc={};['aP','aN','aC','aT'].forEach(a=>loc[a]=gl.getAttribLocation(pr,a));['uVP','uTex','uUseTex','uEye','uAlpha','uEmis','uFlash','uScroll'].forEach(u=>loc[u]=gl.getUniformLocation(pr,u));
+    const loc={};['aP','aN','aC','aT'].forEach(a=>loc[a]=gl.getAttribLocation(pr,a));['uVP','uTex','uUseTex','uEye','uAlpha','uEmis','uFlash','uScroll','uFill','uPeople'].forEach(u=>loc[u]=gl.getUniformLocation(pr,u));
     const tex=img=>{const t=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,t);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,img);
       const pot=x=>(x&(x-1))===0;if(pot(img.width)&&pot(img.height)){gl.generateMipmap(gl.TEXTURE_2D);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.REPEAT);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE)}
       else{gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE)}return t};
@@ -387,13 +387,13 @@ function glInit(){if(LGL!==null)return LGL;try{const cv=document.createElement('
     for(let k=-2;k<=2;k++)for(const z of[-70,70]){glBox(st,[k*190,560,z],[26,18,26],[255,246,214,0])}
     // stands (owner, Nov 14: "make that part a little more realistic"): stepped rows with seats and people, aisles with stairs,
     // a railing in front, an upper deck behind a lit ribbon board, and a dark roof with the lighting truss
-    const crowdT=l3tex('crowdRows',1024,256,(t,w,h)=>{t.clearRect(0,0,w,h);const r=LAB_RNG(77),sh=['#b23a3a','#2f4fa8','#2f7d4a','#c7a33c','#6c6c6c','#7a3f8c','#d8d8d8','#a8642c','#1f6f7f','#c94f7c','#e2e2e2','#2b2b2b','#e07b2a','#5a8f2e'],sk=['#e8b98a','#c68e5d','#8d5524','#5c3a1e','#f1c9a5','#a8703f'],hr=['#2a1a0e','#111','#6b4b2a','#d8c070','#8a8a8a','#b0461c'];
-      for(let k=0;k<4;k++){const y0=k*64;for(let x=0;x<w;x+=32){t.fillStyle='#2a4bb0';t.fillRect(x+2,y0+34,28,30);t.fillStyle='#1b2f73';t.fillRect(x+2,y0+58,28,6);t.fillStyle='#3a5fd0';t.fillRect(x+2,y0+34,28,3);
-        if(r()<.88){const jx=x+4+r()*3,lean=(r()-.5)*3;t.fillStyle=sh[Math.floor(r()*sh.length)];t.beginPath();t.roundRect(jx+lean,y0+26,24,32,7);t.fill();
+    const crowdSeats=l3tex('crowdSeats',1024,256,(t,w,h)=>{t.clearRect(0,0,w,h);for(let k=0;k<4;k++){const y0=k*64;for(let x=0;x<w;x+=32){t.fillStyle='#2a4bb0';t.fillRect(x+2,y0+34,28,30);t.fillStyle='#1b2f73';t.fillRect(x+2,y0+58,28,6);t.fillStyle='#3a5fd0';t.fillRect(x+2,y0+34,28,3)}}});
+    const crowdT=l3tex('crowdPeople',1024,256,(t,w,h)=>{t.clearRect(0,0,w,h);const r=LAB_RNG(77),sh=['#b23a3a','#2f4fa8','#2f7d4a','#c7a33c','#6c6c6c','#7a3f8c','#d8d8d8','#a8642c','#1f6f7f','#c94f7c','#e2e2e2','#2b2b2b','#e07b2a','#5a8f2e'],sk=['#e8b98a','#c68e5d','#8d5524','#5c3a1e','#f1c9a5','#a8703f'],hr=['#2a1a0e','#111','#6b4b2a','#d8c070','#8a8a8a','#b0461c'];
+      for(let k=0;k<4;k++){const y0=k*64;for(let x=0;x<w;x+=32){const jx=x+4+r()*3,lean=(r()-.5)*3;t.fillStyle=sh[Math.floor(r()*sh.length)];t.beginPath();t.roundRect(jx+lean,y0+26,24,32,7);t.fill();
           t.fillStyle=sk[Math.floor(r()*sk.length)];t.beginPath();t.ellipse(jx+12+lean,y0+17,7.5,8.5,0,0,7);t.fill();
           if(r()<.75){t.fillStyle=hr[Math.floor(r()*hr.length)];t.beginPath();t.ellipse(jx+12+lean,y0+12,8,5,0,Math.PI,2*Math.PI);t.fill()}
-          if(r()<.12){t.fillStyle=t.fillStyle=sk[Math.floor(r()*sk.length)];t.fillRect(jx+(r()<.5?-3:23)+lean,y0+6,4,18)} // an arm in the air
-          if(r()<.04){t.fillStyle='#fffbe6';t.fillRect(jx-6,y0+1,36,14);t.fillStyle=r()<.5?'#c8102e':'#1d4ed8';t.fillRect(jx-3,y0+5,30,6)}}}}}); // signs carry a colored stripe (no words, so nothing reads backwards)
+          if(r()<.12){t.fillStyle=sk[Math.floor(r()*sk.length)];t.fillRect(jx+(r()<.5?-3:23)+lean,y0+6,4,18)} // an arm in the air
+          if(r()<.04){t.fillStyle='#fffbe6';t.fillRect(jx-6,y0+1,36,14);t.fillStyle=r()<.5?'#c8102e':'#1d4ed8';t.fillRect(jx-3,y0+5,30,6)}}}}); // signs carry a colored stripe
     const ribT=l3tex('ribbon',1024,32,(t,w,h)=>{t.fillStyle='#120406';t.fillRect(0,0,w,h);t.font="italic 900 22px Impact, 'Arial Black', sans-serif";t.textBaseline='middle';
       ['CONTENDERS BOXING LEAGUE','★ FIGHT NIGHT ★','SIMBOT','★ CONTENDERS ★'].forEach((x,k)=>{t.fillStyle=k%2?'#ffd23f':'#ff3b3b';t.fillText(x,20+k*256,h/2+1)})});
     const cr=glMesh(),rb=glMesh();
@@ -417,7 +417,7 @@ function glInit(){if(LGL!==null)return LGL;try{const cv=document.createElement('
     // roof and truss over the ring
     glQuad(st,[-1600,1150,-1600],[1600,1150,-1600],[1600,1150,1700],[-1600,1150,1700],[0,-1,0],[0,-1,0],[0,-1,0],[0,-1,0],[12,12,18,0]);
     for(const z of[-90,90])glTube(st,[-520,610,z],[520,610,z],()=>4,[70,72,80,.3],2,8);for(let k=-2;k<=2;k++)glTube(st,[k*190,610,-90],[k*190,610,90],()=>3,[70,72,80,.3],1,6);
-    LGL={cv,gl,pr,loc,tex,buf,st:buf(st),mat:buf(mm),apron:ap.map(buf),crowd:buf(cr),rib:buf(rb),tMat:tex(l3matTex()),tApron:[0,1,2,3].map(k=>tex(l3apronTex(k))),tCrowd:tex(crowdT),tRib:tex(ribT),dyn:null};
+    LGL={cv,gl,pr,loc,tex,buf,st:buf(st),mat:buf(mm),apron:ap.map(buf),crowd:buf(cr),rib:buf(rb),tMat:tex(l3matTex()),tApron:[0,1,2,3].map(k=>tex(l3apronTex(k))),tCrowd:tex(crowdT),tSeats:tex(crowdSeats),tRib:tex(ribT),dyn:null};
     return LGL}catch(e){console.warn('3D arena: WebGL unavailable, using the software renderer',e);return LGL=false}}
 function glMat4(C,T,fovy,asp,near,far){const f=l3norm(l3sub(T,C)),r=l3norm(l3cross(f,[0,1,0])),u=l3cross(r,f);
   const V=[r[0],u[0],-f[0],0, r[1],u[1],-f[1],0, r[2],u[2],-f[2],0, -l3dot(r,C),-l3dot(u,C),l3dot(f,C),1];
@@ -428,7 +428,7 @@ function labGLScene(g,o){const G=glInit();if(!G)return null;const{gl,loc}=G,{C,T
   const VP=glMat4(C,T,2*Math.atan(.5/1.32),16/9,30,6000);gl.uniformMatrix4fv(loc.uVP,false,VP);gl.uniform3fv(loc.uEye,C);gl.uniform1f(loc.uAlpha,1);gl.uniform1f(loc.uFlash,0);gl.uniform1i(loc.uTex,0);
   const draw=(b,tex,emis)=>{b.bufs.forEach(([a,x,k])=>{gl.bindBuffer(gl.ARRAY_BUFFER,x);gl.enableVertexAttribArray(loc[a]);gl.vertexAttribPointer(loc[a],k,gl.FLOAT,false,0,0)});
     gl.uniform1f(loc.uUseTex,tex?1:0);gl.uniform1f(loc.uEmis,emis?1:0);if(tex){gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,tex)}gl.drawArrays(gl.TRIANGLES,0,b.n)};
-  draw(G.st,null,false);draw(G.mat,G.tMat,false);G.apron.forEach((b,k)=>draw(b,G.tApron[k],false));draw(G.crowd,G.tCrowd,true);gl.uniform1f(loc.uScroll,(realAt*.06)%1);draw(G.rib,G.tRib,true);gl.uniform1f(loc.uScroll,0);
+  draw(G.st,null,false);draw(G.mat,G.tMat,false);G.apron.forEach((b,k)=>draw(b,G.tApron[k],false));draw(G.crowd,G.tSeats,true);gl.depthFunc(gl.LEQUAL);gl.uniform1f(loc.uFill,o.fill==null?1:o.fill);gl.uniform1f(loc.uPeople,1);draw(G.crowd,G.tCrowd,true);gl.uniform1f(loc.uPeople,0);gl.depthFunc(gl.LESS);gl.uniform1f(loc.uScroll,(realAt*.06)%1);draw(G.rib,G.tRib,true);gl.uniform1f(loc.uScroll,0);
   // the people and their shadows
   const M=glMesh(),hits=[];
   [0,1].forEach(i=>{const b=glBody(M,{p:P[i],x0:Xw[i],y0:mat,dirX:i?-1:1,Lz:i?1:-1,at,K:glKit(LAB_SKIN[i],i)});hits[i]={head:b.head,chest:b.chest,hip:b.hip}});
@@ -447,3 +447,49 @@ function labGLScene(g,o){const G=glInit();if(!G)return null;const{gl,loc}=G,{C,T
   g.setTransform(1,0,0,1,0,0);g.drawImage(G.cv,0,0,960,540);
   const lamps=[];for(let k=-2;k<=2;k++)for(const z of[-70,70])lamps.push([k*190,552,z]);
   return{hits,lamps}}
+
+/* the house for this fight (owner, Nov 14, 2026): league fights use the bout's venue and attendance (small debuts draw a thin
+   crowd, big fights sell out, matching purses and pay-per-view); Simbot fights play a small club */
+function labVenue(){const b=labState().bout||{};if(b.venue&&b.venue.cap){const cap=b.venue.cap,att=b.att||Math.round(cap*({club:.45,arena:.75,stadium:.95}[b.venue.tier]||.5));return{name:b.venue.name,city:b.venue.city,cap,att:Math.min(att,cap)}}
+  return{name:'Simbot Gym',city:'',cap:1200,att:420}}
+function labCrowdFill(){const v=labVenue();return Math.max(.08,Math.min(1,v.att/v.cap))}
+
+/* ---- Simbot sound (owner, Nov 14, 2026: "hearing punches land, the bell ring, background crowd noise").
+   Everything is synthesized live with Web Audio: no recorded sounds are used. The crowd's size follows the
+   house (labCrowdFill), so a half-empty club murmurs and a sellout roars. Choice saved per device. */
+const LSND={ctx:null,bed:null,bedG:null,master:null,on:null};
+function labSndOn(){if(LSND.on==null){try{LSND.on=localStorage.getItem('contenders_simbot_sound')!=='off'}catch(e){LSND.on=true}}return LSND.on}
+function labSndSet(v){LSND.on=v;try{localStorage.setItem('contenders_simbot_sound',v?'on':'off')}catch(e){}if(!v)labSndStop();else if(LSND.master)LSND.master.gain.value=.9}
+function labSndCtx(){if(!labSndOn())return null;try{if(!LSND.ctx){const C=window.AudioContext||window.webkitAudioContext;if(!C)return null;LSND.ctx=new C();const ctx0=LSND.ctx;['pointerdown','keydown'].forEach(ev=>document.addEventListener(ev,()=>{if(labSndOn()&&ctx0.state==='suspended')ctx0.resume()},{once:true}));LSND.master=LSND.ctx.createGain();LSND.master.gain.value=.9;
+    const comp=LSND.ctx.createDynamicsCompressor();LSND.master.connect(comp);comp.connect(LSND.ctx.destination);
+    const n=LSND.ctx.sampleRate*2,b=LSND.ctx.createBuffer(1,n,LSND.ctx.sampleRate),d=b.getChannelData(0);for(let i=0;i<n;i++)d[i]=Math.random()*2-1;LSND.noise=b}
+  if(LSND.ctx.state==='suspended')LSND.ctx.resume();return LSND.ctx}catch(e){return null}}
+function labNoise(c,t,dur,{type='lowpass',f=1000,f2=null,q=.7,g=.5,att=.003}={}){const s=c.createBufferSource();s.buffer=LSND.noise;s.playbackRate.value=.8+Math.random()*.4;
+  const fl=c.createBiquadFilter();fl.type=type;fl.frequency.setValueAtTime(f,t);if(f2)fl.frequency.exponentialRampToValueAtTime(f2,t+dur);fl.Q.value=q;
+  const gn=c.createGain();gn.gain.setValueAtTime(0.0001,t);gn.gain.exponentialRampToValueAtTime(g,t+att);gn.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  s.connect(fl);fl.connect(gn);gn.connect(LSND.master);s.start(t,Math.random()*1.5);s.stop(t+dur+.05)}
+function labTone(c,t,fr,dur,g,type='sine',fr2=null){const o=c.createOscillator();o.type=type;o.frequency.setValueAtTime(fr,t);if(fr2)o.frequency.exponentialRampToValueAtTime(fr2,t+dur);
+  const gn=c.createGain();gn.gain.setValueAtTime(0.0001,t);gn.gain.exponentialRampToValueAtTime(g,t+.004);gn.gain.exponentialRampToValueAtTime(0.0001,t+dur);o.connect(gn);gn.connect(LSND.master);o.start(t);o.stop(t+dur+.05)}
+function labPunchSnd(c,t,kind){const v={j:[.35,1700,.07,110],r:[.55,1300,.1,90],p:[.85,900,.16,70],c:[.7,1100,.13,80],kd:[1,700,.22,55],ko:[1,650,.3,50],st:[.8,850,.18,65]}[kind]||[.5,1200,.1,90];
+  labNoise(c,t,v[2],{f:v[1],g:v[0]*.9});labTone(c,t,v[3]*1.6,v[2]*1.4,v[0]*.8,'sine',v[3]*.6); // the slap and the body thump
+  labNoise(c,t+.004,.04,{type:'highpass',f:2500,g:v[0]*.25})}
+function labWhoosh(c,t){labNoise(c,t,.22,{type:'bandpass',f:500,f2:2200,q:1.4,g:.18,att:.08})}
+function labBell(c,t,times=1){for(let k=0;k<times;k++){const t0=t+k*.32;[[1,0.5],[2.76,.25],[5.4,.12],[8.93,.06]].forEach(([m,g])=>labTone(c,t0,820*m,k===times-1?2.4:1.1,g*.55));labNoise(c,t0,.03,{type:'highpass',f:3000,g:.2})}}
+function labCheer(c,t,amt,dur){const f=labCrowdFill();labNoise(c,t,dur,{type:'bandpass',f:900,q:.5,g:Math.min(.9,.25+amt*f*.7),att:.25});labNoise(c,t+.1,dur*.8,{type:'bandpass',f:2200,q:.8,g:Math.min(.5,.12+amt*f*.35),att:.3})}
+function labBedStart(){const c=labSndCtx();if(!c||LSND.bed)return;const f=labCrowdFill(),t=c.currentTime;
+  const s=c.createBufferSource();s.buffer=LSND.noise;s.loop=true;const l=c.createBiquadFilter();l.type='bandpass';l.frequency.value=650;l.Q.value=.4;
+  const l2=c.createBiquadFilter();l2.type='lowpass';l2.frequency.value=1800;const g=c.createGain();g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(.05+f*.17,t+1.2);
+  const lfo=c.createOscillator(),lg=c.createGain();lfo.frequency.value=.23;lg.gain.value=.02+f*.04;lfo.connect(lg);lg.connect(g.gain);lfo.start(); // the murmur rises and falls
+  s.connect(l);l.connect(l2);l2.connect(g);g.connect(LSND.master);s.start();LSND.bed={s,lfo};LSND.bedG=g}
+function labSndStop(){if(LSND.bed&&LSND.ctx){const t=LSND.ctx.currentTime,b=LSND.bed;LSND.bedG.gain.cancelScheduledValues(t);LSND.bedG.gain.setTargetAtTime(0.0001,t,.3);setTimeout(()=>{try{b.s.stop();b.lfo.stop()}catch(e){}},1500)}LSND.bed=null}
+function labSndPause(p){if(LSND.ctx){if(p)LSND.ctx.suspend();else if(labSndOn())LSND.ctx.resume()}}
+/* one call per beat from the playback loop */
+function labSfx(b){const c=labSndCtx();if(!c)return;const t=c.currentTime+.01;
+  switch(b.k){case 'j':labPunchSnd(c,t,'j');break;case 'r':labPunchSnd(c,t,'r');break;case 'p':labPunchSnd(c,t,'p');labCheer(c,t+.05,.25,.9);break;
+    case 'c':labPunchSnd(c,t,'c');labCheer(c,t+.05,.3,1);break;case 'm':labWhoosh(c,t);break;
+    case 'cl':labNoise(c,t,.12,{f:400,g:.25});break;case 'i':labPunchSnd(c,t,'r');labCheer(c,t,.4,1.2);break;
+    case 'st':labPunchSnd(c,t,'st');labCheer(c,t+.05,.6,1.6);break;
+    case 'kd':labPunchSnd(c,t,'kd');labNoise(c,t+.35,.25,{f:250,g:.7});labCheer(c,t+.1,1,2.4);break; // the punch, the body hitting the canvas, the roar
+    case 'ko':case 'stop':labPunchSnd(c,t,'ko');labNoise(c,t+.4,.3,{f:220,g:.8});labCheer(c,t+.1,1.3,4);labBell(c,t+1.2,4);break;
+    case 'bell':labBell(c,t,1);labCheer(c,t,.2,1.2);break;case 'start':labBell(c,t,1);break;
+    case 'final':labCheer(c,t,.9,3.5);break}}
