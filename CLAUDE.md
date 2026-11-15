@@ -43,6 +43,7 @@ Everything for Contenders runs in the cloud: the site on GitHub Pages, the datab
 - `gym_public_protect` rebuilds a manager's public card from his gym_state, so cards can't show fake numbers.
 - Players can't change `profiles.is_bot` (column privileges: they may update gym, description, location only).
 - Per-round tactics (energy points) are private: `bout_private(bout_id, user_id, mgr)`, readable only by that manager; `bouts.result` never contains `mgr`.
+- Contenders News (forum 'announce') is read-only for players (owner, Nov 15, 2026): RLS policies "members start topics" and "members post" refuse announce topics/replies unless auth.uid() is the owner; the site hides Start a new topic and the Reply box there for everyone but the owner. The Commissioner posts with SQL (author NULL).
 - Sanctions: `sanctions(user_id, kind gag|ban, strike, reason, ends, lifted)`. `select public.give_strike(uid, 'gag'|'ban', reason)` gives the next strike: 2 days, then 14 days, then permanent (lift with `update sanctions set lifted=true`). RLS blocks gagged users from topics/posts/messages and banned users from gym_state/gym_public. Owner's standing order: the commissioner may gag or ban on his own judgment (e.g. a known plan/gym thief called "dub"); the scheduled check stays report-only and only recommends.
 
 ## Anti-impersonation and ban evasion (owner, Nov 13, 2026: "Don't forget about dub. He impersonated me, stole gyms... we're going to need security")

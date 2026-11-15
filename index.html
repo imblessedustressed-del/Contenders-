@@ -823,7 +823,7 @@ function condText(x,after){
 /* ================= SHARED DATA (Supabase: accounts, forums, messages) ================= */
 cleanSlate();
 const SB_URL='https://ojsphhzgzbxmnfcbitqb.supabase.co',SB_KEY='sb_publishable_SWO9WhiSkoVhflY5CmY08A_hlqCEJSi';
-const BUILD='1794746736';
+const BUILD='1794747003';
 /* A tab left open on an older build must not save over newer data: if the site has been updated, reload before anything else is saved. */
 let staleBuild=false;
 async function checkBuild(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
@@ -2664,7 +2664,7 @@ function forumHTML(fid){
   const f=FORUMS.find(x=>x[0]===fid)||FORUMS[0];
   const list=topics.filter(t=>t.forum===f[0]);
   return`${forumNav()}<h1>The ${esc(f[1])} Forum</h1><p class="sans">${esc(f[2])}</p>${needDB()}
-  ${dbState==='on'?(ME?`<p class="sans"><a data-go="newtopic:${f[0]}"><b>Start a new topic</b></a></p>`:needLogin('post')):''}
+  ${dbState==='on'?(f[0]==='announce'&&ME!==OWNER?'<p class="sans small mute">News from the Commissioner. This board is read-only.</p>':ME?`<p class="sans"><a data-go="newtopic:${f[0]}"><b>Start a new topic</b></a></p>`:needLogin('post')):''}
   <div class="sans">${list.length?list.map(t=>`<div class="topic"><a data-go="topic:${t.id}">${esc(t.title)}</a> (${t.count||0}) by <b>${esc(t.by?gymOf(t.by):(t.forum==='announce'?'The Commissioner':gymOf(t.by)))}</b> Last post on ${dt(t.last||t.at)}.</div>`).join(''):(dbState==='on'?'<p class="mute">No topics yet. Be the first.</p>':'')}</div>`;
 }
 function newTopicHTML(fid){
@@ -2683,7 +2683,7 @@ function topicHTML(tid){
   if(!t)return`${forumNav()}${needDB()}<p class="mute">Loading topic...</p>`;
   return`${forumNav()}<h1>${esc(t.title)}</h1><p class="sans small"><a data-go="forum:${t.forum}">Back to ${esc((FORUMS.find(f=>f[0]===t.forum)||['',''])[1])}</a></p>
   <div class="sans">${posts.map(p=>`<div class="post"><div class="meta">Posted by: ${p.by?`<a data-dm="${esc(p.by)}" title="Send a message">${esc(gymOf(p.by))}</a>`:`<b>${postsTopic&&(topics.find(t=>t.id===postsTopic)||{}).forum==='announce'?'The Commissioner':gymOf(null)}</b>`}<br>Date: <span>${dt(p.at)}</span></div>${p.hidden?'<p class="small cr">Hidden by the league pending review. Only you can see this post.</p>':''}<p>${bodyHTML(p.text)}</p></div>`).join('')}</div>
-  ${dbState==='on'?(ME?sanctionOf('gag')?sanctionNote('gag'):`<hr><p class="sans"><b>Reply</b></p><textarea id="rBody" data-keep rows="5"></textarea><p><button id="postReply" data-topic="${t.id}">Post Reply</button></p>`:needLogin('reply')):''}`;
+  ${dbState==='on'?(t.forum==='announce'&&ME!==OWNER?'<p class="sans small mute">Announcements are read-only. Questions? Ask in the <a data-go="forum:help">Help forum</a>.</p>':ME?sanctionOf('gag')?sanctionNote('gag'):`<hr><p class="sans"><b>Reply</b></p><textarea id="rBody" data-keep rows="5"></textarea><p><button id="postReply" data-topic="${t.id}">Post Reply</button></p>`:needLogin('reply')):''}`;
 }
 function msgsHTML(arg){
   if(dbState!=='on')return`<h1>Messages</h1>${needDB()}`;
