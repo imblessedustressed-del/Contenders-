@@ -805,6 +805,11 @@ function labClick(e){const ai=e.target.closest('[data-ai]');if(ai&&!ai.closest('
   if(a==='send')return labSend();
   if(a==='share')return labShare();
 }
+/* the showcase's best-of-N, in small batches so the page never freezes (owner, Nov 15, 2026: Show me a fight "lagging") */
+function labBestAsync(score,tries,enough){return new Promise(done=>{const L=labState();if(labErr()){done(null);return}
+  const[A,B]=labFighters(),div=labDiv(),rounds=L.rounds==='bk'?25:+L.rounds;let best=null,bs=-1,n=0;
+  const step=()=>{const t0=performance.now();while(n<tries&&performance.now()-t0<12){const g=simulate(prepFighter(A,A,B,div),prepFighter(B,A,B,div),rounds),sc=score(g);n++;if(sc>bs){bs=sc;best=g}if(sc>=enough){n=tries;break}}
+    if(n<tries)setTimeout(step,0);else done(best)};setTimeout(step,0)})}
 function labFight(opt){const L=labState(),err=labErr();$('#labErr').textContent=err;if(err)return;
   const[A,B]=labFighters(),div=labDiv(),bk=L.rounds==='bk',rounds=bk?25:+L.rounds;
   const d=new Date();
@@ -812,7 +817,8 @@ function labFight(opt){const L=labState(),err=labErr();$('#labErr').textContent=
   L.bout={rounds,belt:null,title:opt&&opt.title||null,...(tv?{venue:{name:tv[0],city:tv[1],cap:tv[2],tier:'arena'},att:tv[2]}:{}),div,done:true,gym:'Simbot',gyms:['Simbot','Simbot'],ids:['labA','labB'],recs:[[0,0,0,0],[0,0,0,0]],
     date:d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'}).replace(/,/g,'').replace(/(\d+) (\d{4})$/,'$1, $2')};
   /* opt.score: run it up to opt.tries times and keep the most exciting fight (Simbot AI's showcase; each run is a normal, fair simulation) */
-  if(opt&&opt.score){let best=-1;for(let i=0;i<(opt.tries||300);i++){const g=simulate(prepFighter(A,A,B,div),prepFighter(B,A,B,div),rounds),sc=opt.score(g);if(sc>best){best=sc;L.fight=g}if(sc>=(opt.enough||1e9))break}}
+  if(opt&&opt.fight)L.fight=opt.fight;
+  else if(opt&&opt.score){let best=-1;for(let i=0;i<(opt.tries||300);i++){const g=simulate(prepFighter(A,A,B,div),prepFighter(B,A,B,div),rounds),sc=opt.score(g);if(sc>best){best=sc;L.fight=g}if(sc>=(opt.enough||1e9))break}}
   else L.fight=simulate(prepFighter(A,A,B,div),prepFighter(B,A,B,div),rounds);
   L.names=[A.name,B.name];L.plans=[A.planName,B.planName];
   $('#labStage').style.display='';$('#labRep').innerHTML='';$('#labSim').innerHTML='';

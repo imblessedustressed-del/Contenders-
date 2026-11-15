@@ -43,7 +43,9 @@ function aiOpen(){aiFabBubble(false);const w=$('#aiWin');if(!w)return;if(AI.open
 function aiClose(){AI.open=false;const w=$('#aiWin');if(w)w.hidden=true;const f=$('#aiFab');if(f)f.classList.remove('open')}
 
 /* ---- actions (chip buttons) ---- */
-async function aiAct(a,btn){
+async function aiAct(a,btn){try{return await aiAct0(a,btn)}catch(e){console.error('Simbot AI',e);AI.showing=false;document.querySelectorAll('.aiChip[data-ai=show]').forEach(c=>c.disabled=false);
+  aiSay(`Oops, I tripped over my own feet there. 🤕 (${esc(String(e&&e.message||e).slice(0,140))}) Try again?`,[[ '🔁 Try again',a]])}}
+async function aiAct0(a,btn){
   if(a==='fab')return aiOpen();
   if(a==='bubx')return aiFabBubble(false);
   if(a==='close')return aiClose();
@@ -79,9 +81,9 @@ function aiShow(){const L=labState(),red=starterOf(aiRand(AI_PUNCHERS)),blue=aiR
   const og=aiRand(['WBC','WBA','WBO']),T={org:og,orgs:[og],champ:Math.random()<.5?0:1};AI.title=T;const ch=T.champ?L.B:L.A;
   AI.showing=true;aiFabBubble(false);
   aiSay(`🔔🔔 <b>LADIES AND GENTLEMEN... IT'S MAIN EVENT TIME!</b> 🔔🔔<br><br>Twelve rounds for the <b>🏆 ${T.org} WORLD CHAMPIONSHIP!</b><br><br>🔴 In the red corner, ${tape(L.A)}: <b>${esc(L.A.name)}</b>${T.champ===0?' 👑 <b>the CHAMPION</b>':', the challenger'}! ${esc(red.line)}<br>🔵 In the blue corner, ${tape(L.B)}: <b>${esc(L.B.name)}</b>${T.champ===1?' 👑 <b>the CHAMPION</b>':', the challenger'}! ${esc(blue.line)}<br><br>${esc(ch.name)} brings the belt to the ring. Somebody walks out with it. `+`${aiRand(AI_HYPE)} Turn your sound on 🔊 and watch for the knockdowns. I'll be back when it's over to tell you exactly why the winner won.`,[],true);
-  AI.lastShowAt=Date.now();
+  AI.lastShowAt=Date.now();const best=labBestAsync(aiShowScore,400,100);
   setTimeout(()=>{if(!AI.showing)return;aiSay('3... 2... 1... 🔔 <b>LET\'S GET IT ON!</b>',[],true)},1400);
-  setTimeout(()=>{if(!AI.showing||!$('#lab'))return;aiClose();aiSpotOff();labFight({score:aiShowScore,tries:400,enough:100,title:T})},2600)}
+  setTimeout(async()=>{const f=await best;if(!AI.showing||!$('#lab'))return;aiClose();aiSpotOff();labFight(f?{fight:f,title:T}:{title:T})},2600)}
 
 /* "Fight me": a real challenge vs Simbot's fighter, so other people can watch it live too */
 async function aiFightMe(stId,retry){let nick=null;
@@ -188,7 +190,7 @@ function aiAnswer(text){const s=' '+String(text).toLowerCase().replace(/[’‘]
   return{x:[aiRand([`Hmm, you've got me on the ropes with that one. 🤔`,`That one's outside my weight class. 🤷`])+` I know the game inside out though: plans, abilities, knockouts, the league. Or ask the managers in the <a data-go="forums">forums</a>.`,[['❓ What can I ask?','help'],...AI_MAIN.slice(0,2)]]}}
 async function aiAsk(text){text=String(text).trim();if(!text){aiSay('Yeah? What\'s up? 🤖',AI_MAIN);return}
   aiUser(text);const r=aiAnswer(text);AI.typing=true;aiPaint();
-  setTimeout(()=>{if(r.act==='fightme'){AI.typing=false;AI.msgs.pop();return aiAct('fightme')}if(r.act==='show'){AI.typing=false;return aiShow()}aiSay(r.x[0],r.x[1])},500+Math.random()*400)}
+  setTimeout(()=>{if(r.act==='fightme'){AI.typing=false;AI.msgs.pop();return aiAct('fightme')}if(r.act==='show'){AI.typing=false;AI.msgs.pop();return aiAct('show')}aiSay(r.x[0],r.x[1])},500+Math.random()*400)}
 
 /* ---- pointing at the page (owner, Nov 15, 2026: "circle what went wrong... this is how you play right here, move this move that") ----
    A pulsing ring around a part of the Simbot page plus a callout; the chat window steps aside while it's up. */
