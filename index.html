@@ -798,7 +798,7 @@ function condText(x,after){
 /* ================= SHARED DATA (Supabase: accounts, forums, messages) ================= */
 cleanSlate();
 const SB_URL='https://ojsphhzgzbxmnfcbitqb.supabase.co',SB_KEY='sb_publishable_SWO9WhiSkoVhflY5CmY08A_hlqCEJSi';
-const BUILD='1794707171';
+const BUILD='1794707446';
 /* A tab left open on an older build must not save over newer data: if the site has been updated, reload before anything else is saved. */
 let staleBuild=false;
 async function checkBuild(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
@@ -1083,7 +1083,7 @@ function labBeats(f){const L=labState(),sched=f.rounds.length&&L.bout?L.bout.rou
     if(!last||f.result.decision){beats.push({at:t,k:'bell',round:R.n,txt:R.cc?`End of round ${R.n}. The judges: ${R.cards.map(c=>c.join('-')).join(', ')}.`:`End of round ${R.n}.`});t+=3.2} /* the break with the punch stats lasts about 3 seconds */
   });
   const r=f.result,W=r.w==null?null:L.names[r.w];
-  beats.push({at:t+.2,k:'final',txt:W?`${W} wins by ${r.type}${r.decision?'':' in round '+r.round}!`:`It's a ${r.type.toLowerCase()}!`});
+  beats.push({at:t+.2,k:'final',win:r.w!=null,txt:W?`${W} wins by ${r.type}${r.decision?'':' in round '+r.round}!`:`It's a ${r.type.toLowerCase()}!`});
   /* stoppages get an instant replay in slow motion (looks only: the fight itself is already decided) */
   const sb=!r.decision&&beats.find(b=>b.k==='ko'||b.k==='stop');
   const replay=sb?{start:t+2.6,dur:3.4,from:sb.at-.55,rate:.32}:null;
@@ -1857,7 +1857,7 @@ function labSfx(b){const c=labSndCtx();if(!c)return;const t=c.currentTime+.01;
     case 'kd':labPunchSnd(c,t,'kd');labNoise(c,t+.35,.25,{f:250,g:.7});labRoar(c,t+.1,1.2,3.6);break; // the punch, the body hitting the canvas, the roar
     case 'ko':case 'stop':labPunchSnd(c,t,'ko');labNoise(c,t+.4,.3,{f:220,g:.8});labRoar(c,t+.1,1.4,5);labBell(c,t+1.2,4);break;
     case 'bell':labBell(c,t,1);labCheer(c,t,.2,1.2);break;case 'start':labBell(c,t,1);break;
-    case 'final':labCheer(c,t,.9,3.5);break}}
+    case 'final':if(b.win===false){labCheer(c,t,.5,2.5);break}labRoar(c,t,1.5,5.5);labRoar(c,t+1.6,1.1,4);labCheer(c,t+.3,1,5);break}}
 
 /* --- Lab Chat --- */
 const labNick=()=>{try{return localStorage.getItem('contenders_simbot_nick')||''}catch(e){return''}};

@@ -670,7 +670,7 @@ function labBeats(f){const L=labState(),sched=f.rounds.length&&L.bout?L.bout.rou
     if(!last||f.result.decision){beats.push({at:t,k:'bell',round:R.n,txt:R.cc?`End of round ${R.n}. The judges: ${R.cards.map(c=>c.join('-')).join(', ')}.`:`End of round ${R.n}.`});t+=3.2} /* the break with the punch stats lasts about 3 seconds */
   });
   const r=f.result,W=r.w==null?null:L.names[r.w];
-  beats.push({at:t+.2,k:'final',txt:W?`${W} wins by ${r.type}${r.decision?'':' in round '+r.round}!`:`It's a ${r.type.toLowerCase()}!`});
+  beats.push({at:t+.2,k:'final',win:r.w!=null,txt:W?`${W} wins by ${r.type}${r.decision?'':' in round '+r.round}!`:`It's a ${r.type.toLowerCase()}!`});
   /* stoppages get an instant replay in slow motion (looks only: the fight itself is already decided) */
   const sb=!r.decision&&beats.find(b=>b.k==='ko'||b.k==='stop');
   const replay=sb?{start:t+2.6,dur:3.4,from:sb.at-.55,rate:.32}:null;

@@ -498,4 +498,4 @@ function labSfx(b){const c=labSndCtx();if(!c)return;const t=c.currentTime+.01;
     case 'kd':labPunchSnd(c,t,'kd');labNoise(c,t+.35,.25,{f:250,g:.7});labRoar(c,t+.1,1.2,3.6);break; // the punch, the body hitting the canvas, the roar
     case 'ko':case 'stop':labPunchSnd(c,t,'ko');labNoise(c,t+.4,.3,{f:220,g:.8});labRoar(c,t+.1,1.4,5);labBell(c,t+1.2,4);break;
     case 'bell':labBell(c,t,1);labCheer(c,t,.2,1.2);break;case 'start':labBell(c,t,1);break;
-    case 'final':labCheer(c,t,.9,3.5);break}}
+    case 'final':if(b.win===false){labCheer(c,t,.5,2.5);break}labRoar(c,t,1.5,5.5);labRoar(c,t+1.6,1.1,4);labCheer(c,t+.3,1,5);break}}
