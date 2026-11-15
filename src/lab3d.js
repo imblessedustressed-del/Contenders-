@@ -254,20 +254,11 @@ function lab3D(g,o){const{at,realAt,P,X,tl,f,res,stopBeat,kdNow,big,zoom,inRepla
    a thin yellow punch-stamina bar under each (full at the bell, drains as he throws, refills between rounds), and a framed
    digital clock in the middle with the round count. */
 function labHud32(g,o){const{P,at,cur,res,tl,names,W,cx}=o,rounds=(labState().bout&&labState().bout.rounds)||12;
-  const thrown=i=>tl.beats.filter(b=>b.round===cur.n&&b.a===i&&b.at<=at&&['p','r','j','m','c','st','kd'].includes(b.k)).length;
-  const bar=(i)=>{const p=P[i],e=Math.max(0,Math.min(1,p.en)),left=i===0,x0=left?24:cx+58,w0=W/2-82,col=left?['#ff5a5a','#b0101e']:['#5aa0ff','#1d3fb0'];
-    g.save();g.fillStyle='rgba(0,0,0,.55)';g.fillRect(x0-4,14,w0+8,34);
-    // frame
-    const fr=g.createLinearGradient(0,16,0,40);fr.addColorStop(0,'#f2f2f2');fr.addColorStop(1,'#8a8f99');g.fillStyle=fr;g.fillRect(x0-2,16,w0+4,20);
-    g.fillStyle='#111';g.fillRect(x0,18,w0,16);
-    const w=w0*e,bx=left?x0+w0-w:x0,gr=g.createLinearGradient(0,18,0,34);gr.addColorStop(0,col[0]);gr.addColorStop(.5,col[1]);gr.addColorStop(1,col[0]);g.fillStyle=gr;g.fillRect(bx,18,w,16);
-    g.fillStyle='rgba(255,255,255,.35)';g.fillRect(bx,18,w,4);if(p.hitAt>0&&at-p.hitAt<.2){g.fillStyle='rgba(255,255,255,.7)';g.fillRect(x0,18,w0,16)}
-    // stamina
-    const between=at>=cur.end-.05,sta=between?1:Math.max(.08,1-thrown(i)*.035),sw=w0*.92*sta,sx=left?x0+w0*.08+w0*.92-sw:x0;
-    g.fillStyle='#222';g.fillRect(left?x0+w0*.08:x0,38,w0*.92,7);g.fillStyle='#ffd400';g.fillRect(sx,38,sw,7);g.fillStyle='rgba(255,255,255,.4)';g.fillRect(sx,38,sw,2);
-    // name
-    g.font="italic 900 15px Impact, 'Arial Black', sans-serif";g.textAlign=left?'left':'right';g.fillStyle='#000';const nm=(names[i]||'').toUpperCase().slice(0,22);
-    g.fillText(nm,(left?x0:x0+w0)+1,63);g.fillStyle=left?'#ffb3b3':'#b9d3ff';g.fillText(nm,left?x0:x0+w0,62);g.restore()};
+  /* name plates only (owner, Nov 15, 2026: no health or punch-stamina bars) */
+  const bar=(i)=>{const left=i===0,x0=left?24:cx+58,w0=W/2-82,nm=(names[i]||'').toUpperCase().slice(0,22);
+    g.save();g.font="italic 900 17px Impact, 'Arial Black', sans-serif";const tw=g.measureText(nm).width;
+    g.fillStyle='rgba(0,0,0,.55)';g.fillRect(left?x0-6:x0+w0-tw-10,16,tw+16,28);g.fillStyle=left?'#c8102e':'#1d4ed8';g.fillRect(left?x0-6:x0+w0+6,16,4,28);
+    g.textAlign=left?'left':'right';g.fillStyle='#000';g.fillText(nm,(left?x0:x0+w0)+1,37);g.fillStyle=left?'#ffb3b3':'#b9d3ff';g.fillText(nm,left?x0:x0+w0,36);g.restore()};
   bar(0);bar(1);
   // center clock
   const clockT=Math.max(0,Math.min(1,(at-cur.start)/(cur.end-cur.start)))*(cur.last&&!res.decision?cur.clockEnd:180),sec=Math.max(0,180-Math.floor(clockT));
