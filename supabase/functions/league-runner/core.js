@@ -462,7 +462,7 @@ function prepFighter(F,FA,FB,div){const c=JSON.parse(JSON.stringify(F));const wi
   c.k=12+(((FA.rating||0)+(FB.rating||0))/2)/3;c.bk=isBK(F);c.minW=minWeight(F);c.divLim=(DIVS.find(d=>d[0]===div)||[0,160])[1];return c}
 function ratingStatus(F,out,r){
   const me=F.rating||0,opp=r.oppRating!=null?r.oppRating:me;F.gains=[];
-  if(out==='win'){const fast=(F.streak||0)>0,inc=fast?2:1;F.rating=Math.min(isBK(F)?18:28,me+inc);
+  if(out==='win'){const fast=(F.streak||0)>0,inc=fast?2:1;F.rating=Math.min(28,me+inc); /* both regions top out at 28 (owner, Nov 14, 2026; Bare Knuckles was 18) */
     /* training (owner, Nov 12, 2026): the points this win earns go, in order, to the primary program, the secondary program,
        and (fast track, winning streak only) the third program the manager picked before the fight */
     const slots=[F.train||'str',F.train2||F.train||'str',(fast&&F.train3)||F.train2||F.train||'str'];

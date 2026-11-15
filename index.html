@@ -293,7 +293,7 @@ const FIGHT_NIGHT={'Straw':'Sunday','Junior Fly':'Sunday','Fly':'Sunday','Super 
 const nightOf=div=>FIGHT_NIGHT[div]||null;
 const SCHED_TABLE=()=>`<table class="grid"><tr><th>Fight night</th><th>Divisions</th></tr>${['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'].map(n=>`<tr><td><b>${n}</b></td><td>${DIVS.filter(d=>FIGHT_NIGHT[d[0]]===n).map(d=>d[0]+'weight').join(', ')}${n==='Saturday'?' (alone)':''}</td></tr>`).join('')}</table>`;
 const BELTS=['WBC','WBA','WBO'];
-/* Regions: the regular Contenders region and the Bare Knuckles region (25 rounds, decided by knockdowns, rating/status cap 18). */
+/* Regions: the regular Contenders region and the Bare Knuckles region (25 rounds, decided by knockdowns; rating/status cap 28 like Contenders since Nov 14, 2026). */
 const isBK=F=>!!F&&F.region==='bk';
 /* Only the owner sees which gyms are computer-run (owner, Nov 12, 2026: "keep em wondering"). */
 const OWNER='65fa7d27-200f-46d0-9788-85ea5dead857';
@@ -798,7 +798,7 @@ function condText(x,after){
 /* ================= SHARED DATA (Supabase: accounts, forums, messages) ================= */
 cleanSlate();
 const SB_URL='https://ojsphhzgzbxmnfcbitqb.supabase.co',SB_KEY='sb_publishable_SWO9WhiSkoVhflY5CmY08A_hlqCEJSi';
-const BUILD='1794704896';
+const BUILD='1794705058';
 /* A tab left open on an older build must not save over newer data: if the site has been updated, reload before anything else is saved. */
 let staleBuild=false;
 async function checkBuild(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
@@ -2066,7 +2066,7 @@ function recordHTML(side){
     ['Rank',frankOf(side),'Total Earnings',money(F.earn)],['Fan Following',F.fans||0,'PPV Buys',(F.ppv||0).toLocaleString('en-US')],['Injury Points',F.ip||0,'AP Loss',F.aploss||0]];
   const pf=primeF(F),prime=pf>=.999?'He is in his prime.':pf>.9?'He is close to his best.':pf>.8?'He is a step off his best.':'He is well past his best.';
   const tr={str:'strength',spd:'speed',agl:'agility',chn:'chin',cnd:'conditioning',kp:'knockout punch'};
-  return`<p><a data-go="pub:${side}" class="b red">${n}</a>${bkTag(F)} ${recStr(F)}${isBK(F)?' <span class="small mute">Bare Knuckles region: 25-round fights, rating and status top out at 18.</span>':''}</p>
+  return`<p><a data-go="pub:${side}" class="b red">${n}</a>${bkTag(F)} ${recStr(F)}${isBK(F)?' <span class="small mute">Bare Knuckles region: 25-round fights decided by knockdowns.</span>':''}</p>
   <table class="grid">${rows.map(r=>`<tr><td>${r[0]}</td><td class="n">${r[1]}</td><td>${r[2]}</td><td class="n">${r[3]}</td></tr>`).join('')}
   <tr><td>Height</td><td colspan="3">${ht(HT(F))} (${cm(HT(F))} centimeters)</td></tr>
   <tr><td>Build</td><td colspan="3">${esc(F.build||'normal')}</td></tr>
@@ -2267,7 +2267,7 @@ function startFight(){
    at status 6 and every even level after, a bonus point. Points go to the primary, secondary and (fast track) third programs in that order. No random points. Streak grows only when status rises. */
 function ratingStatus(F,out,r){
   const me=F.rating||0,opp=r.oppRating!=null?r.oppRating:me;F.gains=[];
-  if(out==='win'){const fast=(F.streak||0)>0,inc=fast?2:1;F.rating=Math.min(isBK(F)?18:28,me+inc);
+  if(out==='win'){const fast=(F.streak||0)>0,inc=fast?2:1;F.rating=Math.min(28,me+inc); /* both regions top out at 28 (owner, Nov 14, 2026; Bare Knuckles was 18) */
     /* training (owner, Nov 12, 2026): the points this win earns go, in order, to the primary program, the secondary program,
        and (fast track, winning streak only) the third program the manager picked before the fight */
     const slots=[F.train||'str',F.train2||F.train||'str',(fast&&F.train3)||F.train2||F.train||'str'];
@@ -2579,7 +2579,7 @@ const HELP_BODY={
   <li><b>Knockdowns decide.</b> If it goes the distance, the man who scored more knockdowns wins. A point taken from your opponent for fouling counts as a knockdown for you. Equal knockdowns? More stuns wins. Still equal: a draw. The judges' cards don't matter.</li>
   <li><b>Slow recovery.</b> Fighters get back only half the usual endurance between rounds.</li>
   <li><b>No ringside doctor.</b> Cuts and swelling never stop the fight. A man with both eyes swollen shut can only clinch.</li>
-  <li><b>Rating and status top out at 18</b> (28 in the Contenders region).</li>
+  <li><b>Rating and status top out at 28</b>, the same as the Contenders region.</li>
   <li>Same fight nights, same purses, one fight a week against fighters from the Bare Knuckles region only.</li></ul>
   <p><b>What tends to work:</b> it's a war of endurance. Agility matters most, so keep AGL level with (or a little above) STR, with speed around a third of strength. Very heavy builds pack the most agility into a weight class. Start conditioning around 14 to 15. Big punchers and high chins are less important than lasting 25 rounds. Low-energy tactics that save fatigue early, and opening up once he's tired, usually beat rushing.</p>`,
  fighter:()=>`<p>Every fighter starts with exactly <b>${POOL} points</b> spread across:</p>
