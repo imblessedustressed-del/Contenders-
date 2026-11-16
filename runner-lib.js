@@ -29,7 +29,7 @@ var RunnerLib = (() => {
     const rR = FA.rating || 0, rB = FB.rating || 0;
     const f = C.simulate(C.prepFighter(FA, FA, FB, div), C.prepFighter(FB, FA, FB, div), B.rounds || 12);
     const r = f.result, how = r.decision ? r.type.toLowerCase() : `${r.type} in round ${r.round} (${C.fmt(r.t)})`;
-    const score = f.bk && r.decision && f.bkScore ? `knockdowns ${f.bkScore.kd.join("-")}, stuns ${f.bkScore.stuns.join("-")}` : f.totals.map((t) => t.join("-")).join(", ");
+    const score = f.bk && r.decision && f.bkScore ? `knockdowns ${f.bkScore.kd.join("-")}, stuns ${f.bkScore.stuns.join("-")}${f.bkScore.dmg ? `, damage ${f.bkScore.dmg.join("-")}` : ""}` : f.totals.map((t) => t.join("-")).join(", ");
     const purse = C.boutPurses(rR, rB, belt, null, star);
     const v = B.venue || { name: "", city: "", cap: 1e3, tier: "club", tv: "stream" };
     const att = C.attendanceFor(v, Math.max(rR, rB), belt, star);

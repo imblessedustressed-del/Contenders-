@@ -18,7 +18,7 @@ const K_RATING=12;
 /* Simulator update 2 (owner-approved Nov 12, 2026): balanced so every style has a chance (engine tests: each type wins about 36-45%
    against the others, the rest draws); heavyweights capped at 6'9" and 280 lb ("Tyson Fury rule"); WeBL's heavyweight edges replaced. */
 const GX={pow:1.02,agl:1.02,jab:1.08,fat:.9,chin:1.1,ip:.85,rec:.02,hurt:.03};
-const BAL={tcStart:.35,tcFloor:.3,refEnd:.25,refLand:8,refRounds:2,counterDiv:6,counterStr:0,counterAgg:.8,counterFloor:.5,alloutGive:2,alloutTake:2.75,kpMul:3.75,wtPct:10,giantPer10:.5,smallMan:false,hvSpd:.45,hvClinchBase:-.5,hvClinchAggLoss:.4,hvCounterAgg:.94,hvInsideBase:2.25,hvRingBase:1.25,ringBase:1.75,ringFat:.4,clinchBase:.5,clinchAggLoss:.2,bkClinchBase:1.75,bkClinchAggLoss:.12,insideBase:1,tieDmg:.015};
+const BAL={bkTieDmg:.02,tcStart:.35,tcFloor:.3,refEnd:.25,refLand:8,refRounds:2,counterDiv:6,counterStr:0,counterAgg:.8,counterFloor:.5,alloutGive:2,alloutTake:2.75,kpMul:3.75,wtPct:10,giantPer10:.5,smallMan:false,hvSpd:.45,hvClinchBase:-.5,hvClinchAggLoss:.4,hvCounterAgg:.94,hvInsideBase:2.25,hvRingBase:1.25,ringBase:1.75,ringFat:.4,clinchBase:.5,clinchAggLoss:.2,bkClinchBase:.75,bkClinchAggLoss:.2,insideBase:1,tieDmg:.015};
 
 function newSev(){const r=rand();return r<2/3?1:r<8/9?2:r<26/27?3:4}
 function promote(l){if(l>=3)return 4;if(l===2)return rand()<2/3?3:4;const r=rand();return r<2/3?2:r<8/9?3:4}
@@ -219,8 +219,10 @@ function simulate(FA,FB,rounds){
   if(!out.result&&BK){
     /* knockdowns each man scored (a point deducted from his opponent counts as one), then stuns */
     const kd=[0,1].map(i=>S[1-i].kds+S[1-i].ded),sn=[0,1].map(i=>S[1-i].stuns);out.bkScore={kd,stuns:sn};
-    const type=kd[0]!==kd[1]?'Knockdown Decision':sn[0]!==sn[1]?'Stun Decision':'Draw';
-    out.result={type,w:type==='Draw'?null:kd[0]!==kd[1]?(kd[0]>kd[1]?0:1):(sn[0]>sn[1]?0:1),round:rounds,t:180,decision:true};
+    /* then damage (owner, Nov 16, 2026: "no draws... 2% there as well"): the man who did more damage over the fight wins, unless it's within BAL.bkTieDmg */
+    const dm=[0,1].map(i=>Math.round(S[1-i].dmgTot||0));out.bkScore.dmg=dm;const dmOk=Math.abs(dm[0]-dm[1])>BAL.bkTieDmg*Math.max(1,dm[0],dm[1]);
+    const type=kd[0]!==kd[1]?'Knockdown Decision':sn[0]!==sn[1]?'Stun Decision':dmOk?'Damage Decision':'Draw';
+    out.result={type,w:type==='Draw'?null:kd[0]!==kd[1]?(kd[0]>kd[1]?0:1):sn[0]!==sn[1]?(sn[0]>sn[1]?0:1):(dm[0]>dm[1]?0:1),round:rounds,t:180,decision:true};
   }
   if(!out.result){
     /* fewer draws (owner, Nov 15, 2026: draws about 2% of decisions): a judge whose card is level gives the fight to the busier

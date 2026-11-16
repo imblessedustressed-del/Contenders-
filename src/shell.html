@@ -887,8 +887,8 @@ function labBeats(f){const L=labState(),sched=f.rounds.length&&L.bout?L.bout.rou
   });
   const r=f.result,W=r.w==null?null:L.names[r.w];
   /* a decision goes to the official scorecards first, read one judge at a time, then the referee raises the winner's hand (owner, Nov 16, 2026) */
-  if(r.decision&&!BKV&&f.totals&&f.totals.length){beats.push({at:t+.2,k:'cards',txt:"It's going to the scorecards..."});t+=LAB_CARDS_T}
-  beats.push({at:t+.2,k:'final',win:r.w!=null,say:r.decision&&!BKV?(W?`And the winner, by ${String(r.type).toLowerCase()}, ${W}!`:`This fight is a ${String(r.type).toLowerCase()}!`):null,txt:W?`${W} wins by ${r.type}${r.decision?'':' in round '+r.round}!`:`It's a ${r.type.toLowerCase()}!`});
+  if(r.decision&&((!BKV&&f.totals&&f.totals.length)||(BKV&&f.bkScore))){beats.push({at:t+.2,k:'cards',txt:"It's going to the scorecards..."});t+=LAB_CARDS_T}
+  beats.push({at:t+.2,k:'final',win:r.w!=null,say:r.decision?(W?`And the winner, by ${String(r.type).toLowerCase()}, ${W}!`:`This fight is a ${String(r.type).toLowerCase()}!`):null,txt:W?`${W} wins by ${r.type}${r.decision?'':' in round '+r.round}!`:`It's a ${r.type.toLowerCase()}!`});
   /* stoppages get an instant replay in slow motion (looks only: the fight itself is already decided) */
   const sb=!r.decision&&beats.find(b=>b.k==='ko'||(b.k==='stop'&&b.why!=='doc'&&b.why!=='dq'));
   const replay=sb?{start:t+2.6,dur:3.4,from:sb.at-.55,rate:.32}:null;
@@ -1234,7 +1234,7 @@ function labDraw(at,tl){const cv=$('#labCv');if(!cv)return;const g=cv.getContext
    (R.cc per round, R.run running); the three official judges can still see it differently, which shows at the scorecards */
 function labCommRun(tl,n){const o=tl.rounds.find(x=>x.R.n===n);return o&&o.R.cc?{rd:o.R.cc,tot:o.R.run||o.R.cc}:null}
 /* the official scorecards after a decision: each judge read in turn, then the kind of decision; the winner's name waits for the announcement */
-function labScorecards(g,cx,d,f,L){const T=f.totals||[],a=Math.min(1,d*3);g.save();g.globalAlpha=a;
+function labScorecards(g,cx,d,f,L){if(f.bkScore&&labBKView())return labBKCard(g,cx,d,f,L);const T=f.totals||[],a=Math.min(1,d*3);g.save();g.globalAlpha=a;
   g.fillStyle='rgba(6,8,14,.9)';g.beginPath();g.roundRect(cx-280,150,560,250,10);g.fill();g.strokeStyle='#d4af37';g.lineWidth=2;g.stroke();
   labBigText(g,'THE OFFICIAL SCORECARDS',cx,196,30,'#ffd23f','#c47f00');
   T.forEach((t,j)=>{const at0=.9+j*1.1;if(d<at0)return;g.globalAlpha=Math.min(1,(d-at0)*4);const y=236+j*36,hi=Math.max(...t),lo=Math.min(...t),tb=t[0]===t[1]&&f.tieBreak&&f.tieBreak[j]!=null;
@@ -1243,6 +1243,15 @@ function labScorecards(g,cx,d,f,L){const T=f.totals||[],a=Math.min(1,d*3);g.save
   g.globalAlpha=a;const ka=4.3;if(d>=ka){const n=f.totals.filter(t=>t[0]!==t[1]||(f.tieBreak&&f.tieBreak[f.totals.indexOf(t)]!=null)).length;g.globalAlpha=Math.min(1,(d-ka)*4);
     g.textAlign='center';g.font="italic 900 20px Impact, 'Arial Black', sans-serif";g.fillStyle='#ffd23f';g.fillText(f.result.w==null?'IT\'S A DRAW...':`...FOR THE WINNER, BY ${String(f.result.type||'DECISION').toUpperCase()}`,cx,360)}
   if(T.some((t,j)=>t[0]===t[1]&&f.tieBreak&&f.tieBreak[j]!=null)&&d>=3.3){g.globalAlpha=.8;g.textAlign='center';g.font="11px Verdana, sans-serif";g.fillStyle='#aaa';g.fillText('* even card, goes to the busier fighter',cx,388)}
+  g.restore()}
+/* Bare Knuckles goes to the tally, not judges: knockdowns, then stuns, then damage done (owner, Nov 16, 2026) */
+function labBKCard(g,cx,d,f,L){const k=f.bkScore,rows=[['KNOCKDOWNS',k.kd],['STUNS',k.stuns],['DAMAGE DONE',k.dmg||[0,0]]],a=Math.min(1,d*3);g.save();g.globalAlpha=a;
+  g.fillStyle='rgba(14,8,6,.92)';g.beginPath();g.roundRect(cx-280,150,560,250,10);g.fill();g.strokeStyle='#b5651d';g.lineWidth=2;g.stroke();
+  labBigText(g,'THE BARE KNUCKLES TALLY',cx,196,30,'#ffd23f','#c47f00');
+  [0,1].forEach(i=>{const sd=i^LAB_SW;g.textAlign=sd?'right':'left';g.font="bold 14px Verdana, sans-serif";g.fillStyle=i?'#8fb4ff':'#ff8f8f';g.fillText((L.names[i]||'').toUpperCase().slice(0,18),sd?cx+250:cx-250,224)});
+  rows.forEach((r,j)=>{const at0=.9+j*1.1;if(d<at0)return;g.globalAlpha=Math.min(1,(d-at0)*4);const y=258+j*36;g.textAlign='center';g.font="bold 13px Verdana, sans-serif";g.fillStyle='#d4af37';g.fillText(r[0],cx,y-4);
+    [0,1].forEach(i=>{const sd=i^LAB_SW;g.textAlign=sd?'right':'left';g.font="bold 24px Verdana, sans-serif";g.fillStyle=i?'#8fb4ff':'#ff8f8f';g.fillText(String(r[1][i]),sd?cx+250:cx-250,y)})});
+  if(d>=4.3){g.globalAlpha=Math.min(1,(d-4.3)*4);g.textAlign='center';g.font="italic 900 20px Impact, 'Arial Black', sans-serif";g.fillStyle='#ffd23f';g.fillText(f.result.w==null?'DEAD EVEN... IT\'S A DRAW':`...FOR THE WINNER, BY ${String(f.result.type).toUpperCase()}`,cx,380)}
   g.restore()}
 /* title belt for the Simbot arena (original drawing; colors from ORG_BELT) */
 function labBelt(g,x,y,w,org,shine){const C=(typeof ORG_BELT!=='undefined'&&ORG_BELT[org])||['#7a1a1a','#3d0b0b','#e8b923'],h=w*.42,cy=y+h/2;g.save();
@@ -2188,7 +2197,7 @@ function reportHTML(f,b,upto){
     ${R.post.join('')}<div class="gap"></div>${(R.dmg||[]).map((d,i)=>d&&(!b.mine||b.mine[i])?`<p class="mgr">${b.mine?'Your fighter':esc(S[i].n)} lost ${d.d.toFixed(1)} points of endurance this round due to damage, and ${d.f.toFixed(1)} points due to fatigue. He took ${d.s.toFixed(1)} points of stun damage this round. He has accumulated ${d.a} point${d.a===1?'':'s'} of damage in the fight.</p>`:'').join('')}`;
     if(isLast&&end&&!end.decision){h+=`<p class="r b">${S[end.w].n} wins by a Technical Knockout!!</p><p class="b">Time: 3:00 of round ${R.n}</p>`+afterFight(f,end);return}
     if(isLast&&end&&end.decision){
-      if(f.bk){const k=f.bkScore||{kd:[0,0],stuns:[0,0]};h+=`<p>The fight goes the distance. Under bare-knuckle rules it comes down to knockdowns${k.kd[0]===k.kd[1]?', then stuns':''}.</p>${S.map((x,i)=>`<p>${x.n}: ${k.kd[i]} knockdown${k.kd[i]===1?'':'s'} scored, ${k.stuns[i]} stun${k.stuns[i]===1?'':'s'}.</p>`).join('')}
+      if(f.bk){const k=f.bkScore||{kd:[0,0],stuns:[0,0]};h+=`<p>The fight goes the distance. Under bare-knuckle rules it comes down to knockdowns${k.kd[0]===k.kd[1]?(k.stuns[0]===k.stuns[1]?', then stuns, then damage':', then stuns'):''}.</p>${S.map((x,i)=>`<p>${x.n}: ${k.kd[i]} knockdown${k.kd[i]===1?'':'s'} scored, ${k.stuns[i]} stun${k.stuns[i]===1?'':'s'}${k.dmg?`, ${k.dmg[i]} points of damage done`:''}.</p>`).join('')}
       <p class="r b">${end.w===null?"It's a draw!!":`${S[end.w].n} wins by a ${end.type.toLowerCase()}!!`}</p>`+afterFight(f,end);return}
       h+=`<p>The fight goes the distance, so it's up to the judges.</p>${f.totals.map((t,j)=>`<p>Judge ${JUDGES[j].name} scores it ${Math.max(...t)}-${Math.min(...t)}${t[0]===t[1]?(f.tieBreak&&f.tieBreak[j]!=null?`, even, and gives it to ${S[f.tieBreak[j]].n} for being the busier fighter`:', even'):` for ${S[t[0]>t[1]?0:1].n}`}.</p>`).join('')}
       <p class="r b">${end.w===null?`It's a ${end.type.toLowerCase()}!!`:`${S[end.w].n} wins by a ${end.type.toLowerCase()}!!`}</p>`+afterFight(f,end);return;
@@ -2870,7 +2879,7 @@ if score &lt; 0 and round &gt;= 10 then 8/7/5</pre>`,
   <tr><td><b>TKO</b></td><td>Technical knockout: the referee, doctor or corner stops the fight.</td></tr></table>`,
  bk:()=>`<p>Bare Knuckles is a second region with its own rankings and champions. Pick it on the <a data-go="create">Create a Fighter</a> page. A fighter's region is set for life.</p>
   <ul><li><b>25 rounds</b> every fight.</li>
-  <li><b>Knockdowns decide.</b> If it goes the distance, the man who scored more knockdowns wins. A point taken from your opponent for fouling counts as a knockdown for you. Equal knockdowns? More stuns wins. Still equal: a draw. The judges' cards don't matter.</li>
+  <li><b>Knockdowns decide.</b> If it goes the distance, the man who scored more knockdowns wins. A point taken from your opponent for fouling counts as a knockdown for you. Equal knockdowns? More stuns wins. Still equal: the man who did more damage over the fight wins. Only a fight that's dead even on damage too (within 2%) is a draw, about 2 in 100 decisions. The judges' cards don't matter.</li>
   <li><b>Slow recovery.</b> Fighters get back only half the usual endurance between rounds.</li>
   <li><b>No ringside doctor.</b> Cuts and swelling never stop the fight. A man with both eyes swollen shut can only clinch.</li>
   <li><b>Rating and status top out at 28</b>, the same as the Contenders region.</li>
