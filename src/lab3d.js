@@ -256,10 +256,10 @@ function lab3D(g,o){const{at,realAt,P,X,tl,f,res,stopBeat,kdNow,big,zoom,inRepla
    digital clock in the middle with the round count. */
 function labHud32(g,o){const{P,at,cur,res,tl,names,W,cx}=o,rounds=(labState().bout&&labState().bout.rounds)||12;
   /* name plates only (owner, Nov 15, 2026: no health or punch-stamina bars) */
-  const bar=(i)=>{const left=i===0,x0=left?24:cx+58,w0=W/2-82,nm=(names[i]||'').toUpperCase().slice(0,22);
+  const bar=(i)=>{const left=(i^LAB_SW)===0,x0=left?24:cx+58,w0=W/2-82,nm=(names[i]||'').toUpperCase().slice(0,22);
     g.save();g.font="italic 900 17px Impact, 'Arial Black', sans-serif";const tw=g.measureText(nm).width;
-    g.fillStyle='rgba(0,0,0,.55)';g.fillRect(left?x0-6:x0+w0-tw-10,16,tw+16,28);g.fillStyle=left?'#c8102e':'#1d4ed8';g.fillRect(left?x0-6:x0+w0+6,16,4,28);
-    g.textAlign=left?'left':'right';g.fillStyle='#000';g.fillText(nm,(left?x0:x0+w0)+1,37);g.fillStyle=left?'#ffb3b3':'#b9d3ff';g.fillText(nm,left?x0:x0+w0,36);g.restore()};
+    g.fillStyle='rgba(0,0,0,.55)';g.fillRect(left?x0-6:x0+w0-tw-10,16,tw+16,28);g.fillStyle=i?'#1d4ed8':'#c8102e';g.fillRect(left?x0-6:x0+w0+6,16,4,28);
+    g.textAlign=left?'left':'right';g.fillStyle='#000';g.fillText(nm,(left?x0:x0+w0)+1,37);g.fillStyle=i?'#b9d3ff':'#ffb3b3';g.fillText(nm,left?x0:x0+w0,36);g.restore()};
   bar(0);bar(1);
   // center clock
   const clockT=Math.max(0,Math.min(1,(at-cur.start)/(cur.end-cur.start)))*(cur.last&&!res.decision?cur.clockEnd:180),sec=Math.max(0,180-Math.floor(clockT));

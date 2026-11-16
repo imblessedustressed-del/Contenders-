@@ -906,7 +906,8 @@ function labTickAll(){const L=labState();if(!L.fight)return;const tl=labBeats(L.
   tl.beats.filter(b=>['kd','ko','stop','final'].includes(b.k)).slice(-5).forEach(labTick)}
 // stable crowd
 /* --- Simbot arena: late-'90s console boxing look (shaded polygon fighters, 3/4 ring, crowd, referee, arcade HUD) --- */
-let LAB_FPOS=[null,null]; // where each fighter's feet are on screen this frame (960x540), set by every graphics mode
+let LAB_FPOS=[null,null],LAB_SW=0; // LAB_SW 1 = the red corner is on the right of the screen (the 3D camera shows him there), so name plates swap sides to sit over their fighters (owner, Nov 16, 2026)
+function labUpdSwap(){const a=LAB_FPOS[0],b=LAB_FPOS[1];if(!a||!b)return;const d=a[0]-b[0];if(d>60)LAB_SW=1;else if(d<-60)LAB_SW=0} // where each fighter's feet are on screen this frame (960x540), set by every graphics mode
 let LAB_INTRO=3.4; // seconds of tale-of-the-tape before the opening bell (6.4 for a title fight: the belt is presented first)
 const LAB_TITLE_T=3; // seconds of belt presentation in a title fight's intro
 const LAB_RNG=(seed)=>{let s=seed;return()=>(s=(s*16807)%2147483647)/2147483647};
@@ -1122,17 +1123,17 @@ function labDraw(at,tl){const cv=$('#labCv');if(!cv)return;const g=cv.getContext
   if(inReplay){const blink=Math.floor(realAt*2.5)%2;g.fillStyle='rgba(30,20,0,.18)';g.fillRect(0,0,W,H);g.fillStyle='#000';g.fillRect(0,0,W,58);g.fillRect(0,H-58,W,58);
     g.font="italic 900 30px Impact, 'Arial Black', sans-serif";g.textAlign='left';g.fillStyle=blink?'#ff3b30':'#ffffff';g.fillText('● REPLAY',28,40);
     g.textAlign='right';g.fillStyle='#d4af37';g.font="italic 900 20px Impact, 'Arial Black', sans-serif";g.fillText('SLOW MOTION',W-28,H-22);return}
-  const TT=L.bout&&L.bout.title,T0=TT?LAB_TITLE_T:0;
+  labUpdSwap();const TT=L.bout&&L.bout.title,T0=TT?LAB_TITLE_T:0;
   if(intro&&TT&&at<T0)labTitleShow(g,W,H,at,TT,L);
   else if(intro){const k=Math.min(1,(at-T0)/.6),out=Math.max(0,(at-(LAB_INTRO-.9))/.75),sl=(1-k)*(1-k)*520+out*out*620,b=L.bout||{},recs=b.recs||[[0,0,0,0],[0,0,0,0]],gy=b.gyms||['',''];
     g.fillStyle=`rgba(0,0,0,${.45*(1-out)})`;g.fillRect(0,0,W,H);
-    [0,1].forEach(i=>{const x=i?W-30-400+sl:30-sl,F=(f.S&&f.S[i]&&f.S[i].F)||{},r=recs[i]||[0,0,0,0];g.save();g.translate(x,150);
-      const pg2=g.createLinearGradient(0,0,400,0);pg2.addColorStop(i?1:0,i?'rgba(29,78,216,.95)':'rgba(200,16,46,.95)');pg2.addColorStop(i?0:1,'rgba(10,10,14,.92)');g.fillStyle=pg2;
-      g.beginPath();g.moveTo(i?30:0,0);g.lineTo(400,0);g.lineTo(i?400:370,170);g.lineTo(0,170);g.closePath();g.fill();g.strokeStyle='#d4af37';g.lineWidth=3;g.stroke();
-      g.textAlign=i?'right':'left';const tx=i?380:20;g.fillStyle='#fff';g.font="italic 900 30px Impact, 'Arial Black', sans-serif";g.fillText((L.names[i]||'').toUpperCase().slice(0,20),tx,46);
+    [0,1].forEach(i=>{const sd=i^LAB_SW,x=sd?W-30-400+sl:30-sl,F=(f.S&&f.S[i]&&f.S[i].F)||{},r=recs[i]||[0,0,0,0];g.save();g.translate(x,150);
+      const pg2=g.createLinearGradient(0,0,400,0);pg2.addColorStop(sd?1:0,i?'rgba(29,78,216,.95)':'rgba(200,16,46,.95)');pg2.addColorStop(sd?0:1,'rgba(10,10,14,.92)');g.fillStyle=pg2;
+      g.beginPath();g.moveTo(sd?30:0,0);g.lineTo(400,0);g.lineTo(sd?400:370,170);g.lineTo(0,170);g.closePath();g.fill();g.strokeStyle='#d4af37';g.lineWidth=3;g.stroke();
+      g.textAlign=sd?'right':'left';const tx=sd?380:20;g.fillStyle='#fff';g.font="italic 900 30px Impact, 'Arial Black', sans-serif";g.fillText((L.names[i]||'').toUpperCase().slice(0,20),tx,46);
       g.font="bold 15px Verdana, sans-serif";g.fillStyle='#ffd23f';g.fillText((i?'BLUE CORNER':'RED CORNER')+(TT&&TT.champ===i?'  ·  CHAMPION':TT&&TT.champ!=null?'  ·  CHALLENGER':''),tx,74);g.fillStyle='#eee';g.font="14px Verdana, sans-serif";
       g.fillText(`Record ${r[0]}-${r[1]}-${r[2]}`,tx,100);if(F.hgt!=null)g.fillText(`Height ${Math.floor(HT(F)/12)}' ${HT(F)%12}"`+(F.fightW?`   Weight ${F.fightW} lb`:''),tx,122);if(gy[i])g.fillText(String(gy[i]).slice(0,34),tx,144);
-      if(TT&&TT.champ===i){const os=TT.orgs||[TT.org];os.forEach((o,j)=>labBelt(g,i?400-110-j*116:j*116,182,110,o));g.font="italic 900 16px Impact, 'Arial Black', sans-serif";g.fillStyle='#ffd23f';g.textAlign=i?'right':'left';g.fillText(`${os.join('/')} WORLD CHAMPION`,i?400-os.length*116-8:os.length*116+8,206)}
+      if(TT&&TT.champ===i){const os=TT.orgs||[TT.org];os.forEach((o,j)=>labBelt(g,sd?400-110-j*116:j*116,182,110,o));g.font="italic 900 16px Impact, 'Arial Black', sans-serif";g.fillStyle='#ffd23f';g.textAlign=sd?'right':'left';g.fillText(`${os.join('/')} WORLD CHAMPION`,sd?400-os.length*116-8:os.length*116+8,206)}
       g.restore()});
     g.globalAlpha=1-out;labBigText(g,'VS',cx,258,86,'#ffd23f','#c47f00');g.font="italic 900 18px Impact, 'Arial Black', sans-serif";g.textAlign='center';g.fillStyle='#fff';g.fillText('TALE OF THE TAPE',cx,348);{const v=labVenue(),so=v.att>=v.cap;g.font="bold 16px Verdana, sans-serif";g.fillStyle='#ffd23f';g.fillText(`${v.name}${v.city?', '+v.city:''}`,cx,384);g.fillStyle=so?'#ff5a5a':'#ffffff';g.font="bold 15px Verdana, sans-serif";g.fillText(so?`SOLD OUT: ${v.cap.toLocaleString('en-US')} seats`:`Attendance ${v.att.toLocaleString('en-US')} of ${v.cap.toLocaleString('en-US')} seats`,cx,408)}g.globalAlpha=1}
   // HUD: arcade energy bars and round badge (3D mode: a slim late-'90s console HUD across the top instead)
