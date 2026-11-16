@@ -332,6 +332,7 @@ pre.plan{background:#fbfaf7;border:1px solid var(--line)}
 @media(max-width:900px){.sbcWrap{grid-template-columns:1fr}.sbcSide{position:static}.sbcChat{max-height:320px;min-height:160px}}
 
 .gymDescWrap{margin:12px 0}.gymDesc{border:1px solid var(--line);border-radius:8px;padding:12px 14px;max-height:900px;overflow:auto;position:relative;isolation:isolate;contain:layout paint;background:#fffdf8;word-wrap:break-word;overflow-wrap:anywhere}
+#main.gymThemed{background-color:var(--gbg);color:var(--gfg);--ink:var(--gfg)}#main.gymThemed h3.divh{color:var(--gln)}#main.gymThemed a{color:var(--gln)}#main.gymThemed .mute{color:inherit;opacity:.7}#main.gymThemed h1,#main.gymThemed h2,#main.gymThemed h3.divh,#main.gymThemed h1.pubname{color:inherit}#main.gymThemed .gymDesc{background:transparent;border:0;padding:0;max-height:none}#main.gymDark{--card:rgba(255,255,255,.06);--line:rgba(255,255,255,.18)}#main.gymDark p.fl{box-shadow:none}#main.gymDark .note{color:inherit}
 .gymDesc img{max-width:100%;height:auto}.gymDesc table{max-width:100%}.gymDesc a::after{content:" \2197";font-size:.85em}.gymDescCtl{margin-top:4px}
 </style>
 </head>
@@ -916,7 +917,7 @@ function condText(x,after){
 /* ================= SHARED DATA (Supabase: accounts, forums, messages) ================= */
 cleanSlate();
 const SB_URL='https://ojsphhzgzbxmnfcbitqb.supabase.co',SB_KEY='sb_publishable_SWO9WhiSkoVhflY5CmY08A_hlqCEJSi';
-const BUILD='1794848669';
+const BUILD='1794850239';
 /* A tab left open on an older build must not save over newer data: if the site has been updated, reload before anything else is saved. */
 let staleBuild=false;
 async function checkBuild(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
@@ -1069,6 +1070,7 @@ function render(){
     discarded:()=>`<h1>Discarded Fighters</h1><p>No fighters have been discarded.</p>`,search:searchHTML,help:()=>helpHTML(arg),newbie:newbieHTML,funding:fundingHTML,retiregym:retireGymHTML,
     edit:()=>planEditHTML(arg),plan:()=>planEditHTML(arg),pf:()=>planFormHTML(arg),rec:()=>recordHTML(arg),gympub:()=>gymPubHTML(arg),gymret:()=>gymRetHTML(arg),gymres:()=>gymResHTML(arg),gymh2h:()=>gymH2HHTML(arg),opub:()=>oFighterHTML(arg),rpub:()=>retFighterHTML(arg),cdiv:()=>cdivHTML(arg),pub:()=>pubHTML(arg),train:()=>trainHTML(arg),report:()=>savedReportHTML(arg),lreport:()=>leagueReportHTML(arg),ppv:ppvHTML};
   $('#view').innerHTML=`<div id="flash" class="note cr" style="display:none;margin-bottom:10px"></div>`+(P[base]||homeHTML)();
+  gdThemeApply(base,arg);
   if(base!=='sbch')sbcStop();
   if(!['simbot','lab','sbch'].includes(base))SB_LOCK=null;
   if(base==='lab'||base==='simbot')setTimeout(labMount,0);else if(base==='sbview')setTimeout(sbMount,0);else if(base==='sbch')setTimeout(sbcMount,0);else if(labAnim){labAnim.stop=true;labAnim=null}
@@ -2762,6 +2764,24 @@ function gymDescBox(raw,o={}){
   const ctl=o.preview?'<span>Preview: this is how your gym page will show it.</span>':`<span>Written by the gym's manager.</span> ${blockAll?'':`<a data-descplain="${esc(o.uid)}">${plain?'Show with HTML':'View without HTML'}</a> · `}<a data-descblockall="1">${blockAll?'Allow HTML in gym descriptions':'Block HTML in all gym descriptions'}</a>`;
   return`<div class="gymDescWrap"><div class="gymDesc">${body}</div><p class="gymDescCtl small mute">${ctl}</p></div>`;
 }
+
+/* Gym page theme (owner, Nov 16, 2026: "the rest of it should be black"): the whole gym page takes the background and text color
+   of the description's outer box (first element with a background-color), so a dark page stays dark edge to edge. Off when HTML is blocked. */
+function gdTheme(uid){const m=managers[uid];if(!m||!m.desc||m.descBlocked)return null;
+  let blockAll=false;try{blockAll=localStorage.getItem('contenders_block_html')==='1'}catch(e){}if(blockAll||gymDescPlain[uid])return null;
+  const h=gdClean(m.desc);if(!h)return null;const t=document.createElement('template');t.innerHTML=h;
+  let el=t.content.firstElementChild,guard=6;while(el&&guard--){if(el.style&&el.style.backgroundColor)break;el=el.firstElementChild}
+  if(!el||!el.style||!el.style.backgroundColor)return null;
+  const rgb=c=>{const d=document.createElement('div');d.style.color=c;document.body.appendChild(d);const v=getComputedStyle(d).color;d.remove();const mm=v.match(/\d+(\.\d+)?/g)||[0,0,0];return mm.slice(0,3).map(Number)};
+  const lum=a=>{const f=v=>{v/=255;return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4)};return .2126*f(a[0])+.7152*f(a[1])+.0722*f(a[2])};
+  const bg=el.style.backgroundColor,B=rgb(bg),dark=lum(B)<.35,fg=el.style.color||(dark?'#eeeeee':'#1b2230');
+  let ln=el.style.borderColor||el.style.borderTopColor||'';const cr=(a,b)=>{const x=lum(a),y=lum(b);return(Math.max(x,y)+.05)/(Math.min(x,y)+.05)};
+  if(!ln||cr(rgb(ln),B)<3)ln=dark?'#ffd23f':'#1f5fbf';
+  return{bg,fg,ln,dark}}
+function gdThemeApply(base,arg){const mn=document.getElementById('main');if(!mn)return;
+  const th=['gympub','gymret','gymres','gymh2h'].includes(base)?gdTheme(arg.split(':')[0]):null;
+  mn.classList.toggle('gymThemed',!!th);mn.classList.toggle('gymDark',!!(th&&th.dark));
+  if(th){mn.style.setProperty('--gbg',th.bg);mn.style.setProperty('--gfg',th.fg);mn.style.setProperty('--gln',th.ln)}else{['--gbg','--gfg','--gln'].forEach(k=>mn.style.removeProperty(k))}}
 
 /* ---------- Main ---------- */
 const POW=`<svg class="pow" viewBox="0 0 60 50"><polygon points="30,2 35,14 48,6 43,19 58,20 45,28 54,40 39,35 34,48 28,36 16,46 18,32 3,34 14,24 4,12 19,15 22,2" fill="#f4c430" stroke="#a33" stroke-width="2"/><text x="30" y="30" text-anchor="middle" font-family="Impact,Arial Black,sans-serif" font-size="13" fill="#c22" transform="rotate(-12 30 28)">BAM!</text></svg>`;
