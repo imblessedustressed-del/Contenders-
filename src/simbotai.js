@@ -192,6 +192,11 @@ const AI_INTENTS=[
   [/\b(plans?|aggression|power|defense|defence|numbers|how (does|do) (it|this|the game) work|how to play|what is this|what do i do)\b/,'plans'],
   [/\b(help|what can (i|you)|commands?)\b/,'help'],
 ];
+/* topic for the public chat bot (owner, Nov 16, 2026): same intents as the Simbot AI window; the server answers with its own short text */
+const AI_CHAT_FN=['hi','feedback','thanks','bye',null,'show'];
+function aiChatKey(text){const t=String(text).replace(/@\s*simbot/ig,' ').trim();if(!t)return'hi';const s=' '+t.toLowerCase().replace(/[’‘]/g,"'")+' ';
+  for(let i=0;i<AI_INTENTS.length;i++){const[re,v]=AI_INTENTS[i];if(re.test(s.trim())||re.test(s))return typeof v==='string'?v:(AI_CHAT_FN[i]||'help')}
+  return'unknown'}
 function aiAnswer(text){const s=' '+String(text).toLowerCase().replace(/[’‘]/g,"'")+' ';
   for(const[re,v]of AI_INTENTS)if(re.test(s.trim())||re.test(s)){if(typeof v==='function')return{x:v()};if(v==='fightme'||v==='show')return{act:v};return{x:AI_TOPICS[v].a()}}
   return{x:[aiRand([`Hmm, you've got me on the ropes with that one. 🤔`,`That one's outside my weight class. 🤷`])+` I know the game inside out though: plans, abilities, knockouts, the league. Or ask the managers in the <a data-go="forums">forums</a>.`,[['❓ What can I ask?','help'],...AI_MAIN.slice(0,2)]]}}
