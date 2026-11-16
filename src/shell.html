@@ -1951,8 +1951,8 @@ function planFormHTML(arg){
   return back;
 }
 function planName_ok(n,except){n=(n||'').trim();if(!n)return'Give the plan a name.';if(n.length>40)return'Plan names can be up to 40 characters.';if(n!==except&&state.plans[n]!=null)return'You already have a plan with that name.';return''}
-/* a brand-new gym's first fighter starts in the Rookies region (owner, Nov 15, 2026); the manager can pick another region */
-function newDraft(){const first=!ROSTER().length&&!(state.retired||[]).length;return{name:'',nick:'',home:'',build:'normal',str:12,kp:2,spd:12,agl:12,chn:11,cnd:13,hgt:6,cut:2,plan:'6/6/8',planName:'Basic',...(first?{region:'rk'}:{})}}
+/* every new fighter starts in the Contenders region (owner, Nov 16, 2026: "home should always be contenders"); the manager can switch him to Bare Knuckles or Rookies */
+function newDraft(){return{name:'',nick:'',home:'',build:'normal',str:12,kp:2,spd:12,agl:12,chn:11,cnd:13,hgt:6,cut:2,plan:'6/6/8',planName:'Basic'}}
 function createHTML(){
   if(!state.draft)state.draft=newDraft();
   return cornerHTML('D');
@@ -1976,7 +1976,7 @@ function cornerHTML(side){
   <p>Please read our <a data-go="aup">policy on offensive names</a> before creating your first fighter.<br>Need advice? Read the <a data-go="newbie">fighter creation guide</a> for new players.</p>
   <div class="flex">
   <table class="grid" data-side="${side}">
-    <tr><td>Region:</td><td colspan="3"><select data-f="region">${opt([['rk','Rookies (12 rounds, for learning, rating up to 18)'],['','Contenders (12 rounds, judges decide)'],['bk','Bare Knuckles (25 rounds, knockdowns decide)']],F.region||'')}</select> <a data-go="help:rookies" class="small">Rookies</a> | <a data-go="help:bk" class="small">Bare Knuckles</a></td></tr>
+    <tr><td>Region:</td><td colspan="3"><select data-f="region">${opt([['','Contenders (12 rounds, judges decide)'],['rk','Rookies (12 rounds, for learning, rating up to 18)'],['bk','Bare Knuckles (25 rounds, knockdowns decide)']],F.region||'')}</select> <a data-go="help:rookies" class="small">Rookies</a> | <a data-go="help:bk" class="small">Bare Knuckles</a></td></tr>
     <tr><td>Name (Max 40 characters):</td><td colspan="3"><input data-f="name" maxlength="40" value="${esc(F.name)}" style="width:95%"></td></tr>
     <tr><td>Nickname:</td><td><input data-f="nick" maxlength="30" value="${esc(F.nick)}" style="width:90%"></td><td>Hometown:</td><td><input data-f="home" maxlength="40" value="${esc(F.home||'')}" style="width:90%"></td></tr>
     <tr><td>Strength:</td>${statCell('str')}<td>KO Punch Bonus:</td>${statCell('kp')}</tr>
@@ -2579,7 +2579,7 @@ const HELP_BODY={
  start:()=>`<p>Contenders is a boxing strategy game. You're the manager: you build fighters, train them, write their fight plans, and watch every bout play out round by round. You never throw a punch yourself. Your decisions win or lose the fight.</p>
   <ol><li><a data-go="register">Sign up</a> and name your gym.</li><li><a data-go="create">Create a fighter</a> by spending his 70 points.</li><li>Write his <a data-go="help:plans">fight plan</a>.</li><li>Test it in <a data-go="simbot">Simbot</a> or a <a data-go="fight">practice fight</a>.</li><li>Fight on his division's <a data-go="help:schedule">fight night</a>, read the report, adjust, repeat.</li></ol>
   <p>There are two regions: <b>Contenders</b> (the regular game) and <b><a data-go="help:bk">Bare Knuckles</a></b>. You pick a fighter's region when you create him, and it can't be changed. Each region has its own rankings and its own WBC, WBA and WBO world titles in every division.</p>`,
- rookies:()=>`<p>The Rookies region is where new managers learn the game. A new gym's first fighter starts here (you can pick another region on the <a data-go="create">Create a Fighter</a> page).</p>
+ rookies:()=>`<p>The Rookies region is where new managers can learn the game against fighters at their level. Every new fighter starts in Contenders; pick Rookies on the <a data-go="create">Create a Fighter</a> page if you want him here.</p>
   <ul><li><b>Same fights as Contenders:</b> 12 rounds, judges decide, the same plans and styles. Everything you learn carries over.</li>
   <li><b>About two fights a week:</b> after his debut, a rookie's next fight is booked on the soonest card at least 3 days away, any night of the week, not just his division's night.</li>
   <li><b>Fight-eve reminder:</b> the day before each rookie fight the Corner Coach sends you his opponent's record and a last check on your plan.</li>
