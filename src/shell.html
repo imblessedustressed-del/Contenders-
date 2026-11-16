@@ -332,6 +332,7 @@ pre.plan{background:#fbfaf7;border:1px solid var(--line)}
 @media(max-width:900px){.sbcWrap{grid-template-columns:1fr}.sbcSide{position:static}.sbcChat{max-height:320px;min-height:160px}}
 
 .gymDescWrap{margin:12px 0}.gymDesc{border:1px solid var(--line);border-radius:8px;padding:12px 14px;max-height:900px;overflow:auto;position:relative;isolation:isolate;contain:layout paint;background:#fffdf8;word-wrap:break-word;overflow-wrap:anywhere}
+#gymSong{position:fixed;right:10px;bottom:10px;z-index:900;background:#111;color:#eee;border:1px solid #444;border-radius:8px;padding:5px;box-shadow:0 4px 16px rgba(0,0,0,.5);font:12px Verdana,sans-serif;width:200px}#gymSong .gsBar{display:flex;align-items:center;gap:4px;margin-bottom:4px}#gymSong .gsT{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#gymSong button{background:#333;color:#eee;border:1px solid #555;border-radius:4px;padding:1px 6px;cursor:pointer;font-size:12px}#gymSong iframe{display:block;width:200px;height:113px;border:0}#gymSong.gsMin iframe{position:absolute;left:-9999px}@media(max-width:600px){#gymSong{right:6px;bottom:6px}}
 #main.gymThemed{background-color:var(--gbg);color:var(--gfg);--ink:var(--gfg)}#main.gymThemed h3.divh{color:var(--gln)}#main.gymThemed a{color:var(--gln)}#main.gymThemed .mute{color:inherit;opacity:.7}#main.gymThemed h1,#main.gymThemed h2,#main.gymThemed h3.divh,#main.gymThemed h1.pubname{color:inherit}#main.gymThemed .gymDesc{background:transparent;border:0;padding:0;max-height:none}#main.gymDark{--card:rgba(255,255,255,.06);--line:rgba(255,255,255,.18)}#main.gymDark p.fl{box-shadow:none}#main.gymDark .note{color:inherit}
 .gdMq{display:block;overflow:hidden;white-space:nowrap}.gdMqT{display:inline-block;padding-left:100%;animation:gdMq 12s linear infinite;will-change:transform}.gdMqR .gdMqT{animation-direction:reverse}@keyframes gdMq{from{transform:translateX(0)}to{transform:translateX(-100%)}}
 .dcBotAv{background:#2b2d31;border:2px solid #57f287;font-size:20px;display:flex;align-items:center;justify-content:center}.dcAvS.dcBotAv{font-size:13px}.dcBotTag{background:#5865f2!important;color:#fff!important}
@@ -520,14 +521,14 @@ async function initDB(){
 }
 async function loadPublic(){
   try{
-    const[p,t,gc,bt]=await Promise.all([SB.from('profiles').select('id,gym,description,location,created_at,desc_blocked'),SB.from('topics').select('*').order('last_at',{ascending:false}).limit(500),SB.from('gym_public').select('user_id,data,updated_at'),(async()=>{const C='id,fight_date,div,red_user,red_fid,blue_user,blue_fid,belt,purse,status,summary,venue,bot_only,region,rounds';
+    const[p,t,gc,bt]=await Promise.all([SB.from('profiles').select('id,gym,description,location,created_at,desc_blocked,song'),SB.from('topics').select('*').order('last_at',{ascending:false}).limit(500),SB.from('gym_public').select('user_id,data,updated_at'),(async()=>{const C='id,fight_date,div,red_user,red_fid,blue_user,blue_fid,belt,purse,status,summary,venue,bot_only,region,rounds';
       const q=await Promise.all([SB.from('bouts').select(C).or('bot_only.eq.false,belt.not.is.null').order('fight_date',{ascending:false}).limit(2000),
         SB.from('bouts').select(C).eq('bot_only',true).eq('status','scheduled').limit(1000),
         SB.from('bouts').select(C).eq('bot_only',true).eq('status','done').is('belt',null).order('fight_date',{ascending:false}).limit(400)]);
       const e=q.find(x=>x.error);if(e)return e;const seen=new Set(),data=[];q.forEach(x=>x.data.forEach(b=>{if(!seen.has(b.id)){seen.add(b.id);data.push(b)}}));
       data.sort((a,b)=>a.fight_date<b.fight_date?1:a.fight_date>b.fight_date?-1:b.id-a.id);return{data,error:null}})()]);
     if(p.error||t.error)throw p.error||t.error;
-    managers={};p.data.forEach(r=>managers[r.id]={hidden:r.id===COACH,gym:r.gym,desc:r.description,loc:r.location||'',bot:false,at:Date.parse(r.created_at),descBlocked:!!r.desc_blocked});
+    managers={};p.data.forEach(r=>managers[r.id]={hidden:r.id===COACH,gym:r.gym,desc:r.description,loc:r.location||'',bot:false,at:Date.parse(r.created_at),descBlocked:!!r.desc_blocked,song:r.song||''});
     /* sparring gyms: the gyms whose full records the database lets everyone read (which ones are computer-run is never sent to players) */
     /* sparring gyms (owner, Nov 14, 2026: nobody sees anyone else's plans): the spar edge function sends only names, records and weights;
        other gyms' abilities and plans stay on the server, and practice fights against them run there */
@@ -643,7 +644,7 @@ function render(){
     discarded:()=>`<h1>Discarded Fighters</h1><p>No fighters have been discarded.</p>`,search:searchHTML,help:()=>helpHTML(arg),newbie:newbieHTML,funding:fundingHTML,retiregym:retireGymHTML,
     edit:()=>planEditHTML(arg),plan:()=>planEditHTML(arg),pf:()=>planFormHTML(arg),rec:()=>recordHTML(arg),gympub:()=>gymPubHTML(arg),gymret:()=>gymRetHTML(arg),gymres:()=>gymResHTML(arg),gymh2h:()=>gymH2HHTML(arg),opub:()=>oFighterHTML(arg),rpub:()=>retFighterHTML(arg),cdiv:()=>cdivHTML(arg),pub:()=>pubHTML(arg),train:()=>trainHTML(arg),report:()=>savedReportHTML(arg),lreport:()=>leagueReportHTML(arg),ppv:ppvHTML};
   $('#view').innerHTML=`<div id="flash" class="note cr" style="display:none;margin-bottom:10px"></div>`+(P[base]||homeHTML)();
-  gdThemeApply(base,arg);gdMarquees($('#view'));
+  gdThemeApply(base,arg);gdMarquees($('#view'));gsApply(base,arg);
   if(base!=='sbch')sbcStop();
   if(!['simbot','lab','sbch'].includes(base))SB_LOCK=null;
   if(base==='lab'||base==='simbot')setTimeout(labMount,0);else if(base==='sbview')setTimeout(sbMount,0);else if(base==='sbch')setTimeout(sbcMount,0);else if(labAnim){labAnim.stop=true;labAnim=null}
@@ -1607,6 +1608,27 @@ function gdThemeApply(base,arg){const mn=document.getElementById('main');if(!mn)
   mn.classList.toggle('gymThemed',!!th);mn.classList.toggle('gymDark',!!(th&&th.dark));
   if(th){mn.style.setProperty('--gbg',th.bg);mn.style.setProperty('--gfg',th.fg);mn.style.setProperty('--gln',th.ln)}else{['--gbg','--gfg','--gln'].forEach(k=>mn.style.removeProperty(k))}}
 
+/* Gym walkout song (owner, Nov 16, 2026): a manager may set a YouTube video for his gym page; a small player sits in the corner
+   (YouTube needs its player visible) and starts on the visitor's first click or tap, since browsers block sound until then. */
+let GS=null;
+function gsId(v){v=String(v||'').trim();const m=v.match(/(?:youtu\.be\/|[?&]v=|\/embed\/|\/shorts\/|\/live\/)([A-Za-z0-9_-]{11})/);if(m)return m[1];return /^[A-Za-z0-9_-]{11}$/.test(v)?v:''}
+function gsOff(){try{return localStorage.getItem('contenders_gym_music')==='off'}catch(e){return false}}
+function gsCmd(f,a){if(!GS)return;const w=GS.el.querySelector('iframe');if(w&&w.contentWindow)w.contentWindow.postMessage(JSON.stringify({event:'command',func:f,args:a||[]}),'*')}
+function gsKill(){if(!GS)return;document.removeEventListener('pointerdown',GS.go,true);document.removeEventListener('keydown',GS.go,true);GS.el.remove();GS=null}
+function gsApply(base,arg){const uid=String(arg||'').split(':')[0],m=base==='gympub'&&managers[uid];
+  const id=m&&!m.descBlocked&&gsId(m.song);
+  if(!id){gsKill();return}if(GS&&GS.uid===uid)return;gsKill();
+  const el=document.createElement('div');el.id='gymSong';const off=gsOff();
+  el.innerHTML=`<div class="gsBar"><span class="gsT">🎵 Walkout song</span><button data-gs="mute" title="Sound on/off">${off?'🔇':'🔊'}</button><button data-gs="min" title="Hide the video">_</button><button data-gs="x" title="Stop">✕</button></div><iframe src="https://www.youtube-nocookie.com/embed/${id}?enablejsapi=1&playsinline=1&loop=1&playlist=${id}&rel=0&modestbranding=1" allow="autoplay; encrypted-media" title="Walkout song"></iframe><div class="gsHint" style="opacity:.7;margin-top:3px">${off?'Music is off on this device':'Click anywhere to start the music'}</div>`;
+  document.body.appendChild(el);
+  GS={uid,el,on:false,go:function(e){if(!GS||GS.on||gsOff())return;if(e&&e.target&&e.target.closest&&e.target.closest('#gymSong'))return;GS.on=true;gsCmd('unMute');gsCmd('playVideo');const h=el.querySelector('.gsHint');if(h)h.remove()}};
+  el.addEventListener('click',e=>{const b=e.target.closest('[data-gs]');if(!b)return;e.stopPropagation();const k=b.dataset.gs;
+    if(k==='x')gsKill();
+    else if(k==='min'){el.classList.toggle('gsMin');b.textContent=el.classList.contains('gsMin')?'▢':'_'}
+    else if(k==='mute'){const nowOff=!gsOff();try{localStorage.setItem('contenders_gym_music',nowOff?'off':'on')}catch(e){}b.textContent=nowOff?'🔇':'🔊';
+      if(nowOff){gsCmd('pauseVideo')}else{GS.on=true;gsCmd('unMute');gsCmd('playVideo')}const h=el.querySelector('.gsHint');if(h)h.remove()}});
+  document.addEventListener('pointerdown',GS.go,true);document.addEventListener('keydown',GS.go,true)}
+
 /* ---------- Main ---------- */
 const POW=`<svg class="pow" viewBox="0 0 60 50"><polygon points="30,2 35,14 48,6 43,19 58,20 45,28 54,40 39,35 34,48 28,36 16,46 18,32 3,34 14,24 4,12 19,15 22,2" fill="#f4c430" stroke="#a33" stroke-width="2"/><text x="30" y="30" text-anchor="middle" font-family="Impact,Arial Black,sans-serif" font-size="13" fill="#c22" transform="rotate(-12 30 28)">BAM!</text></svg>`;
 const FLAGS=[['#b22','#fff','#226'],['#d22','#fff','#d22'],['#063','#fff','#c22'],['#000','#d00','#fc0'],['#039','#fff','#039'],['#c00','#fff','#00a'],['#fc0','#06c','#fc0'],['#090','#fff','#f60'],['#d00','#fff','#d00'],['#00a','#fd0','#00a'],['#c00','#fd0','#c00'],['#fff','#d00','#fff'],['#06c','#fff','#c00'],['#f80','#fff','#090']];
@@ -1966,7 +1988,7 @@ function shortHTML(){
   ${ROSTER().map(s=>{const F=state[s];return`<tr><td><a data-go="rec:${s}">${esc(F.name)}</a></td><td>${recStr(F)}</td>${STATS.map(([k])=>`<td class="n">${F[k]}</td>`).join('')}<td>${Math.floor(HT(F)/12)}'${HT(F)%12}"</td></tr>`}).join('')}</table>`;
 }
 function changeGymHTML(){return`<h1>Change Gym</h1>${needLogin('name your gym')}${ME?gymForm():''}`}
-function descHTML(){if(!ME)return`<h1>Description</h1>${needLogin('describe your gym')}`;return`<h1>Description</h1><p>Where is your gym? <input id="locIn" data-keep maxlength="60" style="width:240px" placeholder="City, State or Country" value="${esc((managers[ME]&&managers[ME].loc)||'')}"></p><p>Tell other managers about your gym. You can dress it up with old-school HTML: <tt>&lt;center&gt;</tt>, <tt>&lt;font color="red" face="Georgia" size="4"&gt;</tt>, <tt>&lt;b&gt;</tt>, <tt>&lt;i&gt;</tt>, <tt>&lt;br&gt;</tt>, <tt>&lt;hr&gt;</tt>, tables, <tt>&lt;img src="https://..."&gt;</tt>, links and even <tt>&lt;marquee&gt;</tt>. Scripts, forms and anything that would change the rest of the site are removed. Anything misleading (fake records, fake site messages, pretending to be another gym or the commissioner) gets your description blocked. Up to 5,000 characters.</p><textarea id="descIn" data-keep rows="12" spellcheck="false">${esc((ME&&managers[ME]&&managers[ME].desc)||state.gymDesc||'')}</textarea><p><button id="saveDesc">Save Description</button> <button id="prevDesc">Preview</button></p><div id="descPrev"></div>`}
+function descHTML(){if(!ME)return`<h1>Description</h1>${needLogin('describe your gym')}`;return`<h1>Description</h1><p>Where is your gym? <input id="locIn" data-keep maxlength="60" style="width:240px" placeholder="City, State or Country" value="${esc((managers[ME]&&managers[ME].loc)||'')}"></p><p>Tell other managers about your gym. You can dress it up with old-school HTML: <tt>&lt;center&gt;</tt>, <tt>&lt;font color="red" face="Georgia" size="4"&gt;</tt>, <tt>&lt;b&gt;</tt>, <tt>&lt;i&gt;</tt>, <tt>&lt;br&gt;</tt>, <tt>&lt;hr&gt;</tt>, tables, <tt>&lt;img src="https://..."&gt;</tt>, links and even <tt>&lt;marquee&gt;</tt>. Scripts, forms and anything that would change the rest of the site are removed. Anything misleading (fake records, fake site messages, pretending to be another gym or the commissioner) gets your description blocked. Up to 5,000 characters.</p><p>Walkout song (plays in a small corner player on your gym page; paste a YouTube link, or leave blank for none): <input id="songIn" data-keep maxlength="200" style="width:320px" placeholder="https://www.youtube.com/watch?v=..." value="${esc((managers[ME]&&managers[ME].song)?'https://www.youtube.com/watch?v='+managers[ME].song:'')}"></p><textarea id="descIn" data-keep rows="12" spellcheck="false">${esc((ME&&managers[ME]&&managers[ME].desc)||state.gymDesc||'')}</textarea><p><button id="saveDesc">Save Description</button> <button id="prevDesc">Preview</button></p><div id="descPrev"></div>`}
 /* ---------- Fighter editor ---------- */
 function cornerHTML(side){
   const F=state.draft||(state.draft=newDraft()),left=POOL-used(F);
@@ -2971,8 +2993,9 @@ document.addEventListener('click',async e=>{
   else if(t.id==='prevDesc'){$('#descPrev').innerHTML=gymDescBox($('#descIn').value.slice(0,5000),{preview:true});gdMarquees($('#descPrev'));return}
   else if(t.dataset.descplain){gymDescPlain[t.dataset.descplain]=!gymDescPlain[t.dataset.descplain];render();return}
   else if(t.dataset.descblockall){try{localStorage.setItem('contenders_block_html',localStorage.getItem('contenders_block_html')==='1'?'0':'1')}catch(e){}render();return}
-  else if(t.id==='saveDesc'){const v=$('#descIn').value.slice(0,5000),loc=$('#locIn').value.trim().slice(0,60);
-    if(await safeWrite(()=>SB.from('profiles').update({description:v,location:loc}).eq('id',ME))){managers[ME]=Object.assign(managers[ME]||{},{desc:v,loc});alertBox('Description saved.')}}
+  else if(t.id==='saveDesc'){const v=$('#descIn').value.slice(0,5000),loc=$('#locIn').value.trim().slice(0,60),sr=($('#songIn')||{value:''}).value.trim(),song=gsId(sr);
+    if(sr&&!song)return alertBox('That walkout song link is not a YouTube video link.');
+    if(await safeWrite(()=>SB.from('profiles').update({description:v,location:loc,song:song||null}).eq('id',ME))){managers[ME]=Object.assign(managers[ME]||{},{desc:v,loc,song});alertBox('Description saved.')}}
   else if(t.id==='doRetireGym'){if($('#retireName').value.trim()!==myGym())return alertBox('The gym name does not match.');
     t.disabled=true;if(await safeWrite(()=>SB.rpc('retire_gym'))){await SB.auth.signOut().catch(()=>{});try{localStorage.removeItem('contenders_v6')}catch(e){}ME=null;alert0()}else t.disabled=false}
   else if(t.id==='doLogout'){await SB.auth.signOut();ME=null;LAB=null;ims=[];updateTop();nav('home')}
