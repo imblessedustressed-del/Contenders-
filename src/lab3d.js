@@ -1,3 +1,5 @@
+/* referee lifting the winner's arm after a decision: the arm on the winner's side goes up high (forward or back in the ref's own frame) */
+function labRaisePose(rx,mid,wx,k){const dirX=rx<mid?1:-1,side=(wx>rx?1:-1)*dirX;return{rear:[side*(14+20*k),-140-150*k],lead:[-side*18,-132],rearUp:k>.4,leadUp:false}}
 /* --- Simbot 3D arena (owner, Nov 14, 2026: "give me some PlayStation 1 graphics... hit me full power"):
    a tiny software 3D renderer in the style of a late-'90s console: low-poly flat-shaded models drawn at 320x180,
    scaled up with hard pixels, vertices snapped to whole pixels (the wobble), fog, affine (warped) textures,
@@ -135,6 +137,8 @@ function lab3D(g,o){const{at,realAt,P,X,tl,f,res,stopBeat,kdNow,big,zoom,inRepla
   {const cb=!inReplay&&tl.beats.find(b=>(((b.k==='kd'||b.k==='ko')&&b.cs!=null)||(b.k==='stop'&&b.why&&b.why!=='dq'))&&at>=b.at+.3&&at<b.at+b.dur+(b.k==='ko'?1.5:0));
     if(cb){const dn=1-cb.a,dir=dn?-1:1,w=Math.min(1,(at-cb.at-.3)/.5,(cb.at+(cb.dur+(cb.k==='ko'?1.5:0))-at)/.5),e=w*w*(3-2*w);
       tx=tx+(Xw[dn]-dir*45-tx)*e;dist=dist+(470-dist)*e;yaw=yaw+(.12-yaw)*e;hgt=hgt+(250-hgt)*e;lookY=lookY+(120-lookY)*e}}
+  if(fin&&!inReplay&&res.decision&&res.w!=null){const w=Math.min(1,(at-tl.beats[tl.beats.length-1].at)/.8),e=w*w*(3-2*w); /* a decision: ease back to a wide side-on shot of the referee raising the winner's hand */
+    tx=tx+((Xw[0]+Xw[1])/2-tx)*e;dist=dist+(600-dist)*e;yaw=yaw+(.08-yaw)*e;hgt=hgt+(230-hgt)*e;lookY=lookY+(150-lookY)*e}
   if(fin&&!inReplay){yaw+=Math.min(1,(at-(tl.beats[tl.beats.length-1].at))*.15)*.25}
   dist/=zoom;
   const T=[tx,lookY,0];let C=[tx+Math.sin(yaw)*dist,hgt,-Math.cos(yaw)*dist];
@@ -183,9 +187,9 @@ function lab3D(g,o){const{at,realAt,P,X,tl,f,res,stopBeat,kdNow,big,zoom,inRepla
   const lift=v=>[v[0],v[1]+mat,v[2]];hits=[];
   [0,1].forEach(i=>{const before=F.length,b=l3body(F,{cam:C,p:P[i],x0:Xw[i],dirX:i?-1:1,Lz:i?1:-1,at,col:(c=>labBKView()?{...c,glove:[236,230,214],cuff:[236,230,214],bk:1}:c)(l3col(LAB_SKIN[i],false,{flat:i===1}))});for(let q=before;q<F.length;q++){F[q].v=F[q].v.map(lift);if(F[q].pc)F[q].pc=lift(F[q].pc);F[q].layer=2}
     hits[i]={head:lift(b.head),chest:lift(b.chest),hip:lift(b.hip)}});
-  {const kdF=kdNow?1-kdNow.a:null,stopX=stopBeat&&at>=stopBeat.at&&!res.decision?Xw[1-res.w]+(res.w?-70:70):null,rx=kdNow?Xw[kdF]+(kdF?60:-60):stopX!=null?stopX:mid-(C[0]-tx)/Math.max(1,dist)*150+Math.sin(at*.37)*40; // the referee works the far side, away from the camera
+  {const kdF=kdNow?1-kdNow.a:null,stopX=stopBeat&&at>=stopBeat.at&&!res.decision?Xw[1-res.w]+(res.w?-70:70):null,rx=LAB_RAISE?Xw[LAB_RAISE.w]+(Xw[1-LAB_RAISE.w]>Xw[LAB_RAISE.w]?58:-58):kdNow?Xw[kdF]+(kdF?60:-60):stopX!=null?stopX:mid-(C[0]-tx)/Math.max(1,dist)*150+Math.sin(at*.37)*40; // the referee works the far side, away from the camera
     const count=!!kdNow||(stopBeat&&at>=stopBeat.at&&res.type==='KO'),rp={seed:5,lean:0,hug:0,lunge:0,snap:0,tired:0,bodyHit:0,guardDrop:30,fall:0,wob:0,cel:0,
-      ...(LAB_WAVE!=null?{rear:[14+Math.sin(LAB_WAVE*11)*26,-282],lead:[14-Math.sin(LAB_WAVE*11)*26,-278],rearUp:true,leadUp:true}:{rear:count?[24,-200+labRefArm(at)*-60]:[18,-130],lead:[22,-135],rearUp:!!count})};
+      ...(LAB_RAISE?labRaisePose(rx,mid,Xw[LAB_RAISE.w],LAB_RAISE.k):LAB_WAVE!=null?{rear:[14+Math.sin(LAB_WAVE*11)*26,-282],lead:[14-Math.sin(LAB_WAVE*11)*26,-278],rearUp:true,leadUp:true}:{rear:count?[24,-200+labRefArm(at)*-60]:[18,-130],lead:[22,-135],rearUp:!!count})};
     shadow(rx,200,36,22);const before=F.length;l3body(F,{cam:C,zoff:200,p:rp,x0:rx,dirX:rx<mid?1:-1,Lz:-1,at,col:l3col({sk:'#d9a066',skD:'#a8714a'},true),ref:true});
     for(let q=before;q<F.length;q++){F[q].v=F[q].v.map(v=>[v[0],v[1]+mat,v[2]+200]);if(F[q].pc)F[q].pc=[F[q].pc[0],F[q].pc[1]+mat,F[q].pc[2]+200];F[q].layer=2}}
   // shade, cull, fog, sort and draw
@@ -435,9 +439,9 @@ gl.uniform3fv(loc.uEye,C);gl.uniform1f(loc.uAlpha,1);gl.uniform1f(loc.uFlash,0);
   // the people and their shadows
   const M=glMesh(),hits=[];
   [0,1].forEach(i=>{const b=glBody(M,{p:P[i],x0:Xw[i],y0:mat,dirX:i?-1:1,Lz:i?1:-1,at,K:labBKView()?{...glKit(LAB_SKIN[i],i),bk:1,wrap:[238,232,218,.22],wrapD:[200,192,175,.15]}:glKit(LAB_SKIN[i],i)});hits[i]={head:b.head,chest:b.chest,hip:b.hip}});
-  const kdF=kdNow?1-kdNow.a:null,stopX=stopBeat&&at>=stopBeat.at&&!res.decision?Xw[1-res.w]+(res.w?-70:70):null,tx=o.tx,dist=o.dist,rx=kdNow?Xw[kdF]+(kdF?60:-60):stopX!=null?stopX:mid-(C[0]-tx)/Math.max(1,dist)*150+Math.sin(at*.37)*40;
+  const kdF=kdNow?1-kdNow.a:null,stopX=stopBeat&&at>=stopBeat.at&&!res.decision?Xw[1-res.w]+(res.w?-70:70):null,tx=o.tx,dist=o.dist,rx=LAB_RAISE?Xw[LAB_RAISE.w]+(Xw[1-LAB_RAISE.w]>Xw[LAB_RAISE.w]?58:-58):kdNow?Xw[kdF]+(kdF?60:-60):stopX!=null?stopX:mid-(C[0]-tx)/Math.max(1,dist)*150+Math.sin(at*.37)*40;
   const count=!!kdNow||(stopBeat&&at>=stopBeat.at&&res.type==='KO');
-  glBody(M,{p:{seed:5,lean:0,hug:0,lunge:0,snap:0,tired:0,bodyHit:0,guardDrop:30,fall:0,wob:0,cel:0,...(LAB_WAVE!=null?{rear:[14+Math.sin(LAB_WAVE*11)*26,-282],lead:[14-Math.sin(LAB_WAVE*11)*26,-278],rearUp:true,leadUp:true}:{rear:count?[24,-200+labRefArm(at)*-60]:[18,-130],lead:[22,-135],rearUp:!!count})},x0:rx,y0:mat,z0:200,dirX:rx<mid?1:-1,Lz:-1,at,ref:true,K:glRefKit('#d9a066')});
+  glBody(M,{p:{seed:5,lean:0,hug:0,lunge:0,snap:0,tired:0,bodyHit:0,guardDrop:30,fall:0,wob:0,cel:0,...(LAB_RAISE?labRaisePose(rx,mid,Xw[LAB_RAISE.w],LAB_RAISE.k):LAB_WAVE!=null?{rear:[14+Math.sin(LAB_WAVE*11)*26,-282],lead:[14-Math.sin(LAB_WAVE*11)*26,-278],rearUp:true,leadUp:true}:{rear:count?[24,-200+labRefArm(at)*-60]:[18,-130],lead:[22,-135],rearUp:!!count})},x0:rx,y0:mat,z0:200,dirX:rx<mid?1:-1,Lz:-1,at,ref:true,K:glRefKit('#d9a066')});
   if(intro)glBody(M,{p:{seed:9,lean:0,hug:0,lunge:0,snap:0,tired:0,bodyHit:0,guardDrop:0,fall:0,wob:0,cel:0,rear:[8,-262+Math.sin(realAt*4)*6],lead:[16,-130],rearUp:true},x0:0,y0:mat,z0:-40,fx:0,fz:-1,sx:1,sz:0,dirX:1,Lz:-1,at,ref:true,K:{...glRefKit('#c68e5d'),shirt:[24,24,28,.2],trunk:[24,24,28,.1],band:[24,24,28,.1],tie:[200,16,46,.3],hair:[28,18,10,.1]}});
   const dyn=G.dyn||(G.dyn={bufs:['aP','aN','aC','aT'].map((a,i)=>[a,gl.createBuffer(),[3,3,4,2][i]])});
   [M.p,M.n,M.c,M.t].forEach((d,i)=>{gl.bindBuffer(gl.ARRAY_BUFFER,dyn.bufs[i][1]);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(d),gl.DYNAMIC_DRAW)});dyn.n=M.p.length/3;
@@ -510,4 +514,5 @@ function labSfx(b){const c=labSndCtx();if(!c)return;const t=c.currentTime+.01;
     case 'stop':labPunchSnd(c,t,'ko');labNoise(c,t+.4,.3,{f:220,g:.8});labRoar(c,t+.1,1.4,5);labBell(c,t+1.2,4);break;
     case 'cnt':labSay(b.out&&b.last?'Ten! You\'re out!':LAB_WORDS[b.n-1]);if(b.out&&b.last){labBell(c,t+.9,4);labRoar(c,t+.6,1.3,4.5)}break;
     case 'bell':labBell(c,t,1);labCheer(c,t,.2,1.2);break;case 'start':labBell(c,t,1);break;
-    case 'final':if(b.win===false){labCheer(c,t,.5,2.5);break}labRoar(c,t,1.5,5.5);labRoar(c,t+1.6,1.1,4);labCheer(c,t+.3,1,5);break}}
+    case 'cards':labSay('Ladies and gentlemen, we go to the scorecards.');labCheer(c,t,.3,2);break;
+    case 'final':if(b.say)labSay(b.say);if(b.win===false){labCheer(c,t,.5,2.5);break}labRoar(c,t,1.5,5.5);labRoar(c,t+1.6,1.1,4);labCheer(c,t+.3,1,5);break}}
