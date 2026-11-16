@@ -333,6 +333,7 @@ pre.plan{background:#fbfaf7;border:1px solid var(--line)}
 
 .gymDescWrap{margin:12px 0}.gymDesc{border:1px solid var(--line);border-radius:8px;padding:12px 14px;max-height:900px;overflow:auto;position:relative;isolation:isolate;contain:layout paint;background:#fffdf8;word-wrap:break-word;overflow-wrap:anywhere}
 #main.gymThemed{background-color:var(--gbg);color:var(--gfg);--ink:var(--gfg)}#main.gymThemed h3.divh{color:var(--gln)}#main.gymThemed a{color:var(--gln)}#main.gymThemed .mute{color:inherit;opacity:.7}#main.gymThemed h1,#main.gymThemed h2,#main.gymThemed h3.divh,#main.gymThemed h1.pubname{color:inherit}#main.gymThemed .gymDesc{background:transparent;border:0;padding:0;max-height:none}#main.gymDark{--card:rgba(255,255,255,.06);--line:rgba(255,255,255,.18)}#main.gymDark p.fl{box-shadow:none}#main.gymDark .note{color:inherit}
+.gdMq{display:block;overflow:hidden;white-space:nowrap}.gdMqT{display:inline-block;padding-left:100%;animation:gdMq 12s linear infinite;will-change:transform}.gdMqR .gdMqT{animation-direction:reverse}@keyframes gdMq{from{transform:translateX(0)}to{transform:translateX(-100%)}}
 .gymDesc img{max-width:100%;height:auto}.gymDesc table{max-width:100%}.gymDesc a::after{content:" \2197";font-size:.85em}.gymDescCtl{margin-top:4px}
 </style>
 </head>
@@ -641,7 +642,7 @@ function render(){
     discarded:()=>`<h1>Discarded Fighters</h1><p>No fighters have been discarded.</p>`,search:searchHTML,help:()=>helpHTML(arg),newbie:newbieHTML,funding:fundingHTML,retiregym:retireGymHTML,
     edit:()=>planEditHTML(arg),plan:()=>planEditHTML(arg),pf:()=>planFormHTML(arg),rec:()=>recordHTML(arg),gympub:()=>gymPubHTML(arg),gymret:()=>gymRetHTML(arg),gymres:()=>gymResHTML(arg),gymh2h:()=>gymH2HHTML(arg),opub:()=>oFighterHTML(arg),rpub:()=>retFighterHTML(arg),cdiv:()=>cdivHTML(arg),pub:()=>pubHTML(arg),train:()=>trainHTML(arg),report:()=>savedReportHTML(arg),lreport:()=>leagueReportHTML(arg),ppv:ppvHTML};
   $('#view').innerHTML=`<div id="flash" class="note cr" style="display:none;margin-bottom:10px"></div>`+(P[base]||homeHTML)();
-  gdThemeApply(base,arg);
+  gdThemeApply(base,arg);gdMarquees($('#view'));
   if(base!=='sbch')sbcStop();
   if(!['simbot','lab','sbch'].includes(base))SB_LOCK=null;
   if(base==='lab'||base==='simbot')setTimeout(labMount,0);else if(base==='sbview')setTimeout(sbMount,0);else if(base==='sbch')setTimeout(sbcMount,0);else if(labAnim){labAnim.stop=true;labAnim=null}
@@ -1551,6 +1552,15 @@ function gdTheme(uid){const m=managers[uid];if(!m||!m.desc||m.descBlocked)return
   let ln=el.style.borderColor||el.style.borderTopColor||'';const cr=(a,b)=>{const x=lum(a),y=lum(b);return(Math.max(x,y)+.05)/(Math.min(x,y)+.05)};
   if(!ln||cr(rgb(ln),B)<3)ln=dark?'#ffd23f':'#1f5fbf';
   return{bg,fg,ln,dark}}
+/* Smooth marquees (owner, Nov 16, 2026): the browser's own <marquee> measures its box once and restarts halfway when the page widens.
+   Each one in a gym description is swapped for a CSS scroller: text enters from the right edge, crosses the full width, leaves on the left, repeats. */
+function gdMarquees(root){(root||document).querySelectorAll('.gymDesc marquee').forEach(mq=>{
+  const box=document.createElement('div');box.className='gdMq';const st=mq.getAttribute('style');if(st)box.setAttribute('style',st);
+  const t=document.createElement('span');t.className='gdMqT';t.innerHTML=mq.innerHTML;box.appendChild(t);
+  if(/right/i.test(mq.getAttribute('direction')||''))box.classList.add('gdMqR');
+  const amt=Math.max(1,Math.min(40,parseInt(mq.getAttribute('scrollamount'))||6));mq.replaceWith(box);
+  const fit=()=>{t.style.animationDuration=Math.max(4,t.scrollWidth/(amt*12))+'s'};
+  fit();if(window.ResizeObserver){let last=box.clientWidth;new ResizeObserver(()=>{if(Math.abs(box.clientWidth-last)>20){last=box.clientWidth;fit()}}).observe(box)}})}
 function gdThemeApply(base,arg){const mn=document.getElementById('main');if(!mn)return;
   const th=['gympub','gymret','gymres','gymh2h'].includes(base)?gdTheme(arg.split(':')[0]):null;
   mn.classList.toggle('gymThemed',!!th);mn.classList.toggle('gymDark',!!(th&&th.dark));
@@ -2917,7 +2927,7 @@ document.addEventListener('click',async e=>{
   else if(t.id==='saveGym'){const v=$('#gymIn').value.trim().slice(0,40);if(v.length<2)return alertBox('Gym names need at least 2 characters.');
     {const bad=await gymNameProblem(v,ME);if(bad)return alertBox(bad)}
     if(await safeWrite(()=>SB.from('profiles').update({gym:v}).eq('id',ME))){managers[ME]=Object.assign(managers[ME]||{},{gym:v});state.gymName=v;save();updateTop();alertBox('Gym name saved.')}}
-  else if(t.id==='prevDesc'){$('#descPrev').innerHTML=gymDescBox($('#descIn').value.slice(0,5000),{preview:true});return}
+  else if(t.id==='prevDesc'){$('#descPrev').innerHTML=gymDescBox($('#descIn').value.slice(0,5000),{preview:true});gdMarquees($('#descPrev'));return}
   else if(t.dataset.descplain){gymDescPlain[t.dataset.descplain]=!gymDescPlain[t.dataset.descplain];render();return}
   else if(t.dataset.descblockall){try{localStorage.setItem('contenders_block_html',localStorage.getItem('contenders_block_html')==='1'?'0':'1')}catch(e){}render();return}
   else if(t.id==='saveDesc'){const v=$('#descIn').value.slice(0,5000),loc=$('#locIn').value.trim().slice(0,60);
