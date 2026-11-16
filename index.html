@@ -918,7 +918,7 @@ function condText(x,after){
 /* ================= SHARED DATA (Supabase: accounts, forums, messages) ================= */
 cleanSlate();
 const SB_URL='https://ojsphhzgzbxmnfcbitqb.supabase.co',SB_KEY='sb_publishable_SWO9WhiSkoVhflY5CmY08A_hlqCEJSi';
-const BUILD='1794850626';
+const BUILD='1794851925';
 /* A tab left open on an older build must not save over newer data: if the site has been updated, reload before anything else is saved. */
 let staleBuild=false;
 async function checkBuild(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
@@ -1288,7 +1288,7 @@ function labSim(){const L=labState(),err=labErr();$('#labErr').textContent=err;i
 /* --- the highlight reel --- */
 const labTxt=h=>String(h).replace(/<\/p>\s*<p[^>]*>/g,' ').replace(/<[^>]+>/g,'').replace(/&amp;/g,'&').replace(/&quot;/g,'"').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/\s+/g,' ').trim();
 /* the referee's count (owner, Nov 15, 2026: a count you can hear, to the number in the fight report): the fighter falls, the count starts, one number every LAB_CNT seconds, then he climbs back up */
-const LAB_CNT=.7,LAB_FALL=.5,LAB_RISE=1;let labRefPh=null;
+const LAB_CNT=.7,LAB_FALL=.5,LAB_RISE=1;let labRefPh=null,LAB_WAVE=null;
 /* referee's counting arm, 0 = down: it comes down on every number while a count is on, else a steady wave */
 const labRefArm=t=>labRefPh!=null?Math.abs(Math.sin(Math.PI*labRefPh)):Math.abs(Math.sin(t*5.5));
 const labKdCount=x=>{const m=/back on his feet at (\d+)/.exec(x.html||'');return m?+m[1]:x.k==='ko'?10:0};
@@ -1306,14 +1306,17 @@ function labBeats(f){const L=labState(),sched=f.rounds.length&&L.bout?L.bout.rou
       let downName='';if(x.k==='kd'||x.k==='ko'){const fp=/^<p[^>]*>(.*?)<\/p>/.exec(x.html||'');b.txt=labTxt(fp?fp[1]:x.html).replace(/ collapses!!$/,' goes down!!');const m=/ and (.+?) (goes down|collapses)/.exec(b.txt+' collapses');downName=m?m[1]:''}
       if(x.k==='kd'||x.k==='ko'){const n=labKdCount(x);b.cnt=n;b.cs=at+LAB_FALL;b.dur=LAB_FALL+n*LAB_CNT+(x.k==='ko'?.6:LAB_RISE);
         for(let k=1;k<=n;k++){const W=['ONE','TWO','THREE','FOUR','FIVE','SIX','SEVEN','EIGHT','NINE','TEN'][k-1]+'!';beats.push({at:b.cs+k*LAB_CNT,k:'cnt',n:k,last:k===n,out:x.k==='ko',round:R.n,txt:k<n?W:x.k==='ko'?W+" He's out!!!":W+' '+(downName||'He')+' is back on his feet!'})}extra+=b.dur+(x.k==='ko'?.4:.2)}
-      else if(x.k==='st')extra+=.5});
+      else if(x.k==='st')extra+=.5;
+      if(x.k==='stop'){const h=x.html||'';b.why=/doctor/i.test(h)?'doc':/disqualif/i.test(h)?'dq':/exhausted/i.test(h)?'exh':'ref'; /* how the fight was stopped, so Simbot can show it (owner, Nov 16, 2026) */
+        if(b.why==='doc'){const pm=(R.post||[]).map(labTxt).find(q=>/ringside doctor/i.test(q));if(pm)b.txt=pm;const m=pm&&/because of (.+?)!*$/.exec(pm);b.docWhy=m?m[1]:''}
+        b.dur=b.why==='doc'?4.8:b.why==='dq'?2.6:3.4;extra+=b.dur}});
     const dur=per+extra;rounds.push({n:R.n,start,end:start+dur,R,last,clockEnd:end});t=start+dur;
     if(!last||f.result.decision){beats.push({at:t,k:'bell',round:R.n,txt:R.cc?`End of round ${R.n}. The judges: ${R.cards.map(c=>c.join('-')).join(', ')}.`:`End of round ${R.n}.`});t+=BKV?2.4:3.2} /* the break with the punch stats lasts about 3 seconds (2.4 in Bare Knuckles) */
   });
   const r=f.result,W=r.w==null?null:L.names[r.w];
   beats.push({at:t+.2,k:'final',win:r.w!=null,txt:W?`${W} wins by ${r.type}${r.decision?'':' in round '+r.round}!`:`It's a ${r.type.toLowerCase()}!`});
   /* stoppages get an instant replay in slow motion (looks only: the fight itself is already decided) */
-  const sb=!r.decision&&beats.find(b=>b.k==='ko'||b.k==='stop');
+  const sb=!r.decision&&beats.find(b=>b.k==='ko'||(b.k==='stop'&&b.why!=='doc'&&b.why!=='dq'));
   const replay=sb?{start:t+2.6,dur:3.4,from:sb.at-.55,rate:.32}:null;
   return{beats,rounds,replay,total:replay?replay.start+replay.dur+3.2:t+4};
 }
@@ -1421,13 +1424,38 @@ function labFighter(g,c,p,opD,t){
   const armL=labIK(sh[0],hL,36,34,p.leadUp);labLimb(g,sh[0],armL[0],10,8,c.sk,c.skD);labLimb(g,armL[0],armL[1],8,7,c.sk,c.skD);labGlove(g,armL[1][0],armL[1][1],c,true);
   return{head,chest:[8+lean,-160+crouch]};
 }
+/* the ringside doctor (owner, Nov 16, 2026: "show some type of doctor stopping the fight"): drawn over every graphics mode next to the hurt man.
+   d = seconds since the stoppage: walks in from his side of the ring (0.3-1.1), checks the cut with a penlight (1.1-2.6), then waves it off */
+function labDoctor(g,d,li){const fl=LAB_FPOS[li],fw=LAB_FPOS[1-li];if(!fl)return;
+  const side=fw?(fl[0]>=fw[0]?1:-1):(li?1:-1),sc=Math.max(.75,Math.min(2,(fw?Math.abs(fl[0]-fw[0]):170)/170)),tx=fl[0]+side*95*sc,y=Math.min(536,fl[1]),x0=side>0?1020:-60;
+  const wk=Math.min(1,Math.max(0,(d-.3)/.8)),x=x0+(tx-x0)*wk*wk*(3-2*wk),mode=d<1.1?'walk':d<2.6?'exam':'wave',stp=mode==='walk'?Math.sin(d*14):0;
+  g.save();g.translate(x,y);g.scale(-side*sc,sc); /* faces the fighter */
+  g.fillStyle='rgba(0,0,0,.28)';g.beginPath();g.ellipse(0,0,34,7,0,0,7);g.fill();
+  g.strokeStyle='#2a2f3a';g.lineWidth=11;g.lineCap='round';g.beginPath();g.moveTo(-6,-92);g.lineTo(-8+stp*12,-6);g.moveTo(6,-92);g.lineTo(8-stp*12,-6);g.stroke();
+  g.fillStyle='#111';g.beginPath();g.ellipse(-4+stp*12,-3,11,5,0,0,7);g.ellipse(12-stp*12,-3,11,5,0,0,7);g.fill();
+  g.fillStyle='#f4f6f8';g.strokeStyle='#c9ced6';g.lineWidth=2;g.beginPath();g.moveTo(-22,-196);g.lineTo(22,-196);g.lineTo(30,-84);g.lineTo(-30,-84);g.closePath();g.fill();g.stroke(); /* white coat */
+  g.strokeStyle='#c9ced6';g.beginPath();g.moveTo(0,-196);g.lineTo(0,-86);g.moveTo(-12,-196);g.lineTo(0,-160);g.lineTo(12,-196);g.stroke();
+  g.fillStyle='#3b6fd8';g.fillRect(-8,-196,16,30); /* scrubs */
+  g.fillStyle='#d61f2c';g.fillRect(12,-168,12,4);g.fillRect(16,-172,4,12); /* red cross badge */
+  g.strokeStyle='#333';g.lineWidth=3;g.beginPath();g.moveTo(-12,-194);g.quadraticCurveTo(-16,-150,0,-146);g.quadraticCurveTo(14,-150,10,-194);g.stroke();g.fillStyle='#999';g.beginPath();g.arc(0,-144,4,0,7);g.fill(); /* stethoscope */
+  g.fillStyle='#e0b48a';g.beginPath();g.arc(2,-216,16,0,7);g.fill();g.fillStyle='#9a9a9a';g.beginPath();g.arc(0,-222,16,Math.PI*1.05,Math.PI*1.95);g.fill();
+  g.strokeStyle='#222';g.lineWidth=2;g.beginPath();g.arc(9,-218,4.5,0,7);g.moveTo(13,-218);g.lineTo(16,-218);g.stroke(); /* glasses */
+  g.strokeStyle='#f4f6f8';g.lineWidth=10;g.beginPath();
+  if(mode==='walk'){g.moveTo(-14,-188);g.lineTo(-16-stp*10,-128);g.moveTo(14,-188);g.lineTo(16+stp*10,-128)}
+  else if(mode==='exam'){g.moveTo(14,-188);g.lineTo(46,-206);g.moveTo(-14,-188);g.lineTo(-10,-130)} /* penlight up to the eye */
+  else{const sw=Math.sin((d-2.6)*11)*24;g.moveTo(-14,-190);g.lineTo(-4+sw,-252);g.moveTo(14,-190);g.lineTo(4-sw,-252)} /* waves it off */
+  g.stroke();g.fillStyle='#e0b48a';
+  if(mode==='exam'){g.beginPath();g.arc(48,-207,6,0,7);g.fill();if(Math.sin(d*20)>-.3){g.fillStyle='rgba(255,250,200,.85)';g.beginPath();g.moveTo(52,-208);g.lineTo(80,-220);g.lineTo(80,-196);g.closePath();g.fill()}}
+  else if(mode==='wave'){const sw=Math.sin((d-2.6)*11)*24;g.beginPath();g.arc(-4+sw,-255,6,0,7);g.arc(4-sw,-255,6,0,7);g.fill()}
+  g.restore()}
 function labRef(g,x,y,s,t,count){g.save();g.translate(x,y);g.scale(s,s);
   g.fillStyle='rgba(0,0,0,.25)';g.beginPath();g.ellipse(0,0,36,8,0,0,7);g.fill();
   g.fillStyle='#1b1b1b';g.beginPath();g.moveTo(-14,-112);g.lineTo(14,-112);g.lineTo(26,0);g.lineTo(10,0);g.lineTo(0,-70);g.lineTo(-10,0);g.lineTo(-26,0);g.closePath();g.fill();
   g.fillStyle='#f6f6f6';g.beginPath();g.moveTo(-20,-112);g.lineTo(20,-112);g.lineTo(24,-182);g.quadraticCurveTo(0,-196,-24,-182);g.closePath();g.fill();
   g.fillStyle='#111';g.fillRect(-6,-186,12,5);g.fillStyle='#d9a066';g.beginPath();g.arc(0,-204,14,0,7);g.fill();g.fillStyle='#777';g.beginPath();g.arc(0,-210,14,Math.PI,2*Math.PI);g.fill();
   const arm=count?labRefArm(t):0;g.strokeStyle='#f0f0f0';g.lineWidth=9;g.lineCap='round';
-  g.beginPath();g.moveTo(-18,-176);g.lineTo(-30,-140);g.moveTo(18,-176);g.lineTo(32,count?-200+arm*70:-138);g.stroke();
+  if(LAB_WAVE!=null){const sw=Math.sin(LAB_WAVE*11)*26;g.beginPath();g.moveTo(-18,-176);g.lineTo(-6+sw,-240);g.moveTo(18,-176);g.lineTo(6-sw,-240);g.stroke()} /* waving it off over his head */
+  else{g.beginPath();g.moveTo(-18,-176);g.lineTo(-30,-140);g.moveTo(18,-176);g.lineTo(32,count?-200+arm*70:-138);g.stroke()}
   g.restore()}
 function labBigText(g,txt,x,y,size,c1,c2){g.save();g.font=`italic 900 ${size}px Impact, 'Arial Black', sans-serif`;g.textAlign='center';
   const gr=g.createLinearGradient(0,y-size,0,y);gr.addColorStop(0,'#fff8d0');gr.addColorStop(.45,c1);gr.addColorStop(.5,c2);gr.addColorStop(1,c1);
@@ -1454,9 +1482,14 @@ function labDraw(at,tl){const cv=$('#labCv');if(!cv)return;const g=cv.getContext
         if(d<.3)fl=d/.3;else if(d<up)fl=1-(d>up-1.4?.06*Math.max(0,Math.sin((d-up+1.4)*5)):0);else{const r=Math.min(1,(d-up)/LAB_RISE);fl=r<.45?1-.48*ss(r/.45):r<.6?.52:.52*(1-ss((r-.6)/.4))}
         o.fall=Math.max(o.fall,fl);if(d>=up)o.wob=Math.max(o.wob,.5*(1-Math.min(1,(d-up)/(LAB_RISE+.8))))}});
     if(stopBeat&&at>=stopBeat.at&&!res.decision){const d=at-stopBeat.at;
-      if(res.w===1-i){if(res.type==='KO'){const c=stopBeat.cs!=null?(at-stopBeat.cs)/LAB_CNT:0;o.fall=Math.min(1,d/.35)-(c>4&&c<8.6?.07*Math.max(0,Math.sin((c-4)*2.2)):0)}else o.wob=Math.max(o.wob,.7)} /* a KO'd man stirs mid-count like he's trying to beat it */
-      if(res.w===i&&d<.42){o.punch={hand:'rear',type:'cross',e:Math.sin(Math.PI*d/.42),low:false};o.lunge=o.punch.e}
-      if(res.w===i&&d>(res.type==='KO'&&stopBeat.cs!=null?stopBeat.cs-stopBeat.at+stopBeat.cnt*LAB_CNT+.3:1.2))o.cel=1} /* on a KO he waits in his corner until the referee reaches ten (owner, Nov 15, 2026) */
+      const why=stopBeat.why||'ref',ss=x=>x*x*(3-2*x);
+      if(res.w===1-i){if(res.type==='KO'){const c=stopBeat.cs!=null?(at-stopBeat.cs)/LAB_CNT:0;o.fall=Math.min(1,d/.35)-(c>4&&c<8.6?.07*Math.max(0,Math.sin((c-4)*2.2)):0)}
+        else if(why==='ref')o.fall=Math.max(o.fall,.56*ss(Math.min(1,Math.max(0,(d-.3)/.45)))); /* the big shot drops him to a knee and the referee waves it off */
+        else if(why==='exh'){o.wob=Math.max(o.wob,.8);o.tired=1;o.guardDrop=40;o.fall=Math.max(o.fall,.56*ss(Math.min(1,Math.max(0,(d-.8)/.6))))} /* arms down, sags to a knee */
+        else if(why==='doc'){o.wob=Math.max(o.wob,.35);o.cut=1;o.guardDrop=30}
+        else o.wob=Math.max(o.wob,.4)}
+      if(res.w===i&&d<.42&&why==='ref'){o.punch={hand:'rear',type:'cross',e:Math.sin(Math.PI*d/.42),low:false};o.lunge=o.punch.e}
+      if(res.w===i&&d>(res.type==='KO'&&stopBeat.cs!=null?stopBeat.cs-stopBeat.at+stopBeat.cnt*LAB_CNT+.3:why==='doc'?4:why==='dq'?1.4:2.2))o.cel=1} /* on a KO he waits in his corner until the referee reaches ten (owner, Nov 15, 2026) */
     if(fin&&res.decision&&res.w===i&&at-lastBeat.at>.6)o.cel=1;
     const prev=tl.rounds[tl.rounds.indexOf(cur)-1],en0=prev&&prev.R.en?prev.R.en[i]:1,en1=cur.R.en?cur.R.en[i]:1,pr=Math.max(0,Math.min(1,(at-cur.start)/(cur.end-cur.start)));
     o.en=en0+(en1-en0)*pr;o.tired=Math.max(0,.55-o.en)*1.6;o.guardDrop=o.tired*16;o.sweat=Math.min(.8,o.tired*.9);o.sweatT=(at*1.3+i*.5)%1;return o};
@@ -1479,6 +1512,7 @@ function labDraw(at,tl){const cv=$('#labCv');if(!cv)return;const g=cv.getContext
   const kdNow=tl.beats.find(b=>b.k==='kd'&&at-b.at>=0&&at-b.at<(b.dur||1.6));
   /* the count on screen and the referee's arm: one drop per number */
   const cntB=tl.beats.find(b=>(b.k==='kd'||b.k==='ko')&&b.cs!=null&&at>=b.cs&&at<b.cs+b.cnt*LAB_CNT+.35);labRefPh=cntB?(at-cntB.cs)/LAB_CNT:null;
+  {const sd=stopBeat&&stopBeat.k==='stop'&&!res.decision?at-stopBeat.at:-1,w0={ref:.85,exh:1.3,dq:.25,doc:3}[stopBeat&&stopBeat.why]||.85;LAB_WAVE=sd>=w0&&sd<w0+2.4?sd-w0:null} /* referee waving it off */
   const zoom=1+(kdNow?.06*Math.min(1,(at-kdNow.at)*4):0)+(fin&&res&&!res.decision?.04:0)+(inReplay?.22:0)+(intro?.05*(1-at/LAB_INTRO):0);
   g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,W,H);
   const gfx=l3gfx();
@@ -1593,6 +1627,10 @@ function labDraw(at,tl){const cv=$('#labCv');if(!cv)return;const g=cv.getContext
     if(cb){const ph=(at-cb.cs)/LAB_CNT,n=Math.floor(ph),pop=1+.35*Math.max(0,1-(ph-n)*4);
       if(cb.k==='ko'&&n>=cb.cnt){const k=Math.min(1,(ph-n)*3);labBigText(g,'K.O.!',cx,250,Math.round(150*(1.6-.6*k)),'#ffd23f','#c4121f')}
       else{labBigText(g,'KNOCKDOWN!',cx,105,62,'#ffd23f','#c47f00');const m=Math.min(n,cb.cnt);if(m>=1){g.save();g.globalAlpha=n>=cb.cnt?.85:Math.max(.35,1-(ph-n)*.6);labBigText(g,String(m),cx,250,Math.round(120*(n>=cb.cnt?1:pop)),'#ffffff','#c4121f');g.restore()}}}
+    else if(stopBeat&&stopBeat.k==='stop'&&!res.decision&&at>=stopBeat.at){const d=at-stopBeat.at,why=stopBeat.why||'ref',li=1-res.w;
+      if(why==='doc'){labDoctor(g,d,li);if(d<2.6){g.save();g.globalAlpha=Math.min(1,d*3);labBigText(g,'TIME OUT!',cx,105,54,'#ffffff','#9aa0aa');g.font="bold 20px Verdana, sans-serif";g.textAlign='center';g.fillStyle='#fff';g.strokeStyle='#000';g.lineWidth=4;const tx2='The ringside doctor is called in to look at '+(L.names[li]||'him');g.strokeText(tx2,cx,138);g.fillText(tx2,cx,138);g.restore()}
+        else{const k=Math.min(1,(d-2.6)/.2);labBigText(g,'THE DOCTOR STOPS IT!',cx,110,Math.round(58*(1.3-.3*k)),'#ffd23f','#c4121f');if(stopBeat.docWhy){g.save();g.font="bold 22px Verdana, sans-serif";g.textAlign='center';g.fillStyle='#fff';g.strokeStyle='#000';g.lineWidth=4;const t2=stopBeat.docWhy.toUpperCase();g.strokeText(t2,cx,146);g.fillText(t2,cx,146);g.restore()}}}
+      else{const w0={ref:.85,exh:1.3,dq:.25}[why];if(d>=w0){const k=Math.min(1,(d-w0)/.2);labBigText(g,why==='dq'?'DISQUALIFIED!':why==='exh'?'HE CAN\'T GO ON!':'THE REFEREE STOPS IT!',cx,110,Math.round(58*(1.3-.3*k)),'#ffd23f','#c4121f')}}}
     else if(st){const si=1-st.a,fp=LAB_FPOS[si],k=Math.min(1,(at-st.at)/.15),sz=Math.round(46*(1.25-.25*k));
       if(fp){const x=Math.max(130,Math.min(W-130,fp[0])),y=Math.max(150,Math.min(H-28,fp[1]+44));labBigText(g,'STUNNED!',x,y,sz,'#ff9e4a','#c4121f');g.save();g.fillStyle=si?'#5aa0ff':'#ff5a5a';g.beginPath();g.moveTo(x-12,y-sz*.95);g.lineTo(x+12,y-sz*.95);g.lineTo(x,y-sz*.95-14);g.closePath();g.fill();g.restore()}
       else labBigText(g,'STUNNED!',cx,220,62,'#ff9e4a','#c4121f')}
@@ -1605,7 +1643,7 @@ function labDraw(at,tl){const cv=$('#labCv');if(!cv)return;const g=cv.getContext
   if(fin&&res.w!=null){const d=at-lastBeat.at;if(d>.4){const rr=LAB_RNG(11),cols=res.w?['#1d4ed8','#8fb4ff','#ffd23f','#fff']:['#c8102e','#ff8f8f','#ffd23f','#fff'];
     for(let k=0;k<90;k++){const x0=rr()*W,sp2=60+rr()*90,y=((d-.4)*sp2+rr()*H*1.2)%(H+40)-20,x=x0+Math.sin(d*2+k)*18;g.save();g.translate(x,y);g.rotate(d*3+k);g.fillStyle=cols[k%4];g.fillRect(-4,-2,8,4);g.restore()}}}
   if(fin){const d=at-lastBeat.at;g.save();g.globalAlpha=Math.min(1,d*3);g.fillStyle='rgba(0,0,0,.6)';g.fillRect(0,170,W,140);g.globalAlpha=1;
-    labBigText(g,res.w==null?'DRAW!':!res.decision?(res.type==='KO'?'K.O.!':'T.K.O.!'):'DECISION',cx,252,res.decision?66:96,'#ffd23f','#c47f00');
+    labBigText(g,res.w==null?'DRAW!':!res.decision?(res.type==='KO'?'K.O.!':res.type==='DQ'?'D.Q.!':'T.K.O.!'):'DECISION',cx,252,res.decision?66:96,'#ffd23f','#c47f00');
     g.font="italic 900 26px Impact, 'Arial Black', sans-serif";g.textAlign='center';g.fillStyle=res.w===0?'#ff8f8f':res.w===1?'#8fb4ff':'#fff';
     g.fillText(res.w==null?res.type.toUpperCase():`${L.names[res.w].toUpperCase()} WINS${res.decision?' BY '+res.type.toUpperCase():' IN ROUND '+res.round}`,cx,294);
     const TB=L.bout&&L.bout.title;if(TB&&res.w!=null&&d>.8){g.globalAlpha=Math.min(1,(d-.8)*2);g.fillStyle='rgba(0,0,0,.7)';g.fillRect(0,312,W,92);const tos=TB.orgs||[TB.org];labBelt(g,cx-330,322,120,tos[0]);labBelt(g,cx+210,322,120,tos[tos.length-1]);
@@ -1770,7 +1808,7 @@ function lab3D(g,o){const{at,realAt,P,X,tl,f,res,stopBeat,kdNow,big,zoom,inRepla
   if(inReplay){const lo=res.w==null?0:1-res.w;tx=Xw[lo]*.6+mid*.4;dist=420;hgt=160;yaw=-.55+Math.sin(realAt*.4)*.12}
   /* during a referee's count the camera eases back and down to frame the man on the canvas and the referee over him (owner, Nov 15, 2026) */
   let lookY=intro?170:198;
-  {const cb=!inReplay&&tl.beats.find(b=>(b.k==='kd'||b.k==='ko')&&b.cs!=null&&at>=b.at+.3&&at<b.at+b.dur+(b.k==='ko'?1.5:0));
+  {const cb=!inReplay&&tl.beats.find(b=>(((b.k==='kd'||b.k==='ko')&&b.cs!=null)||(b.k==='stop'&&b.why&&b.why!=='dq'))&&at>=b.at+.3&&at<b.at+b.dur+(b.k==='ko'?1.5:0));
     if(cb){const dn=1-cb.a,dir=dn?-1:1,w=Math.min(1,(at-cb.at-.3)/.5,(cb.at+(cb.dur+(cb.k==='ko'?1.5:0))-at)/.5),e=w*w*(3-2*w);
       tx=tx+(Xw[dn]-dir*45-tx)*e;dist=dist+(470-dist)*e;yaw=yaw+(.12-yaw)*e;hgt=hgt+(250-hgt)*e;lookY=lookY+(120-lookY)*e}}
   if(fin&&!inReplay){yaw+=Math.min(1,(at-(tl.beats[tl.beats.length-1].at))*.15)*.25}
@@ -1823,7 +1861,7 @@ function lab3D(g,o){const{at,realAt,P,X,tl,f,res,stopBeat,kdNow,big,zoom,inRepla
     hits[i]={head:lift(b.head),chest:lift(b.chest),hip:lift(b.hip)}});
   {const kdF=kdNow?1-kdNow.a:null,stopX=stopBeat&&at>=stopBeat.at&&!res.decision?Xw[1-res.w]+(res.w?-70:70):null,rx=kdNow?Xw[kdF]+(kdF?60:-60):stopX!=null?stopX:mid-(C[0]-tx)/Math.max(1,dist)*150+Math.sin(at*.37)*40; // the referee works the far side, away from the camera
     const count=!!kdNow||(stopBeat&&at>=stopBeat.at&&res.type==='KO'),rp={seed:5,lean:0,hug:0,lunge:0,snap:0,tired:0,bodyHit:0,guardDrop:30,fall:0,wob:0,cel:0,
-      rear:count?[24,-200+labRefArm(at)*-60]:[18,-130],lead:[22,-135],rearUp:!!count};
+      ...(LAB_WAVE!=null?{rear:[14+Math.sin(LAB_WAVE*11)*26,-282],lead:[14-Math.sin(LAB_WAVE*11)*26,-278],rearUp:true,leadUp:true}:{rear:count?[24,-200+labRefArm(at)*-60]:[18,-130],lead:[22,-135],rearUp:!!count})};
     shadow(rx,200,36,22);const before=F.length;l3body(F,{cam:C,zoff:200,p:rp,x0:rx,dirX:rx<mid?1:-1,Lz:-1,at,col:l3col({sk:'#d9a066',skD:'#a8714a'},true),ref:true});
     for(let q=before;q<F.length;q++){F[q].v=F[q].v.map(v=>[v[0],v[1]+mat,v[2]+200]);if(F[q].pc)F[q].pc=[F[q].pc[0],F[q].pc[1]+mat,F[q].pc[2]+200];F[q].layer=2}}
   // shade, cull, fog, sort and draw
@@ -2075,7 +2113,7 @@ gl.uniform3fv(loc.uEye,C);gl.uniform1f(loc.uAlpha,1);gl.uniform1f(loc.uFlash,0);
   [0,1].forEach(i=>{const b=glBody(M,{p:P[i],x0:Xw[i],y0:mat,dirX:i?-1:1,Lz:i?1:-1,at,K:labBKView()?{...glKit(LAB_SKIN[i],i),bk:1,wrap:[238,232,218,.22],wrapD:[200,192,175,.15]}:glKit(LAB_SKIN[i],i)});hits[i]={head:b.head,chest:b.chest,hip:b.hip}});
   const kdF=kdNow?1-kdNow.a:null,stopX=stopBeat&&at>=stopBeat.at&&!res.decision?Xw[1-res.w]+(res.w?-70:70):null,tx=o.tx,dist=o.dist,rx=kdNow?Xw[kdF]+(kdF?60:-60):stopX!=null?stopX:mid-(C[0]-tx)/Math.max(1,dist)*150+Math.sin(at*.37)*40;
   const count=!!kdNow||(stopBeat&&at>=stopBeat.at&&res.type==='KO');
-  glBody(M,{p:{seed:5,lean:0,hug:0,lunge:0,snap:0,tired:0,bodyHit:0,guardDrop:30,fall:0,wob:0,cel:0,rear:count?[24,-200+labRefArm(at)*-60]:[18,-130],lead:[22,-135],rearUp:!!count},x0:rx,y0:mat,z0:200,dirX:rx<mid?1:-1,Lz:-1,at,ref:true,K:glRefKit('#d9a066')});
+  glBody(M,{p:{seed:5,lean:0,hug:0,lunge:0,snap:0,tired:0,bodyHit:0,guardDrop:30,fall:0,wob:0,cel:0,...(LAB_WAVE!=null?{rear:[14+Math.sin(LAB_WAVE*11)*26,-282],lead:[14-Math.sin(LAB_WAVE*11)*26,-278],rearUp:true,leadUp:true}:{rear:count?[24,-200+labRefArm(at)*-60]:[18,-130],lead:[22,-135],rearUp:!!count})},x0:rx,y0:mat,z0:200,dirX:rx<mid?1:-1,Lz:-1,at,ref:true,K:glRefKit('#d9a066')});
   if(intro)glBody(M,{p:{seed:9,lean:0,hug:0,lunge:0,snap:0,tired:0,bodyHit:0,guardDrop:0,fall:0,wob:0,cel:0,rear:[8,-262+Math.sin(realAt*4)*6],lead:[16,-130],rearUp:true},x0:0,y0:mat,z0:-40,fx:0,fz:-1,sx:1,sz:0,dirX:1,Lz:-1,at,ref:true,K:{...glRefKit('#c68e5d'),shirt:[24,24,28,.2],trunk:[24,24,28,.1],band:[24,24,28,.1],tie:[200,16,46,.3],hair:[28,18,10,.1]}});
   const dyn=G.dyn||(G.dyn={bufs:['aP','aN','aC','aT'].map((a,i)=>[a,gl.createBuffer(),[3,3,4,2][i]])});
   [M.p,M.n,M.c,M.t].forEach((d,i)=>{gl.bindBuffer(gl.ARRAY_BUFFER,dyn.bufs[i][1]);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(d),gl.DYNAMIC_DRAW)});dyn.n=M.p.length/3;

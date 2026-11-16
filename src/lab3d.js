@@ -132,7 +132,7 @@ function lab3D(g,o){const{at,realAt,P,X,tl,f,res,stopBeat,kdNow,big,zoom,inRepla
   if(inReplay){const lo=res.w==null?0:1-res.w;tx=Xw[lo]*.6+mid*.4;dist=420;hgt=160;yaw=-.55+Math.sin(realAt*.4)*.12}
   /* during a referee's count the camera eases back and down to frame the man on the canvas and the referee over him (owner, Nov 15, 2026) */
   let lookY=intro?170:198;
-  {const cb=!inReplay&&tl.beats.find(b=>(b.k==='kd'||b.k==='ko')&&b.cs!=null&&at>=b.at+.3&&at<b.at+b.dur+(b.k==='ko'?1.5:0));
+  {const cb=!inReplay&&tl.beats.find(b=>(((b.k==='kd'||b.k==='ko')&&b.cs!=null)||(b.k==='stop'&&b.why&&b.why!=='dq'))&&at>=b.at+.3&&at<b.at+b.dur+(b.k==='ko'?1.5:0));
     if(cb){const dn=1-cb.a,dir=dn?-1:1,w=Math.min(1,(at-cb.at-.3)/.5,(cb.at+(cb.dur+(cb.k==='ko'?1.5:0))-at)/.5),e=w*w*(3-2*w);
       tx=tx+(Xw[dn]-dir*45-tx)*e;dist=dist+(470-dist)*e;yaw=yaw+(.12-yaw)*e;hgt=hgt+(250-hgt)*e;lookY=lookY+(120-lookY)*e}}
   if(fin&&!inReplay){yaw+=Math.min(1,(at-(tl.beats[tl.beats.length-1].at))*.15)*.25}
@@ -185,7 +185,7 @@ function lab3D(g,o){const{at,realAt,P,X,tl,f,res,stopBeat,kdNow,big,zoom,inRepla
     hits[i]={head:lift(b.head),chest:lift(b.chest),hip:lift(b.hip)}});
   {const kdF=kdNow?1-kdNow.a:null,stopX=stopBeat&&at>=stopBeat.at&&!res.decision?Xw[1-res.w]+(res.w?-70:70):null,rx=kdNow?Xw[kdF]+(kdF?60:-60):stopX!=null?stopX:mid-(C[0]-tx)/Math.max(1,dist)*150+Math.sin(at*.37)*40; // the referee works the far side, away from the camera
     const count=!!kdNow||(stopBeat&&at>=stopBeat.at&&res.type==='KO'),rp={seed:5,lean:0,hug:0,lunge:0,snap:0,tired:0,bodyHit:0,guardDrop:30,fall:0,wob:0,cel:0,
-      rear:count?[24,-200+labRefArm(at)*-60]:[18,-130],lead:[22,-135],rearUp:!!count};
+      ...(LAB_WAVE!=null?{rear:[14+Math.sin(LAB_WAVE*11)*26,-282],lead:[14-Math.sin(LAB_WAVE*11)*26,-278],rearUp:true,leadUp:true}:{rear:count?[24,-200+labRefArm(at)*-60]:[18,-130],lead:[22,-135],rearUp:!!count})};
     shadow(rx,200,36,22);const before=F.length;l3body(F,{cam:C,zoff:200,p:rp,x0:rx,dirX:rx<mid?1:-1,Lz:-1,at,col:l3col({sk:'#d9a066',skD:'#a8714a'},true),ref:true});
     for(let q=before;q<F.length;q++){F[q].v=F[q].v.map(v=>[v[0],v[1]+mat,v[2]+200]);if(F[q].pc)F[q].pc=[F[q].pc[0],F[q].pc[1]+mat,F[q].pc[2]+200];F[q].layer=2}}
   // shade, cull, fog, sort and draw
@@ -437,7 +437,7 @@ gl.uniform3fv(loc.uEye,C);gl.uniform1f(loc.uAlpha,1);gl.uniform1f(loc.uFlash,0);
   [0,1].forEach(i=>{const b=glBody(M,{p:P[i],x0:Xw[i],y0:mat,dirX:i?-1:1,Lz:i?1:-1,at,K:labBKView()?{...glKit(LAB_SKIN[i],i),bk:1,wrap:[238,232,218,.22],wrapD:[200,192,175,.15]}:glKit(LAB_SKIN[i],i)});hits[i]={head:b.head,chest:b.chest,hip:b.hip}});
   const kdF=kdNow?1-kdNow.a:null,stopX=stopBeat&&at>=stopBeat.at&&!res.decision?Xw[1-res.w]+(res.w?-70:70):null,tx=o.tx,dist=o.dist,rx=kdNow?Xw[kdF]+(kdF?60:-60):stopX!=null?stopX:mid-(C[0]-tx)/Math.max(1,dist)*150+Math.sin(at*.37)*40;
   const count=!!kdNow||(stopBeat&&at>=stopBeat.at&&res.type==='KO');
-  glBody(M,{p:{seed:5,lean:0,hug:0,lunge:0,snap:0,tired:0,bodyHit:0,guardDrop:30,fall:0,wob:0,cel:0,rear:count?[24,-200+labRefArm(at)*-60]:[18,-130],lead:[22,-135],rearUp:!!count},x0:rx,y0:mat,z0:200,dirX:rx<mid?1:-1,Lz:-1,at,ref:true,K:glRefKit('#d9a066')});
+  glBody(M,{p:{seed:5,lean:0,hug:0,lunge:0,snap:0,tired:0,bodyHit:0,guardDrop:30,fall:0,wob:0,cel:0,...(LAB_WAVE!=null?{rear:[14+Math.sin(LAB_WAVE*11)*26,-282],lead:[14-Math.sin(LAB_WAVE*11)*26,-278],rearUp:true,leadUp:true}:{rear:count?[24,-200+labRefArm(at)*-60]:[18,-130],lead:[22,-135],rearUp:!!count})},x0:rx,y0:mat,z0:200,dirX:rx<mid?1:-1,Lz:-1,at,ref:true,K:glRefKit('#d9a066')});
   if(intro)glBody(M,{p:{seed:9,lean:0,hug:0,lunge:0,snap:0,tired:0,bodyHit:0,guardDrop:0,fall:0,wob:0,cel:0,rear:[8,-262+Math.sin(realAt*4)*6],lead:[16,-130],rearUp:true},x0:0,y0:mat,z0:-40,fx:0,fz:-1,sx:1,sz:0,dirX:1,Lz:-1,at,ref:true,K:{...glRefKit('#c68e5d'),shirt:[24,24,28,.2],trunk:[24,24,28,.1],band:[24,24,28,.1],tie:[200,16,46,.3],hair:[28,18,10,.1]}});
   const dyn=G.dyn||(G.dyn={bufs:['aP','aN','aC','aT'].map((a,i)=>[a,gl.createBuffer(),[3,3,4,2][i]])});
   [M.p,M.n,M.c,M.t].forEach((d,i)=>{gl.bindBuffer(gl.ARRAY_BUFFER,dyn.bufs[i][1]);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(d),gl.DYNAMIC_DRAW)});dyn.n=M.p.length/3;
