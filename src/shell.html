@@ -699,9 +699,22 @@ function labAnnotate(plan,st){const lines=String(plan).split('\n').filter(l=>!/^
   return[`# ${st?st.nm.toUpperCase()+': '+st.line:'FIGHT PLAN'}`,`# Each line is AGGRESSION/POWER/DEFENSE (20 points at most; whatever is left over he rests).`,`# Every round he reads top to bottom and uses the LAST line that is true.`,...(()=>{let sec=0;return lines.map(l=>{const m=/^\s*(\d+)\)/.exec(l);if(m)sec=+m[1];return labNote(l,sec)})})()].join('\n')} /* lines under an "N)" line only count from round N on, so their notes say so */
 function starterBuild(id,level){const st=starterOf(id);if(!st)return null;const lv=level||'title';
   const[stt,pl]=st.isNew?SB_NEW[lv==='basic'?'basic':'title'][st.id]:labPreset(st.id,lv);return{st,stats:{...stt},plan:labAnnotate(pl,st)}}
+/* same weight class (owner, Nov 15, 2026: "anytime a new person makes a fighter in simbot the opponent needs to be in the same weight class"):
+   a starter put in a corner is fitted to the other corner's lightest division by his build and height; points moved into or out of Height
+   come from / go to his biggest abilities, so his total and his shape stay the same */
+const labDivIdx=F=>{const w=minWeight(F),i=DIVS.findIndex(d=>d[1]>=w);return i<0?DIVS.length-1:i};
+function labFitWeight(F,O){if(!F||!O)return false;const want=labDivIdx(O);if(labDivIdx(F)===want)return false;
+  const max=labMaxS(),base={...F},cur=base.build||'normal';let best=null;
+  for(const b of Object.keys(BUILDS))for(let dh=-12;dh<=12;dh++){const G={...base,build:b};let ok=true;
+    for(let k=0;k<Math.abs(dh)&&ok;k++){
+      if(dh>0){const don=['str','spd','agl','chn','cnd'].filter(x=>G[x]>(MINS[x]||1)+1&&!(x==='str'&&(G.kp||0)*3>G.str-1)).sort((x,y)=>G[y]-G[x])[0];if(!don||G.hgt>=21)ok=false;else{G[don]--;G.hgt++}}
+      else{const rec=['str','spd','agl','chn','cnd'].filter(x=>G[x]<max).sort((x,y)=>G[y]-G[x])[0];if(!rec||G.hgt<=0)ok=false;else{G.hgt--;G[rec]++}}}
+    if(!ok)continue;const cost=Math.abs(labDivIdx(G)-want)*1000+Math.abs(dh)*3+(b!==cur?1:0);if(!best||cost<best.cost)best={cost,G}}
+  if(best&&best.cost<Math.abs(labDivIdx(base)-want)*1000){Object.assign(F,best.G);return true}return false}
+function labPairFit(L,c){const o=c==='A'?'B':'A';labFitWeight(L[c],L[o]);if(labDivIdx(L[c])!==labDivIdx(L[o])&&labFitWeight(L[o],L[c]))labRefresh(o)}
 function labApplyStarter(F,id,level){const b=starterBuild(id,level);if(!b)return;Object.assign(F,b.stats,{plan:b.plan,planName:b.st.nm});labScale(F,LAB_LEVELS[level||'title'].pool,LAB_LEVELS[level||'title'].max)}
 function labMk(name,pre,home,level){const[st,pl]=labPreset(pre,level);const lv=LAB_LEVELS[level||'title'],sto=starterOf(pre);return labScale({name,nick:'',home,build:'normal',...st,plan:sto?labAnnotate(pl,sto):pl,planName:sto?sto.nm:pre,rec:[0,0,0,0],hist:[],rating:0,status:0},lv.pool,lv.max)}
-function labState(){if(LABV)return LABV;if(SBC&&view.startsWith('sbch:'))return SBC.L;if(!LAB)LAB={A:labMk('Red Rocket','Slugger','Detroit, Michigan'),B:labMk('Blue Thunder','Counterpuncher','Philadelphia, Pennsylvania'),level:'title',div:'',rounds:'12',speed:30,fight:null,bout:null};return LAB}
+function labState(){if(LABV)return LABV;if(SBC&&view.startsWith('sbch:'))return SBC.L;if(!LAB)LAB={A:labMk('Red Rocket','Slugger','Detroit, Michigan'),B:labMk('Blue Thunder','Counterpuncher','Philadelphia, Pennsylvania'),level:'title',div:'',rounds:'12',speed:30,fight:null,bout:null};if(!LAB.fitted){LAB.fitted=1;labFitWeight(LAB.B,LAB.A)}return LAB}
 const labDiv=()=>{const L=labState();if(L.div)return L.div;const need=Math.max(minWeight(L.A),minWeight(L.B));return(DIVS.find(d=>d[1]>=need)||DIVS[DIVS.length-1])[0]};
 function labErr(){const L=labState();
   for(const c of['A','B']){const F=L[c],n=F.name.trim()||(c==='A'?'The red corner':'The blue corner'),u=used(F);
@@ -784,7 +797,7 @@ function labMount(){const root=$('#lab');if(!root)return;
 function labInput(e){const el=e.target,c=el.dataset.c;if(el.dataset.lf==='name'||el.dataset.lf==='plan'){labState()[c][el.dataset.lf]=el.value;if(el.dataset.lf==='plan')labState()[c].planName='Custom'}}
 function labChange(e){const el=e.target,L=labState(),c=el.dataset.c;
   if(el.dataset.lf==='cut'||el.dataset.lf==='build'){L[c][el.dataset.lf]=el.dataset.lf==='cut'?+el.value:el.value;labRefresh(c);return}
-  if(el.dataset.lq){const k=el.value;if(!k)return;labApplyStarter(L[el.dataset.lq],k,L.level);labRefresh(el.dataset.lq);return}
+  if(el.dataset.lq){const k=el.value;if(!k)return;const c=el.dataset.lq;labApplyStarter(L[c],k,L.level);if(!SBC||!view.startsWith('sbch:'))labPairFit(L,c);labRefresh(c);return}
   if(el.dataset.lmine){const F=state[el.value];if(!F)return;const t=L[el.dataset.lmine];
     ['str','kp','spd','agl','chn','cnd','hgt','cut','build','name','home'].forEach(k=>t[k]=F[k]);t.plan=F.plan;t.planName=F.planName;
     // trained fighters can have any number of points: grow or trim him to this level's pool, keeping his shape
@@ -795,7 +808,7 @@ function labChange(e){const el=e.target,L=labState(),c=el.dataset.c;
 }
 function labClick(e){const ai=e.target.closest('[data-ai]');if(ai&&!ai.closest('#aiFab')){aiAct(ai.dataset.ai,ai);return}
   const t=e.target.closest('button');if(!t)return;const L=labState();
-  if(t.dataset.starter){const c=t.dataset.c;labApplyStarter(L[c],t.dataset.starter,L.level);labRefresh(c);const card=$('#labCard'+c);if(card){card.scrollIntoView({behavior:'smooth',block:'nearest'});card.classList.add('flash');setTimeout(()=>card.classList.remove('flash'),700)}return}
+  if(t.dataset.starter){const c=t.dataset.c;labApplyStarter(L[c],t.dataset.starter,L.level);labPairFit(L,c);labRefresh(c);const card=$('#labCard'+c);if(card){card.scrollIntoView({behavior:'smooth',block:'nearest'});card.classList.add('flash');setTimeout(()=>card.classList.remove('flash'),700)}return}
   if(t.dataset.lpm){const c=t.dataset.c,k=t.dataset.lpm,F=L[c],d=+t.dataset.d;
     const lo=MINS[k]??0,hi=k==='hgt'?21:labMaxS();F[k]=Math.max(lo,Math.min(hi,F[k]+d));
     if(k==='str'&&F.kp>Math.floor(F.str/3))F.kp=Math.floor(F.str/3);if(k==='kp'&&F.kp>Math.floor(F.str/3))F.kp=Math.floor(F.str/3);
