@@ -1167,9 +1167,9 @@ function labDraw(at,tl){const cv=$('#labCv');if(!cv)return;const g=cv.getContext
     else if(bell){if(at-bell.at<1.1)labBigText(g,'DING DING!',cx,212,50,'#ffffff','#9aa0aa');const R=(tl.rounds.find(r=>r.n===bell.round)||{}).R;
       if(R&&R.st){g.save();g.fillStyle='rgba(8,10,16,.82)';g.beginPath();g.roundRect(cx-210,236,420,78,8);g.fill();g.strokeStyle='#d4af37';g.lineWidth=2;g.stroke();
         g.font="bold 13px Verdana, sans-serif";g.textAlign='center';g.fillStyle='#d4af37';g.fillText(`ROUND ${R.n} PUNCH STATS`,cx,256);
-        R.st.forEach((s,i)=>{const lan=s.jl+s.pl+s.rl,thr=s.jt+s.pt+s.rt;g.fillStyle=i?'#8fb4ff':'#ff8f8f';g.font="bold 15px Verdana, sans-serif";g.textAlign=i?'right':'left';
-          g.fillText(`${lan}/${thr} landed`,i?cx+196:cx-196,282);g.font="12px Verdana, sans-serif";g.fillStyle='#ddd';g.fillText(`${s.pl} power  ${s.jl} jabs`,i?cx+196:cx-196,302)});
-        if(R.cc){g.textAlign='center';g.fillStyle='#fff';g.font="bold 16px Verdana, sans-serif";g.fillText(`${R.cc[0]}-${R.cc[1]}`,cx,292)}g.restore()}}}
+        R.st.forEach((s,i)=>{const sd=i^LAB_SW,lan=s.jl+s.pl+s.rl,thr=s.jt+s.pt+s.rt;g.fillStyle=i?'#8fb4ff':'#ff8f8f';g.font="bold 15px Verdana, sans-serif";g.textAlign=sd?'right':'left'; /* each fighter's numbers on his own side of the screen */
+          g.fillText(`${lan}/${thr} landed`,sd?cx+196:cx-196,282);g.font="12px Verdana, sans-serif";g.fillStyle='#ddd';g.fillText(`${s.pl} power  ${s.jl} jabs`,sd?cx+196:cx-196,302)});
+        if(R.cc){g.textAlign='center';g.fillStyle='#fff';g.font="bold 16px Verdana, sans-serif";g.fillText(LAB_SW?`${R.cc[1]}-${R.cc[0]}`:`${R.cc[0]}-${R.cc[1]}`,cx,292)}g.restore()}}}
   if(fin&&res.w!=null){const d=at-lastBeat.at;if(d>.4){const rr=LAB_RNG(11),cols=res.w?['#1d4ed8','#8fb4ff','#ffd23f','#fff']:['#c8102e','#ff8f8f','#ffd23f','#fff'];
     for(let k=0;k<90;k++){const x0=rr()*W,sp2=60+rr()*90,y=((d-.4)*sp2+rr()*H*1.2)%(H+40)-20,x=x0+Math.sin(d*2+k)*18;g.save();g.translate(x,y);g.rotate(d*3+k);g.fillStyle=cols[k%4];g.fillRect(-4,-2,8,4);g.restore()}}}
   if(fin){const d=at-lastBeat.at;g.save();g.globalAlpha=Math.min(1,d*3);g.fillStyle='rgba(0,0,0,.6)';g.fillRect(0,170,W,140);g.globalAlpha=1;
