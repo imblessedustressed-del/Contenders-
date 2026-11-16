@@ -860,7 +860,7 @@ const LAB_CNT=.7,LAB_FALL=.5,LAB_RISE=1;let labRefPh=null;
 /* referee's counting arm, 0 = down: it comes down on every number while a count is on, else a steady wave */
 const labRefArm=t=>labRefPh!=null?Math.abs(Math.sin(Math.PI*labRefPh)):Math.abs(Math.sin(t*5.5));
 const labKdCount=x=>{const m=/back on his feet at (\d+)/.exec(x.html||'');return m?+m[1]:x.k==='ko'?10:0};
-function labBeats(f){const L=labState(),sched=f.rounds.length&&L.bout?L.bout.rounds:12,per=11; /* each round plays in 11 seconds (owner, Nov 15, 2026: 5 seconds longer than the 6 s set Nov 14) */
+function labBeats(f){const L=labState(),sched=f.rounds.length&&L.bout?L.bout.rounds:12,BKV=labBKView(),per=BKV?7:11; /* Bare Knuckles rounds play quicker: 7 s and a shorter break (owner, Nov 16, 2026: 25 rounds, "a little bit quicker") */ /* each round plays in 11 seconds (owner, Nov 15, 2026: 5 seconds longer than the 6 s set Nov 14) */
   const beats=[],rounds=[];let t=LAB_INTRO;
   f.rounds.forEach((R,ri)=>{const last=ri===f.rounds.length-1,end=last&&f.result&&!f.result.decision?f.result.t:180;
     const ev=(R.lines||[]).filter(x=>x.k);
@@ -876,7 +876,7 @@ function labBeats(f){const L=labState(),sched=f.rounds.length&&L.bout?L.bout.rou
         for(let k=1;k<=n;k++){const W=['ONE','TWO','THREE','FOUR','FIVE','SIX','SEVEN','EIGHT','NINE','TEN'][k-1]+'!';beats.push({at:b.cs+k*LAB_CNT,k:'cnt',n:k,last:k===n,out:x.k==='ko',round:R.n,txt:k<n?W:x.k==='ko'?W+" He's out!!!":W+' '+(downName||'He')+' is back on his feet!'})}extra+=b.dur+(x.k==='ko'?.4:.2)}
       else if(x.k==='st')extra+=.5});
     const dur=per+extra;rounds.push({n:R.n,start,end:start+dur,R,last,clockEnd:end});t=start+dur;
-    if(!last||f.result.decision){beats.push({at:t,k:'bell',round:R.n,txt:R.cc?`End of round ${R.n}. The judges: ${R.cards.map(c=>c.join('-')).join(', ')}.`:`End of round ${R.n}.`});t+=3.2} /* the break with the punch stats lasts about 3 seconds */
+    if(!last||f.result.decision){beats.push({at:t,k:'bell',round:R.n,txt:R.cc?`End of round ${R.n}. The judges: ${R.cards.map(c=>c.join('-')).join(', ')}.`:`End of round ${R.n}.`});t+=BKV?2.4:3.2} /* the break with the punch stats lasts about 3 seconds (2.4 in Bare Knuckles) */
   });
   const r=f.result,W=r.w==null?null:L.names[r.w];
   beats.push({at:t+.2,k:'final',win:r.w!=null,txt:W?`${W} wins by ${r.type}${r.decision?'':' in round '+r.round}!`:`It's a ${r.type.toLowerCase()}!`});
@@ -926,7 +926,15 @@ function labLimb(g,A,B,wa,wb,col,colD){const ang=Math.atan2(B[1]-A[1],B[0]-A[0])
   const gr=g.createLinearGradient(A[0]+nx*wa,A[1]+ny*wa,A[0]-nx*wa,A[1]-ny*wa);gr.addColorStop(0,col);gr.addColorStop(1,colD);g.fillStyle=gr;
   g.beginPath();g.moveTo(A[0]+nx*wa,A[1]+ny*wa);g.lineTo(B[0]+nx*wb,B[1]+ny*wb);g.lineTo(B[0]-nx*wb,B[1]-ny*wb);g.lineTo(A[0]-nx*wa,A[1]-ny*wa);g.closePath();g.fill();
   g.beginPath();g.arc(B[0],B[1],wb,0,7);g.fill()}
-function labGlove(g,x,y,c,big){const r=big?17:15;const gr=g.createRadialGradient(x-5,y-6,2,x,y,r+3);gr.addColorStop(0,'#fff');gr.addColorStop(.18,c.gl);gr.addColorStop(1,c.glD);
+/* Bare Knuckles fights show taped fists instead of gloves (owner, Nov 16, 2026: "instead of boxing gloves... bare knuckles or UFC style wraps") */
+function labBKView(){const L=labState();if(!L)return false;const b=L.bout;return!!(b&&(b.rounds===25||b.region==='bk'))||(!b&&L.rounds==='bk')}
+function labFist(g,x,y,c,big){const rear=c.glD==='#300',sk=rear?c.skD:c.sk,r=big?12:11,tape=rear?'#cfc8b8':'#f1ece0',tapeD=rear?'#a59d8c':'#c9c1ae';g.save();
+  g.fillStyle=tape;g.beginPath();g.ellipse(x-2,y,r+1,r,0,0,7);g.fill();g.strokeStyle=tapeD;g.lineWidth=1.4;
+  for(let k=-1;k<=1;k++){g.beginPath();g.moveTo(x-r+1,y+k*5-3);g.quadraticCurveTo(x,y+k*5+2,x+r-4,y+k*5-1);g.stroke()}
+  g.fillStyle=sk;g.beginPath();g.ellipse(x+r-3,y,5,r-1,0,0,7);g.fill();g.fillStyle=rear?'rgba(0,0,0,.25)':'rgba(0,0,0,.18)';
+  for(let k=0;k<4;k++){g.beginPath();g.arc(x+r,y-r+4+k*(2*r-8)/3,2.3,0,7);g.fill()}
+  g.fillStyle=tape;g.beginPath();g.ellipse(x-r+2,y+3,4,7,0,0,7);g.fill();g.fillStyle=tape;g.fillRect(x-r-9,y-r+3,9,2*r-6);g.strokeStyle=tapeD;g.strokeRect(x-r-9,y-r+3,9,2*r-6);g.restore()}
+function labGlove(g,x,y,c,big){if(labBKView())return labFist(g,x,y,c,big);const r=big?17:15;const gr=g.createRadialGradient(x-5,y-6,2,x,y,r+3);gr.addColorStop(0,'#fff');gr.addColorStop(.18,c.gl);gr.addColorStop(1,c.glD);
   g.fillStyle=gr;g.beginPath();g.ellipse(x,y,r+2,r,0,0,7);g.fill();g.fillStyle=c.glD;g.beginPath();g.ellipse(x+4,y+6,7,5,.4,0,7);g.fill();
   g.fillStyle='#f4f4f4';g.beginPath();g.ellipse(x-r+2,y+2,4,8,0,0,7);g.fill()}
 // one fighter, local space: feet at 0,0, facing +x, about 240 units tall

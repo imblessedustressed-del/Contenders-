@@ -112,7 +112,7 @@ function l3body(F,o){const{p,x0,dirX,Lz,at,col}=o,ref=!!o.ref,z0=o.z0||0,fx=o.fx
   // arms and gloves (rear first so painter order is right)
   [[sh[1],armR,-1,pe('rear')],[sh[0],armL,1,pe('lead')]].forEach(([S,arm,s,e])=>{const zs=sideZ(s*19),zh=zs*(1-e*.85)+(e?0:sideZ(s*-4)),zm=(zs+zh)/2;
     const A=W(S,zs),E=W(arm[0],zm),Hh=W(arm[1],zh);l3ball(F,A,14,13,13,()=>col.armU,undefined,8,5);l3prism(F,A,E,12,9.5,col.armU,8);if(!ref)l3ball(F,l3mul(l3add(A,E),.5),11,10.5,10.5,()=>col.armU,undefined,8,5);l3prism(F,E,Hh,9.5,8,col.arm,8);
-    if(ref){l3ball(F,Hh,6,6,6,()=>col.skin,undefined,5,4)}else{const gc=l3add(Hh,l3mul(fwd,3));l3ball(F,gc,17,16,15,()=>col.glove,undefined,9,6);l3ball(F,l3add(l3add(gc,[0,5,0]),[0,0,sideZ(s*-9)]),5,7,5,()=>col.glove,undefined,5,3);l3prism(F,l3add(Hh,l3mul(fwd,-7)),l3add(Hh,l3mul(fwd,-14)),10,10,col.cuff,8)}});
+    if(ref){l3ball(F,Hh,6,6,6,()=>col.skin,undefined,5,4)}else{const gc=l3add(Hh,l3mul(fwd,3)),gs=col.bk?.62:1;l3ball(F,gc,17*gs,16*gs,15*gs,()=>col.glove,undefined,9,6);if(col.bk)l3ball(F,l3add(gc,l3mul(fwd,7)),4,9,8,()=>col.skin,undefined,6,4);else l3ball(F,l3add(l3add(gc,[0,5,0]),[0,0,sideZ(s*-9)]),5,7,5,()=>col.glove,undefined,5,3);l3prism(F,l3add(Hh,l3mul(fwd,-7)),l3add(Hh,l3mul(fwd,-14)),10,10,col.cuff,8)}});
   return{head:hc,chest:ch,hip:hp}}
 function l3col(c,ref,extra){const sk=l3rgb(c.sk),skD=l3rgb(c.skD),base={skinHex:c.sk,skinDHex:c.skD,...(extra||{})};
   return ref?{skin:sk,skinD:skD,hair:[110,110,110],torso:[235,235,235],chest:[235,235,235],armU:[235,235,235],arm:sk,trunk:[25,25,25],band:[25,25,25],leg:[30,30,30],legD:[22,22,22],sock:[20,20,20],shoe:[15,15,15],glove:sk,cuff:sk,...base}
@@ -181,7 +181,7 @@ function lab3D(g,o){const{at,realAt,P,X,tl,f,res,stopBeat,kdNow,big,zoom,inRepla
     for(let q=before;q<F.length;q++){F[q].v=F[q].v.map(v=>[v[0],v[1]+mat,v[2]]);if(F[q].pc)F[q].pc=[F[q].pc[0],F[q].pc[1]+mat,F[q].pc[2]];F[q].layer=2}}
   // fighters and referee (moved up onto the mat)
   const lift=v=>[v[0],v[1]+mat,v[2]];hits=[];
-  [0,1].forEach(i=>{const before=F.length,b=l3body(F,{cam:C,p:P[i],x0:Xw[i],dirX:i?-1:1,Lz:i?1:-1,at,col:l3col(LAB_SKIN[i],false,{flat:i===1})});for(let q=before;q<F.length;q++){F[q].v=F[q].v.map(lift);if(F[q].pc)F[q].pc=lift(F[q].pc);F[q].layer=2}
+  [0,1].forEach(i=>{const before=F.length,b=l3body(F,{cam:C,p:P[i],x0:Xw[i],dirX:i?-1:1,Lz:i?1:-1,at,col:(c=>labBKView()?{...c,glove:[236,230,214],cuff:[236,230,214],bk:1}:c)(l3col(LAB_SKIN[i],false,{flat:i===1}))});for(let q=before;q<F.length;q++){F[q].v=F[q].v.map(lift);if(F[q].pc)F[q].pc=lift(F[q].pc);F[q].layer=2}
     hits[i]={head:lift(b.head),chest:lift(b.chest),hip:lift(b.hip)}});
   {const kdF=kdNow?1-kdNow.a:null,stopX=stopBeat&&at>=stopBeat.at&&!res.decision?Xw[1-res.w]+(res.w?-70:70):null,rx=kdNow?Xw[kdF]+(kdF?60:-60):stopX!=null?stopX:mid-(C[0]-tx)/Math.max(1,dist)*150+Math.sin(at*.37)*40; // the referee works the far side, away from the camera
     const count=!!kdNow||(stopBeat&&at>=stopBeat.at&&res.type==='KO'),rp={seed:5,lean:0,hug:0,lunge:0,snap:0,tired:0,bodyHit:0,guardDrop:30,fall:0,wob:0,cel:0,
@@ -347,8 +347,12 @@ function glBody(M,o){const{p,x0,dirX,Lz,at,K}=o,ref=!!o.ref,z0=o.z0||0,y0=o.y0||
     glTube(M,A,E,t=>(ref&&t<.5?12.5:11.5)-2.2*t+(ref?0:2.4*Math.sin(Math.PI*Math.max(0,Math.min(1,(t-.25)/.6)))),ref?K.shirt:K.skin,6,12);glEll(M,E,l3mul(FW,8.6),l3mul(UP,8.6),l3mul(SD,8.6),K.skin,10,6);
     glTube(M,E,Hh,t=>9.6-2*t+1.4*Math.sin(Math.PI*Math.min(1,t*1.6)),K.skin,6,12);
     if(ref){glEll(M,Hh,l3mul(FW,6),l3mul(UP,6),l3mul(SD,6),K.skin,8,6)}else{const d=l3norm(l3sub(Hh,E)),[u,v]=glFrame(d),gc=l3add(Hh,l3mul(d,6));
-      glEll(M,gc,l3mul(d,17),l3mul(u,15),l3mul(v,14),K.glove,16,10);glEll(M,l3add(l3add(gc,l3mul(u,side(s)*-10)),l3mul(d,2)),l3mul(d,7),l3mul(u,4.5),l3mul(v,5.5),K.glove,10,6);
-      glTube(M,l3add(Hh,l3mul(d,-4)),l3add(Hh,l3mul(d,-14)),()=>10.6,K.cuff,2,14);glTube(M,l3add(Hh,l3mul(d,-8.5)),l3add(Hh,l3mul(d,-10.5)),()=>11,K.glove,1,14)}
+      if(K.bk){const fc=l3add(Hh,l3mul(d,3)); // Bare Knuckles: a taped fist with the knuckles showing, tape around the wrist
+        glEll(M,fc,l3mul(d,10),l3mul(u,9.5),l3mul(v,8.5),K.wrap,14,8);glEll(M,l3add(fc,l3mul(d,6.5)),l3mul(d,4.5),l3mul(u,8.6),l3mul(v,7.6),K.skin,12,6);
+        glEll(M,l3add(l3add(fc,l3mul(u,side(s)*-7)),l3mul(d,1)),l3mul(d,5),l3mul(u,3.5),l3mul(v,4),K.wrap,8,6);
+        glTube(M,l3add(Hh,l3mul(d,-1)),l3add(Hh,l3mul(d,-15)),()=>9.2,K.wrap,2,14);glTube(M,l3add(Hh,l3mul(d,-6)),l3add(Hh,l3mul(d,-7.5)),()=>9.6,K.wrapD,1,14)}
+      else{glEll(M,gc,l3mul(d,17),l3mul(u,15),l3mul(v,14),K.glove,16,10);glEll(M,l3add(l3add(gc,l3mul(u,side(s)*-10)),l3mul(d,2)),l3mul(d,7),l3mul(u,4.5),l3mul(v,5.5),K.glove,10,6);
+      glTube(M,l3add(Hh,l3mul(d,-4)),l3add(Hh,l3mul(d,-14)),()=>10.6,K.cuff,2,14);glTube(M,l3add(Hh,l3mul(d,-8.5)),l3add(Hh,l3mul(d,-10.5)),()=>11,K.glove,1,14)}}
     hands.push(Hh)});
   return{head:HC,chest:CH,hip:HP}}
 function glKit(c,i){const rgb=h=>l3rgb(h),sk=rgb(c.sk);return{skin:[...sk,.28],boot:i?[29,64,175,.5]:[200,16,46,.5],bootBand:[245,245,245,.3],lace:[250,250,250,.2],sole:[240,240,240,.2],
@@ -430,7 +434,7 @@ gl.uniform3fv(loc.uEye,C);gl.uniform1f(loc.uAlpha,1);gl.uniform1f(loc.uFlash,0);
   draw(G.st,null,false);draw(G.mat,G.tMat,false);G.apron.forEach((b,k)=>draw(b,G.tApron[k],false));draw(G.crowd,G.tSeats,true);gl.depthFunc(gl.LEQUAL);gl.uniform1f(loc.uFill,o.fill==null?1:o.fill);gl.uniform1f(loc.uPeople,1);draw(G.crowd,G.tCrowd,true);gl.uniform1f(loc.uPeople,0);gl.depthFunc(gl.LESS);gl.uniform1f(loc.uScroll,(realAt*.06)%1);draw(G.rib,G.tRib,true);gl.uniform1f(loc.uScroll,0);
   // the people and their shadows
   const M=glMesh(),hits=[];
-  [0,1].forEach(i=>{const b=glBody(M,{p:P[i],x0:Xw[i],y0:mat,dirX:i?-1:1,Lz:i?1:-1,at,K:glKit(LAB_SKIN[i],i)});hits[i]={head:b.head,chest:b.chest,hip:b.hip}});
+  [0,1].forEach(i=>{const b=glBody(M,{p:P[i],x0:Xw[i],y0:mat,dirX:i?-1:1,Lz:i?1:-1,at,K:labBKView()?{...glKit(LAB_SKIN[i],i),bk:1,wrap:[238,232,218,.22],wrapD:[200,192,175,.15]}:glKit(LAB_SKIN[i],i)});hits[i]={head:b.head,chest:b.chest,hip:b.hip}});
   const kdF=kdNow?1-kdNow.a:null,stopX=stopBeat&&at>=stopBeat.at&&!res.decision?Xw[1-res.w]+(res.w?-70:70):null,tx=o.tx,dist=o.dist,rx=kdNow?Xw[kdF]+(kdF?60:-60):stopX!=null?stopX:mid-(C[0]-tx)/Math.max(1,dist)*150+Math.sin(at*.37)*40;
   const count=!!kdNow||(stopBeat&&at>=stopBeat.at&&res.type==='KO');
   glBody(M,{p:{seed:5,lean:0,hug:0,lunge:0,snap:0,tired:0,bodyHit:0,guardDrop:30,fall:0,wob:0,cel:0,rear:count?[24,-200+labRefArm(at)*-60]:[18,-130],lead:[22,-135],rearUp:!!count},x0:rx,y0:mat,z0:200,dirX:rx<mid?1:-1,Lz:-1,at,ref:true,K:glRefKit('#d9a066')});
