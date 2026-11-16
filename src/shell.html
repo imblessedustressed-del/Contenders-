@@ -1553,13 +1553,14 @@ function gdTheme(uid){const m=managers[uid];if(!m||!m.desc||m.descBlocked)return
   if(!ln||cr(rgb(ln),B)<3)ln=dark?'#ffd23f':'#1f5fbf';
   return{bg,fg,ln,dark}}
 /* Smooth marquees (owner, Nov 16, 2026): the browser's own <marquee> measures its box once and restarts halfway when the page widens.
-   Each one in a gym description is swapped for a CSS scroller: text enters from the right edge, crosses the full width, leaves on the left, repeats. */
+   Each one in a gym description is swapped for a CSS scroller: text enters from the right edge, crosses the full width, leaves on the left, repeats.
+   Its position comes from the clock (negative animation-delay), so the site's background redraws don't restart it halfway. */
 function gdMarquees(root){(root||document).querySelectorAll('.gymDesc marquee').forEach(mq=>{
   const box=document.createElement('div');box.className='gdMq';const st=mq.getAttribute('style');if(st)box.setAttribute('style',st);
   const t=document.createElement('span');t.className='gdMqT';t.innerHTML=mq.innerHTML;box.appendChild(t);
   if(/right/i.test(mq.getAttribute('direction')||''))box.classList.add('gdMqR');
   const amt=Math.max(1,Math.min(40,parseInt(mq.getAttribute('scrollamount'))||6));mq.replaceWith(box);
-  const fit=()=>{t.style.animationDuration=Math.max(4,t.scrollWidth/(amt*12))+'s'};
+  const fit=()=>{const d=Math.max(4,t.scrollWidth/(amt*12));t.style.animationDuration=d+'s';t.style.animationDelay=(-((Date.now()/1000)%d)).toFixed(2)+'s'};
   fit();if(window.ResizeObserver){let last=box.clientWidth;new ResizeObserver(()=>{if(Math.abs(box.clientWidth-last)>20){last=box.clientWidth;fit()}}).observe(box)}})}
 function gdThemeApply(base,arg){const mn=document.getElementById('main');if(!mn)return;
   const th=['gympub','gymret','gymres','gymh2h'].includes(base)?gdTheme(arg.split(':')[0]):null;
