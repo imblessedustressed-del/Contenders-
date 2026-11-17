@@ -868,6 +868,10 @@ function labBeats(f){const L=labState(),sched=f.rounds.length&&L.bout?L.bout.rou
   const beats=[],rounds=[];let t=LAB_INTRO;
   f.rounds.forEach((R,ri)=>{const last=ri===f.rounds.length-1,end=last&&f.result&&!f.result.decision?f.result.t:180;
     const ev=(R.lines||[]).filter(x=>x.k);
+    /* some stoppages are decided after the round's punches (the ringside doctor between rounds, the corner's towel before it) and carry no
+       stop line in the play-by-play; give them one so Simbot shows what happened (owner, Nov 16, 2026: TKO "out of nowhere") */
+    if(last&&f.result&&!f.result.decision&&f.result.w!=null&&!ev.some(x=>x.k==='stop'||x.k==='ko')){const why=f.result.why||'',L0=(f.S&&f.S[1-f.result.w]&&f.S[1-f.result.w].n)||'He';
+      ev.push({k:'stop',a:f.result.w,t:Math.max(1,Math.min(179,f.result.t||179)),html:/doctor/i.test(why)?'<p>The ringside doctor stops it.</p>':/towel/i.test(why)?`<p>${L0}'s corner throws in the towel!</p>`:/exhausted/i.test(why)?'<p>He is too exhausted to go on.</p>':`<p>The referee stops the fight! ${why}.</p>`})}
     const must=ev.filter(x=>['kd','st','ko','stop','c'].includes(x.k)),inj=ev.filter(x=>x.k==='i').slice(0,1);
     const room=Math.max(2,Math.round(per*2.4)-must.length-inj.length);
     const pool=ev.filter(x=>['p','r','j','m','cl'].includes(x.k)).map(x=>({x,s:(x.k==='p'?3:x.k==='r'?2:1)*Math.random()+Math.random()})).sort((a,b)=>b.s-a.s).slice(0,room).map(o=>o.x);
@@ -879,9 +883,9 @@ function labBeats(f){const L=labState(),sched=f.rounds.length&&L.bout?L.bout.rou
       if(x.k==='kd'||x.k==='ko'){const n=labKdCount(x);b.cnt=n;b.cs=at+LAB_FALL;b.dur=LAB_FALL+n*LAB_CNT+(x.k==='ko'?.6:LAB_RISE);
         for(let k=1;k<=n;k++){const W=['ONE','TWO','THREE','FOUR','FIVE','SIX','SEVEN','EIGHT','NINE','TEN'][k-1]+'!';beats.push({at:b.cs+k*LAB_CNT,k:'cnt',n:k,last:k===n,out:x.k==='ko',round:R.n,txt:k<n?W:x.k==='ko'?W+" He's out!!!":W+' '+(downName||'He')+' is back on his feet!'})}extra+=b.dur+(x.k==='ko'?.4:.2)}
       else if(x.k==='st')extra+=.5;
-      if(x.k==='stop'){const h=x.html||'';b.why=/doctor/i.test(h)?'doc':/disqualif/i.test(h)?'dq':/exhausted/i.test(h)?'exh':'ref'; /* how the fight was stopped, so Simbot can show it (owner, Nov 16, 2026) */
+      if(x.k==='stop'){const h=x.html||'';b.why=/doctor/i.test(h)?'doc':/towel/i.test(h)?'towel':/disqualif/i.test(h)?'dq':/exhausted/i.test(h)?'exh':'ref'; /* how the fight was stopped, so Simbot can show it (owner, Nov 16, 2026) */
         if(b.why==='doc'){const pm=(R.post||[]).map(labTxt).find(q=>/ringside doctor/i.test(q));if(pm)b.txt=pm;const m=pm&&/because of (.+?)!*$/.exec(pm);b.docWhy=m?m[1]:''}
-        b.dur=b.why==='doc'?4.8:b.why==='dq'?2.6:3.4;extra+=b.dur}});
+        b.dur=b.why==='doc'?4.8:b.why==='dq'?2.6:b.why==='towel'?3.8:3.4;extra+=b.dur}});
     const dur=per+extra;rounds.push({n:R.n,start,end:start+dur,R,last,clockEnd:end});t=start+dur;
     if(!last||f.result.decision){beats.push({at:t,k:'bell',round:R.n,txt:R.cc?`End of round ${R.n}. The judges: ${R.cards.map(c=>c.join('-')).join(', ')}.`:`End of round ${R.n}.`});t+=BKV?2.4:3.2} /* the break with the punch stats lasts about 3 seconds (2.4 in Bare Knuckles) */
   });
@@ -1000,6 +1004,13 @@ function labFighter(g,c,p,opD,t){
 }
 /* the ringside doctor (owner, Nov 16, 2026: "show some type of doctor stopping the fight"): drawn over every graphics mode next to the hurt man.
    d = seconds since the stoppage: walks in from his side of the ring (0.3-1.1), checks the cut with a penlight (1.1-2.6), then waves it off */
+/* the corner's towel: thrown from his corner in an arc, it lands at his feet (2D overlay, every graphics mode) */
+function labTowel(g,d,li){const fl=LAB_FPOS[li];if(!fl)return;const side=li?1:-1,x0=Math.max(40,Math.min(920,fl[0]+side*260)),y0=150,x1=fl[0]+side*30,y1=fl[1]-6,k=Math.min(1,d/.9),x=x0+(x1-x0)*k,y=y0+(y1-y0)*k-Math.sin(Math.PI*k)*120;
+  g.save();g.translate(x,y);g.rotate(k<1?d*9:0.2);const w=k<1?34:44,h=k<1?26:10;g.fillStyle='#f4f4f0';g.strokeStyle='#999';g.lineWidth=1.5;g.beginPath();
+  if(k<1){g.moveTo(-w/2,-h/2);g.quadraticCurveTo(0,-h/2-8*Math.sin(d*20),w/2,-h/2);g.lineTo(w/2,h/2);g.quadraticCurveTo(0,h/2+8*Math.sin(d*20+1),-w/2,h/2)}else{g.ellipse(0,0,w/2,h/2,0,0,7)}
+  g.closePath();g.fill();g.stroke();g.strokeStyle='#c4121f';g.lineWidth=2;g.beginPath();g.moveTo(-w/2+4,0);g.lineTo(w/2-4,0);g.stroke();g.restore()}
+/* why a stoppage happened, in plain words, for the final banner */
+function labStopWhy(res){const w=String(res.why||'');if(res.type==='KO')return'';if(res.dq)return'DISQUALIFICATION';if(/doctor/i.test(w))return'DOCTOR STOPPAGE';if(/towel/i.test(w))return"CORNER STOPPAGE: TOWEL THROWN IN";if(/exhausted/i.test(w))return'TOO EXHAUSTED TO CONTINUE';if(/jaw/i.test(w))return'REFEREE STOPPAGE: BROKEN JAW';if(/referee/i.test(w))return'REFEREE STOPPAGE: TAKING TOO MUCH PUNISHMENT';return w.toUpperCase()}
 function labDoctor(g,d,li){const fl=LAB_FPOS[li],fw=LAB_FPOS[1-li];if(!fl)return;
   const side=fw?(fl[0]>=fw[0]?1:-1):(li?1:-1),sc=Math.max(.75,Math.min(2,(fw?Math.abs(fl[0]-fw[0]):170)/170)),tx=fl[0]+side*95*sc,y=Math.min(536,fl[1]),x0=side>0?1020:-60;
   const wk=Math.min(1,Math.max(0,(d-.3)/.8)),x=x0+(tx-x0)*wk*wk*(3-2*wk),mode=d<1.1?'walk':d<2.6?'exam':'wave',stp=mode==='walk'?Math.sin(d*14):0;
@@ -1062,9 +1073,10 @@ function labDraw(at,tl){const cv=$('#labCv');if(!cv)return;const g=cv.getContext
         else if(why==='ref')o.fall=Math.max(o.fall,.56*ss(Math.min(1,Math.max(0,(d-.3)/.45)))); /* the big shot drops him to a knee and the referee waves it off */
         else if(why==='exh'){o.wob=Math.max(o.wob,.8);o.tired=1;o.guardDrop=40;o.fall=Math.max(o.fall,.56*ss(Math.min(1,Math.max(0,(d-.8)/.6))))} /* arms down, sags to a knee */
         else if(why==='doc'){o.wob=Math.max(o.wob,.35);o.cut=1;o.guardDrop=30}
+        else if(why==='towel'){o.wob=Math.max(o.wob,.7);o.tired=1;o.guardDrop=40;o.fall=Math.max(o.fall,.5*ss(Math.min(1,Math.max(0,(d-.9)/.6))))}
         else o.wob=Math.max(o.wob,.4)}
       if(res.w===i&&d<.42&&why==='ref'){o.punch={hand:'rear',type:'cross',e:Math.sin(Math.PI*d/.42),low:false};o.lunge=o.punch.e}
-      if(res.w===i&&d>(res.type==='KO'&&stopBeat.cs!=null?stopBeat.cs-stopBeat.at+stopBeat.cnt*LAB_CNT+.3:why==='doc'?4:why==='dq'?1.4:2.2))o.cel=1} /* on a KO he waits in his corner until the referee reaches ten (owner, Nov 15, 2026) */
+      if(res.w===i&&d>(res.type==='KO'&&stopBeat.cs!=null?stopBeat.cs-stopBeat.at+stopBeat.cnt*LAB_CNT+.3:why==='doc'?4:why==='dq'?1.4:why==='towel'?2.4:2.2))o.cel=1} /* on a KO he waits in his corner until the referee reaches ten (owner, Nov 15, 2026) */
     if(fin&&res.decision&&res.w===i&&at-lastBeat.at>.6)o.cel=1;
     const prev=tl.rounds[tl.rounds.indexOf(cur)-1],en0=prev&&prev.R.en?prev.R.en[i]:1,en1=cur.R.en?cur.R.en[i]:1,pr=Math.max(0,Math.min(1,(at-cur.start)/(cur.end-cur.start)));
     o.en=en0+(en1-en0)*pr;o.tired=Math.max(0,.55-o.en)*1.6;o.guardDrop=o.tired*16;o.sweat=Math.min(.8,o.tired*.9);o.sweatT=(at*1.3+i*.5)%1;return o};
@@ -1087,7 +1099,7 @@ function labDraw(at,tl){const cv=$('#labCv');if(!cv)return;const g=cv.getContext
   const kdNow=tl.beats.find(b=>b.k==='kd'&&at-b.at>=0&&at-b.at<(b.dur||1.6));
   /* the count on screen and the referee's arm: one drop per number */
   const cntB=tl.beats.find(b=>(b.k==='kd'||b.k==='ko')&&b.cs!=null&&at>=b.cs&&at<b.cs+b.cnt*LAB_CNT+.35);labRefPh=cntB?(at-cntB.cs)/LAB_CNT:null;
-  {const sd=stopBeat&&stopBeat.k==='stop'&&!res.decision?at-stopBeat.at:-1,w0={ref:.85,exh:1.3,dq:.25,doc:3}[stopBeat&&stopBeat.why]||.85;LAB_WAVE=sd>=w0&&sd<w0+2.4?sd-w0:null} /* referee waving it off */
+  {const sd=stopBeat&&stopBeat.k==='stop'&&!res.decision?at-stopBeat.at:-1,w0={ref:.85,exh:1.3,dq:.25,doc:3,towel:1.1}[stopBeat&&stopBeat.why]||.85;LAB_WAVE=sd>=w0&&sd<w0+2.4?sd-w0:null} /* referee waving it off */
   {const d=fin&&res.decision&&res.w!=null?at-lastBeat.at:-1;LAB_RAISE=d>=.2?{w:res.w,k:Math.min(1,(d-.2)/.5)}:null} /* referee raises the winner's hand after a decision */
   const zoom=1+(kdNow?.06*Math.min(1,(at-kdNow.at)*4):0)+(fin&&res&&!res.decision?.04:0)+(inReplay?.22:0)+(intro?.05*(1-at/LAB_INTRO):0);
   g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,W,H);
@@ -1206,6 +1218,7 @@ function labDraw(at,tl){const cv=$('#labCv');if(!cv)return;const g=cv.getContext
     else if(stopBeat&&stopBeat.k==='stop'&&!res.decision&&at>=stopBeat.at){const d=at-stopBeat.at,why=stopBeat.why||'ref',li=1-res.w;
       if(why==='doc'){labDoctor(g,d,li);if(d<2.6){g.save();g.globalAlpha=Math.min(1,d*3);labBigText(g,'TIME OUT!',cx,105,54,'#ffffff','#9aa0aa');g.font="bold 20px Verdana, sans-serif";g.textAlign='center';g.fillStyle='#fff';g.strokeStyle='#000';g.lineWidth=4;const tx2='The ringside doctor is called in to look at '+(L.names[li]||'him');g.strokeText(tx2,cx,138);g.fillText(tx2,cx,138);g.restore()}
         else{const k=Math.min(1,(d-2.6)/.2);labBigText(g,'THE DOCTOR STOPS IT!',cx,110,Math.round(58*(1.3-.3*k)),'#ffd23f','#c4121f');if(stopBeat.docWhy){g.save();g.font="bold 22px Verdana, sans-serif";g.textAlign='center';g.fillStyle='#fff';g.strokeStyle='#000';g.lineWidth=4;const t2=stopBeat.docWhy.toUpperCase();g.strokeText(t2,cx,146);g.fillText(t2,cx,146);g.restore()}}}
+      else if(why==='towel'){labTowel(g,d,li);if(d>=.9){const k=Math.min(1,(d-.9)/.2);labBigText(g,'IN COMES THE TOWEL!',cx,110,Math.round(58*(1.3-.3*k)),'#ffd23f','#c4121f');g.save();g.font="bold 20px Verdana, sans-serif";g.textAlign='center';g.fillStyle='#fff';g.strokeStyle='#000';g.lineWidth=4;const t2=`${(L.names[li]||'his').toUpperCase()}'S CORNER STOPS IT`;g.strokeText(t2,cx,146);g.fillText(t2,cx,146);g.restore()}}
       else{const w0={ref:.85,exh:1.3,dq:.25}[why];if(d>=w0){const k=Math.min(1,(d-w0)/.2);labBigText(g,why==='dq'?'DISQUALIFIED!':why==='exh'?'HE CAN\'T GO ON!':'THE REFEREE STOPS IT!',cx,110,Math.round(58*(1.3-.3*k)),'#ffd23f','#c4121f')}}}
     else if(st){const si=1-st.a,fp=LAB_FPOS[si],k=Math.min(1,(at-st.at)/.15),sz=Math.round(46*(1.25-.25*k));
       if(fp){const x=Math.max(130,Math.min(W-130,fp[0])),y=Math.max(150,Math.min(H-28,fp[1]+44));labBigText(g,'STUNNED!',x,y,sz,'#ff9e4a','#c4121f');g.save();g.fillStyle=si?'#5aa0ff':'#ff5a5a';g.beginPath();g.moveTo(x-12,y-sz*.95);g.lineTo(x+12,y-sz*.95);g.lineTo(x,y-sz*.95-14);g.closePath();g.fill();g.restore()}
@@ -1226,7 +1239,8 @@ function labDraw(at,tl){const cv=$('#labCv');if(!cv)return;const g=cv.getContext
     labBigText(g,res.w==null?'DRAW!':!res.decision?(res.type==='KO'?'K.O.!':res.type==='DQ'?'D.Q.!':'T.K.O.!'):'DECISION',cx,252+oy,res.decision?66:96,'#ffd23f','#c47f00');
     g.font="italic 900 26px Impact, 'Arial Black', sans-serif";g.textAlign='center';g.fillStyle=res.w===0?'#ff8f8f':res.w===1?'#8fb4ff':'#fff';
     g.fillText(res.w==null?res.type.toUpperCase():`${L.names[res.w].toUpperCase()} WINS${res.decision?' BY '+res.type.toUpperCase():' IN ROUND '+res.round}`,cx,294+oy);
-    const TB=L.bout&&L.bout.title;if(TB&&res.w!=null&&d>.8){const ty=res.decision?-250:0;g.globalAlpha=Math.min(1,(d-.8)*2);g.fillStyle='rgba(0,0,0,.7)';g.fillRect(0,312+ty,W,92);const tos=TB.orgs||[TB.org];labBelt(g,cx-330,322+ty,120,tos[0]);labBelt(g,cx+210,322+ty,120,tos[tos.length-1]);
+    if(!res.decision&&res.w!=null){const sw=labStopWhy(res);if(sw){g.font="bold 17px Verdana, sans-serif";g.strokeStyle='#000';g.lineWidth=4;g.strokeText(sw,cx,334);g.fillStyle='#ffd23f';g.fillText(sw,cx,334)}}
+    const TB=L.bout&&L.bout.title;if(TB&&res.w!=null&&d>.8){const ty=res.decision?-250:40;g.globalAlpha=Math.min(1,(d-.8)*2);g.fillStyle='rgba(0,0,0,.7)';g.fillRect(0,312+ty,W,92);const tos=TB.orgs||[TB.org];labBelt(g,cx-330,322+ty,120,tos[0]);labBelt(g,cx+210,322+ty,120,tos[tos.length-1]);
       labBigText(g,res.w===TB.champ?'AND STILL CHAMPION!':TB.champ==null?'AND THE NEW CHAMPION!':'AND NEW CHAMPION!',cx,368+ty,36,'#ffd23f','#c47f00');g.font="bold 15px Verdana, sans-serif";g.fillStyle='#fff';g.fillText(`${TB.bk?'BARE KNUCKLES ':''}${(TB.orgs||[TB.org]).join(' · ')} WORLD ${String(L.bout.div||'').toUpperCase()}WEIGHT CHAMPION`,cx,392+ty);g.globalAlpha=1}
     g.restore()}
 }
