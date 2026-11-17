@@ -921,7 +921,7 @@ function condText(x,after){
 /* ================= SHARED DATA (Supabase: accounts, forums, messages) ================= */
 cleanSlate();
 const SB_URL='https://ojsphhzgzbxmnfcbitqb.supabase.co',SB_KEY='sb_publishable_SWO9WhiSkoVhflY5CmY08A_hlqCEJSi';
-const BUILD='1794934917';
+const BUILD='1794935983';
 /* A tab left open on an older build must not save over newer data: if the site has been updated, reload before anything else is saved. */
 let staleBuild=false;
 async function checkBuild(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
@@ -2790,7 +2790,7 @@ function sbcFightTick(){const r=SBC.row,L=SBC.L,at=new Date(r.fight_at).getTime(
     clearTimeout(SBC.cd);SBC.cd=setTimeout(()=>{if(view==='sbch:'+SBC.id)sbcFightTick()},Math.min(1000,at-now+20));return}
   if(cnt)cnt.innerHTML='';
   if(SBC.shownFor!==SBC.id){SBC.shownFor=SBC.id;const off=(now-at)/1000;labPlay(off);
-    const tot=labAnim?labAnim.tl.total:0;if(off>tot)labTickAll()}
+    const tot=labAnim?labAnim.tl.total:0;if(off>=tot-1)labPlay()}
   else if(!labAnim&&!SBC.drawn){SBC.drawn=1;labDraw(1e9);labTickAll()}
   const res=L.fight.result,el=$('#sbcResult');
   if(el&&(!labAnim||labAnim.at>=labAnim.tl.total-1)&&!el.innerHTML)el.innerHTML=`<p class="note"><b>${res.w==null?`It's a ${esc(res.type.toLowerCase())}!`:`${esc(L.names[res.w])} (${esc(L.bout.gyms[res.w])}) wins by ${esc(res.decision?res.type.toLowerCase():res.type+' in round '+res.round)}!`}</b></p>`+aiAfterChallenge(r,SBC.seat,res)}
