@@ -243,7 +243,7 @@ export async function handle(req: Request, client: any, C: any): Promise<Respons
           }
           continue;
         }
-        for (const reg of (isRkKey(key) ? ["rk"] : ["", "bk"])) for (let di = 0; di < C.DIVS.length; di++) {
+        for (const reg of (isRkKey(key) ? ["rk"] : (GYMS[key].regions || ["", "bk"]))) /* bc/bd (owner, Nov 17, 2026) are Contenders-only */ for (let di = 0; di < C.DIVS.length; di++) {
           const [div, lim] = C.DIVS[di], prev = di ? C.DIVS[di - 1][1] : 0;
           const mine = () => (d.roster || []).filter((k: string) => d[k] && d[k].div === div && regOf(d[k]) === reg);
           for (const k of mine()) {
