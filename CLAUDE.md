@@ -153,6 +153,9 @@ Everything runs on Central time: the runner computes the date/time in America/Ch
 ## Direction (owner, Nov 12, 2026)
 Starting the week of Nov 16, Contenders moves away from WeBL and makes its own way ("no one's going to play from that game"). WeBL is no longer the source of truth for new work; the owner decides new rules.
 
+## The owner's gym is managed by the commissioner (owner, Nov 16, 2026: "yours to scout, train... got some titles to win")
+21 fighters were added Nov 16 (fids f1e76a1ebf..f1e76a1f4b, peek-a-boo pressure builds found by /tmp/gymopt2.js, 70 AP each), so every division has 2+. Every fighter has his own plan name "Commish - <first name>" (plans sync by name on the site, so never share one). Daily scheduled task "Corner man: Mike Tyson's PunchOut" (trig_01WJHHgvNMA7829K8EvbX7Lp, 5:47 PM Central): reviews results, scouts tonight's and tomorrow's opponents with PUBLIC info only (never other gyms' gym_state/bout_private), sets plans and training, reports to the owner. It never books, retires or creates fighters.
+
 ## Managers
 - Human gyms: the owner's Mike Tyson's PunchOut, and Morthorian Stone (signed up Nov 13, 2026 2:26 PM Central; first outside manager; fighter Heaven in a Trashcan, Super Middle). The other sign-up, "The Small Gym On The Corner...", was deleted on the owner's order Nov 12, 2026 (account and gym removed the same way retire_gym() does it).
 
