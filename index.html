@@ -921,7 +921,7 @@ function condText(x,after){
 /* ================= SHARED DATA (Supabase: accounts, forums, messages) ================= */
 cleanSlate();
 const SB_URL='https://ojsphhzgzbxmnfcbitqb.supabase.co',SB_KEY='sb_publishable_SWO9WhiSkoVhflY5CmY08A_hlqCEJSi';
-const BUILD='1794887355';
+const BUILD='1794887623';
 /* A tab left open on an older build must not save over newer data: if the site has been updated, reload before anything else is saved. */
 let staleBuild=false;
 async function checkBuild(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
@@ -1332,7 +1332,11 @@ function labBeats(f){const L=labState(),sched=f.rounds.length&&L.bout?L.bout.rou
 function labPlay(off){const L=labState();if(!L.fight)return;if(labAnim)labAnim.stop=true;
   $('#labTick').innerHTML='';$('#labPause').textContent='Pause';
   LAB_INTRO=L.bout&&L.bout.title?3.4+LAB_TITLE_T:3.4;
-  if(L.bout&&L.bout.title&&!(off>0)){const T=L.bout.title;setTimeout(()=>{if(labAnim&&!labAnim.stop)labSay(`Ladies and gentlemen! This is the main event! ${L.bout.rounds||12} rounds, for the ${T.champ==null?'vacant ':''}${(T.orgs||[T.org]).map(o=>o.split('').join(' ')).join(' and ')} championship of the world!`)},300)}
+  /* the ring announcer opens every fight (owner, Nov 16, 2026: "I haven't heard the announcer at the beginning"); title fights get the main-event call */
+  if(!(off>0)){const T=L.bout&&L.bout.title,nm=L.names||['the red corner','the blue corner'],rd=(L.bout&&L.bout.rounds)||(L.fight&&L.fight.rounds&&L.fight.rounds.length)||12,bkv=labBKView();
+    const line=T?`Ladies and gentlemen! This is the main event! ${rd} rounds, for the ${T.champ==null?'vacant ':''}${(T.orgs||[T.org]).map(o=>o.split('').join(' ')).join(' and ')} championship of the world! In the red corner, ${nm[0]}! And in the blue corner, ${nm[1]}!`
+      :`Ladies and gentlemen! ${rd} rounds of ${bkv?'bare knuckle fighting':'boxing'}! In the red corner, ${nm[0]}! And in the blue corner, ${nm[1]}!`;
+    setTimeout(()=>{if(labAnim&&!labAnim.stop)labSay(line)},300)}
   const tl=labBeats(L.fight);labAnim={tl,t0:performance.now()-(off>0?off*1000:0),at:0,shown:0,rs:0,paused:false,stop:false};const me=labAnim;
   labSndStop();labSndPause(false);labBedStart();
   const step=now=>{if(me.stop){if(!labAnim)labSndStop();return}if(!me.paused)me.at=(now-me.t0)/1000;
@@ -2224,7 +2228,9 @@ function labBedStart(){const c=labSndCtx();if(!c||LSND.bed)return;const f=labCro
 const LAB_WORDS=['One!','Two!','Three!','Four!','Five!','Six!','Seven!','Eight!','Nine!','Ten!'];let labVoice;
 function labSay(w){if(!labSndOn())return;const S=window.speechSynthesis;if(!S||typeof SpeechSynthesisUtterance==='undefined')return;
   try{if(labVoice===undefined){const vs=S.getVoices().filter(v=>/^en/i.test(v.lang));labVoice=vs.find(v=>/male|david|daniel|fred|alex|guy|george|james/i.test(v.name)&&!/female/i.test(v.name))||vs[0]||null;if(!S.getVoices().length)labVoice=undefined}
-    S.cancel();const u=new SpeechSynthesisUtterance(w);if(labVoice)u.voice=labVoice;u.lang='en-US';u.rate=1.15;u.pitch=.7;u.volume=1;S.speak(u)}catch(e){}}
+    const u=new SpeechSynthesisUtterance(w);if(labVoice)u.voice=labVoice;u.lang='en-US';u.rate=1.15;u.pitch=.7;u.volume=1;
+    /* Chrome can silently drop a line spoken right after cancel(), so wait a moment when something was still talking */
+    if(S.speaking||S.pending){S.cancel();setTimeout(()=>{try{S.speak(u)}catch(e){}},80)}else{S.cancel();S.speak(u)}}catch(e){}}
 function labSndStop(){try{window.speechSynthesis&&speechSynthesis.cancel()}catch(e){}if(LSND.bed&&LSND.ctx){const t=LSND.ctx.currentTime,b=LSND.bed;LSND.bedG.gain.cancelScheduledValues(t);LSND.bedG.gain.setTargetAtTime(0.0001,t,.3);setTimeout(()=>{try{b.s.stop();b.lfo.stop()}catch(e){}},1500)}LSND.bed=null}
 function labSndPause(p){try{if(window.speechSynthesis)p?speechSynthesis.pause():speechSynthesis.resume()}catch(e){}if(LSND.ctx){if(p)LSND.ctx.suspend();else if(labSndOn())LSND.ctx.resume()}}
 /* one call per beat from the playback loop */

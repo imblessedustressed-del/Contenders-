@@ -500,7 +500,9 @@ function labBedStart(){const c=labSndCtx();if(!c||LSND.bed)return;const f=labCro
 const LAB_WORDS=['One!','Two!','Three!','Four!','Five!','Six!','Seven!','Eight!','Nine!','Ten!'];let labVoice;
 function labSay(w){if(!labSndOn())return;const S=window.speechSynthesis;if(!S||typeof SpeechSynthesisUtterance==='undefined')return;
   try{if(labVoice===undefined){const vs=S.getVoices().filter(v=>/^en/i.test(v.lang));labVoice=vs.find(v=>/male|david|daniel|fred|alex|guy|george|james/i.test(v.name)&&!/female/i.test(v.name))||vs[0]||null;if(!S.getVoices().length)labVoice=undefined}
-    S.cancel();const u=new SpeechSynthesisUtterance(w);if(labVoice)u.voice=labVoice;u.lang='en-US';u.rate=1.15;u.pitch=.7;u.volume=1;S.speak(u)}catch(e){}}
+    const u=new SpeechSynthesisUtterance(w);if(labVoice)u.voice=labVoice;u.lang='en-US';u.rate=1.15;u.pitch=.7;u.volume=1;
+    /* Chrome can silently drop a line spoken right after cancel(), so wait a moment when something was still talking */
+    if(S.speaking||S.pending){S.cancel();setTimeout(()=>{try{S.speak(u)}catch(e){}},80)}else{S.cancel();S.speak(u)}}catch(e){}}
 function labSndStop(){try{window.speechSynthesis&&speechSynthesis.cancel()}catch(e){}if(LSND.bed&&LSND.ctx){const t=LSND.ctx.currentTime,b=LSND.bed;LSND.bedG.gain.cancelScheduledValues(t);LSND.bedG.gain.setTargetAtTime(0.0001,t,.3);setTimeout(()=>{try{b.s.stop();b.lfo.stop()}catch(e){}},1500)}LSND.bed=null}
 function labSndPause(p){try{if(window.speechSynthesis)p?speechSynthesis.pause():speechSynthesis.resume()}catch(e){}if(LSND.ctx){if(p)LSND.ctx.suspend();else if(labSndOn())LSND.ctx.resume()}}
 /* one call per beat from the playback loop */
