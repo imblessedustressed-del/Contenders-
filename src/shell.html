@@ -1946,6 +1946,7 @@ function ensurePlans(){
 const planNames=()=>{ensurePlans();return Object.keys(state.plans).sort((a,b)=>a.localeCompare(b,undefined,{sensitivity:'base'}))};
 function syncPlan(name){ROSTER().forEach(k=>{if(state[k]&&state[k].planName===name)state[k].plan=state.plans[name]})}
 function usePlan(side,name){ensurePlans();if(state.plans[name]==null)return;state[side].planName=name;state[side].plan=state.plans[name];save()}
+const frankGo=F=>'frank:'+encodeURIComponent(divOf(F))+(normReg(F&&F.region)?'@'+normReg(F.region):''); /* a fighter's division link opens his own division and region (owner, Nov 17, 2026) */
 const encN=n=>encodeURIComponent(n),decN=n=>{try{return decodeURIComponent(n)}catch(e){return n}};
 function planErrBox(text){const p=parsePlan(text);return p.errors.length?`<div class="note cr">${p.errors.map(e=>`# Line ${e.line}: <tt>${esc(e.text)}</tt> (${esc(e.msg)})`).join('<br>')}</div>`:`<p class="small mute">Plan OK: ${p.stmts.length} instruction${p.stmts.length===1?'':'s'}.</p>`}
 /* a plan's league record across the whole gym (active and retired), from each fight's history entry */
@@ -2085,7 +2086,7 @@ function recordHTML(side){
   <tr><td>Build</td><td colspan="3">${esc(F.build||'normal')}</td></tr>
   <tr><td>Weight</td><td colspan="3">${w} pounds (${Math.round(w*.4536)} kilograms)</td></tr>
   <tr><td>Minimum Weight</td><td colspan="3">${minWeight(F)} pounds (${Math.round(minWeight(F)*.4536)} kilograms)</td></tr></table>
-  <p>${n} fights in the <a data-go="frank">${esc(divOf(F))}weight</a> division out of ${esc(F.home||'parts unknown')} for the ${esc(myGym())} gym. ${prime}</p>
+  <p>${n} fights in the <a data-go="${frankGo(F)}">${esc(divOf(F))}weight</a> division out of ${esc(F.home||'parts unknown')} for the ${esc(myGym())} gym. ${prime}</p>
   <p>${myBout(side)?`${n}'s next bout: ${boutLine(myBout(side))}`:`${n} has no bouts scheduled.${nightOf(divOf(F))?` ${esc(divOf(F))}weights fight on <b>${nightOf(divOf(F))}s</b>.`:''}`}</p>
   <p>${n} is training <b>${tr[F.train||'str']}</b>, but you can instruct him to <a data-go="train:${side}">train for something else</a>.</p>
   <p>${n} is currently using the <b>${esc(F.planName||'Basic')}</b> fight plan. He may</p>
@@ -2122,7 +2123,7 @@ function pubHTML(side){
   let titles=[];for(const d in state.champs)for(const b in state.champs[d])if(state.champs[d][b]===F.name)titles.push(b);
   const[rs,belt]=state.bout.split('|');
   return`<h1 class="pubname">${n}</h1>
-  <p>${n} stands ${ht(HT(F))} (${cm(HT(F))} centimeters) tall. He fights for the <a data-go="gym">${esc(myGym())}</a> gym${F.home?` out of ${esc(F.home)}`:''} and is ranked #${frankOf(side)} in the <a data-go="frank">${esc(divOf(F))}weight</a> division (Contenders).</p>
+  <p>${n} stands ${ht(HT(F))} (${cm(HT(F))} centimeters) tall. He fights for the <a data-go="gym">${esc(myGym())}</a> gym${F.home?` out of ${esc(F.home)}`:''} and is ranked #${frankOf(side)} in the <a data-go="${frankGo(F)}">${esc(divOf(F))}weight</a> division (${REG_NAME(normReg(F.region))}).</p>
   <p>${myBout(side)?`${n}'s next bout: ${boutLine(myBout(side))}`:`${n} has no bouts scheduled.`}</p>
   <p>${weightNote(n,divOf(F),natWeight(F),minWeight(F),F.rec[0]+F.rec[1]+F.rec[2])}</p>
   <hr><h2>${n}'s Record</h2>
