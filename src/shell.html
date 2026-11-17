@@ -1443,13 +1443,14 @@ function sbPaintTitles(){const el=$('#sbTitles');if(!el||!sbTitles)return;const 
     if(vac)btns.push(`<button class="labGo" data-sbt="create:${t.org}">🏆 Fight for the vacant belt</button>`);
     else if(t.mine)btns.push(`<button class="labGo" data-sbt="create:${t.org}">🛡️ Put it on the line</button>`);
     else if(!t.bot)btns.push(`<button data-sbt="create:${t.org}">🥊 Call out the champ</button>`);
-    if((vac||t.bot)&&sbAlone)btns.push(`<button data-sbt="bot:${t.org}">🤖 Fight Simbot for it</button>`);
+    if(vac||t.bot)btns.push(`<button data-sbt="bot:${t.org}">🤖 Fight Simbot for it</button>`);
+    else if(t.mine)btns.push(`<button data-sbt="bot:${t.org}">🤖 Defend it vs Simbot</button>`);
     return`<div class="sbBelt ${vac?'vac':''}"><div class="sbBeltArt">${orgBelt(t.org)}</div><div class="sbBeltOrg">${t.org}</div>
       ${vac?'<div class="sbBeltWho mute">VACANT</div>':`<div class="sbBeltWho">👑 <b>${esc(t.who)}</b>${t.mine?' <span class="sbYou">(you)</span>':''}</div><div class="small">${esc(t.fighter||'')}${t.defenses?` · ${t.defenses} defense${t.defenses>1?'s':''}`:''}</div>`}
-      ${t.bot&&!sbAlone?'<div class="small mute">Be the only one in Simbot to fight him for it</div>':''}<div class="sbBeltBtns">${btns.join(' ')}</div></div>`};
-  el.innerHTML=`<h2>🏆 Simbot Titles</h2><p class="small">Three belts, just for fun inside Simbot: title fighters (rating 28, 110 points), 12 rounds, everyone watches. Win one and you're champion until somebody takes it. Guests can win them too. Nothing here counts on any Contenders record.</p>
+      ${t.who&&!t.bot?'<div class="small mute">Leave Simbot and the belt goes back to Simbot</div>':''}<div class="sbBeltBtns">${btns.join(' ')}</div></div>`};
+  el.innerHTML=`<h2>🏆 Simbot Titles</h2><p class="small">Three belts, just for fun inside Simbot: title fighters (rating 28, 110 points), 12 rounds, everyone watches. Win one and you're champion until somebody takes it, or until you leave Simbot: then the belt goes back to Simbot, waiting for the next challenger. Guests can win them too. Nothing here counts on any Contenders record.</p>
     <div class="sbBelts">${T.map(card).join('')}</div><p class="cr small" id="sbtErr"></p>
-    ${sbTlog.length?`<details class="small"><summary>Title history</summary><ul>${sbTlog.map(l=>`<li>${new Date(l.at).toLocaleDateString('en-US',{month:'short',day:'numeric'})}: <b>${esc(l.org)}</b> ${l.kind==='won'?`${esc(l.winner_who)} (${esc(l.winner_fighter||'')}) won it from ${esc(l.loser_who)}`:l.kind==='defended'?`${esc(l.winner_who)} defended against ${esc(l.loser_who)}`:`${esc(l.winner_who)} and ${esc(l.loser_who)} drew`} (${esc(l.how||'')})</li>`).join('')}</ul></details>`:''}`}
+    ${sbTlog.length?`<details class="small"><summary>Title history</summary><ul>${sbTlog.map(l=>`<li>${new Date(l.at).toLocaleDateString('en-US',{month:'short',day:'numeric'})}: <b>${esc(l.org)}</b> ${l.kind==='won'?`${esc(l.winner_who)} (${esc(l.winner_fighter||'')}) won it from ${esc(l.loser_who)}`:l.kind==='defended'?`${esc(l.winner_who)} defended against ${esc(l.loser_who)}`:l.kind==='returned'?`${esc(l.loser_who)} left Simbot and the belt went back to Simbot`:`${esc(l.winner_who)} and ${esc(l.loser_who)} drew`} (${esc(l.how||'')})</li>`).join('')}</ul></details>`:''}`}
 async function sbTitleClick(e){const t=e.target.closest('[data-sbt]');if(!t)return;const[a,org]=t.dataset.sbt.split(':'),er=$('#sbtErr');
   if(a==='bot'){aiTitleFight(org);return}
   const nick=sbNick();if(nick===false){if(er)er.textContent='Pick a Simbot nickname first (3-20 letters or numbers).';const i=$('#sbcNick')||$('#labNick');if(i){i.focus();i.scrollIntoView({block:'center'})}return}

@@ -921,7 +921,7 @@ function condText(x,after){
 /* ================= SHARED DATA (Supabase: accounts, forums, messages) ================= */
 cleanSlate();
 const SB_URL='https://ojsphhzgzbxmnfcbitqb.supabase.co',SB_KEY='sb_publishable_SWO9WhiSkoVhflY5CmY08A_hlqCEJSi';
-const BUILD='1794927692';
+const BUILD='1794928179';
 /* A tab left open on an older build must not save over newer data: if the site has been updated, reload before anything else is saved. */
 let staleBuild=false;
 async function checkBuild(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
@@ -2443,7 +2443,7 @@ async function aiFightMe(stId,retry){let nick=null;const org=AI.titleOrg||null;
   if(r.error){if(/nickname/i.test(r.error)&&!ME&&!retry)return aiFightMe(stId,true);return aiSay(`Hmm, the ring wasn't ready: ${esc(r.error)}`,[['Try again','pick:'+stId]])}
   AI.titleOrg=null;if(nick)sbLockNick(nick);sbcSaveSeat(r.id,'a',r.a);aiPre={id:r.id,st:stId};nav('sbch:'+r.id)}
 /* lobby button "Fight Simbot for it" and the chat chip: pick a fighter, then it's a title fight */
-function aiTitleFight(org){AI.titleOrg=org;if(!AI.open)aiOpen();aiUser(`Fight me for the ${org} belt`);aiSay(`Oh, you want my <b>${esc(org)}</b> belt? 😤 It's 12 rounds, title fighters, winner takes the belt. Pick your fighter:`,[...STARTERS.map(x=>[`${x.em} ${esc(x.nm)}`,'pick:'+x.id]),['🎲 Surprise me','pick:?']])}
+function aiTitleFight(org){AI.titleOrg=org;if(!AI.open)aiOpen();const mine=(sbTitles||[]).some(t=>t.org===org&&t.mine);aiUser(mine?`Defend my ${org} belt against you`:`Fight me for the ${org} belt`);aiSay(mine?`You're putting your <b>${esc(org)}</b> belt on the line against ME? 😤 Bold. 12 rounds, title fighters, winner keeps the belt. Pick your fighter:`:`Oh, you want my <b>${esc(org)}</b> belt? 😤 It's 12 rounds, title fighters, winner takes the belt. Pick your fighter:`,[...STARTERS.map(x=>[`${x.em} ${esc(x.nm)}`,'pick:'+x.id]),['🎲 Surprise me','pick:?']])}
 
 /* ---- after a Simbot fight: why the winner won, and one thing to try ---- */
 function aiFightNotes(f,N){const D=aiDiag(f);return[D.head,D.why]}
@@ -2505,7 +2505,7 @@ const AI_TOPICS={
   app:{q:'Is there an app?',a:()=>[`Yes! The site installs like an app: tap <b>Install the App</b> in the menu (on iPhone: Share, then Add to Home Screen). 📱`,[]]},
   webl:{q:'Is this like WeBL?',a:()=>[`It started as a tribute to the old Web Boxing League, the classic fight-plan boxing game. 🥊 Same idea, you're the manager and the plan does the fighting, but Contenders has its own rules now, plus Simbot, live challenges, Rookies and Bare Knuckles.`,[['🏆 The league','league']]]},
   bk:{q:'What is Bare Knuckles?',a:()=>[`Our hardcore region. 🩸 <b>25 rounds</b>, no gloves, no ringside doctor, slower recovery between rounds. Going the distance, the man with more knockdowns wins. You pick the region when you create a fighter, and it's permanent. In Simbot, pick <b>Bare Knuckles, 25 rounds</b> to try it.`,[['🏆 The league','league']]]},
-  titles:{q:'What are the Simbot titles?',a:()=>{const T=(sbTitles||[]).filter(t=>!t.who||t.bot);return[`🏆 Simbot has three belts: <b>WBC, WBA and WBO</b>. Title fights are 12 rounds with title fighters (rating 28, 110 points), and everybody in Simbot can watch. Win one and you're champion until somebody beats you for it. Guests can win them too, under their nickname. It's just for fun: nothing counts on a Contenders record.<br><br>Find them at the top of the challenge lobby. ${sbAlone&&T.length?'Since it\'s just us in here, you can fight <b>me</b> for one right now:':'When you\'re the only one in Simbot, you can fight me for a vacant belt.'}`,sbAlone?T.map(t=>[`🏆 Fight me for the ${t.org}`,'tbelt:'+t.org]):[]]}},
+  titles:{q:'What are the Simbot titles?',a:()=>{const T=(sbTitles||[]).filter(t=>!t.who||t.bot);return[`🏆 Simbot has three belts: <b>WBC, WBA and WBO</b>. Title fights are 12 rounds with title fighters (rating 28, 110 points), and everybody in Simbot can watch. Win one and you're champion until somebody beats you for it. Guests can win them too, under their nickname. It's just for fun: nothing counts on a Contenders record.<br><br>Find them at the top of the challenge lobby. ${T.length?'Any belt I hold (or a vacant one), you can fight <b>me</b> for right now. A champion who leaves Simbot hands his belt back to me:':'Right now people hold all three. Challenge them in the lobby, and when a champion leaves Simbot his belt comes back to me.'}`,T.map(t=>[`🏆 Fight me for the ${t.org}`,'tbelt:'+t.org])]}},
   gyms:{q:'Who runs the other gyms?',a:()=>[`I only run Simbot, I don't manage any league gym. 🤷 Every gym keeps its plans secret, so the only way to find out what they're made of is to fight them.`,[['🏆 The league','league']]]},
 };
 const AI_INTENTS=[
@@ -2684,13 +2684,14 @@ function sbPaintTitles(){const el=$('#sbTitles');if(!el||!sbTitles)return;const 
     if(vac)btns.push(`<button class="labGo" data-sbt="create:${t.org}">🏆 Fight for the vacant belt</button>`);
     else if(t.mine)btns.push(`<button class="labGo" data-sbt="create:${t.org}">🛡️ Put it on the line</button>`);
     else if(!t.bot)btns.push(`<button data-sbt="create:${t.org}">🥊 Call out the champ</button>`);
-    if((vac||t.bot)&&sbAlone)btns.push(`<button data-sbt="bot:${t.org}">🤖 Fight Simbot for it</button>`);
+    if(vac||t.bot)btns.push(`<button data-sbt="bot:${t.org}">🤖 Fight Simbot for it</button>`);
+    else if(t.mine)btns.push(`<button data-sbt="bot:${t.org}">🤖 Defend it vs Simbot</button>`);
     return`<div class="sbBelt ${vac?'vac':''}"><div class="sbBeltArt">${orgBelt(t.org)}</div><div class="sbBeltOrg">${t.org}</div>
       ${vac?'<div class="sbBeltWho mute">VACANT</div>':`<div class="sbBeltWho">👑 <b>${esc(t.who)}</b>${t.mine?' <span class="sbYou">(you)</span>':''}</div><div class="small">${esc(t.fighter||'')}${t.defenses?` · ${t.defenses} defense${t.defenses>1?'s':''}`:''}</div>`}
-      ${t.bot&&!sbAlone?'<div class="small mute">Be the only one in Simbot to fight him for it</div>':''}<div class="sbBeltBtns">${btns.join(' ')}</div></div>`};
-  el.innerHTML=`<h2>🏆 Simbot Titles</h2><p class="small">Three belts, just for fun inside Simbot: title fighters (rating 28, 110 points), 12 rounds, everyone watches. Win one and you're champion until somebody takes it. Guests can win them too. Nothing here counts on any Contenders record.</p>
+      ${t.who&&!t.bot?'<div class="small mute">Leave Simbot and the belt goes back to Simbot</div>':''}<div class="sbBeltBtns">${btns.join(' ')}</div></div>`};
+  el.innerHTML=`<h2>🏆 Simbot Titles</h2><p class="small">Three belts, just for fun inside Simbot: title fighters (rating 28, 110 points), 12 rounds, everyone watches. Win one and you're champion until somebody takes it, or until you leave Simbot: then the belt goes back to Simbot, waiting for the next challenger. Guests can win them too. Nothing here counts on any Contenders record.</p>
     <div class="sbBelts">${T.map(card).join('')}</div><p class="cr small" id="sbtErr"></p>
-    ${sbTlog.length?`<details class="small"><summary>Title history</summary><ul>${sbTlog.map(l=>`<li>${new Date(l.at).toLocaleDateString('en-US',{month:'short',day:'numeric'})}: <b>${esc(l.org)}</b> ${l.kind==='won'?`${esc(l.winner_who)} (${esc(l.winner_fighter||'')}) won it from ${esc(l.loser_who)}`:l.kind==='defended'?`${esc(l.winner_who)} defended against ${esc(l.loser_who)}`:`${esc(l.winner_who)} and ${esc(l.loser_who)} drew`} (${esc(l.how||'')})</li>`).join('')}</ul></details>`:''}`}
+    ${sbTlog.length?`<details class="small"><summary>Title history</summary><ul>${sbTlog.map(l=>`<li>${new Date(l.at).toLocaleDateString('en-US',{month:'short',day:'numeric'})}: <b>${esc(l.org)}</b> ${l.kind==='won'?`${esc(l.winner_who)} (${esc(l.winner_fighter||'')}) won it from ${esc(l.loser_who)}`:l.kind==='defended'?`${esc(l.winner_who)} defended against ${esc(l.loser_who)}`:l.kind==='returned'?`${esc(l.loser_who)} left Simbot and the belt went back to Simbot`:`${esc(l.winner_who)} and ${esc(l.loser_who)} drew`} (${esc(l.how||'')})</li>`).join('')}</ul></details>`:''}`}
 async function sbTitleClick(e){const t=e.target.closest('[data-sbt]');if(!t)return;const[a,org]=t.dataset.sbt.split(':'),er=$('#sbtErr');
   if(a==='bot'){aiTitleFight(org);return}
   const nick=sbNick();if(nick===false){if(er)er.textContent='Pick a Simbot nickname first (3-20 letters or numbers).';const i=$('#sbcNick')||$('#labNick');if(i){i.focus();i.scrollIntoView({block:'center'})}return}

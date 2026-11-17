@@ -196,7 +196,7 @@ Deno.serve(async (req) => {
       let tt: any = {};
       if (body.title) { // title fight: always 28/28, 12 rounds. Vacant: anyone accepts. Champion: he defends (red). Anyone else: a title shot only the champion can accept (blue).
         const T = await getTitle(body.title);
-        if (T.holder_key === "bot") fail(`Simbot AI holds the ${T.org} belt. Take it from him with "Fight me" when you're the only one in Simbot.`);
+        if (T.holder_key === "bot") fail(`Simbot AI holds the ${T.org} belt. Take it from him with "Fight Simbot for it".`);
         const { data: open } = await admin.from("sb_challenges").select("id").eq("title", T.org).eq("status", "open").eq("b_taken", false).limit(1);
         if (open && open.length) fail(`There's already an open ${T.org} title fight on the board. Accept that one!`);
         level = "title"; rounds = 12;
@@ -216,11 +216,10 @@ Deno.serve(async (req) => {
       const rounds = [3, 6, 12, 25].includes(+body.rounds) ? +body.rounds : 12;
       const name = await nameFor(uid, body.nick, me);
       let tt: any = {};
-      if (body.title) { // only when he's the only one in Simbot, and only for a vacant belt or one Simbot holds
+      if (body.title) { // owner, Nov 17, 2026: fight Simbot for a belt he holds (or a vacant one) any time, and a champion may defend against Simbot
         const T = await getTitle(body.title);
-        if (T.holder_key && T.holder_key !== "bot") fail(`${T.holder_who} holds the ${T.org} belt. Challenge him for it in the lobby!`);
-        if (!(await aloneInSimbot(body.viewer))) fail("Title fights against me are only when you're the only one in Simbot. There are people here: challenge them for the belt!");
-        tt = { title: T.org, title_key: T.holder_key || null, title_champ: T.holder_key === "bot" ? 1 : null };
+        if (T.holder_key && T.holder_key !== "bot" && T.holder_key !== me) fail(`${T.holder_who} holds the ${T.org} belt. Challenge him for it in the lobby!`);
+        tt = { title: T.org, title_key: T.holder_key || null, title_champ: T.holder_key === "bot" ? 1 : T.holder_key === me ? 0 : null };
       }
       const G = checkFighter(Cx, body.bot, tt.title ? "title" : level);
       const ta = rnd(28);
@@ -313,7 +312,7 @@ Deno.serve(async (req) => {
       if (row.title) { // a title rematch: the belt is on the line again if one of these two holds it (or it's still vacant)
         const T = await getTitle(row.title), ka = seats?.find((x: any) => x.seat === "a")?.who_key, kb = seats?.find((x: any) => x.seat === "b")?.who_key;
         const champ = !T.holder_key ? null : T.holder_key === ka ? 0 : T.holder_key === kb ? 1 : -1;
-        const botOk = row.b_who !== SIMBOT || await aloneInSimbot(body.viewer);
+        const botOk = true; // title rematches against Simbot are always allowed now (owner, Nov 17, 2026)
         if (champ !== -1 && botOk) tt = { title: T.org, title_key: T.holder_key || null, title_champ: champ };
       }
       const id = await newChallenge({ level: row.level, rounds: row.rounds, listed: row.b_who === SIMBOT || !!tt.title, a_who: row.a_who, b_who: row.b_who, a_user: row.a_user, b_user: row.b_user,
