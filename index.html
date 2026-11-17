@@ -921,7 +921,7 @@ function condText(x,after){
 /* ================= SHARED DATA (Supabase: accounts, forums, messages) ================= */
 cleanSlate();
 const SB_URL='https://ojsphhzgzbxmnfcbitqb.supabase.co',SB_KEY='sb_publishable_SWO9WhiSkoVhflY5CmY08A_hlqCEJSi';
-const BUILD='1794887623';
+const BUILD='1794888217';
 /* A tab left open on an older build must not save over newer data: if the site has been updated, reload before anything else is saved. */
 let staleBuild=false;
 async function checkBuild(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
@@ -2267,7 +2267,8 @@ async function labPost(body){if(!SB)return;body=body.trim().slice(0,280);if(!bod
     if(!/^[A-Za-z0-9 _.'-]{3,20}$/.test(nick)){$('#labErr').textContent='Pick a Simbot nickname first (3-20 letters or numbers).';ni&&ni.focus();ni&&ni.scrollIntoView({block:'center'});return false}
     try{localStorage.setItem('contenders_simbot_nick',nick)}catch(e){}if(SB_TLOCK||SB_LOCK)nick=SB_TLOCK||SB_LOCK}
   if(labLooksLikePlan(body)){$('#labErr').textContent="That looks like part of a fight plan. Simbot Chat is public, so plans can't be posted there.";return false}
-  const{data:ins,error}=await SB.from('lab_chat').insert(ME?{author:ME,body}:{nick,body}).select('id').single();if(!error&&!ME)sbLockNick(nick);
+  const{error}=await SB.from('lab_chat').insert(ME?{author:ME,body}:{nick,body});if(!error&&!ME)sbLockNick(nick); /* no RETURNING: a message the moderation hides must not turn into an error (that would undo the moderation) */
+  let ins=null;if(!error&&/@\s*simbot/i.test(body)){try{let q=SB.from('lab_chat').select('id').eq('body',body).is('room',null).order('id',{ascending:false}).limit(1);q=ME?q.eq('author',ME):q.eq('nick',nick);const{data:r}=await q;ins=r&&r[0]}catch(e){}}
   if(!error&&ins&&/@\s*simbot/i.test(body)){try{await SB.rpc('sb_bot_answer',{p_msg:ins.id,p_key:aiChatKey(body)})}catch(e){}setTimeout(labLoadChat,1500)} /* the chat bot answers @simbot (owner, Nov 16, 2026) */if(error){$('#labErr').textContent='Chat: '+(/row-level/.test(error.message)?"you can't post right now.":/lab_chat_no_plans/.test(error.message)?"that looks like part of a fight plan, and plans can't be posted here.":error.message);return false}
   $('#labErr').textContent='';
   labLoadChat();return true}
