@@ -1419,18 +1419,18 @@ function sbLobbyHTML(){return`<div class="sbTitles" id="sbTitles"><h2>🏆 Simbo
   <div id="sbBoard"><p class="mute">Loading the board...</p></div></div>`}
 async function sbLoadBoard(force){if(!SB)return;const el=$('#sbBoard');if(!el)return;
   if(!force&&sbBoard&&Date.now()-sbBoardAt<8000){sbPaintBoard();return}
-  const since=new Date(Date.now()-36*3600e3).toISOString();
+  const since=new Date(Date.now()-24*3600e3).toISOString(); /* the board keeps the last 24 hours (owner, Nov 17, 2026) */
   const{data,error}=await SB.from('sb_challenges').select('id,created_at,status,level,rounds,listed,a_who,b_who,a_name,b_name,a_ready,b_ready,b_taken,fight_at,title,title_champ').gte('created_at',since).neq('status','cancelled').order('created_at',{ascending:false}).limit(60);
   if(error){el.innerHTML='<p class="mute">The board is not available right now.</p>';return}
   sbBoard=data;sbBoardAt=Date.now();sbPaintBoard();dcNavPaint();sbLoadTitles()}
 function sbPaintBoard(){const el=$('#sbBoard');if(!el||!sbBoard)return;const mine=sbcSeats(),now=Date.now();
   const lv=r=>r.title?`${orgBelt(r.title)} <b>${r.title} title</b>${r.title_champ==null?' (vacant)':r.title_champ===1&&r.status==='open'&&!r.b_taken?' (title shot: champ only)':''}`:r.level==='basic'?'70 pts':'Title';const rd=r=>r.rounds===25?'Bare Knuckles':r.rounds+' rds';
   const open=sbBoard.filter(r=>r.status==='open'&&r.listed&&!r.b_taken),live=sbBoard.filter(r=>r.status==='open'&&r.b_taken||r.status==='fought'&&new Date(r.fight_at).getTime()>now-6*60e3),
-    done=sbBoard.filter(r=>r.status==='fought'&&new Date(r.fight_at).getTime()<=now-6*60e3).slice(0,10);
+    done=sbBoard.filter(r=>r.status==='fought'&&new Date(r.fight_at).getTime()<=now-6*60e3).slice(0,50);
   const row=(r,btn)=>`<tr><td>${esc(r.a_who||'?')}${r.a_name?` <span class="small mute">(${esc(r.a_name)})</span>`:''}</td><td>${r.b_who?esc(r.b_who)+(r.b_name?` <span class="small mute">(${esc(r.b_name)})</span>`:''):'<span class="mute">open</span>'}</td><td class="small">${lv(r)}, ${rd(r)}</td><td>${btn}</td></tr>`;
   el.innerHTML=`<h3>Open challenges</h3>${open.length?`<table class="grid small"><tr><th>Red corner</th><th>Blue corner</th><th>Bout</th><th></th></tr>${open.map(r=>row(r,mine[r.id]?`<a data-go="sbch:${r.id}">Yours</a>`:`<button data-sbtake="${r.id}">Accept</button>`)).join('')}</table>`:'<p class="small mute">None right now. Create one!</p>'}
   <h3>Live now</h3>${live.length?`<table class="grid small"><tr><th>Red corner</th><th>Blue corner</th><th>Bout</th><th></th></tr>${live.map(r=>row(r,`<a data-go="sbch:${r.id}">${r.status==='fought'?'🔴 Watch':'Watch'}</a>`)).join('')}</table>`:'<p class="small mute">Nothing on right now.</p>'}
-  ${done.length?`<h3>Recent fights</h3><table class="grid small"><tr><th>Red corner</th><th>Blue corner</th><th>Bout</th><th></th></tr>${done.map(r=>row(r,`<a data-go="sbch:${r.id}">Replay</a>`)).join('')}</table>`:''}`}
+  ${done.length?`<h3>Recent fights <span class="small mute">(last 24 hours, click Replay to watch)</span></h3><table class="grid small"><tr><th>Red corner</th><th>Blue corner</th><th>Bout</th><th></th></tr>${done.map(r=>row(r,`<a data-go="sbch:${r.id}">Replay</a>`)).join('')}</table>`:''}`}
 /* ---- Simbot titles (owner, Nov 15, 2026): WBC/WBA/WBO belts inside Simbot only, title level 28/28, 12 rounds, live defenses, guests too;
    nothing counts on Contenders records. Lone visitors can fight Simbot AI for a vacant belt or one Simbot holds. ---- */
 let sbTitles=null,sbTitlesAt=0,sbAlone=false,sbTlog=[];
