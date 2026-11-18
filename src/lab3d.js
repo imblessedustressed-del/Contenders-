@@ -370,8 +370,11 @@ vec3 L1=normalize(vec3(-0.35,0.9,-0.45));vec3 L2=normalize(vec3(0.7,0.35,0.45));
 float d1=max(dot(n,L1),0.0),d2=max(dot(n,L2),0.0),rim=pow(1.0-max(dot(n,V),0.0),2.5);vec3 H=normalize(L1+V);float sp=pow(max(dot(n,H),0.0),28.0)*vC.a;
 vec3 c=base*(0.30+0.78*d1+0.28*d2)+vec3(1.0,0.96,0.88)*sp*0.9+base*rim*0.45+vec3(uFlash);if(uEmis>0.5)c=base;
 float fog=clamp((length(uEye-vW)-950.0)/1700.0,0.0,0.72);c=mix(c,vec3(0.04,0.035,0.08),fog);gl_FragColor=vec4(c,uAlpha);}`;
-function glInit(){if(LGL!==null)return LGL;try{const cv=document.createElement('canvas');cv.width=960;cv.height=540;
-    const gl=cv.getContext('webgl',{antialias:true,preserveDrawingBuffer:true,alpha:false});if(!gl)return LGL=false;
+/* light 3D (owner, Nov 18, 2026: Simbot View lagged his PC and mouse): on a slow computer the 3D arena renders at 640x360 without
+   anti-aliasing (about half the work); labPlay switches it on by itself when frames run slow, saved per device */
+function l3lite(){try{return localStorage.getItem('contenders_simbot_lite')==='1'}catch(e){return false}}
+function glInit(){if(LGL!==null)return LGL;try{const lite=l3lite(),cv=document.createElement('canvas');cv.width=lite?640:960;cv.height=lite?360:540;
+    const gl=cv.getContext('webgl',{antialias:!lite,preserveDrawingBuffer:true,alpha:false});if(!gl)return LGL=false;
     const sh=(t,s)=>{const x=gl.createShader(t);gl.shaderSource(x,s);gl.compileShader(x);if(!gl.getShaderParameter(x,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(x));return x};
     const pr=gl.createProgram();gl.attachShader(pr,sh(gl.VERTEX_SHADER,GL_VS));gl.attachShader(pr,sh(gl.FRAGMENT_SHADER,GL_FS));gl.linkProgram(pr);if(!gl.getProgramParameter(pr,gl.LINK_STATUS))throw new Error('link');
     const loc={};['aP','aN','aC','aT'].forEach(a=>loc[a]=gl.getAttribLocation(pr,a));['uVP','uTex','uUseTex','uEye','uAlpha','uEmis','uFlash','uScroll','uFill','uPeople'].forEach(u=>loc[u]=gl.getUniformLocation(pr,u));
@@ -429,7 +432,7 @@ function glMat4(C,T,fovy,asp,near,far){const f=l3norm(l3sub(T,C)),r=l3norm(l3cro
   const t=1/Math.tan(fovy/2),P=[t/asp,0,0,0, 0,t,0,0, 0,0,(far+near)/(near-far),-1, 0,0,2*far*near/(near-far),0];
   const o=new Float32Array(16);for(let i=0;i<4;i++)for(let j=0;j<4;j++){let s=0;for(let k=0;k<4;k++)s+=P[k*4+j]*V[i*4+k];o[i*4+j]=s}return o}
 function labGLScene(g,o){const G=glInit();if(!G)return null;const{gl,loc}=G,{C,T,P,Xw,mid,at,realAt,intro,fin,res,stopBeat,kdNow,tl,cur,mat}=o;
-  gl.viewport(0,0,960,540);gl.clearColor(.03,.03,.06,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.enable(gl.DEPTH_TEST);gl.useProgram(G.pr);
+  gl.viewport(0,0,G.cv.width,G.cv.height);gl.clearColor(.03,.03,.06,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.enable(gl.DEPTH_TEST);gl.useProgram(G.pr);
   const VP=glMat4(C,T,2*Math.atan(.5/1.32),16/9,30,6000);gl.uniformMatrix4fv(loc.uVP,false,VP);
   [0,1].forEach(i=>{const v=[Xw[i],mat,0,1],c=[0,1,2,3].map(r=>VP[r]*v[0]+VP[4+r]*v[1]+VP[8+r]*v[2]+VP[12+r]*v[3]);LAB_FPOS[i]=c[3]>0?[(c[0]/c[3]*.5+.5)*960,(.5-c[1]/c[3]*.5)*540]:null}); // feet on screen for the overlays (STUNNED!)
 gl.uniform3fv(loc.uEye,C);gl.uniform1f(loc.uAlpha,1);gl.uniform1f(loc.uFlash,0);gl.uniform1i(loc.uTex,0);

@@ -241,14 +241,14 @@ pre.plan{background:#fbfaf7;border:1px solid var(--line)}
 .labChat{max-height:320px;overflow-y:auto;border:1px solid var(--line);border-radius:8px;padding:6px 10px;background:#fffdf8}.labChat .lc{margin:6px 0;border-bottom:1px dotted #e3d6bf;padding-bottom:5px}
 .labSay{display:flex;gap:6px;margin-top:6px}.labGuest input{width:190px}.labSay input{flex:1}
 @media(max-width:760px){.labGrid{grid-template-columns:1fr}.labVs{font-size:22px}.labTick .lt:first-child{font-size:14px}}
-.sbHere{display:inline-block;min-width:18px;padding:0 6px;margin-left:6px;border-radius:9px;background:#1b7f2a;color:#fff;font:bold 12px/18px Verdana,sans-serif;text-align:center;vertical-align:middle;animation:sbHerePulse 2s infinite}
+.sbHere{display:inline-block;min-width:18px;padding:0 6px;margin-left:6px;border-radius:9px;background:#1b7f2a;color:#fff;font:bold 12px/18px Verdana,sans-serif;text-align:center;vertical-align:middle;animation:sbHerePulse 2s 6}
 @keyframes sbHerePulse{0%,100%{box-shadow:0 0 0 0 rgba(27,127,42,.6)}50%{box-shadow:0 0 0 5px rgba(27,127,42,0)}}
 .dc{background:#313338;color:#dbdee1;border-radius:10px;display:grid;grid-template-columns:220px minmax(0,1fr) 240px;overflow:hidden;font-family:"gg sans","Noto Sans","Helvetica Neue",Helvetica,Arial,sans-serif;font-size:15px;box-shadow:0 6px 24px rgba(0,0,0,.3)}
 .dc a{color:#00a8fc}
 .dcNav{background:#2b2d31;display:flex;flex-direction:column;min-width:0}.dcSrv{padding:13px 14px;font-weight:800;color:#f2f3f5;border-bottom:1px solid #1f2023;box-shadow:0 1px 0 rgba(0,0,0,.2);letter-spacing:.02em}.dcSrvSub{font-weight:500;color:#949ba4;font-size:12px;margin-left:4px}
 .dcCat{font-size:12px;font-weight:700;color:#949ba4;margin:16px 8px 4px 16px;letter-spacing:.02em}
 .dc a.dcCh{display:flex;align-items:center;gap:6px;color:#949ba4;padding:6px 8px;margin:1px 8px;border-radius:4px;font-weight:500;cursor:pointer;text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dc a.dcCh:hover{background:#35373c;color:#dbdee1}.dc a.dcCh.on{background:#404249;color:#f2f3f5}
-.dcLiveDot{width:8px;height:8px;border-radius:50%;background:#f23f43;flex:none;animation:sbHerePulse 1.6s infinite}.dcNone{font-size:12px;color:#6d6f78;margin:4px 16px}
+.dcLiveDot{width:8px;height:8px;border-radius:50%;background:#f23f43;flex:none;animation:sbHerePulse 1.6s 6}.dcNone{font-size:12px;color:#6d6f78;margin:4px 16px}
 .dcMe{margin-top:auto;background:#232428;display:flex;align-items:center;gap:10px;padding:8px 10px;position:relative}.dcDotMe{left:34px;top:30px;border-color:#232428}
 .dcDay{display:flex;align-items:center;margin:18px 16px 4px;color:#949ba4;font-size:12px;font-weight:600}.dcDay:before,.dcDay:after{content:'';flex:1;height:1px;background:#3f4147}.dcDay span{padding:0 8px}.dcMain{display:flex;flex-direction:column;min-width:0}
 .dcHead{display:flex;align-items:center;gap:6px;padding:11px 14px;border-bottom:1px solid #26272b;font-weight:700;color:#f2f3f5;box-shadow:0 1px 0 rgba(0,0,0,.2)}.dcHash{color:#80848e;font-size:20px;font-weight:400}
@@ -278,7 +278,7 @@ pre.plan{background:#fbfaf7;border:1px solid var(--line)}
 @media(max-width:760px){.sbBelts{grid-template-columns:1fr}}
 /* Simbot AI (its own pop-up window; the Discord-style chat is untouched) */
 #aiFab{position:fixed;right:18px;bottom:18px;z-index:60;font-family:"gg sans","Segoe UI",Roboto,Helvetica,Arial,sans-serif}
-.aiFabBtn{width:62px;height:62px;border-radius:50%;border:0;background:linear-gradient(145deg,#5865f2,#3b44c4);color:#fff;font-size:30px;cursor:pointer;box-shadow:0 6px 22px rgba(0,0,0,.45),0 0 0 3px rgba(88,101,242,.35);position:relative;animation:aiPulse 2.4s ease-in-out infinite;padding:0}
+.aiFabBtn{width:62px;height:62px;border-radius:50%;border:0;background:linear-gradient(145deg,#5865f2,#3b44c4);color:#fff;font-size:30px;cursor:pointer;box-shadow:0 6px 22px rgba(0,0,0,.45),0 0 0 3px rgba(88,101,242,.35);position:relative;animation:aiPulse 2.4s ease-in-out 5;padding:0}
 .aiFabBtn:hover{transform:scale(1.06)}
 @keyframes aiPulse{0%,100%{box-shadow:0 6px 22px rgba(0,0,0,.45),0 0 0 3px rgba(88,101,242,.35)}50%{box-shadow:0 6px 22px rgba(0,0,0,.45),0 0 0 10px rgba(88,101,242,0)}}
 .aiFabN{position:absolute;top:-2px;right:-2px;background:#f23f43;color:#fff;font-size:12px;font-weight:700;border-radius:10px;min-width:20px;height:20px;line-height:20px;text-align:center;padding:0 5px;border:2px solid #fff}
@@ -505,7 +505,7 @@ async function initDB(){
     const was=ME;ME=session?session.user.id:null;MYEMAIL=session?session.user.email:'';
     if(ME!==was){if(labAnim){labAnim.stop=true;labAnim=null}LAB=null;SBC=null} // never leave one manager's Lab plans on screen for the next
     if(ME&&ME!==was){loadedGym=false;afterLogin()}
-    if(!ME&&was){ims=[];loadedGym=false}
+    if(!ME&&was){ims=[];imsSig='';loadedGym=false}
     updateTop();refresh();
   });
   const timer=setTimeout(()=>{if(dbState==='loading'){dbState='slow';refresh()}},10000);
@@ -518,6 +518,7 @@ async function initDB(){
   setInterval(()=>{if(ME&&document.visibilityState==='visible')loadIms()},20000);
   document.addEventListener('visibilitychange',()=>{if(ME&&document.visibilityState==='visible')loadIms()});
 }
+let pubSig='',imsSig='';
 async function loadPublic(){
   try{
     const[p,t,gc,bt]=await Promise.all([SB.from('profiles').select('id,gym,description,location,created_at,desc_blocked'),SB.from('topics').select('*').order('last_at',{ascending:false}).limit(500),SB.from('gym_public').select('user_id,data,updated_at'),(async()=>{const C='id,fight_date,div,red_user,red_fid,blue_user,blue_fid,belt,purse,status,summary,venue,bot_only,region,rounds';
@@ -534,13 +535,17 @@ async function loadPublic(){
     if(ME){try{const{data:sp,error:se}=await SB.functions.invoke('spar',{body:{action:'list'}});if(!se&&sp&&sp.fighters){botF={};sp.fighters.forEach(x=>{const u=x.k.split(':')[1];if(managers[u])managers[u].bot=true;botF[x.k]=x})}}catch(e){}}
     bouts=(bt&&!bt.error&&bt.data)||[];try{const vq=await SB.from('vacancies').select('div,belt,bout_id,vacated_at');if(!vq.error)vacancies=vq.data||[]}catch(e){}cards={};if(gc&&!gc.error)gc.data.forEach(r=>cards[r.user_id]=r.data||{});
     topics=t.data.map(r=>({id:String(r.id),forum:r.forum,title:r.title,by:r.author,at:Date.parse(r.created_at),last:Date.parse(r.last_at),count:r.post_count}));
-    dbState='on';refresh();
+    /* only redraw the page when something actually changed (owner, Nov 18, 2026: the site lagged on his PC; it used to rebuild the
+       whole page every 45 s and every 20 s for messages even when nothing was new) */
+    const sig=[p.data.length,p.data.map(r=>r.gym+(r.description||'').length+(r.desc_blocked?1:0)).join('|'),t.data.map(r=>r.id+':'+r.last_at+':'+r.post_count).join(','),
+      gc&&!gc.error?gc.data.map(r=>r.user_id+r.updated_at).join(','):'',bouts.map(b=>b.id+b.status).join(','),vacancies.length].join('#');
+    const was=dbState;dbState='on';if(sig!==pubSig||was!=='on'){pubSig=sig;refresh()}
   }catch(e){if(dbState!=='on'){dbState='slow';refresh()}}
 }
 async function loadIms(){
   if(!ME)return;
   const{data,error}=await SB.from('messages').select('*').order('created_at',{ascending:false}).limit(500);
-  if(!error){ims=data.map(m=>({id:m.id,from:m.sender,to:m.recipient,at:Date.parse(m.created_at),text:m.body,read:m.read}));updateMsgLink();refresh()}
+  if(!error){const sig=data.map(m=>m.id+(m.read?'r':'')).join(',');if(sig===imsSig)return;imsSig=sig;ims=data.map(m=>({id:m.id,from:m.sender,to:m.recipient,at:Date.parse(m.created_at),text:m.body,read:m.read}));updateMsgLink();refresh()}
 }
 async function loadPosts(tid){
   const{data,error}=await SB.from('posts').select('*').eq('topic_id',tid).order('created_at').limit(1000);
@@ -911,9 +916,15 @@ function labPlay(off){const L=labState();if(!L.fight)return;if(labAnim)labAnim.s
   const step=now=>{if(me.stop){if(!labAnim)labSndStop();return}if(!me.paused)me.at=(now-me.t0)/1000;
     while(me.rs<tl.rounds.length&&tl.rounds[me.rs].start<=me.at){if(me.at-tl.rounds[me.rs].start<.5)labSfx({k:'start'});me.rs++}
     while(me.shown<tl.beats.length&&tl.beats[me.shown].at<=me.at){const b=tl.beats[me.shown++];labTick(b);if(me.at-b.at<.5)labSfx(b)}
-    labDraw(me.at,tl);if(me.at<tl.total)requestAnimationFrame(step);else{labSndStop();if(labAnim===me)labAnim=null}};
+    labDraw(me.at,tl);labPerf(me,now);if(me.at<tl.total)requestAnimationFrame(step);else{labSndStop();if(labAnim===me)labAnim=null}};
   requestAnimationFrame(step);
 }
+/* frame watchdog: if the arena can't keep about 22 frames a second (a slow PC), step down once to light 3D, then to the Classic view,
+   so the page and the mouse stay responsive; the viewer can still pick any mode with the Graphics button */
+function labPerf(me,now){if(me.paused||document.hidden){me.pf=null;return}const p=me.pf||(me.pf={t:now,n:0});p.n++;
+  if(now-p.t<3000)return;const fps=p.n*1000/(now-p.t);me.pf={t:now,n:0};if(fps>=22||me.at<1)return;
+  const g=l3gfx();if(g==='3d'&&!l3lite()){try{localStorage.setItem('contenders_simbot_lite','1')}catch(e){}LGL=null}
+  else if(g==='3d'||g==='16bit'){l3setGfx('classic');document.querySelectorAll('.labGfx').forEach(b=>b.textContent=L3GFX_NAMES[l3gfx()])}}
 function labToggleSnd(){labSndSet(!labSndOn());document.querySelectorAll('.labSnd').forEach(b=>b.textContent=labSndOn()?'🔊 Sound On':'🔇 Sound Off');if(labSndOn()&&labAnim&&!labAnim.paused){labSndCtx();labBedStart()}}
 function labToggleGfx(t){l3setGfx(l3nextGfx());document.querySelectorAll('.labGfx').forEach(b=>b.textContent=L3GFX_NAMES[l3gfx()]);if(!labAnim)labDraw(1e9)}
 function labTick(b){const el=$('#labTick');if(!el||!b.txt)return;const p=document.createElement('p');
@@ -3037,7 +3048,7 @@ document.addEventListener('click',async e=>{
     if(await safeWrite(()=>SB.from('profiles').update({description:v,location:loc}).eq('id',ME))){managers[ME]=Object.assign(managers[ME]||{},{desc:v,loc});alertBox('Description saved.')}}
   else if(t.id==='doRetireGym'){if($('#retireName').value.trim()!==myGym())return alertBox('The gym name does not match.');
     t.disabled=true;if(await safeWrite(()=>SB.rpc('retire_gym'))){await SB.auth.signOut().catch(()=>{});try{localStorage.removeItem('contenders_v6')}catch(e){}ME=null;alert0()}else t.disabled=false}
-  else if(t.id==='doLogout'){await SB.auth.signOut();ME=null;LAB=null;ims=[];updateTop();nav('home')}
+  else if(t.id==='doLogout'){await SB.auth.signOut();ME=null;LAB=null;ims=[];imsSig='';updateTop();nav('home')}
   else if(t.dataset.prEdit){pressEdit=+t.dataset.prEdit;render()}
   else if(t.dataset.prCancel){pressEdit=null;render()}
   else if(t.dataset.prSave){const id=+t.dataset.prSave,body=$('#prEditText').value.trim().slice(0,280);if(!body)return alertBox('Write something, or delete the press release instead.');
