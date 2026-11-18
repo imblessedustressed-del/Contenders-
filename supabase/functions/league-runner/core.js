@@ -138,6 +138,11 @@ const GX={pow:1.02,agl:1.02,jab:1.08,fat:.9,chin:1.1,ip:.85,rec:.02,hurt:.03};
 const BAL={bkTieDmg:.02,tcStart:.35,tcFloor:.3,refEnd:.25,refLand:8,refRounds:2,counterDiv:6,counterStr:0,counterAgg:.8,counterFloor:.5,alloutGive:2,alloutTake:2.75,kpMul:3.75,wtPct:10,giantPer10:.5,smallMan:false,hvSpd:.45,hvClinchBase:-.5,hvClinchAggLoss:.4,hvCounterAgg:.94,hvInsideBase:2.25,hvRingBase:1.25,ringBase:1.75,ringFat:.4,clinchBase:.5,clinchAggLoss:.2,bkClinchBase:.75,bkClinchAggLoss:.2,insideBase:1,tieDmg:.015};
 
 function newSev(){const r=rand();return r<2/3?1:r<8/9?2:r<26/27?3:4}
+/* nose and mouth injuries follow real ringside numbers (owner, Nov 17, 2026: "use real boxing statistics"): most are a bloody nose or a
+   bloody lip; fractures and broken jaws are rare (pro boxing: nose injuries about 1 per 100 fighter-bouts, lacerations about 9) */
+function newSevFor(t){const r=rand();if(t==='nose')return r<.92?1:r<.98?2:r<.995?3:4;if(t==='jaw')return r<.75?1:r<.95?2:r<.992?3:4;return newSev()}
+function promoteFor(t,l){if(t==='nose'){if(l>=2)return rand()<.3?Math.min(4,l+1):l;return rand()<.12?2:1}
+  if(t==='jaw'){if(l===1)return rand()<.4?2:1;if(l===2)return rand()<.12?3:2;if(l===3)return rand()<.15?4:3;return 4}return promote(l)}
 function promote(l){if(l>=3)return 4;if(l===2)return rand()<2/3?3:4;const r=rand();return r<2/3?2:r<8/9?3:4}
 function injEnd(i){if(i.type==='cut')return i.lvl;if(i.type==='nose')return i.lvl>=2?i.lvl:0;if(i.type==='jaw')return i.lvl>=4?10:0;return 0}
 function injText(i){
@@ -272,8 +277,8 @@ function simulate(FA,FB,rounds){
       p*=e.tgt==='Head'||e.tgt==='Cut'?1.5:e.tgt==='Body'?.25:1;p*=CUTRES[Y.cutres]||1;p=Math.min(.5,p);
       for(const ex of Y.inj.slice()){
         if(rand()<p*(e.tgt==='Cut'?1.5:1)){
-          if(rand()<.5){const old=ex.lvl;ex.lvl=ex.type==='swell'?Math.min(old<3?old+1:(rand()<.25?4:3),4):promote(old)}
-          const ed=injEnd(ex);Y.E-=ed;ex.dmg+=ed;injNews[j].push({inj:ex,agg:true});
+          const old=ex.lvl;if(rand()<.5){ex.lvl=ex.type==='swell'?Math.min(old<3?old+1:(rand()<.25?4:3),4):promoteFor(ex.type,old)}
+          const ed=injEnd(ex);Y.E-=ed;ex.dmg+=ed;if(ex.lvl>old)injNews[j].push({inj:ex,agg:true}); // only news when it really gets worse
           if(ex.type==='jaw'&&ex.lvl>=4&&ex.wasBroken&&!ended)ended={type:'TKO',w:i,why:'his jaw is broken',t:120+rand()*60};
           if(ex.type==='jaw'&&ex.lvl>=4)ex.wasBroken=true;
         }
@@ -282,8 +287,8 @@ function simulate(FA,FB,rounds){
       while(rand()<p&&guard++<6){
         const tot=INJ_LOCS.reduce((s,l)=>s+l[2],0);let q=rand()*tot,L=INJ_LOCS[0];for(const l of INJ_LOCS){q-=l[2];if(q<=0){L=l;break}}
         const ex=Y.inj.find(z=>z.type===L[0]&&z.loc===L[1]);
-        if(ex){if(rand()<.5)ex.lvl=ex.type==='swell'?Math.min(ex.lvl+1,4):promote(ex.lvl);const ed=injEnd(ex);Y.E-=ed;ex.dmg+=ed;injNews[j].push({inj:ex,agg:true})}
-        else{const z={type:L[0],loc:L[1],lvl:L[0]==='swell'?1:newSev(),dmg:0};const ed=injEnd(z);Y.E-=ed;z.dmg=ed;if(z.type==='jaw'&&z.lvl>=4)z.wasBroken=true;Y.inj.push(z);injNews[j].push({inj:z,agg:false})}
+        if(ex){const old=ex.lvl;if(rand()<.5)ex.lvl=ex.type==='swell'?Math.min(ex.lvl+1,4):promoteFor(ex.type,ex.lvl);const ed=injEnd(ex);Y.E-=ed;ex.dmg+=ed;if(ex.lvl>old)injNews[j].push({inj:ex,agg:true})}
+        else{const z={type:L[0],loc:L[1],lvl:L[0]==='swell'?1:newSevFor(L[0]),dmg:0};const ed=injEnd(z);Y.E-=ed;z.dmg=ed;if(z.type==='jaw'&&z.lvl>=4)z.wasBroken=true;Y.inj.push(z);injNews[j].push({inj:z,agg:false})}
       }
     }
     const eD=S.map((x,i)=>e0[i]-x.E),fatV=[0,0];
