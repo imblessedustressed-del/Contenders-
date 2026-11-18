@@ -264,7 +264,8 @@ function labHud32(g,o){const{P,at,cur,res,tl,names,W,cx}=o,rounds=(labState().bo
     g.save();g.font="italic 900 17px Impact, 'Arial Black', sans-serif";const tw=g.measureText(nm).width;
     g.fillStyle='rgba(0,0,0,.55)';g.fillRect(left?x0-6:x0+w0-tw-10,16,tw+16,28);g.fillStyle=i?'#1d4ed8':'#c8102e';g.fillRect(left?x0-6:x0+w0+6,16,4,28);
     g.textAlign=left?'left':'right';g.fillStyle='#000';g.fillText(nm,(left?x0:x0+w0)+1,37);g.fillStyle=i?'#b9d3ff':'#ffb3b3';g.fillText(nm,left?x0:x0+w0,36);g.restore()};
-  bar(0);bar(1);
+  const tac=(i)=>{const left=(i^LAB_SW)===0,x0=left?24:cx+58,w0=W/2-82;if(!o.fin&&typeof labTactic==='function')labTacDraw(g,labTactic(cur,i),left?x0-2:x0+w0+2,62,left?'left':'right',i)};
+  bar(0);bar(1);tac(0);tac(1);
   // center clock
   const clockT=Math.max(0,Math.min(1,(at-cur.start)/(cur.end-cur.start)))*(cur.last&&!res.decision?cur.clockEnd:180),sec=Math.max(0,180-Math.floor(clockT));
   g.save();const mt=g.createLinearGradient(0,6,0,86);mt.addColorStop(0,'#e9edf2');mt.addColorStop(.5,'#7b828e');mt.addColorStop(1,'#dfe3e8');g.fillStyle=mt;

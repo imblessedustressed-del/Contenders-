@@ -1058,6 +1058,15 @@ function labRef(g,x,y,s,t,count,raise){g.save();g.translate(x,y);g.scale(s,s);
   else if(LAB_WAVE!=null){const sw=Math.sin(LAB_WAVE*11)*26;g.beginPath();g.moveTo(-18,-176);g.lineTo(-6+sw,-240);g.moveTo(18,-176);g.lineTo(6-sw,-240);g.stroke()} /* waving it off over his head */
   else{g.beginPath();g.moveTo(-18,-176);g.lineTo(-30,-140);g.moveTo(18,-176);g.lineTo(32,count?-200+arm*70:-138);g.stroke()}
   g.restore()}
+/* the tactic each fighter is using this round, under his name plate (owner, Nov 18, 2026), from the public plan line in the report */
+const LAB_TAC={ring:'MOVING AROUND THE RING','counter-punching':'COUNTER-PUNCHING',clinching:'CLINCHING',inside:'FIGHTING INSIDE',feinting:'FEINTING',ropes:'ON THE ROPES',outside:'BOXING FROM THE OUTSIDE','all-out':'PUNCHING ALL OUT'};
+function labTactic(cur,i){const R=cur&&cur.R,ln=R&&R.plans&&R.plans[i];if(!ln)return'';const t=labTxt(ln);
+  const m=/\(([^)]+)\)/.exec(t);let st=m&&LAB_TAC[m[1].toLowerCase()];
+  if(!st){const q=/\bis ([^.(]+?)(?: and |\.|$)/.exec(t);st=q?q[1].trim().toUpperCase():''}
+  const tg=/head hunting/.test(t)?'HEAD HUNTING':/goes to the body/.test(t)?'TO THE BODY':/after the cut/.test(t)?'AFTER THE CUT':'';
+  return[st,tg,/fighting dirty/i.test(t)?'FIGHTING DIRTY':''].filter(Boolean).join(' · ')}
+function labTacDraw(g,txt,x,y,al,i){if(!txt)return;g.save();g.font="bold 12px Verdana, sans-serif";g.textAlign=al;const w=g.measureText(txt).width;
+  g.fillStyle='rgba(0,0,0,.6)';g.fillRect(al==='left'?x-4:x-w-4,y-12,w+8,17);g.fillStyle=i?'#b9d3ff':'#ffd0d0';g.fillText(txt,x,y);g.restore()}
 function labInjLabel(t){t=String(t||'').toLowerCase();const w=/gets worse/.test(t);
   const l=/swollen shut/.test(t)?'EYE SWOLLEN SHUT!':/gash|serious cut/.test(t)?'BAD CUT!':/\bcut\b/.test(t)?'CUT!':/broken nose|fractured nose/.test(t)?'BROKEN NOSE!':/nose/.test(t)?'BLOODY NOSE!':/broken jaw/.test(t)?'BROKEN JAW!':/broken tooth/.test(t)?'BROKEN TOOTH!':/lip|mouth/.test(t)?'BLOODY MOUTH!':/swell|swollen/.test(t)?'SWELLING!':'HURT!';
   return w&&!/BAD|SHUT|BROKEN/.test(l)?l.replace('!',' GETS WORSE!'):l}
@@ -1209,14 +1218,14 @@ function labDraw(at,tl){const cv=$('#labCv');if(!cv)return;const g=cv.getContext
       g.restore()});
     g.globalAlpha=1-out;labBigText(g,'VS',cx,258,86,'#ffd23f','#c47f00');g.font="italic 900 18px Impact, 'Arial Black', sans-serif";g.textAlign='center';g.fillStyle='#fff';g.fillText('TALE OF THE TAPE',cx,348);{const v=labVenue(),so=v.att>=v.cap;g.font="bold 16px Verdana, sans-serif";g.fillStyle='#ffd23f';g.fillText(`${v.name}${v.city?', '+v.city:''}`,cx,384);g.fillStyle=so?'#ff5a5a':'#ffffff';g.font="bold 15px Verdana, sans-serif";g.fillText(so?`SOLD OUT: ${v.cap.toLocaleString('en-US')} seats`:`Attendance ${v.att.toLocaleString('en-US')} of ${v.cap.toLocaleString('en-US')} seats`,cx,408)}g.globalAlpha=1}
   // HUD: arcade energy bars and round badge (3D mode: a slim late-'90s console HUD across the top instead)
-  if(TT&&intro&&at<T0){}else if(gfx==='3d')labHud32(g,{P,at,cur,res,tl,names:L.names,W,cx});else{
+  if(TT&&intro&&at<T0){}else if(gfx==='3d')labHud32(g,{P,at,cur,res,tl,names:L.names,W,cx,fin});else{
   /* name plates only (owner, Nov 15, 2026: take away the depleting bars, keep the names) */
   const bar=(x,al,i)=>{g.save();g.font="italic 900 22px Impact, 'Arial Black', sans-serif";const pw=Math.min(350,g.measureText(L.names[i].toUpperCase().slice(0,22)).width+34);if(al!=='left')x=x+350-pw;
     const fr=g.createLinearGradient(0,10,0,50);fr.addColorStop(0,'#5a5f6b');fr.addColorStop(.5,'#1d2028');fr.addColorStop(1,'#3a3e48');g.fillStyle=fr;g.beginPath();g.roundRect(x,10,pw,42,8);g.fill();
     g.strokeStyle='#d4af37';g.lineWidth=2;g.stroke();
     g.font="italic 900 22px Impact, 'Arial Black', sans-serif";g.textAlign=al;g.fillStyle='#000';const nx=al==='left'?x+14:x+pw-14;g.fillText(L.names[i].toUpperCase().slice(0,22),nx+2,40);
     g.fillStyle=i?'#8fb4ff':'#ff8f8f';g.fillText(L.names[i].toUpperCase().slice(0,22),nx,38);g.restore()};
-  bar(10,'left',0);bar(W-360,'right',1);
+  bar(10,'left',0);bar(W-360,'right',1);if(!fin){labTacDraw(g,labTactic(cur,0),24,70,'left',0);labTacDraw(g,labTactic(cur,1),W-24,70,'right',1)}
   const rd=cur.n,clockT=Math.max(0,Math.min(1,(at-cur.start)/(cur.end-cur.start)))*(cur.last&&!res.decision?cur.clockEnd:180),sec=Math.max(0,180-Math.floor(clockT));
   g.save();const bd=g.createLinearGradient(0,6,0,84);bd.addColorStop(0,'#f5d76e');bd.addColorStop(.5,'#a8841f');bd.addColorStop(1,'#f5d76e');g.fillStyle=bd;
   g.beginPath();g.moveTo(cx-62,6);g.lineTo(cx+62,6);g.lineTo(cx+54,70);g.lineTo(cx,86);g.lineTo(cx-54,70);g.closePath();g.fill();
