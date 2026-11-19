@@ -1258,14 +1258,16 @@ function labDraw(at,tl){const cv=$('#labCv');if(!cv)return;const g=cv.getContext
       if(fp){const x=Math.max(130,Math.min(W-130,fp[0])),y=Math.max(150,Math.min(H-28,fp[1]+44));labBigText(g,'STUNNED!',x,y,sz,'#ff9e4a','#c4121f');g.save();g.fillStyle=si?'#5aa0ff':'#ff5a5a';g.beginPath();g.moveTo(x-12,y-sz*.95);g.lineTo(x+12,y-sz*.95);g.lineTo(x,y-sz*.95-14);g.closePath();g.fill();g.restore()}
       else labBigText(g,'STUNNED!',cx,220,62,'#ff9e4a','#c4121f')}
     else if(bell){if(at-bell.at<1.1)labBigText(g,'DING DING!',cx,212,50,'#ffffff','#9aa0aa');const R=(tl.rounds.find(r=>r.n===bell.round)||{}).R;
-      if(R&&R.st){const cc=R.cc?labCommRun(tl,R.n):null;g.save();g.fillStyle='rgba(8,10,16,.82)';g.beginPath();g.roundRect(cx-210,236,420,cc?112:78,8);g.fill();g.strokeStyle='#d4af37';g.lineWidth=2;g.stroke();
+      if(R&&R.st){const cc=R.cc?labCommRun(tl,R.n):null,hw=300,ex=cx+hw-16,ix=cx-hw+16;g.save();g.fillStyle='rgba(8,10,16,.84)';g.beginPath();g.roundRect(cx-hw,236,hw*2,cc?136:100,8);g.fill();g.strokeStyle='#d4af37';g.lineWidth=2;g.stroke();
         g.font="bold 13px Verdana, sans-serif";g.textAlign='center';g.fillStyle='#d4af37';g.fillText(`ROUND ${R.n} PUNCH STATS`,cx,256);
-        R.st.forEach((s,i)=>{const sd=i^LAB_SW,lan=s.jl+s.pl+s.rl,thr=s.jt+s.pt+s.rt;g.fillStyle=i?'#8fb4ff':'#ff8f8f';g.font="bold 15px Verdana, sans-serif";g.textAlign=sd?'right':'left'; /* each fighter's numbers on his own side of the screen */
-          g.fillText(`${lan}/${thr} landed`,sd?cx+196:cx-196,282);g.font="12px Verdana, sans-serif";g.fillStyle='#ddd';g.fillText(`${s.pl} power  ${s.jl} jabs`,sd?cx+196:cx-196,302)});
+        R.st.forEach((s,i)=>{const sd=i^LAB_SW,lan=s.jl+s.pl+s.rl,thr=s.jt+s.pt+s.rt,x=sd?ex:ix,pc=thr?Math.round(100*lan/thr):0;g.textAlign=sd?'right':'left'; /* each fighter's numbers on his own side of the screen, same line as the fight report (owner, Nov 18, 2026) */
+          g.fillStyle=i?'#8fb4ff':'#ff8f8f';g.font="bold 17px Verdana, sans-serif";g.fillText(`${lan} of ${thr} punches`,x,282);
+          g.font="12px Verdana, sans-serif";g.fillStyle='#ddd';g.fillText(`${s.pl} power, ${s.jl} jabs, ${s.rl} rights`,x,300);
+          g.fillStyle='#d4af37';g.fillText(`${pc}% landed  (${s.pl*4+s.rl*3+s.jl*2} points)`,x,317)});
         if(cc){const rd=cc.rd,tt=cc.tot;g.textAlign='center';g.fillStyle='#fff';g.font="bold 16px Verdana, sans-serif";g.fillText(LAB_SW?`${rd[1]}-${rd[0]}`:`${rd[0]}-${rd[1]}`,cx,292);
-          g.strokeStyle='rgba(212,175,55,.35)';g.lineWidth=1;g.beginPath();g.moveTo(cx-196,312);g.lineTo(cx+196,312);g.stroke();
-          g.font="bold 11px Verdana, sans-serif";g.fillStyle='#d4af37';g.fillText('RINGSIDE CARD (UNOFFICIAL)',cx,330);g.font="11px Verdana, sans-serif";g.fillStyle='#aaa';g.fillText(`after ${R.n} round${R.n>1?'s':''}`,cx,343);
-          [0,1].forEach(i=>{const sd=i^LAB_SW;g.textAlign=sd?'right':'left';g.font="bold 20px Verdana, sans-serif";g.fillStyle=i?'#8fb4ff':'#ff8f8f';g.fillText(String(tt[i]),sd?cx+196:cx-196,340)})}g.restore()}}
+          g.strokeStyle='rgba(212,175,55,.35)';g.lineWidth=1;g.beginPath();g.moveTo(ix,330);g.lineTo(ex,330);g.stroke();
+          g.font="bold 11px Verdana, sans-serif";g.fillStyle='#d4af37';g.fillText('RINGSIDE CARD (UNOFFICIAL)',cx,350);g.font="11px Verdana, sans-serif";g.fillStyle='#aaa';g.fillText(`after ${R.n} round${R.n>1?'s':''}`,cx,363);
+          [0,1].forEach(i=>{const sd=i^LAB_SW;g.textAlign=sd?'right':'left';g.font="bold 20px Verdana, sans-serif";g.fillStyle=i?'#8fb4ff':'#ff8f8f';g.fillText(String(tt[i]),sd?ex:ix,360)})}g.restore()}}
     else if(cardsB&&at>=cardsB.at)labScorecards(g,cx,at-cardsB.at,f,L)}
   if(fin&&res.w!=null){const d=at-lastBeat.at;if(d>.4){const rr=LAB_RNG(11),cols=res.w?['#1d4ed8','#8fb4ff','#ffd23f','#fff']:['#c8102e','#ff8f8f','#ffd23f','#fff'];
     for(let k=0;k<90;k++){const x0=rr()*W,sp2=60+rr()*90,y=((d-.4)*sp2+rr()*H*1.2)%(H+40)-20,x=x0+Math.sin(d*2+k)*18;g.save();g.translate(x,y);g.rotate(d*3+k);g.fillStyle=cols[k%4];g.fillRect(-4,-2,8,4);g.restore()}}}

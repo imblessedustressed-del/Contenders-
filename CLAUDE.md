@@ -204,6 +204,8 @@ Rounds play in 11 s (`per=11` in labBeats, was 6). Knockdowns and KOs look and s
 
 **Round tactic under each name (owner, Nov 18, 2026):** every graphics mode shows each fighter's tactic for the current round under his name plate (MOVING AROUND THE RING, COUNTER-PUNCHING, PUNCHING ALL OUT · HEAD HUNTING, ...), from the public plan line `R.plans` the report already shows (`labTactic`/`labTacDraw`, `LAB_TAC`); hidden at the finish. No plan text or numbers.
 
+**Between-rounds punch stats (owner, Nov 18, 2026):** the card shows each fighter the same line as the fight report: "N of M punches", power/jabs/rights landed, landing % and points (power 4, rights 3, jabs 2), on his own side (LAB_SW), plus the round score and ringside card. Visual only.
+
 **Speed (owner, Nov 18, 2026: Simbot View lagged his Linux PC and mouse):** loadPublic/loadIms only redraw the page when the data changed (`pubSig`/`imsSig`; it used to rebuild every 45 s/20 s); pulse animations stop after a few cycles; light 3D (`l3lite`, localStorage `contenders_simbot_lite`: GL at 640x360, no anti-aliasing) and a frame watchdog `labPerf` in labPlay (under 22 fps for 3 s: 3D -> light 3D -> Classic). Told the owner to turn on Chrome's graphics acceleration (Linux Chrome often draws WebGL on the CPU).
 
 ## Simbot levels and Challenges (owner, Nov 15, 2026: "challenge somebody... they put in their plans and everyone can watch... live chat"; "bump simbot up to title stats, rating 28/28")
