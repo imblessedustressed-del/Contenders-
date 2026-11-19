@@ -64,7 +64,7 @@ Deno.serve(async (req) => {
       if (c && typeof c.k === "string") {
         const e = P.get(c.k); if (!e) throw new Error("That fighter isn't available for sparring any more. Reload the page.");
         const F = structuredClone(e.F);
-        if (typeof c.plan === "string" && c.plan.length < 20000) { F.plan = c.plan; F.planName = ""; }
+        if (typeof c.plan === "string" && c.plan.length <= 1000000) { F.plan = c.plan; F.planName = ""; }
         return { F, hidden: true };
       }
       if (c && c.F && typeof c.F === "object" && typeof c.F.plan === "string") return { F: c.F, hidden: false };

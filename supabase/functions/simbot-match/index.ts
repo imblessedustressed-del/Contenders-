@@ -66,7 +66,7 @@ function checkFighter(Cx: any, F: any, level: string) {
   const used = ABIL.reduce((a, k) => a + G[k], 0) + G.hgt + G.cut;
   if (used !== L.pool) fail(`Your fighter has ${used} points. He needs exactly ${L.pool}.`);
   G.plan = String(F.plan ?? "");
-  if (G.plan.length > 20000) fail("That fight plan is too long.");
+  if (G.plan.length > 1000000) fail("That fight plan is too long."); // no real limit (owner, Nov 19, 2026: "unlimited length"); 1,000,000 chars only stops junk uploads
   const e = Cx.parsePlan(G.plan).errors;
   if (e.length) fail(`Fight plan, line ${e[0].line}: ${e[0].msg}`);
   G.planName = clean(F.planName, 40);
