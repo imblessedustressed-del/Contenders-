@@ -171,7 +171,7 @@ function ctxFor(S,i,r){const x=S[i],y=S[1-i];
 /* a spent fighter can't take a punch (owner, Nov 15, 2026: "any power and his opponent he would be knocked out"): below BAL.tcStart of his
    endurance his chin weakens, down to BAL.tcFloor of normal when empty, so a puncher can finish him; a light hitter still mostly can't. Contenders only. */
 function tiredChin(x){if(x.bk||!BAL.tcStart)return 1;const f=Math.max(0,x.E/x.E0);return f>=BAL.tcStart?1:BAL.tcFloor+(1-BAL.tcFloor)*f/BAL.tcStart}
-function simulate(FA,FB,rounds){
+function simulate(FA,FB,rounds,opt){
   const S=[prep(FA,'red'),prep(FB,'blue')];
   const out={rounds:[],result:null,S};
   /* weight advantage: heavier man gets +1 STR per 5% (fractions kept), nothing above 300 lb */
@@ -356,6 +356,10 @@ function simulate(FA,FB,rounds){
        Contenders clinching toned down with it (clinchBase 1.75 -> .5, clinchAggLoss .12 -> .2; Bare Knuckles keeps the old bk* values) so clinchers don't turn their old draws into a 60% win rate. */
     const dd=[0,1].map(i=>out.rounds.reduce((a,R)=>a+(R.st?R.st[i].pt+R.st[i].rt+R.st[i].jt:0),0));
     out.tieBreak=tot.map(t=>t[0]!==t[1]||Math.abs(dd[0]-dd[1])<=BAL.tieDmg*Math.max(1,dd[0],dd[1])?null:(dd[0]>dd[1]?0:1));
+    /* title fights (owner, Nov 18, 2026; not posted, owner's order): like real boxing, a level card goes to the defending champion.
+       opt.champ = 0/1 = the corner defending a belt; leave it out for a vacant title or when both men hold belts (unification). */
+    const ch=opt&&(opt.champ===0||opt.champ===1)?opt.champ:null;
+    if(ch!==null){out.tieBreak=tot.map((t,j)=>t[0]!==t[1]?null:ch);out.tieChamp=ch}
     let wa=0,wb=0,dr=0;tot.forEach((t,j)=>{const w=t[0]!==t[1]?(t[0]>t[1]?0:1):out.tieBreak[j];w===0?wa++:w===1?wb++:dr++});
     let type;
     if(wa===3||wb===3)type='Unanimous Decision';

@@ -147,7 +147,7 @@ async function runFight(row: any) {
   const need = Math.max(Cx.minWeight(A), Cx.minWeight(B));
   const D = Cx.DIVS as [string, number][];
   const div = (D.find((d) => d[1] >= need) || D[D.length - 1])[0];
-  const f: any = Cx.simulate(Cx.prepFighter(A, A, B, div), Cx.prepFighter(B, A, B, div), row.rounds);
+  const f: any = Cx.simulate(Cx.prepFighter(A, A, B, div), Cx.prepFighter(B, A, B, div), row.rounds, row.title && (row.title_champ === 0 || row.title_champ === 1) ? { champ: row.title_champ } : undefined);
   const mine: any[][] = [[], []];
   f.rounds.forEach((R: any) => {
     for (const i of [0, 1]) mine[i].push({ pre: R.mgr ? R.mgr[i] || "" : "", post: R.dmg ? R.dmg[i] || null : null });

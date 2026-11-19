@@ -1292,7 +1292,7 @@ function labScorecards(g,cx,d,f,L){if(f.bkScore&&labBKView())return labBKCard(g,
     g.textAlign='right';g.font="bold 24px Verdana, sans-serif";g.fillStyle='#fff';g.fillText(`${hi}-${lo}${tb?'*':''}`,cx+220,y)});
   g.globalAlpha=a;const ka=4.3;if(d>=ka){const n=f.totals.filter(t=>t[0]!==t[1]||(f.tieBreak&&f.tieBreak[f.totals.indexOf(t)]!=null)).length;g.globalAlpha=Math.min(1,(d-ka)*4);
     g.textAlign='center';g.font="italic 900 20px Impact, 'Arial Black', sans-serif";g.fillStyle='#ffd23f';g.fillText(f.result.w==null?'IT\'S A DRAW...':`...FOR THE WINNER, BY ${String(f.result.type||'DECISION').toUpperCase()}`,cx,360)}
-  if(T.some((t,j)=>t[0]===t[1]&&f.tieBreak&&f.tieBreak[j]!=null)&&d>=3.3){g.globalAlpha=.8;g.textAlign='center';g.font="11px Verdana, sans-serif";g.fillStyle='#aaa';g.fillText('* even card, goes to the busier fighter',cx,388)}
+  if(T.some((t,j)=>t[0]===t[1]&&f.tieBreak&&f.tieBreak[j]!=null)&&d>=3.3){g.globalAlpha=.8;g.textAlign='center';g.font="11px Verdana, sans-serif";g.fillStyle='#aaa';g.fillText(f.tieChamp!=null?'* even card':'* even card, goes to the busier fighter',cx,388)}
   g.restore()}
 /* Bare Knuckles goes to the tally, not judges: knockdowns, then stuns, then damage done (owner, Nov 16, 2026) */
 function labBKCard(g,cx,d,f,L){const k=f.bkScore,rows=[['KNOCKDOWNS',k.kd],['STUNS',k.stuns],['DAMAGE DONE',k.dmg||[0,0]]],a=Math.min(1,d*3);g.save();g.globalAlpha=a;
@@ -2252,7 +2252,7 @@ function reportHTML(f,b,upto){
     if(isLast&&end&&end.decision){
       if(f.bk){const k=f.bkScore||{kd:[0,0],stuns:[0,0]};h+=`<p>The fight goes the distance. Under bare-knuckle rules it comes down to knockdowns${k.kd[0]===k.kd[1]?(k.stuns[0]===k.stuns[1]?', then stuns, then damage':', then stuns'):''}.</p>${S.map((x,i)=>`<p>${x.n}: ${k.kd[i]} knockdown${k.kd[i]===1?'':'s'} scored, ${k.stuns[i]} stun${k.stuns[i]===1?'':'s'}${k.dmg?`, ${k.dmg[i]} points of damage done`:''}.</p>`).join('')}
       <p class="r b">${end.w===null?"It's a draw!!":`${S[end.w].n} wins by a ${end.type.toLowerCase()}!!`}</p>`+afterFight(f,end);return}
-      h+=`<p>The fight goes the distance, so it's up to the judges.</p>${f.totals.map((t,j)=>`<p>Judge ${JUDGES[j].name} scores it ${Math.max(...t)}-${Math.min(...t)}${t[0]===t[1]?(f.tieBreak&&f.tieBreak[j]!=null?`, even, and gives it to ${S[f.tieBreak[j]].n} for being the busier fighter`:', even'):` for ${S[t[0]>t[1]?0:1].n}`}.</p>`).join('')}
+      h+=`<p>The fight goes the distance, so it's up to the judges.</p>${f.totals.map((t,j)=>`<p>Judge ${JUDGES[j].name} scores it ${Math.max(...t)}-${Math.min(...t)}${t[0]===t[1]?(f.tieBreak&&f.tieBreak[j]!=null?`, even, and gives it to ${S[f.tieBreak[j]].n}${f.tieChamp!=null?'':' for being the busier fighter'}`:', even'):` for ${S[t[0]>t[1]?0:1].n}`}.</p>`).join('')}
       <p class="r b">${end.w===null?`It's a ${end.type.toLowerCase()}!!`:`${S[end.w].n} wins by a ${end.type.toLowerCase()}!!`}</p>`+afterFight(f,end);return;
     }
     h+=S.map((x,i)=>`<p>${x.n} ${R.cond[i]}</p>`).join('');
