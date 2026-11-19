@@ -259,6 +259,7 @@ pre.plan{background:#fbfaf7;border:1px solid var(--line)}
 .dcAv{width:40px;height:40px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:15px;position:relative}.dcAvS{width:32px;height:32px;font-size:12px}
 .dcGut{width:40px;flex:none;font-size:10px;color:transparent;text-align:right;padding-top:3px}.dcCont:hover .dcGut{color:#949ba4}
 .dcBody{min-width:0}.dcN{font-weight:600;cursor:pointer;text-decoration:none}.dcN:hover{text-decoration:underline}.dcT{font-size:12px;color:#949ba4;margin-left:8px}
+.dcClip{display:block;width:100%;max-width:360px;aspect-ratio:16/9;border-radius:8px;margin-top:6px;border:1px solid #3f4147;background:#000}
 .dcB{color:#dbdee1;line-height:1.375;word-wrap:break-word;overflow-wrap:anywhere;white-space:pre-wrap}.dcDel{font-size:11px;color:#949ba4!important;margin-left:6px;cursor:pointer}.dcHid{font-size:12px;color:#f23f43}
 .dcTag{display:inline-block;background:#5865f2;color:#fff;font-size:10px;font-weight:700;border-radius:3px;padding:0 4px;line-height:15px;vertical-align:1px;margin-left:4px}
 .dcSys{color:#949ba4;font-size:14px;margin:8px 0 0;padding:0 16px 0 70px}.dcSys b{color:#f2f3f5}.dcIn{color:#23a55a;font-weight:700}.dcOut{color:#f23f43;font-weight:700}
@@ -1334,7 +1335,7 @@ async function labLoadChat(){if(!SB||labChatBusy)return;labChatBusy=true;
   try{const{data,error}=await SB.from('lab_chat').select('id,author,nick,body,created_at,hidden,bot,reply_to').is('room',null).lte('created_at',new Date(Date.now()+5000).toISOString()).order('created_at',{ascending:false}).limit(40);if(!error)labChat=data.reverse()}finally{labChatBusy=false}
   labChatPaint()}
 function labChatPaint(){const el=$('#labChat');if(!el)return;const atBottom=el.scrollHeight-el.scrollTop-el.clientHeight<40;
-  if(el.classList.contains('dcMsgs')){el.innerHTML=!labChat?needDB():dcRender(labChat,dcSys);if(atBottom||!el.dataset.seen){el.scrollTop=el.scrollHeight;el.dataset.seen=1}
+  if(el.classList.contains('dcMsgs')){const h=!labChat?needDB():dcRender(labChat,dcSys);if(el._h!==h){el.innerHTML=h;el._h=h} /* redraw only on change, so the welcome clip keeps playing */if(atBottom||!el.dataset.seen){el.scrollTop=el.scrollHeight;el.dataset.seen=1}
     el.querySelectorAll('[data-labdel]').forEach(a=>a.onclick=async()=>{await SB.from('lab_chat').delete().eq('id',+a.dataset.labdel);labLoadChat()});return}
   el.innerHTML=!labChat?needDB():labChat.length?labChat.map(m=>{const gm=managers[m.author];const when=new Date(m.created_at);
     return`<p class="lc"><b>${m.bot?'🤖 Simbot (AI)':m.author&&gm?`<a data-go="gympub:${m.author}">${esc(gm.gym)}</a>`:m.nick?`${esc(m.nick)} <span class="small mute">(guest)</span>`:'A retired gym'}</b> <span class="small mute">${when.toLocaleDateString('en-US',{month:'short',day:'numeric'})} ${when.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}</span>${m.author===ME?` <a class="small" data-labdel="${m.id}">delete</a>`:''}${m.hidden?' <span class="small cr">(hidden pending review, only you see it)</span>':''}<br>${esc(m.body)}</p>`}).join(''):'<p class="mute">No messages yet. Say something!</p>';
@@ -1389,15 +1390,18 @@ const dcAv=(n,big)=>n==='Simbot (AI)'?`<div class="dcAv dcBotAv${big?'':' dcAvS'
 function dcUnique(rows){const seen=new Map();rows.forEach(r=>{const k=r.uid||('g:'+r.name);const o=seen.get(k);if(!o||r.me)seen.set(k,{...r,k})});return[...seen.values()]}
 function dcWho(m){if(m.bot)return{n:'Simbot (AI)',bot:true,guest:false};const gm=managers[m.author];return m.author&&gm?{n:gm.gym,go:'gympub:'+m.author,guest:false}:m.nick?{n:m.nick,guest:true}:{n:'A retired gym',guest:false}}
 function dcTime(d){const t=new Date(d),now=new Date();return(t.toDateString()===now.toDateString()?'Today at ':t.toLocaleDateString('en-US',{month:'2-digit',day:'2-digit',year:'numeric'})+' ')+t.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}
-function dcRender(msgs,sys){const items=[...msgs.map(m=>({t:Date.parse(m.created_at),m})),...(sys||[]).map(x=>({t:x.t,x}))].sort((a,b)=>a.t-b.t);let last=null;
+/* the guest welcome carries a 10-second Simbot knockout clip so newcomers see the game (owner, Nov 19, 2026); only the newest welcome plays it */
+const dcClipFor=m=>m&&m.bot&&/welcome to Contenders/i.test(m.body||'');
+const DC_CLIP='<video class="dcClip" src="clips/simbot-ko.mp4" poster="clips/simbot-ko.jpg" autoplay muted loop playsinline preload="metadata"></video>';
+function dcRender(msgs,sys){const clipId=(msgs.filter(dcClipFor).pop()||{}).id;const items=[...msgs.map(m=>({t:Date.parse(m.created_at),m})),...(sys||[]).map(x=>({t:x.t,x}))].sort((a,b)=>a.t-b.t);let last=null;
   if(!items.length)return'<p class="dcSys">No messages yet. Say something!</p>';
   let day='';
   return items.map(it=>{const dv=new Date(it.t).toDateString(),divi=dv!==day?(day=dv,last=null,`<div class="dcDay"><span>${esc(new Date(it.t).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}))}</span></div>`):'';return divi+(()=>{if(it.x){last=null;return`<p class="dcSys"><span class="${it.x.k==='in'?'dcIn':'dcOut'}">${it.x.k==='in'?'→':'←'}</span> <b>${esc(it.x.n)}</b> ${it.x.k==='in'?'joined Simbot.':'left.'} <span class="dcT">${esc(dcTime(it.t))}</span></p>`}
     const m=it.m,w=dcWho(m),same=last&&last.n===w.n&&it.t-last.t<5*60e3;last={n:w.n,t:it.t};
     const nm=w.go?`<a class="dcN" data-go="${w.go}" style="color:${dcCol(w.n)}">${esc(w.n)}</a>`:`<span class="dcN" style="color:${dcCol(w.n)}">${esc(w.n)}</span>`;
     const tools=`${m.author===ME&&ME?` <a class="dcDel" data-labdel="${m.id}">delete</a>`:''}${m.hidden?' <span class="dcHid">(hidden pending review, only you see it)</span>':''}`;
-    return same?`<div class="dcM dcCont"><div class="dcGut">${esc(new Date(it.t).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}))}</div><div class="dcBody"><div class="dcB">${esc(m.body)}${tools}</div></div></div>`
-      :`<div class="dcM">${dcAv(w.n,1)}<div class="dcBody"><div>${nm}${w.guest?' <span class="dcTag">GUEST</span>':''}${w.bot?' <span class="dcTag dcBotTag">BOT</span>':''}<span class="dcT">${esc(dcTime(it.t))}</span></div><div class="dcB">${esc(m.body)}${tools}</div></div></div>`})()}).join('')}
+    return same?`<div class="dcM dcCont"><div class="dcGut">${esc(new Date(it.t).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}))}</div><div class="dcBody"><div class="dcB">${esc(m.body)}${tools}${m.id===clipId?DC_CLIP:''}</div></div></div>`
+      :`<div class="dcM">${dcAv(w.n,1)}<div class="dcBody"><div>${nm}${w.guest?' <span class="dcTag">GUEST</span>':''}${w.bot?' <span class="dcTag dcBotTag">BOT</span>':''}<span class="dcT">${esc(dcTime(it.t))}</span></div><div class="dcB">${esc(m.body)}${tools}${m.id===clipId?DC_CLIP:''}</div></div></div>`})()}).join('')}
 /* left column: live fight rooms as channels, and your own name at the bottom */
 function dcNavPaint(){const lv=$('#dcLive');if(lv){const now=Date.now(),L=(sbBoard||[]).filter(r=>r.status==='open'&&r.b_taken||r.status==='fought'&&new Date(r.fight_at).getTime()>now-6*60e3);
     lv.innerHTML=L.length?L.slice(0,8).map(r=>`<a class="dcCh" data-go="sbch:${r.id}"><span class="dcLiveDot"></span> ${esc((r.a_name||r.a_who||'?').slice(0,14))} vs ${esc((r.b_name||r.b_who||'?').slice(0,14))}</a>`).join(''):'<p class="dcNone">No fights on right now</p>'}
