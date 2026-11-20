@@ -1394,7 +1394,8 @@ function dcWho(m){if(m.bot)return{n:'Simbot (AI)',bot:true,guest:false};const gm
 function dcTime(d){const t=new Date(d),now=new Date();return(t.toDateString()===now.toDateString()?'Today at ':t.toLocaleDateString('en-US',{month:'2-digit',day:'2-digit',year:'numeric'})+' ')+t.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}
 /* the guest welcome carries a 10-second Simbot knockout clip so newcomers see the game (owner, Nov 19, 2026); only the newest welcome plays it */
 const dcClipFor=m=>m&&m.bot&&/welcome to Contenders/i.test(m.body||'');
-const DC_CLIP='<video class="dcClip" src="clips/simbot-ko.mp4" poster="clips/simbot-ko.jpg" autoplay muted loop playsinline preload="metadata"></video><a class="dcShow" data-sbshow="1">🏆 Watch a title fight now</a>';
+const DC_CLIP='<video class="dcClip" src="clips/simbot-ko.mp4" poster="clips/simbot-ko.jpg" autoplay muted loop playsinline preload="metadata"></video>';
+const DC_SHOW='<a class="dcShow" data-sbshow="1">🏆 Watch a title fight now</a>',dcShowFor=m=>m&&m.bot&&/^welcome/i.test(m.body||'');
 /* the button under the welcome clip (owner, Nov 19, 2026: "a link we can click on and bring it to a simbot fight... random result every time, title fight and atmosphere every time"):
    two random starters at title level, fitted to one weight class, 12 rounds for a random belt with a random champion, sold-out arena;
    one normal simulation, so the result is random every time */
@@ -1411,8 +1412,8 @@ function dcRender(msgs,sys){const clipId=(msgs.filter(dcClipFor).pop()||{}).id;c
     const m=it.m,w=dcWho(m),same=last&&last.n===w.n&&it.t-last.t<5*60e3;last={n:w.n,t:it.t};
     const nm=w.go?`<a class="dcN" data-go="${w.go}" style="color:${dcCol(w.n)}">${esc(w.n)}</a>`:`<span class="dcN" style="color:${dcCol(w.n)}">${esc(w.n)}</span>`;
     const tools=`${m.author===ME&&ME?` <a class="dcDel" data-labdel="${m.id}">delete</a>`:''}${m.hidden?' <span class="dcHid">(hidden pending review, only you see it)</span>':''}`;
-    return same?`<div class="dcM dcCont"><div class="dcGut">${esc(new Date(it.t).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}))}</div><div class="dcBody"><div class="dcB">${esc(m.body)}${tools}${m.id===clipId?DC_CLIP:''}</div></div></div>`
-      :`<div class="dcM">${dcAv(w.n,1)}<div class="dcBody"><div>${nm}${w.guest?' <span class="dcTag">GUEST</span>':''}${w.bot?' <span class="dcTag dcBotTag">BOT</span>':''}<span class="dcT">${esc(dcTime(it.t))}</span></div><div class="dcB">${esc(m.body)}${tools}${m.id===clipId?DC_CLIP:''}</div></div></div>`})()}).join('')}
+    return same?`<div class="dcM dcCont"><div class="dcGut">${esc(new Date(it.t).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}))}</div><div class="dcBody"><div class="dcB">${esc(m.body)}${tools}${m.id===clipId?DC_CLIP:''}${dcShowFor(m)?DC_SHOW:''}</div></div></div>`
+      :`<div class="dcM">${dcAv(w.n,1)}<div class="dcBody"><div>${nm}${w.guest?' <span class="dcTag">GUEST</span>':''}${w.bot?' <span class="dcTag dcBotTag">BOT</span>':''}<span class="dcT">${esc(dcTime(it.t))}</span></div><div class="dcB">${esc(m.body)}${tools}${m.id===clipId?DC_CLIP:''}${dcShowFor(m)?DC_SHOW:''}</div></div></div>`})()}).join('')}
 /* left column: live fight rooms as channels, and your own name at the bottom */
 function dcNavPaint(){const lv=$('#dcLive');if(lv){const now=Date.now(),L=(sbBoard||[]).filter(r=>r.status==='open'&&r.b_taken||r.status==='fought'&&new Date(r.fight_at).getTime()>now-6*60e3);
     lv.innerHTML=L.length?L.slice(0,8).map(r=>`<a class="dcCh" data-go="sbch:${r.id}"><span class="dcLiveDot"></span> ${esc((r.a_name||r.a_who||'?').slice(0,14))} vs ${esc((r.b_name||r.b_who||'?').slice(0,14))}</a>`).join(''):'<p class="dcNone">No fights on right now</p>'}
