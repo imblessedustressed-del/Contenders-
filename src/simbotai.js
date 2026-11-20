@@ -115,18 +115,23 @@ function aiDiag(f){const N=labState().names||['Red','Blue'];const r=f.result,R=f
   else if(tot[l].t<tot[w].t*.85)k='work',why=`<b>${esc(N[l])} got outworked.</b> The judges love the busier man. Raise his <b>AGGRESSION</b> (the first number) in the middle rounds.`;
   else k='close',why=`<b>Close one on the cards.</b> One number either way could flip it. Change something in the losing plan and run it again. That's the whole game. 😉`;
   return{k,c:l===0?'A':'B',head,why,loser:N[l]}}
+/* sign-up pitch right after a guest's fight (owner, Nov 20, 2026: guests from the ad watch and leave; show the pitch when they're most interested, from the FIRST fight) */
+function aiPitchHTML(){const n=AI.fights||1;
+  const head=n<=1?'Liked that? Put <u>your own</u> fighter in the league.':n===2?'You\'ve got the hang of it. Now make it count.':'You keep coming back for more. 😄 Time for a real career.';
+  return`<div id="labPitch" class="aiPitch"><div class="aiPitchT">🥊 ${head}</div><div class="aiPitchS">Build him, write his plan, and he fights on a real card every week against other gyms. He keeps his record, climbs the rankings and goes after titles. <b>Free, no ads to watch, 30 seconds to sign up.</b></div><a class="aiPitchB" data-go="register">Sign Up Free</a></div>`}
 const N2=(n,f)=>f.result.w==null?'nobody':n[f.result.w];
 function aiWatchFight(){clearTimeout(aiWatchT);const box=$('#labAi');if(box)box.innerHTML='';
   const L=labState(),f=L.fight;if(!f)return;let n=0;
   const tick=()=>{if(!$('#labAi')||labState().fight!==f)return;if(labAnim&&labAnim.at<labAnim.tl.total-.3&&n++<900){aiWatchT=setTimeout(tick,1000);return}
     const[h,why]=aiFightNotes(f,L.names);AI.fights=(AI.fights||0)+1;
-    const chips=[['🔁 Run it again','again'],['🥊 Now fight me','fightme']];if(!ME&&AI.fights>=2)chips.push(['🏆 Make it count: sign up free','go:register']);else chips.push(['📋 How plans work','plans']);
+    const chips=[['🔁 Run it again','again'],['🥊 Now fight me','fightme']];if(!ME)chips.push(['🏆 Make it count: sign up free','go:register']);else chips.push(['📋 How plans work','plans']);
     const D=aiDiag(f),fx=D.k==='close'?[]:[['👉 Show me what went wrong','point:'+D.k+':'+D.c],['🔧 Fix it for me','fix:'+D.k+':'+D.c]];
-    $('#labAi').innerHTML=aiCard(`${h}<br>${why}${!ME&&AI.fights===2?'<br><br>In the league, your fighter keeps his record, climbs the rankings and fights every week. It\'s free.':''}`,[...fx,...chips]);
+    $('#labAi').innerHTML=(ME?'':aiPitchHTML())+aiCard(`${h}<br>${why}${!ME&&AI.fights===2?'<br><br>In the league, your fighter keeps his record, climbs the rankings and fights every week. It\'s free.':''}`,[...fx,...chips]);
     const mine=AI.showing;AI.showing=false;
     const TB=L.bout&&L.bout.title,belt=TB&&f.result.w!=null?(f.result.w===TB.champ?`<br>👑 <b>AND STILL ${TB.org} CHAMPION!</b> The belt stays home.`:`<br>👑 <b>AND NEW ${TB.org} CHAMPION!</b> We've got a new king. 🏆`):'';
-    aiSay(`${mine?'That\'s the fight! ':''}${h}${belt}<br><br>${why}`,[...fx,['🔁 Run it again','again'],...(!ME&&AI.fights>=2?[['🏆 Sign up free','go:register']]:[['🥊 Fight me','fightme']])]);
-    if(mine&&!AI.open)aiOpen();else if(!AI.open)aiFabBubble(true,`🔔 Fight's over! Want to know why <b>${esc(N2(L.names,f))}</b> won? Tap me.`)};
+    aiSay(`${mine?'That\'s the fight! ':''}${h}${belt}<br><br>${why}`,[...fx,['🔁 Run it again','again'],...(!ME?[['🏆 Sign up free','go:register']]:[['🥊 Fight me','fightme']])]);
+    if(mine&&!AI.open)aiOpen();else if(!AI.open&&ME)aiFabBubble(true,`🔔 Fight's over! Want to know why <b>${esc(N2(L.names,f))}</b> won? Tap me.`); /* guests get the big sign-up card instead, so the bubble doesn't cover it */
+    if(!ME&&AI.fights===1){const pb=$('#labPitch');if(pb)setTimeout(()=>pb.scrollIntoView({behavior:'smooth',block:'nearest'}),400)}};
   aiWatchT=setTimeout(tick,1500)}
 
 /* ---- the challenge page vs Simbot ---- */

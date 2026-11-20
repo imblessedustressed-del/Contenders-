@@ -260,6 +260,7 @@ pre.plan{background:#fbfaf7;border:1px solid var(--line)}
 .dcGut{width:40px;flex:none;font-size:10px;color:transparent;text-align:right;padding-top:3px}.dcCont:hover .dcGut{color:#949ba4}
 .dcBody{min-width:0}.dcN{font-weight:600;cursor:pointer;text-decoration:none}.dcN:hover{text-decoration:underline}.dcT{font-size:12px;color:#949ba4;margin-left:8px}
 .dcClip{display:block;width:100%;max-width:360px;aspect-ratio:16/9;border-radius:8px;margin-top:6px;border:1px solid #3f4147;background:#000}
+.aiPitch{background:linear-gradient(135deg,#1b1d23,#3a1418);color:#fff;border:2px solid #c8323a;border-radius:12px;padding:14px 16px;margin:12px 0;text-align:center;box-shadow:0 6px 20px rgba(200,50,58,.25)}.aiPitchT{font-size:20px;font-weight:800;margin-bottom:6px}.aiPitchS{font-size:14px;opacity:.92;line-height:1.45;max-width:640px;margin:0 auto 10px}.aiPitchB{display:inline-block;background:#c8323a;color:#fff!important;font-weight:800;font-size:17px;padding:10px 26px;border-radius:8px;text-decoration:none;cursor:pointer}.aiPitchB:hover{background:#e0414a}
 .dcShow{display:inline-block;margin-top:8px;padding:8px 14px;background:#c8323a;color:#fff!important;border-radius:6px;font-weight:bold;cursor:pointer;text-decoration:none}.dcShow:hover{background:#e0414a}
 .dcB{color:#dbdee1;line-height:1.375;word-wrap:break-word;overflow-wrap:anywhere;white-space:pre-wrap}.dcDel{font-size:11px;color:#949ba4!important;margin-left:6px;cursor:pointer}.dcHid{font-size:12px;color:#f23f43}
 .dcTag{display:inline-block;background:#5865f2;color:#fff;font-size:10px;font-weight:700;border-radius:3px;padding:0 4px;line-height:15px;vertical-align:1px;margin-left:4px}
@@ -936,7 +937,7 @@ function condText(x,after){
 /* ================= SHARED DATA (Supabase: accounts, forums, messages) ================= */
 cleanSlate();
 const SB_URL='https://ojsphhzgzbxmnfcbitqb.supabase.co',SB_KEY='sb_publishable_SWO9WhiSkoVhflY5CmY08A_hlqCEJSi';
-const BUILD='1795142495';
+const BUILD='1795184575';
 /* A tab left open on an older build must not save over newer data: if the site has been updated, reload before anything else is saved. */
 let staleBuild=false;
 async function checkBuild(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
@@ -2525,18 +2526,23 @@ function aiDiag(f){const N=labState().names||['Red','Blue'];const r=f.result,R=f
   else if(tot[l].t<tot[w].t*.85)k='work',why=`<b>${esc(N[l])} got outworked.</b> The judges love the busier man. Raise his <b>AGGRESSION</b> (the first number) in the middle rounds.`;
   else k='close',why=`<b>Close one on the cards.</b> One number either way could flip it. Change something in the losing plan and run it again. That's the whole game. 😉`;
   return{k,c:l===0?'A':'B',head,why,loser:N[l]}}
+/* sign-up pitch right after a guest's fight (owner, Nov 20, 2026: guests from the ad watch and leave; show the pitch when they're most interested, from the FIRST fight) */
+function aiPitchHTML(){const n=AI.fights||1;
+  const head=n<=1?'Liked that? Put <u>your own</u> fighter in the league.':n===2?'You\'ve got the hang of it. Now make it count.':'You keep coming back for more. 😄 Time for a real career.';
+  return`<div id="labPitch" class="aiPitch"><div class="aiPitchT">🥊 ${head}</div><div class="aiPitchS">Build him, write his plan, and he fights on a real card every week against other gyms. He keeps his record, climbs the rankings and goes after titles. <b>Free, no ads to watch, 30 seconds to sign up.</b></div><a class="aiPitchB" data-go="register">Sign Up Free</a></div>`}
 const N2=(n,f)=>f.result.w==null?'nobody':n[f.result.w];
 function aiWatchFight(){clearTimeout(aiWatchT);const box=$('#labAi');if(box)box.innerHTML='';
   const L=labState(),f=L.fight;if(!f)return;let n=0;
   const tick=()=>{if(!$('#labAi')||labState().fight!==f)return;if(labAnim&&labAnim.at<labAnim.tl.total-.3&&n++<900){aiWatchT=setTimeout(tick,1000);return}
     const[h,why]=aiFightNotes(f,L.names);AI.fights=(AI.fights||0)+1;
-    const chips=[['🔁 Run it again','again'],['🥊 Now fight me','fightme']];if(!ME&&AI.fights>=2)chips.push(['🏆 Make it count: sign up free','go:register']);else chips.push(['📋 How plans work','plans']);
+    const chips=[['🔁 Run it again','again'],['🥊 Now fight me','fightme']];if(!ME)chips.push(['🏆 Make it count: sign up free','go:register']);else chips.push(['📋 How plans work','plans']);
     const D=aiDiag(f),fx=D.k==='close'?[]:[['👉 Show me what went wrong','point:'+D.k+':'+D.c],['🔧 Fix it for me','fix:'+D.k+':'+D.c]];
-    $('#labAi').innerHTML=aiCard(`${h}<br>${why}${!ME&&AI.fights===2?'<br><br>In the league, your fighter keeps his record, climbs the rankings and fights every week. It\'s free.':''}`,[...fx,...chips]);
+    $('#labAi').innerHTML=(ME?'':aiPitchHTML())+aiCard(`${h}<br>${why}${!ME&&AI.fights===2?'<br><br>In the league, your fighter keeps his record, climbs the rankings and fights every week. It\'s free.':''}`,[...fx,...chips]);
     const mine=AI.showing;AI.showing=false;
     const TB=L.bout&&L.bout.title,belt=TB&&f.result.w!=null?(f.result.w===TB.champ?`<br>👑 <b>AND STILL ${TB.org} CHAMPION!</b> The belt stays home.`:`<br>👑 <b>AND NEW ${TB.org} CHAMPION!</b> We've got a new king. 🏆`):'';
-    aiSay(`${mine?'That\'s the fight! ':''}${h}${belt}<br><br>${why}`,[...fx,['🔁 Run it again','again'],...(!ME&&AI.fights>=2?[['🏆 Sign up free','go:register']]:[['🥊 Fight me','fightme']])]);
-    if(mine&&!AI.open)aiOpen();else if(!AI.open)aiFabBubble(true,`🔔 Fight's over! Want to know why <b>${esc(N2(L.names,f))}</b> won? Tap me.`)};
+    aiSay(`${mine?'That\'s the fight! ':''}${h}${belt}<br><br>${why}`,[...fx,['🔁 Run it again','again'],...(!ME?[['🏆 Sign up free','go:register']]:[['🥊 Fight me','fightme']])]);
+    if(mine&&!AI.open)aiOpen();else if(!AI.open&&ME)aiFabBubble(true,`🔔 Fight's over! Want to know why <b>${esc(N2(L.names,f))}</b> won? Tap me.`); /* guests get the big sign-up card instead, so the bubble doesn't cover it */
+    if(!ME&&AI.fights===1){const pb=$('#labPitch');if(pb)setTimeout(()=>pb.scrollIntoView({behavior:'smooth',block:'nearest'}),400)}};
   aiWatchT=setTimeout(tick,1500)}
 
 /* ---- the challenge page vs Simbot ---- */
