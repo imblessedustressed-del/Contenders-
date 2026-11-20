@@ -2042,6 +2042,53 @@ function planFormHTML(arg){
 }
 function planName_ok(n,except){n=(n||'').trim();if(!n)return'Give the plan a name.';if(n.length>40)return'Plan names can be up to 40 characters.';if(n!==except&&state.plans[n]!=null)return'You already have a plan with that name.';return''}
 /* every new fighter starts in the Contenders region (owner, Nov 16, 2026: "home should always be contenders"); the manager can switch him to Bare Knuckles or Rookies */
+/* First fight plans for a new fighter (owner, Nov 19, 2026: "give them a first plan like you have for five basic fighter types").
+   Tested vs the league field (bots2+bots3, fighters of that type with this plan): Slugger 61%, KO Puncher 49%, Dancer 60%, Counterpuncher 56%, Clincher 60% wins (/tmp/fp). */
+const FIRST_PLANS={
+ 'Slugger':{line:'Strong man who walks him down and wins the fight inside.',plan:`# Starter plan: Slugger. Walk him down and win it inside.
+5/7/8 (inside)   # work inside, where his strength counts
+if opponent <= tired then 6/8/6 (inside)   # the other man is slowing down: step on the gas
+if hisstuns > 0 then 7H/9/4   # he's hurt: go to the head and finish him
+if score < 0 and round >= 9 then 7/8/5   # behind late: go get the rounds back
+if %A% then 3/3/14   # too far ahead to lose: cruise home safe
+if endurance_percent < 45 then 4/4/12 (clinch)   # running out of gas: tie him up and rest`},
+ 'KO Puncher':{line:'Puncher with KO Punch points who hunts the knockout.',plan:`# Starter plan: KO Puncher. Be patient, then go for the chin.
+5H/7/8   # aim at the head and wait for the opening
+if opponent <= tired then 6H/9/5   # he's slowing down: sit down on your punches
+if hisstuns > 0 then 6H/10/4   # he's hurt: everything into power to the head
+if score < 0 and round >= 9 then 7H/9/4   # behind late: you need the knockout
+if %A% then 3/3/14   # too far ahead to lose: cruise home safe
+if endurance_percent < 40 then 4/5/11 (clinch)   # running out of gas: tie him up and rest`},
+ 'Dancer':{line:'Agile boxer who moves, scores and makes him miss.',plan:`# Starter plan: Dancer. Stick, move and never stand still.
+5H/4/11 (ring)   # move around the ring, jab at the head, defense first
+if round <= 3 then 4/3/13 (ring)   # first three rounds: get a feel for him, take no risks
+if opponent = exhausted then 7/7/6   # he's out of gas: plant your feet and let your hands go
+if score < 0 and round >= 7 then 6/5/9 (ring)   # behind: keep moving but throw more
+if %A% then 2/2/16 (ring)   # too far ahead to lose: just keep moving
+if endurance_percent < 45 then 4/3/13 (ring)   # running out of gas: move and rest`},
+ 'Counterpuncher':{line:'Fast fighter (and tall helps) who makes him miss and pay.',plan:`# Starter plan: Counterpuncher. Make him miss, make him pay.
+6/5/9 (counter)   # wait for his punches and fire back (needs more speed + height than him)
+if score < 1 then 7/6/7 (counter)   # not ahead: counter a little busier
+if opponent <= tired then 6H/7/7 (counter)   # he's slowing down: counter to the head
+if score < 0 and round >= 9 then 7/7/6   # behind late: stop waiting and go get it
+if %A% then 2/2/16   # too far ahead to lose: cruise home safe
+if endurance_percent < 45 then 4/4/12 (counter)   # running out of gas: rest and counter`},
+ 'Clincher':{line:'Tough, well-conditioned man who ties him up and outlasts him.',plan:`# Starter plan: Clincher. Tie him up, tire him out, take over late.
+6/5/9 (clinch)   # lean on him and tie him up, so he can't land clean
+if opponent <= tired then 7/6/7 (inside)   # he's slowing down: go to work inside
+if hisstuns > 0 then 7H/8/5   # he's hurt: go to the head
+if score < 0 and round >= 8 then 8/6/6 (inside)   # behind late: turn up the pressure
+if %A% then 2/2/16 (clinch)   # too far ahead to lose: hold and coast
+if endurance_percent < 40 then 3/3/14 (clinch)   # running out of gas: hold and rest`}};
+for(const k in FIRST_PLANS)FIRST_PLANS[k].plan=FIRST_PLANS[k].plan.split('%A%').join('score > 2*(1 + 12 - round)');
+// which basic type his numbers fit best
+function firstType(F){const{str,kp,spd,agl,cnd,chn}=F;
+  if(kp>=2)return'KO Puncher';
+  if(agl>=str+2&&agl>=spd)return'Dancer';
+  if(spd>=str+1&&spd>agl)return'Counterpuncher';
+  if(cnd+chn>=2*str+3)return'Clincher';
+  return'Slugger'}
+function firstPick(D){if(D.fp&&FIRST_PLANS[D.fp])return D.fp;if(D.fp==='pre'||(!D.fp&&PRESETS[D.planName]))return'pre';return firstType(D)}
 function newDraft(){return{name:'',nick:'',home:'',build:'normal',str:12,kp:2,spd:12,agl:12,chn:11,cnd:13,hgt:6,cut:2,plan:'6/6/8',planName:'Basic'}}
 function createHTML(){
   if(!state.draft)state.draft=newDraft();
@@ -2078,6 +2125,7 @@ function cornerHTML(side){
         <td>Metric Height:</td><td>${cm(HT(F))} centimeters</td></tr>
     <tr><td>Weight:</td><td>${natWeight(F)} pounds (${Math.round(natWeight(F)*.4536)} kg)</td><td>Minimum Weight:</td><td>${minWeight(F)} pounds</td></tr>
     <tr><td>Weight Division:</td><td colspan="3"><select data-f="div">${DIVS.map(([d,l])=>`<option value="${d}"${d===divOf(F)?' selected':''}>${d} (${l<1000?l:'no limit'})</option>`).join('')}</select>${(()=>{const wi=weighIn(F,divOf(F));return wi.endMul<1?` <span class="cr small">He'd have to sweat down to make weight and start fights with only ${Math.round(wi.endMul*100)}% of his endurance. Try a lighter build, less height, or a heavier division.</span>`:''})()}</td></tr>
+    <tr><td>First Fight Plan:</td><td colspan="3">${(()=>{const pk=firstPick(F),sug=firstType(F);return`<select data-f="fp">${PRESETS[F.planName]?`<option value="pre"${pk==='pre'?' selected':''}>${esc(F.planName)} template plan</option>`:''}${Object.keys(FIRST_PLANS).map(k=>`<option value="${k}"${pk===k?' selected':''}>${k}${k===sug?' (fits his numbers)':''}</option>`).join('')}</select> <span class="small">${pk==='pre'?'The plan that comes with this template.':esc(FIRST_PLANS[pk].line)}</span><br><span class="small mute">A complete starter plan with a note on every line explaining it. It's his own copy: change it or write your own any time on the <a data-go="plans">Fight Plans</a> page.</span>`})()}</td></tr>
     <tr><td>Total:</td><td colspan="3"><b>${used(F)}</b> <span class="cr small">${left===0?'':`(Must equal ${POOL} before fighting. ${left>0?left+' left':(-left)+' too many'}.)`}</span>${kpNote}</td></tr>
   </table>
   <table class="grid presets" data-side="${side}">
@@ -3019,13 +3067,14 @@ document.addEventListener('click',async e=>{
   if(t.dataset.s){const F=FS(side),k=t.dataset.s,d=+t.dataset.d,nv=F[k]+d;if(nv<MINS[k]||nv>(k==='hgt'?21:MAX))return;
     if(k==='kp'&&nv>Math.floor(F.str/3))return alertBox(`He needs ${nv*3} Strength for ${nv} KO Punch Bonus.`);
     if(k==='str'&&F.kp>Math.floor(nv/3))return alertBox(`Lower his KO Punch Bonus first. ${F.kp} KP needs ${F.kp*3} Strength.`);F[k]=nv;save();render()}
-  else if(t.dataset.pre){const[st,pl]=PRESETS[t.dataset.pre];ensurePlans();if(state.plans[t.dataset.pre]==null)state.plans[t.dataset.pre]=pl;Object.assign(FS(side),st,{plan:state.plans[t.dataset.pre],planName:t.dataset.pre});save();render()}
+  else if(t.dataset.pre){const[st,pl]=PRESETS[t.dataset.pre];ensurePlans();if(state.plans[t.dataset.pre]==null)state.plans[t.dataset.pre]=pl;Object.assign(FS(side),st,{plan:state.plans[t.dataset.pre],planName:t.dataset.pre});delete FS(side).fp;save();render()}
   else if(t.dataset.copy){const F=state[side],i=+t.dataset.copy;for(let j=i+1;j<F.plan.length;j++)F.plan[j]={...F.plan[i]};save();render()}
   else if(t.dataset.rand){const F=FS(side);const ks=['str','spd','agl','chn','cnd'];ks.forEach(k=>F[k]=5);F.kp=0;F.cut=1+Math.floor(rand()*3);F.hgt=3+Math.floor(rand()*10);let left=POOL-used(F);
     while(left>0){const k=rand()<.08?'kp':pick(ks);if(k==='kp'&&F.kp>=Math.floor(F.str/3))continue;if(F[k]<22){F[k]++;left--}}save();render()}
   else if(t.id==='createF'){const D=state.draft;if(!D.name.trim())return $('#cerr').textContent='Give him a name.';if(used(D)!==POOL)return $('#cerr').textContent=`He must total exactly ${POOL} points.`;if(D.kp>Math.floor(D.str/3))return $('#cerr').textContent='KO Punch Bonus needs 3 Strength per point.';
     const slot='f'+Date.now().toString(36);ROSTER();
-    ensurePlans();if(state.plans[D.planName]==null)state.plans[D.planName]=D.plan;
+    ensurePlans();{const pk=firstPick(D);if(pk!=='pre'){const fn=D.name.trim().split(/\s+/)[0].slice(0,20);let nm=`${pk} - ${fn}`,i=2;while(state.plans[nm]!=null)nm=`${pk} - ${fn} ${i++}`;D.plan=FIRST_PLANS[pk].plan;D.planName=nm}delete D.fp}
+    if(state.plans[D.planName]==null)state.plans[D.planName]=D.plan;
     state.roster.push(slot);state[slot]={...JSON.parse(JSON.stringify(D)),div:divOf(D),rec:[0,0,0,0],hist:[],locked:true,rating:0,status:0,train:'str',train2:'cnd',streak:0,ip:0};state.draft=null;save();nav('rec:'+slot)}
   else if(t.dataset.graduate){const s0=t.dataset.graduate,F=FTR(s0);if(!F||!SB)return;
     if(myBout(s0))return alertBox(`${F.name} has a rookie bout booked. Move him up after that fight.`);
@@ -3144,7 +3193,7 @@ document.addEventListener('change',e=>{
   const tb=el.closest('[data-side]');if(!tb)return;const F=tb.dataset.side==='D'?state.draft:FTR(tb.dataset.side);if(!F)return;
   if(el.dataset.f==='plan'){F.plan=el.value;save();render();return}
   if(el.dataset.st){const k=el.dataset.st;F[k]=clamp(parseInt(el.value)||0,MINS[k],k==='hgt'?21:MAX);if(k==='kp')F.kp=Math.min(F.kp,Math.floor(F.str/3));if(k==='str')F.kp=Math.min(F.kp,Math.floor(F.str/3));save();render();return}
-  if(el.dataset.f){const f=el.dataset.f;F[f]=f==='cut'?+el.value:el.value;save();if(f==='cut'||f==='build'||f==='div'||f==='region')render();return}
+  if(el.dataset.f){const f=el.dataset.f;F[f]=f==='cut'?+el.value:el.value;save();if(f==='cut'||f==='build'||f==='div'||f==='region'||f==='fp')render();return}
   if(el.dataset.p){const p=F.plan[+el.dataset.p],k=el.dataset.k;p[k]=(k==='style'||k==='tgt')?el.value:+el.value;save();if(k!=='style'&&k!=='tgt')render()}
 });
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)&&e.target&&e.target.id==='dmBody'){const b=$('#sendDm');if(b)b.click()}});
