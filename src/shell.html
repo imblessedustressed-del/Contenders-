@@ -2665,6 +2665,23 @@ function helpHTML(arg){
   <ul>${HELP_TOPICS.map(x=>`<li><a data-go="help:${x[0]}">${x[1]}</a></li>`).join('')}</ul>`;
   return`${toc}<h1>${t[1]}</h1>${HELP_BODY[t[0]]()}<hr><p class="small"><a data-go="help">Back to Help Pages</a></p>`;
 }
+/* every style, what it does and who it fits (owner, Nov 19, 2026: "they got to know everything they can use... and how it fits the fighter"); numbers from BAL/simulate in sim4.js, keep in sync */
+const STYLE_GUIDE=()=>`<table class="grid small"><tr><th>Style</th><th>What it does</th><th>What it costs</th><th>Fits this fighter</th><th>Example</th></tr>
+  <tr><td><i>no style</i></td><td>Straight boxing: his abilities as they are.</td><td>Nothing.</td><td>Anyone, and always the safe choice when he has no clear edge.</td><td><tt>6/6/8</tt></td></tr>
+  <tr><td><tt>(inside)</tt></td><td>Works on the inside: +1 STR, plus half of any STR edge he has over the other man.</td><td>He takes 10% more damage.</td><td>The <b>stronger</b> man, a slugger or pressure fighter with a good chin who can afford to trade.</td><td><tt>6/7/7 (inside)</tt></td></tr>
+  <tr><td><tt>(clinch)</tt></td><td>Ties the other man up: +0.5 AGL, plus half of any STR edge, so he's harder to hit. The energy he stops punching with goes to rest, so he recovers.</td><td>He throws less: his AGG drops by a fifth of the other man's AGG. Holding with DEF over 10 can cost a point for refusing to break (the higher the DEF, the likelier).</td><td>The <b>stronger</b> man who is tired, hurt or protecting a lead; a good way to survive a bad round.</td><td><tt>4/5/11 (clinch)</tt></td></tr>
+  <tr><td><tt>(feint)</tt></td><td>Fakes to open him up: +1 SPD, plus half of any SPD edge, so more punches land.</td><td>1 extra point of fatigue every round.</td><td>The <b>faster</b> man with a good gas tank (CND).</td><td><tt>7/6/7 (feint)</tt></td></tr>
+  <tr><td><tt>(counter)</tt></td><td>Waits and fires back. If his SPD + height beats the other man's, he gains AGL and the other man loses AGL (a sixth of the edge each way), and the report shows him slipping punches and countering.</td><td>He throws 20% less (AGG x0.8). If the other man is faster or taller, it <b>backfires</b>: the swing goes the other way.</td><td>The <b>faster and/or taller</b> man against an aggressive opponent who comes forward.</td><td><tt>5/7/8 (counter)</tt></td></tr>
+  <tr><td><tt>(ring)</tt></td><td>Moves around the ring: +1.75 AGL, plus half of any AGL edge. Much harder to hit.</td><td>A little extra fatigue (0.4 a round).</td><td>The <b>more agile</b> man, a dancer or boxer who wants to win rounds without getting hit.</td><td><tt>6/6/8 (ring)</tt></td></tr>
+  <tr><td><tt>(ropes)</tt></td><td>Lays on the ropes and makes him miss: if he's the more agile man, the other man loses two thirds of the AGL edge (never below 8), so <b>he lands more</b>.</td><td>He loses 1 AGL himself. Does nothing if he isn't the more agile man.</td><td>The <b>more agile</b> man who wants to land, not just avoid (ring is for avoiding).</td><td><tt>6/6/8 (ropes)</tt></td></tr>
+  <tr><td><tt>(outside)</tt></td><td>Boxes at range behind the jab: +0.5 SPD and +0.5 AGL, and his height edge counts half again as much (+0.75 SPD and AGL per inch instead of +0.5).</td><td>15% less power.</td><td>The <b>taller</b> man with reach, happy to win on jabs and volume.</td><td><tt>6/5/9 (outside)</tt></td></tr>
+  <tr><td><tt>(allout)</tt></td><td>Throws everything: he does <b>double damage</b>.</td><td>He takes <b>nearly triple damage</b> (x2.75).</td><td>Anyone in desperation: far behind late, or the other man is badly hurt and has to go. Suicide against a fresh puncher.</td><td><tt>if score &lt; -4 and round &gt;= 10 then 9/8/3 (allout)</tt></td></tr></table>
+  <ul><li>Only one style per tactic line. A different line can use a different style, so a plan can switch styles by round or situation.</li>
+  <li><b>The taller man</b> always gets +0.5 SPD and +0.5 AGL for every inch of height edge, style or not (+0.75 with <tt>(outside)</tt>).</li>
+  <li>Most styles grow with the edge they use: check the tale of the tape (height, weight, record) before you pick one.</li>
+  <li><b>Heavyweight (Contenders region):</b> (inside) +2.25 STR instead of +1; (clinch) -0.5 AGL instead of +0.5, and his AGG drops by two fifths of the other man's AGG; (counter) AGG drops only 6%; (ring) +1.25 AGL instead of +1.75. The shorter heavyweight gets +0.45 SPD for every inch he gives away.</li>
+  <li><b>Bare Knuckles:</b> (clinch) gives +0.75 AGL; everything else is the same as Contenders.</li>
+  <li>Your private round lines in the fight report tell you which styles took effect ("His AGL is increased by using the ring", "His counter-punching backfires!").</li></ul>`;
 const HELP_BODY={
  start:()=>`<p>Contenders is a boxing strategy game. You're the manager: you build fighters, train them, write their fight plans, and watch every bout play out round by round. You never throw a punch yourself. Your decisions win or lose the fight.</p>
   <ol><li><a data-go="register">Sign up</a> and name your gym.</li><li><a data-go="create">Create a fighter</a> by spending his 70 points.</li><li>Write his <a data-go="help:plans">fight plan</a>.</li><li>Test it in <a data-go="simbot">Simbot</a> or a <a data-go="fight">practice fight</a>.</li><li>Fight on his division's <a data-go="help:schedule">fight night</a>, read the report, adjust, repeat.</li></ol>
@@ -2742,7 +2759,8 @@ const HELP_BODY={
   <h2>Dirty fighting</h2>
   <p>Put <tt>!</tt> after the POW number: <tt>6/7!/7</tt>. He does 10% more damage, but each round he fouls there's about an even chance the referee warns him (a warned man's fouls only add 5%). From the second warning on, each warning costs a point on the cards, and every warning carries a small and growing risk of disqualification.</p>
   <h2>Styles</h2>
-  <p>Add one style in parentheses at the end: <tt>6/6/8 (ring)</tt>. Each style has an upside and a cost, and most only pay off when he has a particular edge. See <a data-go="help:styles">Fighting Styles</a>.</p>
+  <p>Add one style in parentheses at the end of a tactic: <tt>6/6/8 (ring)</tt>. There are eight styles. Each has an upside and a cost, and most only pay off when he has a particular edge over the other man.</p>
+  ${STYLE_GUIDE()}
   <h2>Rounds and conditions</h2>
   <ul><li>A plain tactic on its own line applies every round: <tt>6/6/8</tt></li>
   <li><b>Round lines:</b> <tt>4) 7/6/7</tt> means "from round 4 on". The lines under a round line also only count from that round on, until the next round line.</li>
@@ -2765,18 +2783,8 @@ if score &gt;= 6 and round &gt;= 9 then 3/4/11
 # behind late: go get him
 if score &lt; 0 and round &gt;= 9 then 7H/8/5</pre>
   <p>Mistakes to avoid: a plan with no rest lines runs out of gas by round 8; very low DEF (5 or less) gets fighters knocked out; and conditions in the wrong order never fire because a later true line overrides them. Test every change in <a data-go="simbot">Simbot</a> or a <a data-go="fight">practice fight</a> before fight night. Plans are private: only you ever see yours.</p>`,
- styles:()=>`<p>Styles go in parentheses after the energy points, like <tt>6/6/8 (inside)</tt>. Only one per tactic. Most styles get stronger the bigger his edge in the ability they use, so check the tale of the tape before choosing one. No style at all is often the right answer.</p>
-  <table class="grid small"><tr><th>Style</th><th>Upside</th><th>Cost</th><th>Use it when</th></tr>
-  <tr><td><tt>(inside)</tt></td><td>+1 STR, plus half of any STR edge he has.</td><td>He takes 10% more damage.</td><td>He's the stronger man and can afford a trade.</td></tr>
-  <tr><td><tt>(clinch)</tt></td><td>+AGL, more if he's the stronger man.</td><td>His AGG drops by a fifth of the other man's AGG. Holding with DEF over 10 risks a point deduction for refusing to break.</td><td>He's stronger, tired, hurt, or protecting a lead.</td></tr>
-  <tr><td><tt>(feint)</tt></td><td>+1 SPD, plus half of any SPD edge.</td><td>1 extra fatigue per round.</td><td>He's faster and wants more punches to land.</td></tr>
-  <tr><td><tt>(counter)</tt></td><td>If his SPD plus height beats the other man's, he gains AGL and the other man loses AGL.</td><td>His AGG drops 20%. If the other man is faster or taller, it backfires and the swing goes the other way.</td><td>He's clearly faster and/or taller, against an aggressive opponent.</td></tr>
-  <tr><td><tt>(ring)</tt></td><td>+1.75 AGL, plus half of any AGL edge.</td><td>A little extra fatigue.</td><td>He's the more agile man and wants to be hard to hit.</td></tr>
-  <tr><td><tt>(ropes)</tt></td><td>If he's the more agile man, the other man loses a good part of his agility (never below 8).</td><td>He loses 1 AGL himself; it does nothing if he isn't more agile.</td><td>He's more agile and wants to land more, not just avoid.</td></tr>
-  <tr><td><tt>(outside)</tt></td><td>+0.5 SPD and AGL, and his height edge counts half again as much.</td><td>15% less power.</td><td>He's the taller man and is happy to win on jabs and volume.</td></tr>
-  <tr><td><tt>(allout)</tt></td><td>He does double damage.</td><td>He takes nearly triple damage.</td><td>Desperation: far behind late, or the other man is badly hurt and has to go.</td></tr></table>
-  <p><b>Heavyweight (Contenders region only) uses different numbers:</b> (inside) +2.25 STR instead of +1; (clinch) -0.5 AGL instead of +0.5, and his AGG drops by two fifths of the other man's AGG instead of one fifth; (counter) his AGG drops 6% instead of 20%; (ring) +1.25 AGL instead of +1.75. The shorter heavyweight also gets +0.45 SPD for every inch he gives away. Bare Knuckles heavyweights use the normal numbers.</p>
-  <p>The fight report's private manager line tells you each round which styles took effect ("His AGL is increased by using the ring", "His counter-punching backfires!").</p>`,
+ styles:()=>`<p>Styles go in parentheses after the energy points, like <tt>6/6/8 (inside)</tt>. Only one per tactic line. Pick the one that matches his edge over the other man, or none at all.</p>
+  ${STYLE_GUIDE()}`,
  conditions:()=>`<p>Everything you can test in an <tt>if ... then</tt> line. All values are checked at the start of the round, before any punches.</p>
   <table class="grid small"><tr><th>Word</th><th>Meaning</th></tr>
   <tr><td><tt>round</tt></td><td>The round about to start (1 to 12; 1 to 25 in Bare Knuckles).</td></tr>
