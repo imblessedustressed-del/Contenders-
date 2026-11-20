@@ -260,6 +260,7 @@ pre.plan{background:#fbfaf7;border:1px solid var(--line)}
 .dcGut{width:40px;flex:none;font-size:10px;color:transparent;text-align:right;padding-top:3px}.dcCont:hover .dcGut{color:#949ba4}
 .dcBody{min-width:0}.dcN{font-weight:600;cursor:pointer;text-decoration:none}.dcN:hover{text-decoration:underline}.dcT{font-size:12px;color:#949ba4;margin-left:8px}
 .dcClip{display:block;width:100%;max-width:360px;aspect-ratio:16/9;border-radius:8px;margin-top:6px;border:1px solid #3f4147;background:#000}
+.dcShow{display:inline-block;margin-top:8px;padding:8px 14px;background:#c8323a;color:#fff!important;border-radius:6px;font-weight:bold;cursor:pointer;text-decoration:none}.dcShow:hover{background:#e0414a}
 .dcB{color:#dbdee1;line-height:1.375;word-wrap:break-word;overflow-wrap:anywhere;white-space:pre-wrap}.dcDel{font-size:11px;color:#949ba4!important;margin-left:6px;cursor:pointer}.dcHid{font-size:12px;color:#f23f43}
 .dcTag{display:inline-block;background:#5865f2;color:#fff;font-size:10px;font-weight:700;border-radius:3px;padding:0 4px;line-height:15px;vertical-align:1px;margin-left:4px}
 .dcSys{color:#949ba4;font-size:14px;margin:8px 0 0;padding:0 16px 0 70px}.dcSys b{color:#f2f3f5}.dcIn{color:#23a55a;font-weight:700}.dcOut{color:#f23f43;font-weight:700}
@@ -935,7 +936,7 @@ function condText(x,after){
 /* ================= SHARED DATA (Supabase: accounts, forums, messages) ================= */
 cleanSlate();
 const SB_URL='https://ojsphhzgzbxmnfcbitqb.supabase.co',SB_KEY='sb_publishable_SWO9WhiSkoVhflY5CmY08A_hlqCEJSi';
-const BUILD='1795140165';
+const BUILD='1795142189';
 /* A tab left open on an older build must not save over newer data: if the site has been updated, reload before anything else is saved. */
 let staleBuild=false;
 async function checkBuild(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
@@ -2304,6 +2305,7 @@ async function labLoadChat(){if(!SB||labChatBusy)return;labChatBusy=true;
   labChatPaint()}
 function labChatPaint(){const el=$('#labChat');if(!el)return;const atBottom=el.scrollHeight-el.scrollTop-el.clientHeight<40;
   if(el.classList.contains('dcMsgs')){const h=!labChat?needDB():dcRender(labChat,dcSys);if(el._h!==h){el.innerHTML=h;el._h=h} /* redraw only on change, so the welcome clip keeps playing */if(atBottom||!el.dataset.seen){el.scrollTop=el.scrollHeight;el.dataset.seen=1}
+    el.querySelectorAll('[data-sbshow]').forEach(a=>a.onclick=e=>{e.preventDefault();sbTitleShow()});
     el.querySelectorAll('[data-labdel]').forEach(a=>a.onclick=async()=>{await SB.from('lab_chat').delete().eq('id',+a.dataset.labdel);labLoadChat()});return}
   el.innerHTML=!labChat?needDB():labChat.length?labChat.map(m=>{const gm=managers[m.author];const when=new Date(m.created_at);
     return`<p class="lc"><b>${m.bot?'🤖 Simbot (AI)':m.author&&gm?`<a data-go="gympub:${m.author}">${esc(gm.gym)}</a>`:m.nick?`${esc(m.nick)} <span class="small mute">(guest)</span>`:'A retired gym'}</b> <span class="small mute">${when.toLocaleDateString('en-US',{month:'short',day:'numeric'})} ${when.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}</span>${m.author===ME?` <a class="small" data-labdel="${m.id}">delete</a>`:''}${m.hidden?' <span class="small cr">(hidden pending review, only you see it)</span>':''}<br>${esc(m.body)}</p>`}).join(''):'<p class="mute">No messages yet. Say something!</p>';
@@ -2360,7 +2362,16 @@ function dcWho(m){if(m.bot)return{n:'Simbot (AI)',bot:true,guest:false};const gm
 function dcTime(d){const t=new Date(d),now=new Date();return(t.toDateString()===now.toDateString()?'Today at ':t.toLocaleDateString('en-US',{month:'2-digit',day:'2-digit',year:'numeric'})+' ')+t.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}
 /* the guest welcome carries a 10-second Simbot knockout clip so newcomers see the game (owner, Nov 19, 2026); only the newest welcome plays it */
 const dcClipFor=m=>m&&m.bot&&/welcome to Contenders/i.test(m.body||'');
-const DC_CLIP='<video class="dcClip" src="clips/simbot-ko.mp4" poster="clips/simbot-ko.jpg" autoplay muted loop playsinline preload="metadata"></video>';
+const DC_CLIP='<video class="dcClip" src="clips/simbot-ko.mp4" poster="clips/simbot-ko.jpg" autoplay muted loop playsinline preload="metadata"></video><a class="dcShow" data-sbshow="1">🏆 Watch a title fight now</a>';
+/* the button under the welcome clip (owner, Nov 19, 2026: "a link we can click on and bring it to a simbot fight... random result every time, title fight and atmosphere every time"):
+   two random starters at title level, fitted to one weight class, 12 rounds for a random belt with a random champion, sold-out arena;
+   one normal simulation, so the result is random every time */
+function sbTitleShow(){if(!$('#lab')){nav('simbot');return setTimeout(sbTitleShow,600)}
+  const L=labState(),pk=a=>a[Math.floor(Math.random()*a.length)],r=pk(STARTERS),b=pk(STARTERS.filter(x=>x.id!==r.id));
+  L.level='title';L.rounds='12';L.div='';
+  labApplyStarter(L.A,r.id,'title');labApplyStarter(L.B,b.id,'title');L.A.name=r.nm.replace(/^The /,'Kid ');L.B.name=b.nm.replace(/^The /,'Big ');
+  labPairFit(L,'B');labRefresh('A');labRefresh('B');const bar=$('#labBar');if(bar)bar.innerHTML=labBarHTML();
+  const og=pk(['WBC','WBA','WBO']);labFight({title:{org:og,orgs:[og],champ:Math.random()<.5?0:1}})}
 function dcRender(msgs,sys){const clipId=(msgs.filter(dcClipFor).pop()||{}).id;const items=[...msgs.map(m=>({t:Date.parse(m.created_at),m})),...(sys||[]).map(x=>({t:x.t,x}))].sort((a,b)=>a.t-b.t);let last=null;
   if(!items.length)return'<p class="dcSys">No messages yet. Say something!</p>';
   let day='';
