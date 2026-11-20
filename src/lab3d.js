@@ -258,14 +258,23 @@ function lab3D(g,o){const{at,realAt,P,X,tl,f,res,stopBeat,kdNow,big,zoom,inRepla
 /* 3D-mode HUD (original design in the style of late-'90s console boxing): long health bars across the top in each corner's color,
    a thin yellow punch-stamina bar under each (full at the bell, drains as he throws, refills between rounds), and a framed
    digital clock in the middle with the round count. */
+/* endurance bar: drains from the outside in, green -> yellow -> red; en = endurance left (0..1), eased between the round-end numbers */
+function labEnBar(g,x,y,w,h,en,i,left){en=Math.max(0,Math.min(1,en==null?1:en));g.save();
+  g.fillStyle='rgba(0,0,0,.6)';g.fillRect(x-2,y-2,w+4,h+4);g.fillStyle='#2a1012';g.fillRect(x,y,w,h);
+  const fw=w*en,c=en>.6?['#4ade80','#16a34a']:en>.3?['#facc15','#ca8a04']:['#f87171','#b91c1c'],gr=g.createLinearGradient(0,y,0,y+h);gr.addColorStop(0,c[0]);gr.addColorStop(1,c[1]);
+  g.fillStyle=gr;if(left)g.fillRect(x,y,fw,h);else g.fillRect(x+w-fw,y,fw,h);
+  if(en<.3&&Math.floor(performance.now()/300)%2){g.fillStyle='rgba(255,255,255,.18)';if(left)g.fillRect(x,y,fw,h);else g.fillRect(x+w-fw,y,fw,h)}
+  g.fillStyle='rgba(255,255,255,.25)';g.fillRect(x,y,w,1);g.strokeStyle=i?'#1d4ed8':'#c8102e';g.lineWidth=1;g.strokeRect(x-.5,y-.5,w+1,h+1);
+  g.font="bold 9px Verdana, sans-serif";g.textAlign=left?'left':'right';g.fillStyle='#000';const t='ENDURANCE '+Math.round(en*100)+'%',tx=left?x:x+w;g.fillText(t,tx+1,y+h+11);g.fillStyle='#e5e7eb';g.fillText(t,tx,y+h+10);g.restore()}
 function labHud32(g,o){const{P,at,cur,res,tl,names,W,cx}=o,rounds=(labState().bout&&labState().bout.rounds)||12;
-  /* name plates only (owner, Nov 15, 2026: no health or punch-stamina bars) */
+  /* name plates + endurance bars (owner, Nov 20, 2026: "show their endurance throughout the fight with a health bar"; the Nov 15 bars were removed) */
   const bar=(i)=>{const left=(i^LAB_SW)===0,x0=left?24:cx+58,w0=W/2-82,nm=(names[i]||'').toUpperCase().slice(0,22);
     g.save();g.font="italic 900 17px Impact, 'Arial Black', sans-serif";const tw=g.measureText(nm).width;
     g.fillStyle='rgba(0,0,0,.55)';g.fillRect(left?x0-6:x0+w0-tw-10,16,tw+16,28);g.fillStyle=i?'#1d4ed8':'#c8102e';g.fillRect(left?x0-6:x0+w0+6,16,4,28);
     g.textAlign=left?'left':'right';g.fillStyle='#000';g.fillText(nm,(left?x0:x0+w0)+1,37);g.fillStyle=i?'#b9d3ff':'#ffb3b3';g.fillText(nm,left?x0:x0+w0,36);g.restore()};
-  const tac=(i)=>{const left=(i^LAB_SW)===0,x0=left?24:cx+58,w0=W/2-82;if(!o.fin&&typeof labTactic==='function')labTacDraw(g,labTactic(cur,i),left?x0-2:x0+w0+2,62,left?'left':'right',i)};
-  bar(0);bar(1);tac(0);tac(1);
+  const tac=(i)=>{const left=(i^LAB_SW)===0,x0=left?24:cx+58,w0=W/2-82;if(!o.fin&&typeof labTactic==='function')labTacDraw(g,labTactic(cur,i),left?x0-2:x0+w0+2,88,left?'left':'right',i)};
+  const en=(i)=>{const left=(i^LAB_SW)===0,x0=left?18:cx+58,w0=W/2-82,bw=Math.min(260,w0);labEnBar(g,left?x0:x0+w0+6-bw,50,bw,10,P[i].en,i,left)};
+  bar(0);bar(1);en(0);en(1);tac(0);tac(1);
   // center clock
   const clockT=Math.max(0,Math.min(1,(at-cur.start)/(cur.end-cur.start)))*(cur.last&&!res.decision?cur.clockEnd:180),sec=Math.max(0,180-Math.floor(clockT));
   g.save();const mt=g.createLinearGradient(0,6,0,86);mt.addColorStop(0,'#e9edf2');mt.addColorStop(.5,'#7b828e');mt.addColorStop(1,'#dfe3e8');g.fillStyle=mt;
