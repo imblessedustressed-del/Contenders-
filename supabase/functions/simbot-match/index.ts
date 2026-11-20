@@ -136,6 +136,24 @@ async function seatOk(id: string, seat: unknown, token: unknown) {
   return data;
 }
 
+const divIdx = (Cx: any, F: any) => { const w = Cx.minWeight(F), D = Cx.DIVS as [string, number][], i = D.findIndex((d) => d[1] >= w); return i < 0 ? D.length - 1 : i; };
+function fitWeight(Cx: any, F: any, want: number, max: number) { // same method as the Simbot page's labFitWeight
+  if (divIdx(Cx, F) === want) return;
+  const base = { ...F }, cur = base.build || "normal", AB = ["str", "spd", "agl", "chn", "cnd"];
+  let best: any = null;
+  for (const b of BUILDS) for (let dh = -14; dh <= 14; dh++) {
+    const G: any = { ...base, build: b }; let ok = true;
+    for (let k = 0; k < Math.abs(dh) && ok; k++) {
+      if (dh > 0) { const don = AB.filter((x) => G[x] > 2 && !(x === "str" && (G.kp || 0) * 3 > G.str - 1)).sort((x, y) => G[y] - G[x])[0]; if (!don || G.hgt >= 21) ok = false; else { G[don]--; G.hgt++; } }
+      else { const rec = AB.filter((x) => G[x] < max).sort((x, y) => G[y] - G[x])[0]; if (!rec || G.hgt <= 0) ok = false; else { G.hgt--; G[rec]++; } }
+    }
+    if (!ok) continue;
+    const cost = Math.abs(divIdx(Cx, G) - want) * 1000 + Math.abs(dh) * 3 + (b !== cur ? 1 : 0);
+    if (!best || cost < best.cost) best = { cost, G };
+  }
+  if (best && best.cost < Math.abs(divIdx(Cx, base) - want) * 1000) Object.assign(F, best.G);
+}
+
 async function runFight(row: any) {
   const Cx = await engine();
   const { data: seats } = await admin.from("sb_seats").select("seat,fighter,who_key").eq("challenge_id", row.id);
@@ -144,8 +162,11 @@ async function runFight(row: any) {
   const L = LEVELS[row.level], bk = row.rounds === 25;
   const mk = (F: any) => ({ ...F, rec: [0, 0, 0, 0], hist: [], rating: L.rating, status: L.rating, region: bk ? "bk" : undefined, streak: 0, ip: 0 });
   const A = mk(sa.fighter), B = mk(sb.fighter);
-  const need = Math.max(Cx.minWeight(A), Cx.minWeight(B));
   const D = Cx.DIVS as [string, number][];
+  // Simbot always fights in the player's weight class (owner, Nov 19, 2026: a 117 lb man was matched with Simbot's 160 lb fighter):
+  // his fighter is refitted by build and height (points moved into/out of Height from his biggest abilities, same total)
+  if (row.b_who === SIMBOT) fitWeight(Cx, B, divIdx(Cx, A), L.max);
+  const need = Math.max(Cx.minWeight(A), Cx.minWeight(B));
   const div = (D.find((d) => d[1] >= need) || D[D.length - 1])[0];
   const f: any = Cx.simulate(Cx.prepFighter(A, A, B, div), Cx.prepFighter(B, A, B, div), row.rounds, row.title && (row.title_champ === 0 || row.title_champ === 1) ? { champ: row.title_champ } : undefined);
   const mine: any[][] = [[], []];
