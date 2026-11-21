@@ -261,6 +261,7 @@ pre.plan{background:#fbfaf7;border:1px solid var(--line)}
 .dcBody{min-width:0}.dcN{font-weight:600;cursor:pointer;text-decoration:none}.dcN:hover{text-decoration:underline}.dcT{font-size:12px;color:#949ba4;margin-left:8px}
 .dcClip{display:block;width:100%;max-width:360px;aspect-ratio:16/9;border-radius:8px;margin-top:6px;border:1px solid #3f4147;background:#000}
 .aiPitch{background:linear-gradient(135deg,#1b1d23,#3a1418);color:#fff;border:2px solid #c8323a;border-radius:12px;padding:14px 16px;margin:12px 0;text-align:center;box-shadow:0 6px 20px rgba(200,50,58,.25)}.aiPitchT{font-size:20px;font-weight:800;margin-bottom:6px}.aiPitchS{font-size:14px;opacity:.92;line-height:1.45;max-width:640px;margin:0 auto 10px}.aiPitchB{display:inline-block;background:#c8323a;color:#fff!important;font-weight:800;font-size:17px;padding:10px 26px;border-radius:8px;text-decoration:none;cursor:pointer}.aiPitchB:hover{background:#e0414a}
+.invite{border:1px solid #c8102e;background:#fff6f0;padding:8px 10px;margin:8px 0;border-radius:4px}.invite input{width:min(380px,70%);font-size:.9em;margin-top:4px}
 .coachOff{display:inline-flex;align-items:center;gap:8px;font-weight:bold;font-size:16px;cursor:pointer;padding:8px 14px;border:2px solid #c8323a;border-radius:8px;background:#fff}.coachOff input{width:20px;height:20px;cursor:pointer}.coachReply{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .dcShow{display:inline-block;margin-top:8px;padding:8px 14px;background:#c8323a;color:#fff!important;border-radius:6px;font-weight:bold;cursor:pointer;text-decoration:none}.dcShow:hover{background:#e0414a}
 .dcB{color:#dbdee1;line-height:1.375;word-wrap:break-word;overflow-wrap:anywhere;white-space:pre-wrap}.dcDel{font-size:11px;color:#949ba4!important;margin-left:6px;cursor:pointer}.dcHid{font-size:12px;color:#f23f43}
@@ -938,7 +939,7 @@ function condText(x,after){
 /* ================= SHARED DATA (Supabase: accounts, forums, messages) ================= */
 cleanSlate();
 const SB_URL='https://ojsphhzgzbxmnfcbitqb.supabase.co',SB_KEY='sb_publishable_SWO9WhiSkoVhflY5CmY08A_hlqCEJSi';
-const BUILD='1795278112';
+const BUILD='1795290160';
 /* A tab left open on an older build must not save over newer data: if the site has been updated, reload before anything else is saved. */
 let staleBuild=false;
 async function checkBuild(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
@@ -3250,10 +3251,14 @@ function gymHTML(){
   <table class="plain"><tr><th>Region</th><th>Earnings</th><th>Record</th><th>Titles</th></tr>
   <tr><td><b>Contenders</b></td><td>${money(ALL.reduce((a,f)=>a+(f.earn||0),0))}</td><td>${tot[0]}-${tot[1]}-${tot[2]}</td><td class="cr">${titles}</td></tr></table>
   <p><a data-go="fcards">Recent Fight Cards</a><br><a data-go="results">Recent Results</a></p>
+  ${ME?inviteHTML():''}
   <p class="cr">Select a fighter from the list below. You may also <a data-go="create">create a new fighter</a> at any time.</p>
   ${ROSTER().length?DIVS.filter(([d])=>ROSTER().some(k=>divOf(state[k])===d)).reverse().map(([d,l])=>`<h2>${esc(d)}weights (${l<1000?l:1000} pounds)</h2>${ROSTER().filter(k=>divOf(state[k])===d).map(fighterLine).join('')}`).join(''):'<p>You have no active fighters. <a data-go="create">Create one</a>.</p>'}
   <p>&#9758; <a data-go="retired">Your Gym's Retired Fighters</a></p>`;
 }
+function inviteTag(){const g=(myGym()||'').toLowerCase().replace(/[^a-z0-9]+/g,'').slice(0,28);return'f-'+(g||'gym')}
+function inviteLink(){return'https://contendersboxingleague.com/?ref='+inviteTag()}
+function inviteHTML(){return`<div class="invite"><b>&#129354; Invite a friend.</b> Send this link to anyone who'd like a gym of his own. It's free, and you'll see your friends' gyms join the league.<br><input id="invLink" readonly value="${esc(inviteLink())}" onclick="this.select()"> <button id="invCopy">Copy</button></div>`}
 function retiredHTML(){
   const L=state.retired||[];
   if(!L.length)return`<h1>Your Gym's Retired Fighters</h1><p>You have no retired fighters.</p><p><a data-go="gym">Back to your active fighters</a></p>`;
@@ -4434,6 +4439,7 @@ document.addEventListener('click',async e=>{
   else if(t.id==='sendDm'){const to=$('#dmTo').value,body=$('#dmBody').value.trim().slice(0,4000);if(!to||!body)return;t.disabled=true;
     const ok=await safeWrite(()=>SB.from('messages').insert({recipient:to,body}));
     if(ok){$('#dmBody').value='';await loadIms();nav('msgs:'+to)}t.disabled=false}
+  else if(t.id==='invCopy'){try{await navigator.clipboard.writeText(inviteLink());t.textContent='Copied!'}catch(e){const i=$('#invLink');if(i)i.select();t.textContent='Select and copy'}setTimeout(()=>t.textContent='Copy',2000)}
   else if(t.id==='doSearch')doSearch($('#q').value);
   else if(t.id==='aiCopy'){const who=$('#aiWho'),box=$('#aiOut'),txt=aiPrompt(who?who.value:'',($('#pfText')||{}).value||'');box.value=txt;box.style.display='block';
     try{await navigator.clipboard.writeText(txt);alertBox('Prompt copied. Paste it into your AI.')}catch(e){box.select();alertBox('Select the text in the box and copy it.')}}
