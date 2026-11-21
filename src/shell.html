@@ -261,6 +261,7 @@ pre.plan{background:#fbfaf7;border:1px solid var(--line)}
 .dcBody{min-width:0}.dcN{font-weight:600;cursor:pointer;text-decoration:none}.dcN:hover{text-decoration:underline}.dcT{font-size:12px;color:#949ba4;margin-left:8px}
 .dcClip{display:block;width:100%;max-width:360px;aspect-ratio:16/9;border-radius:8px;margin-top:6px;border:1px solid #3f4147;background:#000}
 .aiPitch{background:linear-gradient(135deg,#1b1d23,#3a1418);color:#fff;border:2px solid #c8323a;border-radius:12px;padding:14px 16px;margin:12px 0;text-align:center;box-shadow:0 6px 20px rgba(200,50,58,.25)}.aiPitchT{font-size:20px;font-weight:800;margin-bottom:6px}.aiPitchS{font-size:14px;opacity:.92;line-height:1.45;max-width:640px;margin:0 auto 10px}.aiPitchB{display:inline-block;background:#c8323a;color:#fff!important;font-weight:800;font-size:17px;padding:10px 26px;border-radius:8px;text-decoration:none;cursor:pointer}.aiPitchB:hover{background:#e0414a}
+.coachOff{display:inline-flex;align-items:center;gap:8px;font-weight:bold;font-size:16px;cursor:pointer;padding:8px 14px;border:2px solid #c8323a;border-radius:8px;background:#fff}.coachOff input{width:20px;height:20px;cursor:pointer}.coachReply{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .dcShow{display:inline-block;margin-top:8px;padding:8px 14px;background:#c8323a;color:#fff!important;border-radius:6px;font-weight:bold;cursor:pointer;text-decoration:none}.dcShow:hover{background:#e0414a}
 .dcB{color:#dbdee1;line-height:1.375;word-wrap:break-word;overflow-wrap:anywhere;white-space:pre-wrap}.dcDel{font-size:11px;color:#949ba4!important;margin-left:6px;cursor:pointer}.dcHid{font-size:12px;color:#f23f43}
 .dcTag{display:inline-block;background:#5865f2;color:#fff;font-size:10px;font-weight:700;border-radius:3px;padding:0 4px;line-height:15px;vertical-align:1px;margin-left:4px}
@@ -548,7 +549,8 @@ async function loadPublic(){
 /* Corner Coach on/off (owner, Nov 20, 2026: "give an option to turn off the coach's corner for players"); profiles.coach_off, read by the league runner */
 let COACH_OFF=null,COACH_OFF_FOR=null;
 async function loadCoachOff(){if(!SB||!ME||COACH_OFF_FOR===ME)return;COACH_OFF_FOR=ME;COACH_OFF=null;try{const{data}=await SB.from('profiles').select('coach_off').eq('id',ME).maybeSingle();COACH_OFF=!!(data&&data.coach_off);refresh()}catch(e){COACH_OFF_FOR=null}}
-function coachToggleHTML(){if(!ME)return'';return`<div class="note coachTog"><label><input type="checkbox" id="coachOn"${COACH_OFF?'':' checked'}${COACH_OFF===null?' disabled':''}> <b>Corner Coach notes</b></label> <span class="small mute">${COACH_OFF?'Off: the Corner Coach won\'t send you any more notes. Tick the box to turn them back on.':'On: after each fight the Corner Coach sends you tips from your own fight (rookies also get a note the night before). Untick to turn them off.'}</span></div>`}
+function coachToggleHTML(inline){if(!ME)return'';const box=`<label class="coachOff"><input type="checkbox" id="coachOff"${COACH_OFF?' checked':''}${COACH_OFF===null?' disabled':''}> Turn off Corner Coach</label>`;
+  return inline?box:`<div class="note coachTog">${box} <span class="small mute">${COACH_OFF?'The Corner Coach is off. Uncheck to turn his notes back on.':'Check the box and the Corner Coach stops sending you notes.'}</span></div>`}
 async function loadIms(){
   if(!ME)return;loadCoachOff();
   const{data,error}=await SB.from('messages').select('*').order('created_at',{ascending:false}).limit(500);
@@ -2527,9 +2529,9 @@ function msgsHTML(arg){
   if(arg&&arg!=='new'){
     const who=arg,thread=ims.filter(m=>(m.from===who&&m.to===ME)||(m.from===ME&&m.to===who)).sort((x,y)=>x.at-y.at);
     return`<p class="small"><a data-go="msgs">&larr; All conversations</a></p>
-    <h1>${esc(gymOf(who))}</h1><p class="small mute">Private between you and <a data-go="gympub:${esc(who)}">${esc(gymOf(who))}</a>.</p>${who===COACH?coachToggleHTML():''}
+    <h1>${esc(gymOf(who))}</h1><p class="small mute">Private between you and <a data-go="gympub:${esc(who)}">${esc(gymOf(who))}</a>.</p>
     <div class="thread" id="thread">${thread.map(m=>`<div class="bub ${m.from===ME?'me':'them'}"><div>${bodyHTML(m.text)}</div><div class="bt">${m.from===ME?'You':esc(gymOf(m.from))} &middot; ${dt(m.at)}</div></div>`).join('')||'<p class="mute">No messages yet. Say hello.</p>'}</div>
-    ${gag?sanctionNote('gag'):`<div class="reply"><textarea id="dmBody" data-keep rows="3" placeholder="Write a reply..."></textarea><input type="hidden" id="dmTo" value="${esc(who)}"><button id="sendDm">Send</button><span class="small mute"> Ctrl+Enter to send</span></div>`}`;
+    ${who===COACH?`<div class="reply coachReply">${coachToggleHTML(true)} <span class="small mute">${COACH_OFF?'Corner Coach is off. Uncheck to turn him back on.':'Check it and the Corner Coach stops sending notes. (He can\'t read replies.)'}</span></div>`:gag?sanctionNote('gag'):`<div class="reply"><textarea id="dmBody" data-keep rows="3" placeholder="Write a reply..."></textarea><input type="hidden" id="dmTo" value="${esc(who)}"><button id="sendDm">Send</button><span class="small mute"> Ctrl+Enter to send</span></div>`}`;
   }
   const conv={};ims.forEach(m=>{const o=m.from===ME?m.to:m.from;(conv[o]=conv[o]||[]).push(m)});
   const rows=Object.entries(conv).map(([o,L])=>{L.sort((x,y)=>y.at-x.at);return{o,last:L[0],unread:L.filter(m=>m.to===ME&&!m.read).length}}).sort((x,y)=>y.last.at-x.last.at);
@@ -3195,7 +3197,7 @@ document.addEventListener('submit',async e=>{
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='q')doSearch(e.target.value)});
 document.addEventListener('change',e=>{
   const el=e.target;
-  if(el.id==='coachOn'){const off=!el.checked;el.disabled=true;(async()=>{const ok=await safeWrite(()=>SB.from('profiles').update({coach_off:off}).eq('id',ME));if(ok)COACH_OFF=off;render()})();return}
+  if(el.id==='coachOff'){const off=el.checked;el.disabled=true;(async()=>{const ok=await safeWrite(()=>SB.from('profiles').update({coach_off:off}).eq('id',ME));if(ok)COACH_OFF=off;render()})();return}
   if(el.dataset.grank!=null){nav(el.value?'grank:'+el.value:'grank');return}
   if(el.id==='redPlan'||el.id==='bluePlan'){prPlan[el.id==='redPlan'?'red':'blue']=el.value;render();return}
   if(el.id==='redSel'||el.id==='blueSel'){state[el.id==='redSel'?'red':'blue']=el.value;save();render();return}
