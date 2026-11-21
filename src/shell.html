@@ -261,6 +261,7 @@ pre.plan{background:#fbfaf7;border:1px solid var(--line)}
 .dcBody{min-width:0}.dcN{font-weight:600;cursor:pointer;text-decoration:none}.dcN:hover{text-decoration:underline}.dcT{font-size:12px;color:#949ba4;margin-left:8px}
 .dcClip{display:block;width:100%;max-width:360px;aspect-ratio:16/9;border-radius:8px;margin-top:6px;border:1px solid #3f4147;background:#000}
 .aiPitch{background:linear-gradient(135deg,#1b1d23,#3a1418);color:#fff;border:2px solid #c8323a;border-radius:12px;padding:14px 16px;margin:12px 0;text-align:center;box-shadow:0 6px 20px rgba(200,50,58,.25)}.aiPitchT{font-size:20px;font-weight:800;margin-bottom:6px}.aiPitchS{font-size:14px;opacity:.92;line-height:1.45;max-width:640px;margin:0 auto 10px}.aiPitchB{display:inline-block;background:#c8323a;color:#fff!important;font-weight:800;font-size:17px;padding:10px 26px;border-radius:8px;text-decoration:none;cursor:pointer}.aiPitchB:hover{background:#e0414a}
+.p4p td{vertical-align:middle}.p4pRk{font:bold 1.6em Impact,Arial Black,sans-serif;color:#c8102e;text-align:center}.p4pUp{color:#1a8a2a;font-weight:bold}.p4pDn{color:#c8102e;font-weight:bold}.p4pNew{background:#f2c14e;color:#000;font-size:.75em;font-weight:bold;padding:1px 4px;border-radius:3px}
 .invite{border:1px solid #c8102e;background:#fff6f0;padding:8px 10px;margin:8px 0;border-radius:4px}.invite input{width:min(380px,70%);font-size:.9em;margin-top:4px}
 .coachOff{display:inline-flex;align-items:center;gap:8px;font-weight:bold;font-size:16px;cursor:pointer;padding:8px 14px;border:2px solid #c8323a;border-radius:8px;background:#fff}.coachOff input{width:20px;height:20px;cursor:pointer}.coachReply{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .dcShow{display:inline-block;margin-top:8px;padding:8px 14px;background:#c8323a;color:#fff!important;border-radius:6px;font-weight:bold;cursor:pointer;text-decoration:none}.dcShow:hover{background:#e0414a}
@@ -360,7 +361,7 @@ pre.plan{background:#fbfaf7;border:1px solid var(--line)}
   <div class="box"><div class="hd">Main</div><a data-v="home">Home</a><a data-v="register">Register</a><a data-v="aup">Acceptable Use Policy</a></div>
   <div class="box"><div class="hd">Your Gym</div><a data-v="gym">Active Fighters</a><a data-v="plans">Fight Plans</a><a data-v="fight">Practice Fights</a><a data-v="create">Create a Fighter</a><a data-v="short">Short Gym</a><a data-v="changegym">Change Gym</a><a data-v="desc">Description</a><a data-v="login">Login</a><a data-v="logout">Logout</a></div>
   <div class="box"><div class="hd">Community</div><a data-v="forums">Contenders Forums</a><a data-v="msgs" id="msgLink">Messages</a><a data-v="forum:press">Press Releases</a><a data-v="simbot">🥊 Simbot<span class="sbHere" id="sbHere" hidden></span></a></div>
-  <div class="box"><div class="hd">Hall of Records</div><a data-v="champs">Champions</a><a data-v="frank">Fighter Rankings</a><a data-v="grank">Gym Rankings</a><a data-v="ppv">Pay-Per-View</a><a data-v="results">Fight Results</a><a data-v="fcards">Fight Cards</a><a data-v="sched">Fight Schedule</a><a data-v="discarded">Discarded Fighters</a><a data-v="search">Search Contenders</a></div>
+  <div class="box"><div class="hd">Hall of Records</div><a data-v="champs">Champions</a><a data-v="frank">Fighter Rankings</a><a data-v="p4p">Pound for Pound</a><a data-v="grank">Gym Rankings</a><a data-v="ppv">Pay-Per-View</a><a data-v="results">Fight Results</a><a data-v="fcards">Fight Cards</a><a data-v="sched">Fight Schedule</a><a data-v="discarded">Discarded Fighters</a><a data-v="search">Search Contenders</a></div>
   <div class="box"><div class="hd">Contenders Help &amp; Tools</div><a data-v="help">Help Pages</a><a data-v="newbie">Newbie Files</a><a data-fb="sidebar" class="fbLink">💬 Send Feedback</a></div>
   <div class="box"><div class="hd">Other Stuff</div><a data-v="forgot">Forgotten Password</a><a data-v="changepw">Change Email/Passwd.</a></div>
   <div class="box fund"><a data-v="funding">Contenders Funding</a></div>
@@ -643,7 +644,7 @@ document.addEventListener('click',e=>{const a=e.target.closest('[data-app]');if(
 function refresh(){
   const a=document.activeElement;
   if(a&&(a.tagName==='TEXTAREA'||a.tagName==='INPUT')&&a.value)return;
-  const live=['gymres','gymh2h','sbview','lreport','sched','champs','frank','gym','rec','pub','fcards','forums','msgs','grank','gympub','gymret','opub','rpub','register','changegym','login','logout','home','desc','changepw'];
+  const live=['gymres','gymh2h','sbview','lreport','sched','champs','p4p','frank','gym','rec','pub','fcards','forums','msgs','grank','gympub','gymret','opub','rpub','register','changegym','login','logout','home','desc','changepw'];
   if(live.includes(view.split(':')[0])||view.startsWith('forum:')||view.startsWith('topic:'))render();
 }
 function render(){
@@ -654,7 +655,7 @@ function render(){
   const P={sbview:()=>sbViewHTML(arg),home:homeHTML,register:registerHTML,aup:aupHTML,gym:gymHTML,plans:plansHTML,fight:fightHTML,create:createHTML,cards:cardsHTML,
     retired:retiredHTML,clean:cleanHTML,short:shortHTML,changegym:changeGymHTML,desc:descHTML,
     login:loginHTML,logout:logoutHTML,forgot:forgotHTML,newpass:newPassHTML,changepw:changePwHTML,forums:forumsHTML,forum:()=>forumHTML(arg),topic:()=>topicHTML(arg),newtopic:()=>newTopicHTML(arg),msgs:()=>msgsHTML(arg),
-    simbot:labHTML,lab:labHTML,sbch:()=>sbchHTML(arg),champs:()=>champsHTML(arg),frank:()=>frankHTML(arg),grank:()=>grankHTML(arg),results:resultsHTML,fcards:fightCardsHTML,sched:schedHTML,
+    simbot:labHTML,lab:labHTML,sbch:()=>sbchHTML(arg),champs:()=>champsHTML(arg),p4p:()=>p4pHTML(arg),frank:()=>frankHTML(arg),grank:()=>grankHTML(arg),results:resultsHTML,fcards:fightCardsHTML,sched:schedHTML,
     discarded:()=>`<h1>Discarded Fighters</h1><p>No fighters have been discarded.</p>`,search:searchHTML,help:()=>helpHTML(arg),newbie:newbieHTML,funding:fundingHTML,retiregym:retireGymHTML,
     edit:()=>planEditHTML(arg),plan:()=>planEditHTML(arg),pf:()=>planFormHTML(arg),rec:()=>recordHTML(arg),gympub:()=>gymPubHTML(arg),gymret:()=>gymRetHTML(arg),gymres:()=>gymResHTML(arg),gymh2h:()=>gymH2HHTML(arg),opub:()=>oFighterHTML(arg),rpub:()=>retFighterHTML(arg),cdiv:()=>cdivHTML(arg),pub:()=>pubHTML(arg),train:()=>trainHTML(arg),report:()=>savedReportHTML(arg),lreport:()=>leagueReportHTML(arg),ppv:ppvHTML};
   $('#view').innerHTML=`<div id="flash" class="note cr" style="display:none;margin-bottom:10px"></div>`+(P[base]||homeHTML)();
@@ -2551,6 +2552,25 @@ async function markRead(){
   try{await SB.rpc('mark_thread_read',{from_id:who});ims.forEach(m=>{if(m.to===ME&&m.from===who)m.read=true});updateMsgLink()}catch(e){}
 }
 /* ---------- Hall of Records ---------- */
+let P4P=null,P4P_LOADING=false;
+async function loadP4P(){if(P4P_LOADING)return;P4P_LOADING=true;try{const{data}=await SB.from('p4p').select('*').order('week',{ascending:false}).order('rank').limit(130);
+  P4P={};(data||[]).forEach(r=>{(P4P[r.week]=P4P[r.week]||[]).push(r)});if(view.split(':')[0]==='p4p')render()}catch(e){P4P={}}P4P_LOADING=false}
+function p4pHTML(arg){
+  if(!P4P){loadP4P();return`<h1>Pound for Pound</h1><p class="mute">Loading the rankings...</p>`}
+  const weeks=Object.keys(P4P).sort().reverse(),wk=weeks.includes(arg)?arg:weeks[0];
+  const fmt=d=>new Date(d+'T12:00:00').toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+  const mv=r=>r.prev==null?'<span class="p4pNew">NEW</span>':r.prev>r.rank?`<span class="p4pUp">&#9650; ${r.prev-r.rank}</span>`:r.prev<r.rank?`<span class="p4pDn">&#9660; ${r.rank-r.prev}</span>`:'<span class="mute">&#8212;</span>';
+  const rows=(P4P[wk]||[]).map(r=>`<tr><td class="p4pRk">${r.rank}</td><td>${mv(r)}</td><td><a data-go="opub:${r.user_id}:${encN(r.fid)}"><b>${esc(r.name)}</b></a>${r.nick?` <span class="mute">"${esc(r.nick.trim())}"</span>`:''}<br><a class="small" data-go="gympub:${r.user_id}">${esc(r.gym||'')}</a></td><td>${esc(r.div)}weight</td><td>${r.w}-${r.l}-${r.d}<br><span class="small mute">${r.ko} KO</span></td><td>${r.rating}(${r.status})</td><td class="small">${(+r.score).toFixed(1)}</td></tr>`).join('');
+  return`<h1>Pound for Pound</h1><p class="news">The ten best fighters in Contenders, regardless of weight class.${wk?` Week of ${fmt(wk)}.`:''}</p>
+  ${weeks.length>1?`<p class="small">Earlier weeks: ${weeks.slice(0,12).map(w=>w===wk?`<b>${fmt(w)}</b>`:`<a data-go="p4p:${w}">${fmt(w)}</a>`).join(' &middot; ')}</p>`:''}
+  ${rows?`<table class="plain p4p"><tr><th>#</th><th></th><th>Fighter</th><th>Division</th><th>Record</th><th>Rating</th><th>Points</th></tr>${rows}</table>`:'<p>No fighter qualifies yet. Check back after the next fight night.</p>'}
+  <h2>How the list is made</h2>
+  <p class="small">The list is updated every Sunday morning from the last 90 days of Contenders fights (Rookies and Bare Knuckles fights don't count). To be ranked, a fighter needs at least two fights, at least one win, and a fight in the last three weeks. Points:</p>
+  <ul class="small"><li><b>Win:</b> 3 points, plus the beaten man's rating going into the fight, plus 1 for a stoppage and 5 for a title fight. Beating good fighters counts most.</li>
+  <li><b>Draw:</b> 1 point, plus half the other man's rating.</li>
+  <li><b>Loss:</b> minus 3, and more if he lost to a lower-rated man.</li>
+  <li><b>Standing:</b> plus twice his current rating, his status and his winning streak.</li></ul>
+  <p class="small">Ties go to the higher rating, then the better win percentage, then the more recent fight.</p>`}
 function champsHTML(arg){const reg=arg==='bk'?'bk':'',P=reg?'BK ':'';
   return`<h1>${reg?'Bare Knuckles ':''}Champions</h1><p class="small">Region: ${reg?'<a data-go="champs">Contenders</a> | <b>Bare Knuckles</b>':'<b>Contenders</b> | <a data-go="champs:bk">Bare Knuckles</a>'}</p><table class="grid"><tr><th>Division</th>${BELTS.map(b=>`<th>${b}</th>`).join('')}</tr>
   ${(()=>{const m=currentChamps();return DIVS.map(([d])=>`<tr><td>${d}weight</td>${BELTS.map(b=>{const c=m[P+d]&&m[P+d][b];return`<td>${c?`<a data-go="opub:${c.uid}:${encN(c.fid)}">${esc(fName(c.uid,c.fid))}</a><br><span class="small">${esc(gymOf(c.uid))}</span>${champRetired(c)?`<br><span class="small cr">${RETIRED_CHAMP_NOTE}</span>`:''}`:'<span class="mute">vacant</span>'}</td>`}).join('')}</tr>`).join('')})()}</table>
