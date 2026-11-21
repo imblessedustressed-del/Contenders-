@@ -261,6 +261,49 @@ pre.plan{background:#fbfaf7;border:1px solid var(--line)}
 .dcBody{min-width:0}.dcN{font-weight:600;cursor:pointer;text-decoration:none}.dcN:hover{text-decoration:underline}.dcT{font-size:12px;color:#949ba4;margin-left:8px}
 .dcClip{display:block;width:100%;max-width:360px;aspect-ratio:16/9;border-radius:8px;margin-top:6px;border:1px solid #3f4147;background:#000}
 .aiPitch{background:linear-gradient(135deg,#1b1d23,#3a1418);color:#fff;border:2px solid #c8323a;border-radius:12px;padding:14px 16px;margin:12px 0;text-align:center;box-shadow:0 6px 20px rgba(200,50,58,.25)}.aiPitchT{font-size:20px;font-weight:800;margin-bottom:6px}.aiPitchS{font-size:14px;opacity:.92;line-height:1.45;max-width:640px;margin:0 auto 10px}.aiPitchB{display:inline-block;background:#c8323a;color:#fff!important;font-weight:800;font-size:17px;padding:10px 26px;border-radius:8px;text-decoration:none;cursor:pointer}.aiPitchB:hover{background:#e0414a}
+.hofHero{position:relative;overflow:hidden;text-align:center;padding:34px 10px 28px;margin:4px 0 10px;border-radius:10px;background:radial-gradient(ellipse at 50% 0%,#fff8e6 0%,#efe6d2 35%,#cfc3a8 100%);border:3px solid #b8892b;box-shadow:inset 0 0 0 2px #f3d98b,0 6px 18px rgba(0,0,0,.25)}
+.hofHero:before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(115deg,rgba(255,255,255,0) 0 40px,rgba(120,100,70,.06) 40px 42px,rgba(255,255,255,0) 42px 95px),repeating-linear-gradient(35deg,rgba(0,0,0,0) 0 70px,rgba(90,80,60,.05) 70px 71px)}
+.hofRays{position:absolute;left:50%;top:-60%;width:900px;height:900px;margin-left:-450px;background:repeating-conic-gradient(from 0deg,rgba(255,215,110,.22) 0 6deg,rgba(255,215,110,0) 6deg 18deg);animation:hofSpin 60s linear infinite;pointer-events:none}
+@keyframes hofSpin{to{transform:rotate(360deg)}}
+.hofT0{position:relative;font:600 13px Georgia,serif;letter-spacing:.4em;text-transform:uppercase;color:#6b5320}
+.hofT1{position:relative;font:900 54px/1.05 Georgia,"Times New Roman",serif;letter-spacing:.06em;text-transform:uppercase;background:linear-gradient(180deg,#fff3b0 0%,#e3b23c 40%,#8a5a12 60%,#f1cf6a 100%);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 2px 0 #5a3a08) drop-shadow(0 4px 6px rgba(0,0,0,.35))}
+.hofT2{position:relative;font:italic 15px Georgia,serif;color:#4a3a1a;margin-top:6px}
+.hofTabs{text-align:center;font-size:15px}
+.hofClass{margin:18px 0}.hofClassHd{text-align:center;border-bottom:2px solid #b8892b;margin-bottom:12px}.hofClassHd span{display:inline-block;transform:translateY(50%);background:var(--bg,#f4f1ec);padding:0 14px;font:bold 17px Georgia,serif;letter-spacing:.1em;text-transform:uppercase;color:#8a5a12}
+.hofRow{display:flex;flex-wrap:wrap;gap:14px;justify-content:center}
+.hofPlq{display:flex;width:200px;cursor:pointer;padding:6px;border-radius:6px;background:linear-gradient(145deg,#6b3e12,#3a2008);box-shadow:0 6px 14px rgba(0,0,0,.35);transition:transform .2s}
+.hofPlq:hover,.hofPlq:focus{transform:translateY(-4px) scale(1.03)}
+.hofPlqIn{flex:1;position:relative;overflow:hidden;text-align:center;padding:14px 8px;border-radius:4px;background:linear-gradient(160deg,#fff2b8 0%,#e0b048 35%,#b07f22 55%,#f0cf70 80%,#c4932c 100%);color:#3a2604;border:1px solid #fbe7a1}
+.hofPlqIn:after{content:"";position:absolute;top:0;left:-60%;width:40%;height:100%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.7),transparent);transform:skewX(-20deg);animation:hofGlint 5s ease-in-out infinite}
+.hofPlq:nth-child(2n) .hofPlqIn:after{animation-delay:1.7s}.hofPlq:nth-child(3n) .hofPlqIn:after{animation-delay:3.1s}
+@keyframes hofGlint{0%,70%{left:-60%}100%{left:130%}}
+.hofStar{font-size:20px;color:#7a4c08}.hofPName{font:900 18px/1.15 Georgia,serif;text-transform:uppercase;letter-spacing:.03em}.hofPNick{font:italic 13px Georgia,serif}.hofPSub{font:12px Georgia,serif;margin-top:4px}.hofPGym{font:bold 11px Georgia,serif;margin-top:2px;opacity:.8}
+.hofFB{display:inline-block;margin-top:6px;padding:1px 6px;background:#3a2604;color:#f6d77a;font:bold 10px system-ui,sans-serif;letter-spacing:.12em;border-radius:3px}.hofFB.big{font-size:12px;padding:3px 10px;margin-top:12px}
+.hofEmpty{text-align:center;padding:16px;font-family:Georgia,serif}.hofPed{width:110px;height:120px;margin:0 auto 10px;background:linear-gradient(90deg,#bdb3a0,#f3eee2,#bdb3a0);clip-path:polygon(15% 22%,85% 22%,80% 100%,20% 100%);position:relative}.hofPedTop{font-size:44px;line-height:1;margin-bottom:-14px;position:relative;z-index:1;color:#d9a92e;text-shadow:0 0 14px #ffd76a;animation:hofPulse 2.4s ease-in-out infinite}
+@keyframes hofPulse{50%{opacity:.45}}
+.hofW td{vertical-align:middle}.hofBarC{min-width:180px}.hofBar{height:12px;border-radius:6px;background:#e8e0cc;overflow:hidden;box-shadow:inset 0 1px 2px rgba(0,0,0,.25);margin:2px 0}.hofBar i{display:block;height:100%;background:linear-gradient(90deg,#8a5a12,#e3b23c,#fff0a8);border-radius:6px}
+body.hofOpen{overflow:hidden}
+#hofOv{position:fixed;inset:0;z-index:9999;background:radial-gradient(ellipse at 50% 30%,#2a1d08 0%,#0b0804 60%,#000 100%);display:flex;align-items:center;justify-content:center;overflow:auto;animation:hofFade .6s ease}
+@keyframes hofFade{from{opacity:0}}
+.hofSpot{position:fixed;left:50%;top:-20%;width:900px;height:140%;margin-left:-450px;background:conic-gradient(from 165deg at 50% 0%,transparent 0deg,rgba(255,230,160,.18) 12deg,rgba(255,240,190,.28) 15deg,rgba(255,230,160,.18) 18deg,transparent 30deg);pointer-events:none;animation:hofSpotIn 1.4s ease}
+@keyframes hofSpotIn{from{opacity:0;transform:scaleX(.2)}}
+.hofDust{position:fixed;inset:0;pointer-events:none;background-image:radial-gradient(2px 2px at 20% 30%,#ffe08a,transparent),radial-gradient(1.5px 1.5px at 70% 20%,#fff,transparent),radial-gradient(2px 2px at 40% 70%,#f3c14a,transparent),radial-gradient(1.5px 1.5px at 85% 60%,#ffe9b0,transparent),radial-gradient(2px 2px at 10% 80%,#ffd36a,transparent),radial-gradient(1.5px 1.5px at 55% 45%,#fff5d0,transparent);background-size:300px 300px;animation:hofFall 9s linear infinite;opacity:.8}
+@keyframes hofFall{from{background-position:0 -300px}to{background-position:60px 300px}}
+.hofStage{position:relative;max-width:620px;width:92%;text-align:center;padding:30px 0}
+.hofPrev{color:#ff6b6b;font:bold 12px system-ui,sans-serif;letter-spacing:.2em;margin-bottom:8px}
+.hofCls{color:#e9c770;font:600 14px Georgia,serif;letter-spacing:.35em;text-transform:uppercase;opacity:0;animation:hofUp .8s ease .6s forwards}
+.hofBig{position:relative;overflow:hidden;margin:16px auto;padding:26px 22px 22px;border-radius:8px;background:linear-gradient(160deg,#fff4c0 0%,#e3b24a 30%,#a8761c 52%,#f3d47a 75%,#c08c28 100%);border:6px solid #5a3608;box-shadow:0 0 0 2px #f8e3a0,0 0 60px rgba(255,200,80,.45),0 20px 50px rgba(0,0,0,.7);color:#2e1e02;opacity:0;animation:hofRise 1.3s cubic-bezier(.2,.9,.3,1.15) 1s forwards}
+@keyframes hofRise{from{opacity:0;transform:translateY(120px) scale(.85)}to{opacity:1;transform:none}}
+.hofShine{position:absolute;top:0;left:-70%;width:45%;height:100%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.85),transparent);transform:skewX(-20deg);animation:hofGlint2 4s ease-in-out 2.2s infinite}
+@keyframes hofGlint2{0%{left:-70%}45%,100%{left:140%}}
+.hofLaurel{font-size:22px;color:#6b4208;letter-spacing:.3em}
+.hofName{font:900 clamp(28px,6vw,46px)/1.05 Georgia,serif;text-transform:uppercase;letter-spacing:.04em;text-shadow:0 1px 0 #fff3c4,0 -1px 0 #6b4208;margin-top:6px}
+.hofNick{font:italic 20px Georgia,serif;margin-top:2px}.hofSub{font:15px Georgia,serif;margin-top:6px}
+.hofStats{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin:16px 0 10px}.hofStats div{min-width:70px;padding:6px 7px;background:rgba(58,38,4,.85);border-radius:4px;color:#f8dc84;opacity:0;animation:hofUp .5s ease forwards}.hofStats b{display:block;font:bold 18px Georgia,serif}.hofStats span{font:10px system-ui,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#e9d7a8}
+.hofCit{font:italic 15px/1.45 Georgia,serif;max-width:480px;margin:8px auto 0;opacity:0;animation:hofUp .8s ease 3.4s forwards}
+@keyframes hofUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.hofBtns{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;opacity:0;animation:hofUp .6s ease 3.8s forwards}.hofBtns a{cursor:pointer;color:#f3d47a;border:1px solid #8a6a2a;padding:7px 14px;border-radius:999px;font:600 14px system-ui,sans-serif;text-decoration:none}.hofBtns a:hover{background:rgba(243,212,122,.15)}#hofOv .hofBtns a.sbvLink{color:#fff!important;background:#c8102e;border-color:#c8102e;font-size:14px;text-decoration:none}
+@media(max-width:600px){.hofT1{font-size:36px}.hofPlq{width:46%}.hofSpot{width:600px;margin-left:-300px}}
 .p4p td{vertical-align:middle}.p4pRk{font:bold 1.6em Impact,Arial Black,sans-serif;color:#c8102e;text-align:center}.p4pUp{color:#1a8a2a;font-weight:bold}.p4pDn{color:#c8102e;font-weight:bold}.p4pNew{background:#f2c14e;color:#000;font-size:.75em;font-weight:bold;padding:1px 4px;border-radius:3px}
 .invite{border:1px solid #c8102e;background:#fff6f0;padding:8px 10px;margin:8px 0;border-radius:4px}.invite input{width:min(380px,70%);font-size:.9em;margin-top:4px}
 .coachOff{display:inline-flex;align-items:center;gap:8px;font-weight:bold;font-size:16px;cursor:pointer;padding:8px 14px;border:2px solid #c8323a;border-radius:8px;background:#fff}.coachOff input{width:20px;height:20px;cursor:pointer}.coachReply{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
@@ -361,7 +404,7 @@ pre.plan{background:#fbfaf7;border:1px solid var(--line)}
   <div class="box"><div class="hd">Main</div><a data-v="home">Home</a><a data-v="register">Register</a><a data-v="aup">Acceptable Use Policy</a></div>
   <div class="box"><div class="hd">Your Gym</div><a data-v="gym">Active Fighters</a><a data-v="plans">Fight Plans</a><a data-v="fight">Practice Fights</a><a data-v="create">Create a Fighter</a><a data-v="short">Short Gym</a><a data-v="changegym">Change Gym</a><a data-v="desc">Description</a><a data-v="login">Login</a><a data-v="logout">Logout</a></div>
   <div class="box"><div class="hd">Community</div><a data-v="forums">Contenders Forums</a><a data-v="msgs" id="msgLink">Messages</a><a data-v="forum:press">Press Releases</a><a data-v="simbot">🥊 Simbot<span class="sbHere" id="sbHere" hidden></span></a></div>
-  <div class="box"><div class="hd">Hall of Records</div><a data-v="champs">Champions</a><a data-v="frank">Fighter Rankings</a><a data-v="p4p">Pound for Pound</a><a data-v="grank">Gym Rankings</a><a data-v="ppv">Pay-Per-View</a><a data-v="results">Fight Results</a><a data-v="fcards">Fight Cards</a><a data-v="sched">Fight Schedule</a><a data-v="discarded">Discarded Fighters</a><a data-v="search">Search Contenders</a></div>
+  <div class="box"><div class="hd">Hall of Records</div><a data-v="champs">Champions</a><a data-v="frank">Fighter Rankings</a><a data-v="p4p">Pound for Pound</a><a data-v="hof">Hall of Fame</a><a data-v="grank">Gym Rankings</a><a data-v="ppv">Pay-Per-View</a><a data-v="results">Fight Results</a><a data-v="fcards">Fight Cards</a><a data-v="sched">Fight Schedule</a><a data-v="discarded">Discarded Fighters</a><a data-v="search">Search Contenders</a></div>
   <div class="box"><div class="hd">Contenders Help &amp; Tools</div><a data-v="help">Help Pages</a><a data-v="newbie">Newbie Files</a><a data-fb="sidebar" class="fbLink">💬 Send Feedback</a></div>
   <div class="box"><div class="hd">Other Stuff</div><a data-v="forgot">Forgotten Password</a><a data-v="changepw">Change Email/Passwd.</a></div>
   <div class="box fund"><a data-v="funding">Contenders Funding</a></div>
@@ -644,7 +687,7 @@ document.addEventListener('click',e=>{const a=e.target.closest('[data-app]');if(
 function refresh(){
   const a=document.activeElement;
   if(a&&(a.tagName==='TEXTAREA'||a.tagName==='INPUT')&&a.value)return;
-  const live=['gymres','gymh2h','sbview','lreport','sched','champs','p4p','frank','gym','rec','pub','fcards','forums','msgs','grank','gympub','gymret','opub','rpub','register','changegym','login','logout','home','desc','changepw'];
+  const live=['gymres','gymh2h','sbview','lreport','sched','champs','p4p','hof','frank','gym','rec','pub','fcards','forums','msgs','grank','gympub','gymret','opub','rpub','register','changegym','login','logout','home','desc','changepw'];
   if(live.includes(view.split(':')[0])||view.startsWith('forum:')||view.startsWith('topic:'))render();
 }
 function render(){
@@ -655,7 +698,7 @@ function render(){
   const P={sbview:()=>sbViewHTML(arg),home:homeHTML,register:registerHTML,aup:aupHTML,gym:gymHTML,plans:plansHTML,fight:fightHTML,create:createHTML,cards:cardsHTML,
     retired:retiredHTML,clean:cleanHTML,short:shortHTML,changegym:changeGymHTML,desc:descHTML,
     login:loginHTML,logout:logoutHTML,forgot:forgotHTML,newpass:newPassHTML,changepw:changePwHTML,forums:forumsHTML,forum:()=>forumHTML(arg),topic:()=>topicHTML(arg),newtopic:()=>newTopicHTML(arg),msgs:()=>msgsHTML(arg),
-    simbot:labHTML,lab:labHTML,sbch:()=>sbchHTML(arg),champs:()=>champsHTML(arg),p4p:()=>p4pHTML(arg),frank:()=>frankHTML(arg),grank:()=>grankHTML(arg),results:resultsHTML,fcards:fightCardsHTML,sched:schedHTML,
+    simbot:labHTML,lab:labHTML,sbch:()=>sbchHTML(arg),champs:()=>champsHTML(arg),p4p:()=>p4pHTML(arg),hof:()=>hofHTML(arg),frank:()=>frankHTML(arg),grank:()=>grankHTML(arg),results:resultsHTML,fcards:fightCardsHTML,sched:schedHTML,
     discarded:()=>`<h1>Discarded Fighters</h1><p>No fighters have been discarded.</p>`,search:searchHTML,help:()=>helpHTML(arg),newbie:newbieHTML,funding:fundingHTML,retiregym:retireGymHTML,
     edit:()=>planEditHTML(arg),plan:()=>planEditHTML(arg),pf:()=>planFormHTML(arg),rec:()=>recordHTML(arg),gympub:()=>gymPubHTML(arg),gymret:()=>gymRetHTML(arg),gymres:()=>gymResHTML(arg),gymh2h:()=>gymH2HHTML(arg),opub:()=>oFighterHTML(arg),rpub:()=>retFighterHTML(arg),cdiv:()=>cdivHTML(arg),pub:()=>pubHTML(arg),train:()=>trainHTML(arg),report:()=>savedReportHTML(arg),lreport:()=>leagueReportHTML(arg),ppv:ppvHTML};
   $('#view').innerHTML=`<div id="flash" class="note cr" style="display:none;margin-bottom:10px"></div>`+(P[base]||homeHTML)();
@@ -2552,6 +2595,70 @@ async function markRead(){
   try{await SB.rpc('mark_thread_read',{from_id:who});ims.forEach(m=>{if(m.to===ME&&m.from===who)m.read=true});updateMsgLink()}catch(e){}
 }
 /* ---------- Hall of Records ---------- */
+/* ---------- Hall of Fame ---------- */
+let HOF=null,HOF_W=null,HOF_LOADING=false;
+const HOF_F=120,HOF_G=250,HOF_FIGHTS=15,HOF_DAYS=180;
+async function loadHOF(){if(HOF_LOADING)return;HOF_LOADING=true;try{const[a,b]=await Promise.all([SB.from('hall_of_fame').select('*').order('class_month',{ascending:false}).order('points',{ascending:false}),SB.rpc('hof_watch')]);
+  HOF=a.data||[];HOF_W=b.data||{fighters:[],gyms:[]}}catch(e){HOF=[];HOF_W={fighters:[],gyms:[]}}HOF_LOADING=false;if(view.split(':')[0]==='hof')render()}
+const hofMonth=d=>new Date(d+'T12:00:00').toLocaleDateString('en-US',{month:'long',year:'numeric'});
+const hofRec=r=>`${r.w}-${r.l}-${r.d}`;
+function hofPlaque(r,i){const g=r.kind==='gym';
+  return`<div class="hofPlq${g?' g':''}" data-hof="${i}" tabindex="0" title="Open the induction"><div class="hofPlqIn">
+  <div class="hofStar">&#9733;</div><div class="hofPName">${esc(g?r.gym:r.name)}</div>${!g&&r.nick?`<div class="hofPNick">"${esc(r.nick)}"</div>`:''}
+  <div class="hofPSub">${g?'Gym':esc(r.div)+'weight'} &middot; ${hofRec(r)}${r.ko!=null?` &middot; ${r.ko} KO`:''}</div>
+  ${!g?`<div class="hofPGym">${esc(r.gym||'')}</div>`:''}${r.first_ballot?'<div class="hofFB">FIRST BALLOT</div>':''}</div></div>`}
+function hofWatchRow(r,g){const need=g?HOF_G:HOF_F,pct=Math.max(2,Math.min(100,Math.round(100*(+r.points)/need)));
+  const name=g?`<a data-go="gympub:${r.user_id}"><b>${esc(r.gym)}</b></a>`:`<a data-go="opub:${r.user_id}:${encN(r.fid)}"><b>${esc(r.name)}</b></a>${r.nick?` <span class="mute">"${esc(r.nick)}"</span>`:''}<br><span class="small">${esc(r.gym||'')} &middot; ${r.wing==='bk'?'Bare Knuckles ':''}${esc(r.div)}weight</span>`;
+  const note=g?`${r.age_days} of ${HOF_DAYS} days`:`${r.w+r.l+r.d} of ${HOF_FIGHTS} fights`;
+  return`<tr><td>${name}</td><td>${hofRec(r)}<br><span class="small mute">${r.ko} KO${g?` &middot; ${r.champions} champs`:` &middot; status ${r.peak}`}</span></td>
+  <td class="hofBarC"><div class="hofBar"><i style="width:${pct}%"></i></div><span class="small">${(+r.points).toFixed(1)} of ${need} points &middot; ${note}</span></td></tr>`}
+function hofHTML(arg){
+  if(!HOF){loadHOF();return`<div class="hofHero"><div class="hofT1">Hall of Fame</div><div class="hofT2">Loading the halls...</div></div>`}
+  const tab=arg==='gyms'?'gyms':arg==='bk'?'bk':'',W=HOF_W||{fighters:[],gyms:[]};
+  const list=HOF.filter(r=>tab==='gyms'?r.kind==='gym':r.kind==='fighter'&&(r.wing||'')===tab);
+  window.HOF_SHOW=list.slice();
+  const classes={};list.forEach((r,i)=>{(classes[r.class_month]=classes[r.class_month]||[]).push([r,i])});
+  const plaques=Object.keys(classes).sort().reverse().map(m=>`<div class="hofClass"><div class="hofClassHd"><span>Class of ${hofMonth(m)}</span></div><div class="hofRow">${classes[m].map(([r,i])=>hofPlaque(r,i)).join('')}</div></div>`).join('');
+  const watch=tab==='gyms'?W.gyms:(W.fighters||[]).filter(r=>(r.wing||'')===tab);
+  const tabs=[['','Fighters'],['bk','Bare Knuckles Wing'],['gyms','Gyms']].map(([k,n])=>k===tab?`<b>${n}</b>`:`<a data-go="hof${k?':'+k:''}">${n}</a>`).join(' | ');
+  const counts=`${HOF.filter(r=>r.kind==='fighter').length} fighter${HOF.filter(r=>r.kind==='fighter').length===1?'':'s'} &middot; ${HOF.filter(r=>r.kind==='gym').length} gym${HOF.filter(r=>r.kind==='gym').length===1?'':'s'} enshrined`;
+  return`<div class="hofHero"><div class="hofRays"></div><div class="hofT0">The Contenders</div><div class="hofT1">Hall of Fame</div><div class="hofT2">${counts}</div></div>
+  <p class="sans hofTabs">${tabs}</p>
+  ${plaques||`<div class="hofEmpty"><div class="hofPedTop">&#9733;</div><div class="hofPed"></div><p><b>The halls are empty, for now.</b><br>The first class will be inducted once fighters build careers worth remembering. Every plaque here will be earned in the ring.</p></div>`}
+  ${ME===OWNER&&watch.length?`<p class="sans"><button data-hofpreview="${tab}">&#127942; Preview a ceremony</button> <span class="small mute">(only you see this button; uses the top name below, nothing is saved)</span></p>`:''}
+  <h2>On the Road to the Hall</h2>
+  <p class="small">${tab==='gyms'?`The gyms with the most Hall of Fame points. A gym needs ${HOF_G} points and to be at least ${HOF_DAYS} days old.`:`Active ${tab==='bk'?'Bare Knuckles ':''}fighters with the most Hall of Fame points. A fighter is eligible once he retires with at least ${HOF_FIGHTS} fights and ${HOF_F} points.`}</p>
+  ${watch.length?`<table class="plain hofW"><tr><th>${tab==='gyms'?'Gym':'Fighter'}</th><th>Record</th><th>Toward the Hall</th></tr>${watch.map(r=>hofWatchRow(r,tab==='gyms')).join('')}</table>`:'<p class="mute">No one yet.</p>'}
+  <h2>How the Hall works</h2>
+  <ul class="small"><li><b>Induction day:</b> the 1st of every month. Each class takes up to three retired fighters from Contenders and three from Bare Knuckles, plus one gym. Rookies don't count.</li>
+  <li><b>Fighter points:</b> 1 per win, half a point per knockout, minus half a point per loss, 12 per title fight won, 3 per point of his highest status, 2 per week on the Pound for Pound list (4 more for every week at #1), and 1 per $50,000 earned (up to 20).</li>
+  <li><b>Gym points:</b> 1 per 10 wins (up to 50), 10 per title fight won, 15 per world champion it produced, 25 per Hall of Fame fighter, 1 per Pound for Pound week, and a bonus for a winning record.</li>
+  <li><b>First ballot:</b> a fighter inducted within 45 days of retiring.</li>
+  <li>Click a plaque to watch his induction.</li></ul>`}
+function hofCeremony(r){const old=document.getElementById('hofOv');if(old)old.remove();const g=r.kind==='gym';
+  const stats=g?[[hofRec(r),'Record'],[r.ko,'Knockouts'],[r.title_wins||0,'Title wins'],[r.champions||0,'Champions']]
+    :[[hofRec(r),'Record'],[r.ko,'Knockouts'],[r.title_wins||0,'Title wins'],[r.peak||0,'Peak status'],[r.p4p_weeks||0,'P4P weeks'],[money(r.earn||0),'Earnings']];
+  const cit=r.citation||(g?`${r.gym}: ${r.w} wins and ${r.champions||0} world champions.`:`A ${r.wing==='bk'?'Bare Knuckles ':''}${String(r.div||'').toLowerCase()}weight from ${r.gym} who went ${hofRec(r)} with ${r.ko} knockouts.`);
+  const page=g?`gympub:${r.user_id}`:r.preview?`opub:${r.user_id}:${encN(r.fid)}`:`rpub:${r.user_id}:${encN(r.fid)}`;
+  const o=document.createElement('div');o.id='hofOv';o.innerHTML=`<div class="hofSpot"></div><div class="hofDust"></div>
+  <div class="hofStage">${r.preview?'<div class="hofPrev">PREVIEW (NOT INDUCTED)</div>':''}
+  <div class="hofCls">${g?'Gym Wing':r.wing==='bk'?'Bare Knuckles Wing':'Contenders Wing'} &middot; Class of ${hofMonth(r.class_month)}</div>
+  <div class="hofBig"><div class="hofShine"></div>
+   <div class="hofLaurel">&#10087; &#9733; &#10087;</div>
+   <div class="hofName">${esc(g?r.gym:r.name)}</div>${!g&&r.nick?`<div class="hofNick">"${esc(r.nick)}"</div>`:''}
+   <div class="hofSub">${g?'Gym':esc(r.div)+'weight &middot; '+esc(r.gym||'')}</div>
+   <div class="hofStats">${stats.map(([v,k],i)=>`<div style="animation-delay:${2.2+i*.18}s"><b>${esc(String(v))}</b><span>${k}</span></div>`).join('')}</div>
+   <div class="hofCit">${esc(cit)}</div>${r.first_ballot?'<div class="hofFB big">FIRST BALLOT HALL OF FAMER</div>':''}</div>
+  <div class="hofBtns">${r.best_bout?`<a class="sbvLink" data-go="sbview:${r.best_bout}">&#9654; Watch his greatest win in Simbot View</a>`:''}<a data-go="${page}">${g?'Visit the gym':'His career'}</a><a data-hofclose>Close</a></div></div>`;
+  document.body.appendChild(o);document.body.classList.add('hofOpen');
+  try{if(typeof labSay==='function')labSay(`Ladies and gentlemen, please rise. Entering the Contenders Hall of Fame${g?'':', from '+(r.gym||'')}, ${g?r.gym:r.name}!`)}catch(e){}
+  o.addEventListener('click',e=>{if(e.target.closest('[data-hofclose]')||e.target===o||e.target.closest('[data-go]')){o.remove();document.body.classList.remove('hofOpen')}});
+}
+document.addEventListener('click',e=>{const p=e.target.closest('[data-hof]');if(p&&window.HOF_SHOW){hofCeremony(HOF_SHOW[+p.dataset.hof]);return}
+  const v=e.target.closest('[data-hofpreview]');if(v&&HOF_W){const t=v.dataset.hofpreview,g=t==='gyms',r=g?HOF_W.gyms[0]:(HOF_W.fighters||[]).filter(x=>(x.wing||'')===t)[0];if(!r)return;
+    const m=new Date();m.setMonth(m.getMonth()+1,1);hofCeremony(Object.assign({},r,{kind:g?'gym':'fighter',preview:true,class_month:m.toISOString().slice(0,10)}))}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){const o=document.getElementById('hofOv');if(o){o.remove();document.body.classList.remove('hofOpen')}}
+  else if(e.key==='Enter'&&e.target.dataset&&e.target.dataset.hof!=null&&window.HOF_SHOW)hofCeremony(HOF_SHOW[+e.target.dataset.hof])});
 let P4P=null,P4P_LOADING=false;
 async function loadP4P(){if(P4P_LOADING)return;P4P_LOADING=true;try{const{data}=await SB.from('p4p').select('*').order('week',{ascending:false}).order('rank').limit(130);
   P4P={};(data||[]).forEach(r=>{(P4P[r.week]=P4P[r.week]||[]).push(r)});if(view.split(':')[0]==='p4p')render()}catch(e){P4P={}}P4P_LOADING=false}
