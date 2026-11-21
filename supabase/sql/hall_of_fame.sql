@@ -66,7 +66,11 @@ returns jsonb language sql stable security definer set search_path = public, pri
         order by points desc, w desc limit 12) x), '[]'),
     'gyms', coalesce((select jsonb_agg(x) from (select user_id, gym, w, l, d, ko, title_wins, champions, p4p_weeks, famers, earn, age_days, points
         from private.hof_gyms() g where not exists (select 1 from hall_of_fame h where h.kind='gym' and h.user_id=g.user_id)
-        order by points desc limit 10) x), '[]'))
+        order by points desc limit 10) x), '[]'),
+    'top', coalesce((select jsonb_agg(x order by x.wing, x.points desc) from (select * from (select user_id, fid, wing, active, name, nick, gym, div, w, l, d, ko, title_wins, peak, p4p_weeks, earn, points,
+        row_number() over (partition by wing order by points desc, w desc) rk from private.hof_fighters() where w + l + d > 0) z where rk <= 10) x), '[]'),
+    'top_gyms', coalesce((select jsonb_agg(x) from (select user_id, gym, w, l, d, ko, title_wins, champions, famers, points
+        from private.hof_gyms() where w + l + d > 0 order by points desc limit 10) x), '[]'))
 $$;
 grant execute on function public.hof_watch() to anon, authenticated;
 revoke all on function private.hof_fighters() from public, anon, authenticated;

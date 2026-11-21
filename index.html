@@ -281,7 +281,7 @@ pre.plan{background:#fbfaf7;border:1px solid var(--line)}
 .hofFB{display:inline-block;margin-top:6px;padding:1px 6px;background:#3a2604;color:#f6d77a;font:bold 10px system-ui,sans-serif;letter-spacing:.12em;border-radius:3px}.hofFB.big{font-size:12px;padding:3px 10px;margin-top:12px}
 .hofEmpty{text-align:center;padding:16px;font-family:Georgia,serif}.hofPed{width:110px;height:120px;margin:0 auto 10px;background:linear-gradient(90deg,#bdb3a0,#f3eee2,#bdb3a0);clip-path:polygon(15% 22%,85% 22%,80% 100%,20% 100%);position:relative}.hofPedTop{font-size:44px;line-height:1;margin-bottom:-14px;position:relative;z-index:1;color:#d9a92e;text-shadow:0 0 14px #ffd76a;animation:hofPulse 2.4s ease-in-out infinite}
 @keyframes hofPulse{50%{opacity:.45}}
-.hofW td{vertical-align:middle}.hofBarC{min-width:180px}.hofBar{height:12px;border-radius:6px;background:#e8e0cc;overflow:hidden;box-shadow:inset 0 1px 2px rgba(0,0,0,.25);margin:2px 0}.hofBar i{display:block;height:100%;background:linear-gradient(90deg,#8a5a12,#e3b23c,#fff0a8);border-radius:6px}
+.hofAll{margin:22px 0;padding:6px 16px 12px;border-radius:10px;background:linear-gradient(180deg,#1d160a,#2c210e);color:#f3e6c4;border:2px solid #b8892b}.hofAll h2{color:#f3d47a;text-align:center;font-family:Georgia,serif;letter-spacing:.06em;border-color:#5a4520}.hofAll p{color:#d9c79c;text-align:center}.hofAll a{color:#ffe08a}.hofAll .mute{color:#bfae84!important}.hofT{width:100%}.hofT th{color:#e9c770}.hofT td{vertical-align:middle;border-color:#4a3a1a!important}.hofRk{font:900 24px Georgia,serif;text-align:center;color:#c9a24a;width:40px}.hofTop1 .hofRk{color:#ffd700;text-shadow:0 0 10px rgba(255,215,0,.6)}.hofTop2 .hofRk{color:#e4e4e4}.hofTop3 .hofRk{color:#d58a4a}.hofPts{font:bold 16px Georgia,serif;color:#ffe08a;text-align:right}.hofRet{font:bold 9px system-ui,sans-serif;letter-spacing:.1em;background:#5a4520;color:#f3d47a;padding:1px 5px;border-radius:3px}.hofW td{vertical-align:middle}.hofBarC{min-width:180px}.hofBar{height:12px;border-radius:6px;background:#e8e0cc;overflow:hidden;box-shadow:inset 0 1px 2px rgba(0,0,0,.25);margin:2px 0}.hofBar i{display:block;height:100%;background:linear-gradient(90deg,#8a5a12,#e3b23c,#fff0a8);border-radius:6px}
 body.hofOpen{overflow:hidden}
 #hofOv{position:fixed;inset:0;z-index:9999;background:radial-gradient(ellipse at 50% 30%,#2a1d08 0%,#0b0804 60%,#000 100%);display:flex;align-items:center;justify-content:center;overflow:auto;animation:hofFade .6s ease}
 @keyframes hofFade{from{opacity:0}}
@@ -983,7 +983,7 @@ function condText(x,after){
 /* ================= SHARED DATA (Supabase: accounts, forums, messages) ================= */
 cleanSlate();
 const SB_URL='https://ojsphhzgzbxmnfcbitqb.supabase.co',SB_KEY='sb_publishable_SWO9WhiSkoVhflY5CmY08A_hlqCEJSi';
-const BUILD='1795302211';
+const BUILD='1795302294';
 /* A tab left open on an older build must not save over newer data: if the site has been updated, reload before anything else is saved. */
 let staleBuild=false;
 async function checkBuild(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
@@ -3898,6 +3898,7 @@ function hofHTML(arg){
   <p class="sans hofTabs">${tabs}</p>
   ${plaques||`<div class="hofEmpty"><div class="hofPedTop">&#9733;</div><div class="hofPed"></div><p><b>The halls are empty, for now.</b><br>The first class will be inducted once fighters build careers worth remembering. Every plaque here will be earned in the ring.</p></div>`}
   ${ME===OWNER&&watch.length?`<p class="sans"><button data-hofpreview="${tab}">&#127942; Preview a ceremony</button> <span class="small mute">(only you see this button; uses the top name below, nothing is saved)</span></p>`:''}
+  ${hofTop(tab,W)}
   <h2>On the Road to the Hall</h2>
   <p class="small">${tab==='gyms'?`The gyms with the most Hall of Fame points. A gym needs ${HOF_G} points and to be at least ${HOF_DAYS} days old.`:`Active ${tab==='bk'?'Bare Knuckles ':''}fighters with the most Hall of Fame points. A fighter is eligible once he retires with at least ${HOF_FIGHTS} fights and ${HOF_F} points.`}</p>
   ${watch.length?`<table class="plain hofW"><tr><th>${tab==='gyms'?'Gym':'Fighter'}</th><th>Record</th><th>Toward the Hall</th></tr>${watch.map(r=>hofWatchRow(r,tab==='gyms')).join('')}</table>`:'<p class="mute">No one yet.</p>'}
@@ -3907,6 +3908,11 @@ function hofHTML(arg){
   <li><b>Gym points:</b> 1 per 10 wins (up to 50), 10 per title fight won, 15 per world champion it produced, 25 per Hall of Fame fighter, 1 per Pound for Pound week, and a bonus for a winning record.</li>
   <li><b>First ballot:</b> a fighter inducted within 45 days of retiring.</li>
   <li>Click a plaque to watch his induction.</li></ul>`}
+function hofTop(tab,W){const g=tab==='gyms',L=g?(W.top_gyms||[]):(W.top||[]).filter(r=>(r.wing||'')===tab);if(!L.length)return'';
+  const row=(r,i)=>`<tr class="${i<3?'hofTop'+(i+1):''}"><td class="hofRk">${i+1}</td><td>${g?`<a data-go="gympub:${r.user_id}"><b>${esc(r.gym)}</b></a>`:`<a data-go="${r.active?'opub':'rpub'}:${r.user_id}:${encN(r.fid)}"><b>${esc(r.name)}</b></a>${r.nick?` <span class="mute">"${esc(r.nick)}"</span>`:''}${r.active?'':' <span class="hofRet">RETIRED</span>'}<br><span class="small">${esc(r.gym||'')} &middot; ${esc(r.div)}weight</span>`}</td>
+  <td>${hofRec(r)}<br><span class="small mute">${r.ko} KO${r.title_wins?` &middot; ${r.title_wins} title win${r.title_wins>1?'s':''}`:''}${g?` &middot; ${r.champions} champs`:` &middot; status ${r.peak}`}</span></td><td class="hofPts">${(+r.points).toFixed(1)}</td></tr>`;
+  return`<div class="hofAll"><h2>&#9733; All-Time Top 10 ${g?'Gyms':tab==='bk'?'Bare Knuckles Fighters':'Fighters'} &#9733;</h2><p class="small">Every ${g?'gym':'fighter, active or retired,'} ranked by Hall of Fame points. Updated live.</p>
+  <table class="plain hofT"><tr><th>#</th><th>${g?'Gym':'Fighter'}</th><th>Record</th><th>Points</th></tr>${L.map(row).join('')}</table></div>`}
 function hofCeremony(r){const old=document.getElementById('hofOv');if(old)old.remove();const g=r.kind==='gym';
   const stats=g?[[hofRec(r),'Record'],[r.ko,'Knockouts'],[r.title_wins||0,'Title wins'],[r.champions||0,'Champions']]
     :[[hofRec(r),'Record'],[r.ko,'Knockouts'],[r.title_wins||0,'Title wins'],[r.peak||0,'Peak status'],[r.p4p_weeks||0,'P4P weeks'],[money(r.earn||0),'Earnings']];
