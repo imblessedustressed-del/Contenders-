@@ -155,7 +155,7 @@ export async function handle(req: Request, client: any, C: any): Promise<Respons
           [[B.red_user, FA, 0], [B.blue_user, FB, 1]].forEach(([u, F0, i]: any) => {
             if (!P[u]?.is_bot) return;
             const A = o.after[i]; A.plan = F0.plan; // keep his own plan, then learn from the result
-            const w = o.summary.w; learn(A, gk(u), w == null ? null : w === i, !o.summary.decision);
+            const w = o.summary.w; learn(A, gk(u), w == null ? null : w === i, !o.summary.decision, o.en?.[i], o.en?.[1 - i]);
           });
           const { data, error } = await sb.rpc("commit_bout", { p_bout: B.id, p_summary: o.summary, p_result: o.result, p_mgr: o.mgr, p_after: o.after, p_cards: o.after.map(cardEntry) });
           if (error) { log.push(`bout ${B.id}: ${error.message}`); continue; }
@@ -263,7 +263,8 @@ export async function handle(req: Request, client: any, C: any): Promise<Respons
             const peers = allBots.filter((x) => x.F.div === div && regOf(x.F) === reg && typeOf(x.F) === t && (x.F.rec[0] + x.F.rec[1] + x.F.rec[2]) >= 3)
               .sort((a, b) => (b.F.rec[0] - b.F.rec[1]) - (a.F.rec[0] - a.F.rec[1]));
             const g = { ...(peers[0] ? defaultGene(peers[0].F, gk(peers[0].u)) : defaultGene({}, key)) };
-            if (Math.random() < 0.5) g[Math.random() < 0.5 ? "a" : "d"] += rnd([-1, 1]);
+            if (Math.random() < 0.5) { const k = rnd(reg === "rk" ? ["a", "d"] : ["a", "d", "p"]) as "a" | "d" | "p"; g[k] = (g[k] || 0) + rnd([-1, 1]); }
+            if (reg === "rk") delete g.p; else if (g.p != null) g.p = reg === "bk" ? Math.max(0, Math.min(1, g.p)) : Math.max(-2, Math.min(3, g.p));
             const home = rnd(GYMS[key].towns);
             const NF = makeFighter(C, t, div, lim, prev, key, taken, home, g, reg === "rk");
             if (!NF) { log.push(`could not build a ${t} for ${P[u].gym} at ${div}`); break; }

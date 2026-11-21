@@ -31,7 +31,7 @@ const T: Record<string, { head: string; lines: L[] }> = {
 };
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
 export const rnd = <X,>(a: X[]): X => a[Math.floor(Math.random() * a.length)];
-export type Gene = { a: number; d: number };
+export type Gene = { a: number; d: number; p?: number }; // p = pace: + saves gas in the early rounds, - starts fast
 // the bot's type, from its saved tag or its plan name
 export function typeOf(F: any): string | null {
   if (F.bt && T[F.bt]) return F.bt;
@@ -41,7 +41,11 @@ export function typeOf(F: any): string | null {
 }
 export function planFor(t: string, g: Gene, scout = 0): string {
   const S = T[t]; if (!S) return "6/6/8";
-  return [S.head + (g.a || g.d ? ` (tuned ${g.a >= 0 ? "+" : ""}${g.a}/${g.d >= 0 ? "+" : ""}${g.d})` : ""), ...S.lines.map(([c, A, tg, P, D, st, fixed]) => {
+  const pc = g.p || 0;
+  // pace (learned from endurance, Nov 21, 2026): an early-rounds copy of the main line, AGG -pace and DEF +pace
+  const lines: L[] = pc ? [S.lines[0], [`round <= ${t.startsWith("BK ") ? 10 : 5}`, S.lines[0][1] - pc, S.lines[0][2], S.lines[0][3], S.lines[0][4] + pc, S.lines[0][5]], ...S.lines.slice(1)] : S.lines;
+  const tune = g.a || g.d || pc ? ` (tuned ${g.a >= 0 ? "+" : ""}${g.a}/${g.d >= 0 ? "+" : ""}${g.d}${pc ? `, pace ${pc > 0 ? "+" : ""}${pc}` : ""})` : "";
+  return [S.head + tune, ...lines.map(([c, A, tg, P, D, st, fixed]) => {
     let a = A, p = P, d = D;
     if (!fixed) { a = clamp(A + g.a, 1, 12); d = clamp(D + g.d + scout, 2, 16); p = clamp(P, 1, 12); while (a + p + d > 20) { if (p > 3) p--; else if (a > 2) a--; else d--; } }
     const tac = `${a}${tg}/${p}/${d}${st ? ` (${st})` : ""}`;
@@ -53,15 +57,22 @@ export function defaultGene(F: any, gymKey: string): Gene {
   if (isRkKey(gymKey)) return { ...RK_START };
   const t = (GYMS[gymKey] || { temper: 0 }).temper; return { a: t, d: -t };
 }
-// learn from a result: stopped = get more careful, outpointed = get busier, draw = push a little
-export function learn(F: any, gymKey: string, won: boolean | null, stopped: boolean) {
+// learn from a result: stopped = get more careful, outpointed = get busier, draw = push a little.
+// Pace (owner, Nov 21, 2026: "bot gyms should be learning about endurance"): lost and finished with 20+ points less
+// endurance than the other man = save more gas early; lost a decision with 20+ points more = start faster.
+// en/oe = his and his opponent's endurance left at the end (0-1). Rookie bots don't learn pace.
+export function learn(F: any, gymKey: string, won: boolean | null, stopped: boolean, en?: number, oe?: number) {
   const t = typeOf(F); if (!t || won === true) return;
   const g = { ...defaultGene(F, gymKey) };
   if (won === null) g.a += 1;
   else if (stopped) { g.d += 1; g.a -= 1; }
   else { g.a += 1; g.d -= 1; }
-  if (F.region === "rk") { g.a = clamp(g.a, RK_GENE.aMin, RK_GENE.aMax); g.d = clamp(g.d, RK_GENE.dMin, RK_GENE.dMax); }
-  else { g.a = clamp(g.a, -3, 3); g.d = clamp(g.d, -3, 4); }
+  if (won === false && F.region !== "rk" && en != null && oe != null) {
+    if (oe - en > 0.2 && (!stopped || en < 0.25)) g.p = (g.p || 0) + 1;
+    else if (!stopped && en - oe > 0.2) g.p = (g.p || 0) - 1;
+  }
+  if (F.region === "rk") { g.a = clamp(g.a, RK_GENE.aMin, RK_GENE.aMax); g.d = clamp(g.d, RK_GENE.dMin, RK_GENE.dMax); delete g.p; }
+  else { g.a = clamp(g.a, -3, 3); g.d = clamp(g.d, -3, 4); if (g.p != null) g.p = F.region === "bk" ? clamp(g.p, 0, 1) : clamp(g.p, -2, 3); } // BK: a fast start loses 25-rounders, so pace 0..1 there
   F.bt = t; F.gene = g; F.plan = planFor(t, g);
 }
 // scouting (public record only): a puncher across the ring means more defense tonight

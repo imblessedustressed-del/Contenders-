@@ -29,6 +29,7 @@ export function fightOne(C: any, B: any, red: any, blue: any) {
   // Bot-vs-bot bouts keep their public report too (owner, Nov 14, 2026), stored compressed in bouts.result_z by the runner.
   const full = { f, b: { rounds: B.rounds || 12, belt, div, gym: "", gyms: [red.gym, blue.gym], recs: [FA.rec.slice(), FB.rec.slice()], date } };
   const result = B.bot_only ? null : full;
-  return { summary, result, full: B.bot_only ? full : null, mgr: B.bot_only ? null : mgr, after };
+  const en = (f.rounds[f.rounds.length - 1] || {}).en || null; // endurance left at the end, for bot learning
+  return { summary, result, full: B.bot_only ? full : null, mgr: B.bot_only ? null : mgr, after, en };
 }
 

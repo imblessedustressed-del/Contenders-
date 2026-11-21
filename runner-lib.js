@@ -58,7 +58,8 @@ var RunnerLib = (() => {
     const summary = { w: r.w, decision: !!r.decision, type: r.type, round: r.round, how, score, ip: f.ip, ratings: [rR, rB], purse, att, fans, tv };
     const full = { f, b: { rounds: B.rounds || 12, belt, div, gym: "", gyms: [red.gym, blue.gym], recs: [FA.rec.slice(), FB.rec.slice()], date } };
     const result = B.bot_only ? null : full;
-    return { summary, result, full: B.bot_only ? full : null, mgr: B.bot_only ? null : mgr, after };
+    const en = (f.rounds[f.rounds.length - 1] || {}).en || null;
+    return { summary, result, full: B.bot_only ? full : null, mgr: B.bot_only ? null : mgr, after, en };
   }
 
   // ../supabase/functions/league-runner/botgen.ts
@@ -96,7 +97,10 @@ var RunnerLib = (() => {
   function planFor(t, g, scout = 0) {
     const S = T[t];
     if (!S) return "6/6/8";
-    return [S.head + (g.a || g.d ? ` (tuned ${g.a >= 0 ? "+" : ""}${g.a}/${g.d >= 0 ? "+" : ""}${g.d})` : ""), ...S.lines.map(([c, A, tg, P, D, st, fixed]) => {
+    const pc = g.p || 0;
+    const lines = pc ? [S.lines[0], [`round <= ${t.startsWith("BK ") ? 10 : 5}`, S.lines[0][1] - pc, S.lines[0][2], S.lines[0][3], S.lines[0][4] + pc, S.lines[0][5]], ...S.lines.slice(1)] : S.lines;
+    const tune = g.a || g.d || pc ? ` (tuned ${g.a >= 0 ? "+" : ""}${g.a}/${g.d >= 0 ? "+" : ""}${g.d}${pc ? `, pace ${pc > 0 ? "+" : ""}${pc}` : ""})` : "";
+    return [S.head + tune, ...lines.map(([c, A, tg, P, D, st, fixed]) => {
       let a = A, p = P, d = D;
       if (!fixed) {
         a = clamp(A + g.a, 1, 12);
@@ -118,7 +122,7 @@ var RunnerLib = (() => {
     const t = (GYMS[gymKey] || { temper: 0 }).temper;
     return { a: t, d: -t };
   }
-  function learn(F, gymKey, won, stopped) {
+  function learn(F, gymKey, won, stopped, en, oe) {
     const t = typeOf(F);
     if (!t || won === true) return;
     const g = { ...defaultGene(F, gymKey) };
@@ -130,12 +134,18 @@ var RunnerLib = (() => {
       g.a += 1;
       g.d -= 1;
     }
+    if (won === false && F.region !== "rk" && en != null && oe != null) {
+      if (oe - en > 0.2 && (!stopped || en < 0.25)) g.p = (g.p || 0) + 1;
+      else if (!stopped && en - oe > 0.2) g.p = (g.p || 0) - 1;
+    }
     if (F.region === "rk") {
       g.a = clamp(g.a, RK_GENE.aMin, RK_GENE.aMax);
       g.d = clamp(g.d, RK_GENE.dMin, RK_GENE.dMax);
+      delete g.p;
     } else {
       g.a = clamp(g.a, -3, 3);
       g.d = clamp(g.d, -3, 4);
+      if (g.p != null) g.p = F.region === "bk" ? clamp(g.p, 0, 1) : clamp(g.p, -2, 3);
     }
     F.bt = t;
     F.gene = g;
@@ -520,7 +530,7 @@ var RunnerLib = (() => {
               const A = o.after[i];
               A.plan = F0.plan;
               const w = o.summary.w;
-              learn(A, gk(u), w == null ? null : w === i, !o.summary.decision);
+              learn(A, gk(u), w == null ? null : w === i, !o.summary.decision, o.en?.[i], o.en?.[1 - i]);
             });
             const { data, error } = await sb.rpc("commit_bout", { p_bout: B.id, p_summary: o.summary, p_result: o.result, p_mgr: o.mgr, p_after: o.after, p_cards: o.after.map(cardEntry) });
             if (error) {
@@ -692,7 +702,12 @@ var RunnerLib = (() => {
               const t = [...types].sort((a, b) => have.filter((x) => x === a).length - have.filter((x) => x === b).length)[0];
               const peers = allBots.filter((x) => x.F.div === div && regOf(x.F) === reg && typeOf(x.F) === t && x.F.rec[0] + x.F.rec[1] + x.F.rec[2] >= 3).sort((a, b) => b.F.rec[0] - b.F.rec[1] - (a.F.rec[0] - a.F.rec[1]));
               const g = { ...peers[0] ? defaultGene(peers[0].F, gk(peers[0].u)) : defaultGene({}, key2) };
-              if (Math.random() < 0.5) g[Math.random() < 0.5 ? "a" : "d"] += rnd([-1, 1]);
+              if (Math.random() < 0.5) {
+                const k = rnd(reg === "rk" ? ["a", "d"] : ["a", "d", "p"]);
+                g[k] = (g[k] || 0) + rnd([-1, 1]);
+              }
+              if (reg === "rk") delete g.p;
+              else if (g.p != null) g.p = reg === "bk" ? Math.max(0, Math.min(1, g.p)) : Math.max(-2, Math.min(3, g.p));
               const home = rnd(GYMS[key2].towns);
               const NF = makeFighter(C, t, div, lim, prev, key2, taken, home, g, reg === "rk");
               if (!NF) {
