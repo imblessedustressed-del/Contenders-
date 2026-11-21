@@ -937,7 +937,7 @@ function condText(x,after){
 /* ================= SHARED DATA (Supabase: accounts, forums, messages) ================= */
 cleanSlate();
 const SB_URL='https://ojsphhzgzbxmnfcbitqb.supabase.co',SB_KEY='sb_publishable_SWO9WhiSkoVhflY5CmY08A_hlqCEJSi';
-const BUILD='1795215257';
+const BUILD='1795226127';
 /* A tab left open on an older build must not save over newer data: if the site has been updated, reload before anything else is saved. */
 let staleBuild=false;
 async function checkBuild(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
@@ -989,8 +989,12 @@ async function loadPublic(){
     const was=dbState;dbState='on';if(sig!==pubSig||was!=='on'){pubSig=sig;refresh()}
   }catch(e){if(dbState!=='on'){dbState='slow';refresh()}}
 }
+/* Corner Coach on/off (owner, Nov 20, 2026: "give an option to turn off the coach's corner for players"); profiles.coach_off, read by the league runner */
+let COACH_OFF=null,COACH_OFF_FOR=null;
+async function loadCoachOff(){if(!SB||!ME||COACH_OFF_FOR===ME)return;COACH_OFF_FOR=ME;COACH_OFF=null;try{const{data}=await SB.from('profiles').select('coach_off').eq('id',ME).maybeSingle();COACH_OFF=!!(data&&data.coach_off);refresh()}catch(e){COACH_OFF_FOR=null}}
+function coachToggleHTML(){if(!ME)return'';return`<div class="note coachTog"><label><input type="checkbox" id="coachOn"${COACH_OFF?'':' checked'}${COACH_OFF===null?' disabled':''}> <b>Corner Coach notes</b></label> <span class="small mute">${COACH_OFF?'Off: the Corner Coach won\'t send you any more notes. Tick the box to turn them back on.':'On: after each fight the Corner Coach sends you tips from your own fight (rookies also get a note the night before). Untick to turn them off.'}</span></div>`}
 async function loadIms(){
-  if(!ME)return;
+  if(!ME)return;loadCoachOff();
   const{data,error}=await SB.from('messages').select('*').order('created_at',{ascending:false}).limit(500);
   if(!error){const sig=data.map(m=>m.id+(m.read?'r':'')).join(',');if(sig===imsSig)return;imsSig=sig;ims=data.map(m=>({id:m.id,from:m.sender,to:m.recipient,at:Date.parse(m.created_at),text:m.body,read:m.read}));updateMsgLink();refresh()}
 }
@@ -3385,7 +3389,7 @@ function shortHTML(){
   return`<h1>Short Gym</h1><table class="grid"><tr><th>Fighter</th><th>Record</th><th>Str</th><th>KP</th><th>Spd</th><th>Agl</th><th>Chn</th><th>Cnd</th><th>Hgt</th></tr>
   ${ROSTER().map(s=>{const F=state[s];return`<tr><td><a data-go="rec:${s}">${esc(F.name)}</a></td><td>${recStr(F)}</td>${STATS.map(([k])=>`<td class="n">${F[k]}</td>`).join('')}<td>${Math.floor(HT(F)/12)}'${HT(F)%12}"</td></tr>`}).join('')}</table>`;
 }
-function changeGymHTML(){return`<h1>Change Gym</h1>${needLogin('name your gym')}${ME?gymForm():''}`}
+function changeGymHTML(){return`<h1>Change Gym</h1>${needLogin('name your gym')}${ME?gymForm()+'<h2>Settings</h2>'+coachToggleHTML():''}`}
 function descHTML(){if(!ME)return`<h1>Description</h1>${needLogin('describe your gym')}`;return`<h1>Description</h1><p>Where is your gym? <input id="locIn" data-keep maxlength="60" style="width:240px" placeholder="City, State or Country" value="${esc((managers[ME]&&managers[ME].loc)||'')}"></p><p>Tell other managers about your gym. You can dress it up with old-school HTML: <tt>&lt;center&gt;</tt>, <tt>&lt;font color="red" face="Georgia" size="4"&gt;</tt>, <tt>&lt;b&gt;</tt>, <tt>&lt;i&gt;</tt>, <tt>&lt;br&gt;</tt>, <tt>&lt;hr&gt;</tt>, tables, <tt>&lt;img src="https://..."&gt;</tt>, links and even <tt>&lt;marquee&gt;</tt>. Scripts, forms and anything that would change the rest of the site are removed. Anything misleading (fake records, fake site messages, pretending to be another gym or the commissioner) gets your description blocked. Up to 5,000 characters.</p><textarea id="descIn" data-keep rows="12" spellcheck="false">${esc((ME&&managers[ME]&&managers[ME].desc)||state.gymDesc||'')}</textarea><p><button id="saveDesc">Save Description</button> <button id="prevDesc">Preview</button></p><div id="descPrev"></div>`}
 /* ---------- Fighter editor ---------- */
 function cornerHTML(side){
@@ -3795,13 +3799,13 @@ function msgsHTML(arg){
   if(arg&&arg!=='new'){
     const who=arg,thread=ims.filter(m=>(m.from===who&&m.to===ME)||(m.from===ME&&m.to===who)).sort((x,y)=>x.at-y.at);
     return`<p class="small"><a data-go="msgs">&larr; All conversations</a></p>
-    <h1>${esc(gymOf(who))}</h1><p class="small mute">Private between you and <a data-go="gympub:${esc(who)}">${esc(gymOf(who))}</a>.</p>
+    <h1>${esc(gymOf(who))}</h1><p class="small mute">Private between you and <a data-go="gympub:${esc(who)}">${esc(gymOf(who))}</a>.</p>${who===COACH?coachToggleHTML():''}
     <div class="thread" id="thread">${thread.map(m=>`<div class="bub ${m.from===ME?'me':'them'}"><div>${bodyHTML(m.text)}</div><div class="bt">${m.from===ME?'You':esc(gymOf(m.from))} &middot; ${dt(m.at)}</div></div>`).join('')||'<p class="mute">No messages yet. Say hello.</p>'}</div>
     ${gag?sanctionNote('gag'):`<div class="reply"><textarea id="dmBody" data-keep rows="3" placeholder="Write a reply..."></textarea><input type="hidden" id="dmTo" value="${esc(who)}"><button id="sendDm">Send</button><span class="small mute"> Ctrl+Enter to send</span></div>`}`;
   }
   const conv={};ims.forEach(m=>{const o=m.from===ME?m.to:m.from;(conv[o]=conv[o]||[]).push(m)});
   const rows=Object.entries(conv).map(([o,L])=>{L.sort((x,y)=>y.at-x.at);return{o,last:L[0],unread:L.filter(m=>m.to===ME&&!m.read).length}}).sort((x,y)=>y.last.at-x.last.at);
-  return`<h1>Messages</h1><p class="small mute">Messages are private between you and the other manager.</p>
+  return`<h1>Messages</h1><p class="small mute">Messages are private between you and the other manager.</p>${conv[COACH]?coachToggleHTML():''}
   ${gag?sanctionNote('gag'):arg==='new'||!rows.length?(others.length?`<h2>New Message</h2><table class="grid"><tr><td>To:</td><td><select id="dmTo">${others.map(id=>`<option value="${esc(id)}">${esc(gymOf(id))}</option>`).join('')}</select></td></tr>
     <tr><td>Message:</td><td><textarea id="dmBody" data-keep rows="5"></textarea></td></tr></table><p><button id="sendDm">Send</button>${rows.length?' <a data-go="msgs">Cancel</a>':''}</p>`:'<p class="mute">No other managers have signed up yet.</p>'):`<p><button data-go="msgs:new">New message</button></p>`}
   ${rows.length?`<h2>Conversations</h2><div class="convos">${rows.map(r=>`<a class="convo${r.unread?' unread':''}" data-go="msgs:${esc(r.o)}"><span class="cn">${esc(gymOf(r.o))}${r.unread?` <span class="badge">${r.unread}</span>`:''}</span><span class="cw">${when(r.last.at)}</span><span class="cs">${r.last.from===ME?'You: ':''}${esc(r.last.text.replace(/\s+/g,' ').slice(0,90))}${r.last.text.length>90?'...':''}</span></a>`).join('')}</div>`:''}`;
@@ -4048,7 +4052,7 @@ const HELP_BODY={
  coach:()=>`<p>After every league fight, the <b>Corner Coach</b> sends you a private message (see <a data-go="msgs">Messages</a>) reading your fighter's fight: punches thrown and landed, when he ran out of gas, whether his defense was too low when he got hurt, rounds he lost by being outworked, an opponent he should have finished, weight problems, and whether his KP and STR add up.</p>
   <ul><li>The coach only uses your own fight data and the other man's public record. He never sees anyone else's plan.</li>
   <li>Each note ends with a few concrete plan lines to try. Test them in <a data-go="simbot">Simbot</a> first.</li>
-  <li>It's automatic, so replies to the coach aren't read. Questions go to the <a data-go="forum:help">Help forum</a>.</li></ul>`,
+  <li>It's automatic, so replies to the coach aren't read. Questions go to the <a data-go="forum:help">Help forum</a>.</li></ul><p><b>Don't want the notes?</b> Untick <b>Corner Coach notes</b> at the top of your Messages page or under Settings on the <a data-go="changegym">Change Gym</a> page. You can turn them back on any time.</p>`,
  fighter:()=>`<p>Every new fighter gets exactly <b>${POOL} points</b> to spread over his abilities. Once you create him the points are <b>locked</b>; after that he only improves by winning (see <a data-go="help:training">Training</a>).</p>
   <table class="grid small"><tr><th>Ability</th><th>What it does</th><th>Fades when tired?</th></tr>
   <tr><td>Strength (STR)</td><td>The engine of all damage, both endurance damage and stunning damage. Each point adds about a pound and a half.</td><td>Yes</td></tr>
@@ -4463,6 +4467,7 @@ document.addEventListener('submit',async e=>{
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='q')doSearch(e.target.value)});
 document.addEventListener('change',e=>{
   const el=e.target;
+  if(el.id==='coachOn'){const off=!el.checked;el.disabled=true;(async()=>{const ok=await safeWrite(()=>SB.from('profiles').update({coach_off:off}).eq('id',ME));if(ok)COACH_OFF=off;render()})();return}
   if(el.dataset.grank!=null){nav(el.value?'grank:'+el.value:'grank');return}
   if(el.id==='redPlan'||el.id==='bluePlan'){prPlan[el.id==='redPlan'?'red':'blue']=el.value;render();return}
   if(el.id==='redSel'||el.id==='blueSel'){state[el.id==='redSel'?'red':'blue']=el.value;save();render();return}

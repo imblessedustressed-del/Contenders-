@@ -491,7 +491,7 @@ var RunnerLib = (() => {
       const vac = await sb.rpc("vacate_retired_champs");
       if (vac.error) log.push("vacate: " + vac.error.message);
       else vacated = (vac.data || []).length;
-      const profs = await all(() => sb.from("profiles").select("id,gym,is_bot"));
+      const profs = await all(() => sb.from("profiles").select("id,gym,is_bot,coach_off"));
       const P = Object.fromEntries(profs.map((p) => [p.id, p]));
       const states = await all(() => sb.from("gym_state").select("user_id,data"));
       const S = Object.fromEntries(states.map((s) => [s.user_id, s.data || {}]));
@@ -538,7 +538,7 @@ var RunnerLib = (() => {
               }
               tonight.push({ B, o, FA, FB });
               if (!B.bot_only) for (const [u, F, O, i] of [[B.red_user, FA, FB, 0], [B.blue_user, FB, FA, 1]]) {
-                if (P[u]?.is_bot || !P[COACH_ID]) continue;
+                if (P[u]?.is_bot || P[u]?.coach_off || !P[COACH_ID]) continue;
                 try {
                   const body = coachNote(C, B, o, i, F, O);
                   if (body) {
@@ -921,7 +921,7 @@ var RunnerLib = (() => {
             const fresh = (await sb.from("coach_reminders").upsert(up.map((b) => ({ bout_id: b.id })), { onConflict: "bout_id", ignoreDuplicates: true }).select("bout_id")).data || [];
             const go = new Set(fresh.map((r) => r.bout_id));
             for (const b of up.filter((x) => go.has(x.id))) for (const [u, k, ou, ok] of [[b.red_user, b.red_fid, b.blue_user, b.blue_fid], [b.blue_user, b.blue_fid, b.red_user, b.red_fid]]) {
-              if (P[u]?.is_bot) continue;
+              if (P[u]?.is_bot || P[u]?.coach_off) continue;
               const F = S[u]?.[k], O = S[ou]?.[ok];
               if (!F || !O) continue;
               const r = O.rec || [0, 0, 0, 0], plan = String(F.plan || "").trim();
