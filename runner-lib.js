@@ -307,7 +307,7 @@ var RunnerLib = (() => {
     else if ((F.kp || 0) > 0 && (F.str || 0) % 3 === 2) tips.push(`One more point of STR (to ${F.str + 1}) lets him carry another KP point, since every 3 STR supports 1 KP.`);
     if (!tips.length) tips.push(won ? `Clean work. Keep the plan, and scout his next opponent's public reports before fight night.` : `No single big mistake. Test small changes in Simbot (run it 100 times) against the same style before his next fight.`);
     lines.push(...tips.slice(0, 4).map((t, k) => `${k + 1}. ${t}`));
-    lines.push(`Read the full report (with your private tactics and damage lines) from Recent Fight Cards. For more help: Help Pages > Fight Plan Strategy, or the "Ask your own AI" button on the fight plan page. (This is an automatic note; replies aren't read.)`);
+    lines.push(`Read the full report (with your private tactics and damage lines) from Recent Fight Cards. For more help: Help Pages > Fight Plan Strategy, or the "Ask your own AI" button on the fight plan page. (This is an automatic note; replies aren't read. Don't want these notes? Open this conversation and click "Turn off coach notes", or reply STOP.)`);
     return lines.join("\n\n").slice(0, 3500);
   }
 
@@ -491,7 +491,7 @@ var RunnerLib = (() => {
       const vac = await sb.rpc("vacate_retired_champs");
       if (vac.error) log.push("vacate: " + vac.error.message);
       else vacated = (vac.data || []).length;
-      const profs = await all(() => sb.from("profiles").select("id,gym,is_bot"));
+      const profs = await all(() => sb.from("profiles").select("id,gym,is_bot,coach_off"));
       const P = Object.fromEntries(profs.map((p) => [p.id, p]));
       const states = await all(() => sb.from("gym_state").select("user_id,data"));
       const S = Object.fromEntries(states.map((s) => [s.user_id, s.data || {}]));
@@ -538,7 +538,7 @@ var RunnerLib = (() => {
               }
               tonight.push({ B, o, FA, FB });
               if (!B.bot_only) for (const [u, F, O, i] of [[B.red_user, FA, FB, 0], [B.blue_user, FB, FA, 1]]) {
-                if (P[u]?.is_bot || !P[COACH_ID]) continue;
+                if (P[u]?.is_bot || P[u]?.coach_off || !P[COACH_ID]) continue;
                 try {
                   const body = coachNote(C, B, o, i, F, O);
                   if (body) {
@@ -921,7 +921,7 @@ var RunnerLib = (() => {
             const fresh = (await sb.from("coach_reminders").upsert(up.map((b) => ({ bout_id: b.id })), { onConflict: "bout_id", ignoreDuplicates: true }).select("bout_id")).data || [];
             const go = new Set(fresh.map((r) => r.bout_id));
             for (const b of up.filter((x) => go.has(x.id))) for (const [u, k, ou, ok] of [[b.red_user, b.red_fid, b.blue_user, b.blue_fid], [b.blue_user, b.blue_fid, b.red_user, b.red_fid]]) {
-              if (P[u]?.is_bot) continue;
+              if (P[u]?.is_bot || P[u]?.coach_off) continue;
               const F = S[u]?.[k], O = S[ou]?.[ok];
               if (!F || !O) continue;
               const r = O.rec || [0, 0, 0, 0], plan = String(F.plan || "").trim();
@@ -930,7 +930,7 @@ var RunnerLib = (() => {
                 `Fight tomorrow night! ${nm(F)} meets ${nm(O)} from ${P[ou]?.gym || "another gym"} (${b.div}weight, Rookies). The card runs at about 10:45 PM Central tomorrow${b.venue?.name ? " at " + b.venue.name : ""}.`,
                 `Scouting: ${nm(O)} is ${r[0]}-${r[1]}-${r[2]} with ${r[3] || 0} KO${r[3] === 1 ? "" : "s"}, ${C.ht ? C.ht(60 + (O.hgt || 0)) : ""} tall. Click his name on your fighter's page to read his past fight reports.`,
                 starter ? `Your fighter is still on the starter plan. Even two extra lines help: a rest line ("if endurance_percent < 45 then 4/5/9") and a late push ("if score < 0 and round >= 9 then 7H/8/5"). Test them in Simbot first.` : `Last chance to tune his plan. Run it 100 times in Simbot against a few different styles to check it.`,
-                `Whatever plan is saved when the fights run is the one he uses. Good luck! (Automatic note; replies aren't read.)`
+                `Whatever plan is saved when the fights run is the one he uses. Good luck! (Automatic note; replies aren't read. Don't want these notes? Open this conversation and click "Turn off coach notes", or reply STOP.)`
               ].join("\n\n");
               const m = await sb.from("messages").insert({ sender: COACH_ID, recipient: u, body });
               if (m.error) log.push(`reminder ${b.id}: ${m.error.message}`);

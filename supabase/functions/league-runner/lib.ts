@@ -134,7 +134,7 @@ export async function handle(req: Request, client: any, C: any): Promise<Respons
     if (vac.error) log.push("vacate: " + vac.error.message); else vacated = (vac.data || []).length;
 
     // load gyms
-    const profs = await all(() => sb.from("profiles").select("id,gym,is_bot"));
+    const profs = await all(() => sb.from("profiles").select("id,gym,is_bot,coach_off"));
     const P: Record<string, any> = Object.fromEntries(profs.map((p) => [p.id, p]));
     const states = await all(() => sb.from("gym_state").select("user_id,data"));
     const S: Record<string, any> = Object.fromEntries(states.map((s) => [s.user_id, s.data || {}]));
@@ -165,7 +165,7 @@ export async function handle(req: Request, client: any, C: any): Promise<Respons
             tonight.push({ B, o, FA, FB });
             // the Corner Coach writes each manager a private note on what went wrong and what to try (owner, Nov 15, 2026)
             if (!B.bot_only) for (const [u, F, O, i] of [[B.red_user, FA, FB, 0], [B.blue_user, FB, FA, 1]] as any) {
-              if (P[u]?.is_bot || !P[COACH_ID]) continue;
+              if (P[u]?.is_bot || P[u]?.coach_off || !P[COACH_ID]) continue; // coach_off: manager turned the notes off (owner, Nov 20, 2026)
               try { const body = coachNote(C, B, o, i, F, O); if (body) { const m = await sb.from("messages").insert({ sender: COACH_ID, recipient: u, body }); if (m.error) log.push(`coach ${B.id}: ${m.error.message}`); } }
               catch (e) { log.push(`coach ${B.id}: ${(e as Error).message}`); }
             }
@@ -410,14 +410,14 @@ export async function handle(req: Request, client: any, C: any): Promise<Respons
           const fresh = (await sb.from("coach_reminders").upsert(up.map((b: any) => ({ bout_id: b.id })), { onConflict: "bout_id", ignoreDuplicates: true }).select("bout_id")).data || [];
           const go = new Set(fresh.map((r: any) => r.bout_id));
           for (const b of up.filter((x: any) => go.has(x.id))) for (const [u, k, ou, ok] of [[b.red_user, b.red_fid, b.blue_user, b.blue_fid], [b.blue_user, b.blue_fid, b.red_user, b.red_fid]]) {
-            if (P[u]?.is_bot) continue;
+            if (P[u]?.is_bot || P[u]?.coach_off) continue;
             const F = S[u]?.[k], O = S[ou]?.[ok]; if (!F || !O) continue;
             const r = O.rec || [0, 0, 0, 0], plan = String(F.plan || "").trim();
             const starter = !plan || plan === "6/6/8" || (F.planName || "Basic") === "Basic";
             const body = [`Fight tomorrow night! ${nm(F)} meets ${nm(O)} from ${P[ou]?.gym || "another gym"} (${b.div}weight, Rookies). The card runs at about 10:45 PM Central tomorrow${b.venue?.name ? " at " + b.venue.name : ""}.`,
               `Scouting: ${nm(O)} is ${r[0]}-${r[1]}-${r[2]} with ${r[3] || 0} KO${r[3] === 1 ? "" : "s"}, ${C.ht ? C.ht(60 + (O.hgt || 0)) : ""} tall. Click his name on your fighter's page to read his past fight reports.`,
               starter ? `Your fighter is still on the starter plan. Even two extra lines help: a rest line ("if endurance_percent < 45 then 4/5/9") and a late push ("if score < 0 and round >= 9 then 7H/8/5"). Test them in Simbot first.` : `Last chance to tune his plan. Run it 100 times in Simbot against a few different styles to check it.`,
-              `Whatever plan is saved when the fights run is the one he uses. Good luck! (Automatic note; replies aren't read.)`].join("\n\n");
+              `Whatever plan is saved when the fights run is the one he uses. Good luck! (Automatic note; replies aren't read. Don't want these notes? Open this conversation and click \"Turn off coach notes\", or reply STOP.)`].join("\n\n");
             const m = await sb.from("messages").insert({ sender: COACH_ID, recipient: u, body }); if (m.error) log.push(`reminder ${b.id}: ${m.error.message}`);
           }
         }

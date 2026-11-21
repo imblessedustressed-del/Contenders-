@@ -57,6 +57,6 @@ export function coachNote(C: any, B: any, o: any, i: number, F: any, O: any): st
 
   if (!tips.length) tips.push(won ? `Clean work. Keep the plan, and scout his next opponent's public reports before fight night.` : `No single big mistake. Test small changes in Simbot (run it 100 times) against the same style before his next fight.`);
   lines.push(...tips.slice(0, 4).map((t, k) => `${k + 1}. ${t}`));
-  lines.push(`Read the full report (with your private tactics and damage lines) from Recent Fight Cards. For more help: Help Pages > Fight Plan Strategy, or the "Ask your own AI" button on the fight plan page. (This is an automatic note; replies aren't read.)`);
+  lines.push(`Read the full report (with your private tactics and damage lines) from Recent Fight Cards. For more help: Help Pages > Fight Plan Strategy, or the "Ask your own AI" button on the fight plan page. (This is an automatic note; replies aren't read. Don't want these notes? Open this conversation and click \"Turn off coach notes\", or reply STOP.)`);
   return lines.join("\n\n").slice(0, 3500);
 }

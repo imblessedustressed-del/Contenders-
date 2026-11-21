@@ -2525,7 +2525,7 @@ function msgsHTML(arg){
     return`<p class="small"><a data-go="msgs">&larr; All conversations</a></p>
     <h1>${esc(gymOf(who))}</h1><p class="small mute">Private between you and <a data-go="gympub:${esc(who)}">${esc(gymOf(who))}</a>.</p>
     <div class="thread" id="thread">${thread.map(m=>`<div class="bub ${m.from===ME?'me':'them'}"><div>${bodyHTML(m.text)}</div><div class="bt">${m.from===ME?'You':esc(gymOf(m.from))} &middot; ${dt(m.at)}</div></div>`).join('')||'<p class="mute">No messages yet. Say hello.</p>'}</div>
-    ${gag?sanctionNote('gag'):`<div class="reply"><textarea id="dmBody" data-keep rows="3" placeholder="Write a reply..."></textarea><input type="hidden" id="dmTo" value="${esc(who)}"><button id="sendDm">Send</button><span class="small mute"> Ctrl+Enter to send</span></div>`}`;
+    ${who===COACH?coachPrefHTML():gag?sanctionNote('gag'):`<div class="reply"><textarea id="dmBody" data-keep rows="3" placeholder="Write a reply..."></textarea><input type="hidden" id="dmTo" value="${esc(who)}"><button id="sendDm">Send</button><span class="small mute"> Ctrl+Enter to send</span></div>`}`;
   }
   const conv={};ims.forEach(m=>{const o=m.from===ME?m.to:m.from;(conv[o]=conv[o]||[]).push(m)});
   const rows=Object.entries(conv).map(([o,L])=>{L.sort((x,y)=>y.at-x.at);return{o,last:L[0],unread:L.filter(m=>m.to===ME&&!m.read).length}}).sort((x,y)=>y.last.at-x.last.at);
@@ -2533,6 +2533,13 @@ function msgsHTML(arg){
   ${gag?sanctionNote('gag'):arg==='new'||!rows.length?(others.length?`<h2>New Message</h2><table class="grid"><tr><td>To:</td><td><select id="dmTo">${others.map(id=>`<option value="${esc(id)}">${esc(gymOf(id))}</option>`).join('')}</select></td></tr>
     <tr><td>Message:</td><td><textarea id="dmBody" data-keep rows="5"></textarea></td></tr></table><p><button id="sendDm">Send</button>${rows.length?' <a data-go="msgs">Cancel</a>':''}</p>`:'<p class="mute">No other managers have signed up yet.</p>'):`<p><button data-go="msgs:new">New message</button></p>`}
   ${rows.length?`<h2>Conversations</h2><div class="convos">${rows.map(r=>`<a class="convo${r.unread?' unread':''}" data-go="msgs:${esc(r.o)}"><span class="cn">${esc(gymOf(r.o))}${r.unread?` <span class="badge">${r.unread}</span>`:''}</span><span class="cw">${when(r.last.at)}</span><span class="cs">${r.last.from===ME?'You: ':''}${esc(r.last.text.replace(/\s+/g,' ').slice(0,90))}${r.last.text.length>90?'...':''}</span></a>`).join('')}</div>`:''}`;
+}
+/* Corner Coach notes can be turned off (owner, Nov 20, 2026); the setting lives in profiles.coach_off, read/set through RPC coach_pref */
+let coachOff=null,coachBusy=false,coachFor=null;
+function coachPrefHTML(){
+  if(coachFor!==ME){coachFor=ME;coachOff=null}
+  if(coachOff===null){if(!coachBusy&&SB){coachBusy=true;SB.rpc('coach_pref',{}).then(r=>{coachBusy=false;if(!r.error){coachOff=!!r.data;render()}})}return'<p class="small mute">Loading your coach settings...</p>'}
+  return`<div class="reply"><p><b>Corner Coach notes are ${coachOff?'OFF':'ON'}.</b> ${coachOff?'You won\'t get post-fight notes or fight-eve reminders.':'After each fight he sends tips from your fighter\'s report.'}</p><button data-coachpref="${coachOff?'on':'off'}">${coachOff?'Turn coach notes back on':'Turn off coach notes'}</button><p class="small mute">The Corner Coach is automatic, so replies here aren't read.</p></div>`;
 }
 async function markRead(){
   if(!SB||!ME||!view.startsWith('msgs:'))return;const who=view.slice(5);
@@ -3070,7 +3077,7 @@ function fundingHTML(){return`<h1>Contenders Funding</h1><p>Contenders is free t
 
 /* ---------- events ---------- */
 document.addEventListener('click',async e=>{
-  const t=e.target.closest('[data-go],[data-v],[data-dm],[data-graduate],[data-retire],[data-unretire-after],[data-activate],[data-descplain],[data-descblockall],button');if(!t)return;
+  const t=e.target.closest('[data-go],[data-v],[data-dm],[data-graduate],[data-retire],[data-unretire-after],[data-activate],[data-descplain],[data-descblockall],[data-coachpref],button');if(!t)return;
   if(t.closest('.gymDesc'))return; // nothing inside a manager's description can trigger site actions
   /* visitors without a gym: every sidebar link leads back to the home page (owner, Nov 12, 2026) */
   if(t.dataset.v){if(!ME&&t.dataset.v!=='login'&&t.dataset.v!=='simbot'&&t.dataset.v!=='lab'){$('#side').classList.remove('open');nav('home');return}nav(t.dataset.v);return}
@@ -3128,6 +3135,7 @@ document.addEventListener('click',async e=>{
     if(await safeWrite(()=>SB.from('profiles').update({gym:v}).eq('id',ME))){managers[ME]=Object.assign(managers[ME]||{},{gym:v});state.gymName=v;save();updateTop();alertBox('Gym name saved.')}}
   else if(t.id==='prevDesc'){$('#descPrev').innerHTML=gymDescBox($('#descIn').value.slice(0,5000),{preview:true});gdMarquees($('#descPrev'));return}
   else if(t.dataset.descplain){gymDescPlain[t.dataset.descplain]=!gymDescPlain[t.dataset.descplain];render();return}
+  else if(t.dataset.coachpref){if(!SB||!ME)return;t.disabled=true;const off=t.dataset.coachpref==='off';const r=await SB.rpc('coach_pref',{p_off:off});if(r.error){t.disabled=false;alertBox('Could not save that. Please try again.');return}coachOff=!!r.data;alertBox(coachOff?'Corner Coach notes turned off.':'Corner Coach notes turned back on.');render();return}
   else if(t.dataset.descblockall){try{localStorage.setItem('contenders_block_html',localStorage.getItem('contenders_block_html')==='1'?'0':'1')}catch(e){}render();return}
   else if(t.id==='saveDesc'){const v=$('#descIn').value.slice(0,5000),loc=$('#locIn').value.trim().slice(0,60);
     if(await safeWrite(()=>SB.from('profiles').update({description:v,location:loc}).eq('id',ME))){managers[ME]=Object.assign(managers[ME]||{},{desc:v,loc});alertBox('Description saved.')}}
