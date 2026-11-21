@@ -940,7 +940,7 @@ function condText(x,after){
 /* ================= SHARED DATA (Supabase: accounts, forums, messages) ================= */
 cleanSlate();
 const SB_URL='https://ojsphhzgzbxmnfcbitqb.supabase.co',SB_KEY='sb_publishable_SWO9WhiSkoVhflY5CmY08A_hlqCEJSi';
-const BUILD='1795301526';
+const BUILD='1795301662';
 /* A tab left open on an older build must not save over newer data: if the site has been updated, reload before anything else is saved. */
 let staleBuild=false;
 async function checkBuild(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
@@ -3837,12 +3837,12 @@ function p4pHTML(arg){
   ${weeks.length>1?`<p class="small">Earlier weeks: ${weeks.slice(0,12).map(w=>w===wk?`<b>${fmt(w)}</b>`:`<a data-go="p4p:${w}">${fmt(w)}</a>`).join(' &middot; ')}</p>`:''}
   ${rows?`<table class="plain p4p"><tr><th>#</th><th></th><th>Fighter</th><th>Division</th><th>Record</th><th>Rating</th><th>Points</th></tr>${rows}</table>`:'<p>No fighter qualifies yet. Check back after the next fight night.</p>'}
   <h2>How the list is made</h2>
-  <p class="small">The list is updated every Sunday morning from the last 90 days of Contenders fights (Rookies and Bare Knuckles fights don't count). To be ranked, a fighter needs at least two fights, at least one win, and a fight in the last three weeks. Points:</p>
+  <p class="small">The list is updated every Sunday morning from the last 90 days of Contenders fights (Rookies and Bare Knuckles fights don't count). To be ranked, a fighter needs at least one win and a fight in the last three weeks, and no weight class can have more than two fighters on the list. Points:</p>
   <ul class="small"><li><b>Win:</b> 3 points, plus the beaten man's rating going into the fight, plus 1 for a stoppage and 5 for a title fight. Beating good fighters counts most.</li>
   <li><b>Draw:</b> 1 point, plus half the other man's rating.</li>
   <li><b>Loss:</b> minus 3, and more if he lost to a lower-rated man.</li>
   <li><b>Standing:</b> plus twice his current rating, his status and his winning streak.</li></ul>
-  <p class="small">Ties go to the higher rating, then the better win percentage, then the more recent fight.</p>`}
+  <p class="small">Ties go to the higher rating, then the better win percentage, then more knockouts, then the more recent fight.</p>`}
 function champsHTML(arg){const reg=arg==='bk'?'bk':'',P=reg?'BK ':'';
   return`<h1>${reg?'Bare Knuckles ':''}Champions</h1><p class="small">Region: ${reg?'<a data-go="champs">Contenders</a> | <b>Bare Knuckles</b>':'<b>Contenders</b> | <a data-go="champs:bk">Bare Knuckles</a>'}</p><table class="grid"><tr><th>Division</th>${BELTS.map(b=>`<th>${b}</th>`).join('')}</tr>
   ${(()=>{const m=currentChamps();return DIVS.map(([d])=>`<tr><td>${d}weight</td>${BELTS.map(b=>{const c=m[P+d]&&m[P+d][b];return`<td>${c?`<a data-go="opub:${c.uid}:${encN(c.fid)}">${esc(fName(c.uid,c.fid))}</a><br><span class="small">${esc(gymOf(c.uid))}</span>${champRetired(c)?`<br><span class="small cr">${RETIRED_CHAMP_NOTE}</span>`:''}`:'<span class="mute">vacant</span>'}</td>`}).join('')}</tr>`).join('')})()}</table>
