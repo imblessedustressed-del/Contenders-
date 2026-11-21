@@ -44,7 +44,7 @@ var RunnerLib = (() => {
       delete R.mgr;
       delete R.dmg;
     });
-    f.S = f.S.map((x) => ({ n: x.n, F: { name: x.F.name, nick: x.F.nick, home: x.F.home, hgt: x.F.hgt } }));
+    f.S = f.S.map((x) => ({ n: x.n, F: { name: x.F.name, nick: x.F.nick, home: x.F.home, hgt: x.F.hgt, fightW: x.F.fightW } }));
     const after = [structuredClone(FA), structuredClone(FB)];
     [0, 1].forEach((i) => {
       const op = i ? FA : FB, opGym = i ? red.gym : blue.gym;

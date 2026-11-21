@@ -18,7 +18,7 @@ export function fightOne(C: any, B: any, red: any, blue: any) {
   // private to each manager: his tactics line at the start of each round and his damage line at the end (bout_private)
   const mgr = [0, 1].map((i) => f.rounds.map((R: any) => ({ pre: (R.mgr || [])[i] || "", post: (R.dmg || [])[i] || null })));
   f.rounds.forEach((R: any) => { delete R.mgr; delete R.dmg; });
-  f.S = f.S.map((x: any) => ({ n: x.n, F: { name: x.F.name, nick: x.F.nick, home: x.F.home, hgt: x.F.hgt } }));
+  f.S = f.S.map((x: any) => ({ n: x.n, F: { name: x.F.name, nick: x.F.nick, home: x.F.home, hgt: x.F.hgt, fightW: x.F.fightW } })); // fightW = real weigh-in weight for the report intro
   const after = [structuredClone(FA), structuredClone(FB)];
   [0, 1].forEach((i) => {
     const op = i ? FA : FB, opGym = i ? red.gym : blue.gym;
