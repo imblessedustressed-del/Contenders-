@@ -1,4 +1,3 @@
--- Contenders Hall of Fame (Nov 21, 2026). Run once in the Supabase SQL editor.
 create table if not exists public.hall_of_fame (
   id bigserial primary key, kind text not null check (kind in ('fighter','gym')), wing text not null default '',
   class_month date not null, inducted_at timestamptz not null default now(),
@@ -11,7 +10,6 @@ drop policy if exists "hof readable" on public.hall_of_fame;
 create policy "hof readable" on public.hall_of_fame for select using (true);
 grant select on public.hall_of_fame to anon, authenticated;
 
--- every Contenders / Bare Knuckles fighter (active and retired), career numbers and Hall of Fame points
 create or replace function private.hof_fighters()
 returns table (user_id uuid, fid text, wing text, active boolean, name text, nick text, gym text, div text, w int, l int, d int, ko int,
   title_wins int, peak int, p4p_weeks int, p4p_top int, earn bigint, best_bout bigint, fights int, retired_on text, points numeric)
@@ -42,7 +40,6 @@ language sql stable security definer set search_path = public, private as $$
   where coalesce(f.v->>'region','') in ('','bk') and f.v ? 'rec' and pr.id::text not like '%0000000000d0'
 $$;
 
--- every gym: totals over all its fighters ever, titles, champions, P4P weeks, Hall of Famers
 create or replace function private.hof_gyms()
 returns table (user_id uuid, gym text, w int, l int, d int, ko int, title_wins int, champions int, p4p_weeks int, famers int, earn bigint, age_days int, points numeric)
 language sql stable security definer set search_path = public, private as $$
@@ -57,7 +54,6 @@ language sql stable security definer set search_path = public, private as $$
   from g join profiles pr on pr.id = g.user_id left join h on h.user_id = g.user_id
 $$;
 
--- public watch lists (public fields only)
 create or replace function public.hof_watch()
 returns jsonb language sql stable security definer set search_path = public, private as $$
   select jsonb_build_object(
@@ -76,7 +72,6 @@ grant execute on function public.hof_watch() to anon, authenticated;
 revoke all on function private.hof_fighters() from public, anon, authenticated;
 revoke all on function private.hof_gyms() from public, anon, authenticated;
 
--- monthly induction: up to 3 retired fighters per wing (15+ fights, 120+ points) and 1 gym (180+ days old, 250+ points)
 create or replace function private.hof_induct(p_month date default date_trunc('month', now() at time zone 'America/Chicago')::date)
 returns int language plpgsql security definer set search_path = public, private as $$
 declare n int := 0; t bigint; body text := ''; r record;
