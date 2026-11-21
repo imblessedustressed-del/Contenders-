@@ -11,6 +11,9 @@ const l3cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0
 const l3norm=a=>{const l=Math.hypot(a[0],a[1],a[2])||1;return[a[0]/l,a[1]/l,a[2]/l]};
 const l3rgb=h=>{h=h.replace('#','');if(h.length===3)h=h.split('').map(c=>c+c).join('');return[parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)]};
 const L3LIGHT=l3norm([-.35,.9,-.45]),L3RIM=l3norm([.2,.25,1]),L3FOG=[10,9,20];
+/* Nov 21, 2026 (owner: "turn it where I can watch the 3D version"): the frame watchdog used to drop slow PCs to Classic for good;
+   reset everyone to 3D once, and the watchdog now only switches to light 3D. */
+try{if(!localStorage.getItem('contenders_simbot_gfx_v2')){localStorage.setItem('contenders_simbot_gfx','3d');localStorage.setItem('contenders_simbot_gfx_v2','1')}}catch(e){}
 function l3gfx(){try{return localStorage.getItem('contenders_simbot_gfx')||'3d'}catch(e){return'3d'}}
 const L3GFX_NAMES={'16bit':'Graphics: 16-Bit','3d':'Graphics: 3D',classic:'Graphics: Classic'};
 /* 16-bit mode (owner, Nov 14, 2026: a Super Nintendo era boxing look): the 2D arena drawn at 320x180 in three layers,

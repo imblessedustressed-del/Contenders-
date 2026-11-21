@@ -977,8 +977,7 @@ function labPlay(off){const L=labState();if(!L.fight)return;if(labAnim)labAnim.s
    so the page and the mouse stay responsive; the viewer can still pick any mode with the Graphics button */
 function labPerf(me,now){if(me.paused||document.hidden){me.pf=null;return}const p=me.pf||(me.pf={t:now,n:0});p.n++;
   if(now-p.t<3000)return;const fps=p.n*1000/(now-p.t);me.pf={t:now,n:0};if(fps>=22||me.at<1)return;
-  const g=l3gfx();if(g==='3d'&&!l3lite()){try{localStorage.setItem('contenders_simbot_lite','1')}catch(e){}LGL=null}
-  else if(g==='3d'||g==='16bit'){l3setGfx('classic');document.querySelectorAll('.labGfx').forEach(b=>b.textContent=L3GFX_NAMES[l3gfx()])}}
+  const g=l3gfx();if(g==='3d'&&!l3lite()){try{localStorage.setItem('contenders_simbot_lite','1')}catch(e){}LGL=null}}
 function labToggleSnd(){labSndSet(!labSndOn());document.querySelectorAll('.labSnd').forEach(b=>b.textContent=labSndOn()?'🔊 Sound On':'🔇 Sound Off');if(labSndOn()&&labAnim&&!labAnim.paused){labSndCtx();labBedStart()}}
 function labToggleGfx(t){l3setGfx(l3nextGfx());document.querySelectorAll('.labGfx').forEach(b=>b.textContent=L3GFX_NAMES[l3gfx()]);if(!labAnim)labDraw(1e9)}
 function labTick(b){const el=$('#labTick');if(!el||!b.txt)return;const p=document.createElement('p');
