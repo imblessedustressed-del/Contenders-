@@ -135,7 +135,7 @@ const K_RATING=12;
 /* Simulator update 2 (owner-approved Nov 12, 2026): balanced so every style has a chance (engine tests: each type wins about 36-45%
    against the others, the rest draws); heavyweights capped at 6'9" and 280 lb ("Tyson Fury rule"); WeBL's heavyweight edges replaced. */
 const GX={pow:1.02,agl:1.02,jab:1.08,fat:.9,chin:1.1,ip:.85,rec:.02,hurt:.03};
-const BAL={flashEnd:.6,flashKO:3.8,bkTieDmg:.02,tcStart:.35,tcFloor:.3,refEnd:.25,refLand:8,refRounds:2,counterDiv:6,counterStr:0,counterAgg:.8,counterFloor:.5,alloutGive:2,alloutTake:2.75,kpMul:3.75,wtPct:10,giantPer10:.5,smallMan:false,hvSpd:.45,hvClinchBase:-.5,hvClinchAggLoss:.4,hvCounterAgg:.94,hvInsideBase:2.25,hvRingBase:1.25,ringBase:1.75,ringFat:.4,clinchBase:.5,clinchAggLoss:.2,bkClinchBase:.75,bkClinchAggLoss:.2,insideBase:1,tieDmg:.015};
+const BAL={flashEnd:.6,flashKO:6,bkTieDmg:.02,tcStart:.35,tcFloor:.3,refEnd:.25,refLand:8,refRounds:2,counterDiv:6,counterStr:0,counterAgg:.8,counterFloor:.5,alloutGive:2,alloutTake:2.75,kpMul:3.75,wtPct:10,giantPer10:.5,smallMan:false,hvSpd:.45,hvClinchBase:-.5,hvClinchAggLoss:.4,hvCounterAgg:.94,hvInsideBase:2.25,hvRingBase:1.25,ringBase:1.75,ringFat:.4,clinchBase:.5,clinchAggLoss:.2,bkClinchBase:.75,bkClinchAggLoss:.2,insideBase:1,tieDmg:.015};
 
 function newSev(){const r=rand();return r<2/3?1:r<8/9?2:r<26/27?3:4}
 /* nose and mouth injuries follow real ringside numbers (owner, Nov 17, 2026: "use real boxing statistics"): most are a bloody nose or a
