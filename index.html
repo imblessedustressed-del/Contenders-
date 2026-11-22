@@ -983,7 +983,7 @@ function condText(x,after){
 /* ================= SHARED DATA (Supabase: accounts, forums, messages) ================= */
 cleanSlate();
 const SB_URL='https://ojsphhzgzbxmnfcbitqb.supabase.co',SB_KEY='sb_publishable_SWO9WhiSkoVhflY5CmY08A_hlqCEJSi';
-const BUILD='1795303819';
+const BUILD='1795316579';
 /* A tab left open on an older build must not save over newer data: if the site has been updated, reload before anything else is saved. */
 let staleBuild=false;
 async function checkBuild(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
@@ -3447,6 +3447,9 @@ function descHTML(){if(!ME)return`<h1>Description</h1>${needLogin('describe your
 /* ---------- Fighter editor ---------- */
 function cornerHTML(side){
   const F=state.draft||(state.draft=newDraft()),left=POOL-used(F);
+  /* owner, Nov 21, 2026: a new fighter goes in the lightest division he can make (his dry-out weight under the limit); Cruiser/Heavy gap: over 200 = Heavy.
+     A manual pick sticks until his weight changes. */
+  {const mw=minWeight(F);if(F.divMw!==mw){F.div=(DIVS.find(([d,l])=>mw<=l)||DIVS[DIVS.length-1])[0];F.divMw=mw}}
   const opt=(arr,v)=>arr.map(o=>{const[val,lab]=Array.isArray(o)?o:[o,o];return`<option value="${val}"${String(val)===String(v)?' selected':''}>${lab}</option>`}).join('');
   const statCell=k=>`<td><input class="num" data-st="${k}" value="${F[k]}" inputmode="numeric"> <button class="pm" data-s="${k}" data-d="1">+</button><button class="pm" data-s="${k}" data-d="-1">-</button></td>`;
   const kpNote=`<br><span class="small mute">KO Punch Bonus needs 3 Strength per point: with ${F.str} Strength he can have up to ${Math.floor(F.str/3)} KP.</span>`;
@@ -3466,7 +3469,7 @@ function cornerHTML(side){
     <tr><td>Height:</td><td><input class="num" data-st="hgt" value="${F.hgt}" inputmode="numeric"> <button class="pm" data-s="hgt" data-d="1">+</button><button class="pm" data-s="hgt" data-d="-1">-</button> ${Math.floor(HT(F)/12)}'${HT(F)%12}"</td>
         <td>Metric Height:</td><td>${cm(HT(F))} centimeters</td></tr>
     <tr><td>Weight:</td><td>${natWeight(F)} pounds (${Math.round(natWeight(F)*.4536)} kg)</td><td>Minimum Weight:</td><td>${minWeight(F)} pounds</td></tr>
-    <tr><td>Weight Division:</td><td colspan="3"><select data-f="div">${DIVS.map(([d,l])=>`<option value="${d}"${d===divOf(F)?' selected':''}>${d} (${l<1000?l:'no limit'})</option>`).join('')}</select>${(()=>{const wi=weighIn(F,divOf(F));return wi.endMul<1?` <span class="cr small">He'd have to sweat down to make weight and start fights with only ${Math.round(wi.endMul*100)}% of his endurance. Try a lighter build, less height, or a heavier division.</span>`:''})()}</td></tr>
+    <tr><td>Weight Division:</td><td colspan="3"><select data-f="div">${DIVS.map(([d,l])=>`<option value="${d}"${d===divOf(F)?' selected':''}>${d} (${l<1000?l:'no limit'})</option>`).join('')}</select>${(()=>{const wi=weighIn(F,divOf(F));return wi.endMul<1?` <span class="cr small">He'd have to sweat down to make weight and start fights with only ${Math.round(wi.endMul*100)}% of his endurance. Try a lighter build, less height, or a heavier division.</span>`:(()=>{const best=(DIVS.find(([d,l])=>minWeight(F)<=l)||DIVS[DIVS.length-1])[0];return best!==divOf(F)?` <span class="small mute">He can make ${best}weight. In a heavier division he gives away weight to bigger men.</span>`:` <span class="small mute">The lightest division he can make (picked automatically).</span>`})()})()}</td></tr>
     <tr><td>First Fight Plan:</td><td colspan="3">${(()=>{const pk=firstPick(F),sug=firstType(F);return`<select data-f="fp">${PRESETS[F.planName]?`<option value="pre"${pk==='pre'?' selected':''}>${esc(F.planName)} template plan</option>`:''}${Object.keys(FIRST_PLANS).map(k=>`<option value="${k}"${pk===k?' selected':''}>${k}${k===sug?' (fits his numbers)':''}</option>`).join('')}</select> <span class="small">${pk==='pre'?'The plan that comes with this template.':esc(FIRST_PLANS[pk].line)}</span><br><span class="small mute">A complete starter plan with a note on every line explaining it. It's his own copy: change it or write your own any time on the <a data-go="plans">Fight Plans</a> page.</span>`})()}</td></tr>
     <tr><td>Total:</td><td colspan="3"><b>${used(F)}</b> <span class="cr small">${left===0?'':`(Must equal ${POOL} before fighting. ${left>0?left+' left':(-left)+' too many'}.)`}</span>${kpNote}</td></tr>
   </table>
@@ -4506,7 +4509,7 @@ document.addEventListener('click',async e=>{
     const slot='f'+Date.now().toString(36);ROSTER();
     ensurePlans();{const pk=firstPick(D);if(pk!=='pre'){const fn=D.name.trim().split(/\s+/)[0].slice(0,20);let nm=`${pk} - ${fn}`,i=2;while(state.plans[nm]!=null)nm=`${pk} - ${fn} ${i++}`;D.plan=FIRST_PLANS[pk].plan;D.planName=nm}delete D.fp}
     if(state.plans[D.planName]==null)state.plans[D.planName]=D.plan;
-    state.roster.push(slot);state[slot]={...JSON.parse(JSON.stringify(D)),div:divOf(D),rec:[0,0,0,0],hist:[],locked:true,rating:0,status:0,train:'str',train2:'cnd',streak:0,ip:0};state.draft=null;save();nav('rec:'+slot)}
+    state.roster.push(slot);delete D.divMw;state[slot]={...JSON.parse(JSON.stringify(D)),div:divOf(D),rec:[0,0,0,0],hist:[],locked:true,rating:0,status:0,train:'str',train2:'cnd',streak:0,ip:0};state.draft=null;save();nav('rec:'+slot)}
   else if(t.dataset.graduate){const s0=t.dataset.graduate,F=FTR(s0);if(!F||!SB)return;
     if(myBout(s0))return alertBox(`${F.name} has a rookie bout booked. Move him up after that fight.`);
     if(!window.confirm(`Move ${F.name} up to the Contenders region? He keeps his abilities, record and rating, and from now on fights Contenders fighters. This can't be undone.`))return;
@@ -4626,7 +4629,7 @@ document.addEventListener('change',e=>{
   const tb=el.closest('[data-side]');if(!tb)return;const F=tb.dataset.side==='D'?state.draft:FTR(tb.dataset.side);if(!F)return;
   if(el.dataset.f==='plan'){F.plan=el.value;save();render();return}
   if(el.dataset.st){const k=el.dataset.st;F[k]=clamp(parseInt(el.value)||0,MINS[k],k==='hgt'?21:MAX);if(k==='kp')F.kp=Math.min(F.kp,Math.floor(F.str/3));if(k==='str')F.kp=Math.min(F.kp,Math.floor(F.str/3));save();render();return}
-  if(el.dataset.f){const f=el.dataset.f;F[f]=f==='cut'?+el.value:el.value;save();if(f==='cut'||f==='build'||f==='div'||f==='region'||f==='fp')render();return}
+  if(el.dataset.f){const f=el.dataset.f;F[f]=f==='cut'?+el.value:el.value;if(f==='div')F.divMw=minWeight(F);save();if(f==='cut'||f==='build'||f==='div'||f==='region'||f==='fp')render();return}
   if(el.dataset.p){const p=F.plan[+el.dataset.p],k=el.dataset.k;p[k]=(k==='style'||k==='tgt')?el.value:+el.value;save();if(k!=='style'&&k!=='tgt')render()}
 });
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)&&e.target&&e.target.id==='dmBody'){const b=$('#sendDm');if(b)b.click()}});
