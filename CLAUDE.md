@@ -183,6 +183,9 @@ Starting the week of Nov 16, Contenders moves away from WeBL and makes its own w
 ## Weight formula (owner, Nov 12, 2026)
 Keep our own formula; don't try to match WeBL's ("we're going to make it kind of our own").
 
+## League week (owner, Nov 22, 2026: "we are on week two or three of the official start")
+`leagueWeek()` in shell.html (Fighter Rankings "after Week N"): Week 1 = Monday Nov 9, 2026, a new week every Monday, Central time (Nov 22 = Week 2, Nov 23 = Week 3). It used to count fight nights (7 a week), which showed Week 7.
+
 ## Visitors (owner, Nov 12, 2026)
 Someone not logged in (no gym) who clicks any sidebar link is sent back to the home page. The home page buttons (Sign Up, Enter Your Gym, Try it Out) still work.
 
