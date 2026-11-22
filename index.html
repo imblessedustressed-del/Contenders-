@@ -983,7 +983,7 @@ function condText(x,after){
 /* ================= SHARED DATA (Supabase: accounts, forums, messages) ================= */
 cleanSlate();
 const SB_URL='https://ojsphhzgzbxmnfcbitqb.supabase.co',SB_KEY='sb_publishable_SWO9WhiSkoVhflY5CmY08A_hlqCEJSi';
-const BUILD='1795356167';
+const BUILD='1795356445';
 /* A tab left open on an older build must not save over newer data: if the site has been updated, reload before anything else is saved. */
 let staleBuild=false;
 async function checkBuild(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
@@ -3910,7 +3910,7 @@ function hofHTML(arg){
   <h2>How the Hall works</h2>
   <ul class="small"><li><b>Induction day:</b> the 1st of every month. Each class takes up to three retired fighters from Contenders and three from Bare Knuckles, plus one gym. Rookies don't count.</li>
   <li><b>Fighter points:</b> 1 per win, half a point per knockout, minus half a point per loss, 12 per title fight won, 3 per point of his highest status, 2 per week on the Pound for Pound list (4 more for every week at #1), and 1 per $50,000 earned (up to 20).</li>
-  <li><b>Gym points:</b> 1 per 10 wins (up to 50), 10 per title fight won, 15 per world champion it produced, 25 per Hall of Fame fighter, 1 per Pound for Pound week, and a bonus for a winning record. Contenders and Bare Knuckles gyms have separate Top 10s; each counts only that region's fights.</li>
+  <li><b>Gym points:</b> 1 per 10 wins (up to 50), 10 per title fight won, 15 per world champion it produced, 25 per Hall of Fame fighter, 1 per Pound for Pound week, and a bonus for a winning record (it grows to full strength over the gym's first 50 decided fights). Contenders and Bare Knuckles gyms have separate Top 10s; each counts only that region's fights.</li>
   <li><b>First ballot:</b> a fighter inducted within 45 days of retiring.</li>
   <li>Click a plaque to watch his induction.</li></ul>`}
 function hofTop(tab,W){const gb=tab==='gymsbk',g=tab==='gyms'||gb,L=gb?(W.top_gyms_bk||[]):g?(W.top_gyms||[]):(W.top||[]).filter(r=>(r.wing||'')===tab);if(!L.length)return'';

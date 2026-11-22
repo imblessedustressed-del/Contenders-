@@ -50,7 +50,7 @@ language sql stable security definer set search_path = public, private as $$
   select g.user_id, g.gym, g.w::int, g.l::int, g.d::int, g.ko::int, g.tw::int, g.ch::int, g.pw::int, coalesce(h.n,0)::int, g.earn::bigint,
     (current_date - pr.created_at::date)::int,
     round(least(g.w,500)/10.0 + 10*g.tw + 15*g.ch + 25*coalesce(h.n,0) + g.pw
-      + greatest(0, 100.0*g.w/greatest(1,g.w+g.l) - 50)/2, 1)
+      + greatest(0, 100.0*g.w/greatest(1,g.w+g.l) - 50)/2 * least(1, (g.w+g.l)/50.0), 1)
   from g join profiles pr on pr.id = g.user_id left join h on h.user_id = g.user_id
 $$;
 
@@ -63,7 +63,7 @@ language sql stable security definer set search_path = public, private as $$
   h as (select hf.user_id, count(*) n from hall_of_fame hf where hf.kind='fighter' and coalesce(hf.wing,'') = p_wing group by 1)
   select g.user_id, g.gym, g.w::int, g.l::int, g.d::int, g.ko::int, g.tw::int, g.ch::int, coalesce(h.n,0)::int,
     round(least(g.w,500)/10.0 + 10*g.tw + 15*g.ch + 25*coalesce(h.n,0) + g.pw
-      + greatest(0, 100.0*g.w/greatest(1,g.w+g.l) - 50)/2, 1)
+      + greatest(0, 100.0*g.w/greatest(1,g.w+g.l) - 50)/2 * least(1, (g.w+g.l)/50.0), 1)
   from g left join h on h.user_id = g.user_id
 $$;
 revoke all on function private.hof_gyms_wing(text) from public, anon, authenticated;
