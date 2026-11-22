@@ -54,6 +54,20 @@ language sql stable security definer set search_path = public, private as $$
   from g join profiles pr on pr.id = g.user_id left join h on h.user_id = g.user_id
 $$;
 
+create or replace function private.hof_gyms_wing(p_wing text)
+returns table (user_id uuid, gym text, w int, l int, d int, ko int, title_wins int, champions int, famers int, points numeric)
+language sql stable security definer set search_path = public, private as $$
+  with f as (select * from private.hof_fighters() where wing = p_wing),
+  g as (select f.user_id, max(f.gym) gym, sum(f.w) w, sum(f.l) l, sum(f.d) d, sum(f.ko) ko, sum(f.title_wins) tw,
+          count(*) filter (where f.title_wins > 0) ch, sum(f.p4p_weeks) pw from f group by f.user_id),
+  h as (select hf.user_id, count(*) n from hall_of_fame hf where hf.kind='fighter' and coalesce(hf.wing,'') = p_wing group by 1)
+  select g.user_id, g.gym, g.w::int, g.l::int, g.d::int, g.ko::int, g.tw::int, g.ch::int, coalesce(h.n,0)::int,
+    round(least(g.w,500)/10.0 + 10*g.tw + 15*g.ch + 25*coalesce(h.n,0) + g.pw
+      + greatest(0, 100.0*g.w/greatest(1,g.w+g.l) - 50)/2, 1)
+  from g left join h on h.user_id = g.user_id
+$$;
+revoke all on function private.hof_gyms_wing(text) from public, anon, authenticated;
+
 create or replace function public.hof_watch()
 returns jsonb language sql stable security definer set search_path = public, private as $$
   select jsonb_build_object(
@@ -66,7 +80,9 @@ returns jsonb language sql stable security definer set search_path = public, pri
     'top', coalesce((select jsonb_agg(x order by x.wing, x.points desc) from (select * from (select user_id, fid, wing, active, name, nick, gym, div, w, l, d, ko, title_wins, peak, p4p_weeks, earn, points,
         row_number() over (partition by wing order by points desc, w desc) rk from private.hof_fighters() where w + l + d > 0) z where rk <= 10) x), '[]'),
     'top_gyms', coalesce((select jsonb_agg(x) from (select user_id, gym, w, l, d, ko, title_wins, champions, famers, points
-        from private.hof_gyms() where w + l + d > 0 order by points desc limit 10) x), '[]'))
+        from private.hof_gyms_wing('') where w + l + d > 0 order by points desc, w desc limit 10) x), '[]'),
+    'top_gyms_bk', coalesce((select jsonb_agg(x) from (select user_id, gym, w, l, d, ko, title_wins, champions, famers, points
+        from private.hof_gyms_wing('bk') where w + l + d > 0 order by points desc, w desc limit 10) x), '[]'))
 $$;
 grant execute on function public.hof_watch() to anon, authenticated;
 revoke all on function private.hof_fighters() from public, anon, authenticated;
