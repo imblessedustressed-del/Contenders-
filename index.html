@@ -983,7 +983,7 @@ function condText(x,after){
 /* ================= SHARED DATA (Supabase: accounts, forums, messages) ================= */
 cleanSlate();
 const SB_URL='https://ojsphhzgzbxmnfcbitqb.supabase.co',SB_KEY='sb_publishable_SWO9WhiSkoVhflY5CmY08A_hlqCEJSi';
-const BUILD='1795357627';
+const BUILD='1795375762';
 /* A tab left open on an older build must not save over newer data: if the site has been updated, reload before anything else is saved. */
 let staleBuild=false;
 async function checkBuild(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
@@ -3902,7 +3902,7 @@ function hofHTML(arg){
   return`<div class="hofHero"><div class="hofRays"></div><div class="hofT0">The Contenders</div><div class="hofT1">Hall of Fame</div><div class="hofT2">${counts}</div></div>
   <p class="sans hofTabs">${tabs}</p>
   ${plaques||`<div class="hofEmpty"><div class="hofPedTop">&#9733;</div><div class="hofPed"></div><p><b>The halls are empty, for now.</b><br>The first class will be inducted once fighters build careers worth remembering. Every plaque here will be earned in the ring.</p></div>`}
-  ${ME===OWNER&&watch.length?`<p class="sans"><button data-hofpreview="${tab}">&#127942; Preview a ceremony</button> <span class="small mute">(only you see this button; uses the top name below, nothing is saved)</span></p>`:''}
+  ${watch.length||hofMine(tab)?`<p class="sans">${watch.length?`<button data-hofpreview="${tab}">&#127942; Preview a ceremony</button> `:''}${hofMine(tab)?`<button data-hofpreview="${tab}" data-hofme="1">&#11088; See ${tab==='gyms'?'your gym':'your fighter'} inducted</button> `:''}<span class="small mute">A preview of what ${tab==='gyms'?'a gym':'a fighter'} can earn. Nothing is saved.</span></p>`:''}
   ${tab==='gyms'?hofTop('gyms',W)+hofTop('gymsbk',W):hofTop(tab,W)}
   <h2>On the Road to the Hall</h2>
   <p class="small">${tab==='gyms'?`The gyms with the most Hall of Fame points. A gym needs ${HOF_G} points and to be at least ${HOF_DAYS} days old.`:`Active ${tab==='bk'?'Bare Knuckles ':''}fighters with the most Hall of Fame points. A fighter is eligible once he retires with at least ${HOF_FIGHTS} fights and ${HOF_F} points.`}</p>
@@ -3913,6 +3913,12 @@ function hofHTML(arg){
   <li><b>Gym points:</b> 1 per 10 wins (up to 50), 10 per title fight won, 15 per world champion it produced, 25 per Hall of Fame fighter, 1 per Pound for Pound week, and a bonus for a winning record (it grows to full strength over the gym's first 50 decided fights). Contenders and Bare Knuckles gyms have separate Top 10s; each counts only that region's fights.</li>
   <li><b>First ballot:</b> a fighter inducted within 45 days of retiring.</li>
   <li>Click a plaque to watch his induction.</li></ul>`}
+function hofMine(tab){if(!ME||!cards[ME]||!managers[ME])return null;const gym=managers[ME].gym||'';
+  if(tab==='gyms'){const F=(cards[ME].fighters||[]).filter(f=>regOf(f)!=='rk');if(!F.length)return null;const t=[0,0,0,0];F.forEach(f=>(f.rec||[]).forEach((v,i)=>t[i]+=+v||0));
+    return{kind:'gym',user_id:ME,gym,w:t[0],l:t[1],d:t[2],ko:t[3],title_wins:0,champions:0}}
+  const F=(cards[ME].fighters||[]).filter(f=>f.active!==false&&(regOf(f)==='bk'?'bk':regOf(f)==='rk'?'rk':'')===tab).sort((a,b)=>((b.rec||[])[0]||0)-((a.rec||[])[0]||0)||(b.status||0)-(a.status||0))[0];
+  if(!F)return null;const r=F.rec||[0,0,0,0];
+  return{kind:'fighter',user_id:ME,fid:F.id,wing:tab,name:F.name,nick:F.nick||'',gym,div:F.div,w:r[0]||0,l:r[1]||0,d:r[2]||0,ko:r[3]||0,title_wins:0,peak:F.status||0,p4p_weeks:0,earn:F.earn||0}}
 function hofTop(tab,W){const gb=tab==='gymsbk',g=tab==='gyms'||gb,L=gb?(W.top_gyms_bk||[]):g?(W.top_gyms||[]):(W.top||[]).filter(r=>(r.wing||'')===tab);if(!L.length)return'';
   const row=(r,i)=>`<tr class="${i<3?'hofTop'+(i+1):''}"><td class="hofRk">${i+1}</td><td>${g?`<a data-go="gympub:${r.user_id}"><b>${esc(r.gym)}</b></a>`:`<a data-go="${r.active?'opub':'rpub'}:${r.user_id}:${encN(r.fid)}"><b>${esc(r.name)}</b></a>${r.nick?` <span class="mute">"${esc(r.nick)}"</span>`:''}${r.active?'':' <span class="hofRet">RETIRED</span>'}<br><span class="small">${esc(r.gym||'')} &middot; ${esc(r.div)}weight</span>`}</td>
   <td>${hofRec(r)}<br><span class="small mute">${r.ko} KO${r.title_wins?` &middot; ${r.title_wins} title win${r.title_wins>1?'s':''}`:''}${g?` &middot; ${r.champions} champs`:` &middot; status ${r.peak}`}</span></td><td class="hofPts">${(+r.points).toFixed(1)}</td></tr>`;
@@ -3938,7 +3944,7 @@ function hofCeremony(r){const old=document.getElementById('hofOv');if(old)old.re
   o.addEventListener('click',e=>{if(e.target.closest('[data-hofclose]')||e.target===o||e.target.closest('[data-go]')){o.remove();document.body.classList.remove('hofOpen')}});
 }
 document.addEventListener('click',e=>{const p=e.target.closest('[data-hof]');if(p&&window.HOF_SHOW){hofCeremony(HOF_SHOW[+p.dataset.hof]);return}
-  const v=e.target.closest('[data-hofpreview]');if(v&&HOF_W){const t=v.dataset.hofpreview,g=t==='gyms',r=g?HOF_W.gyms[0]:(HOF_W.fighters||[]).filter(x=>(x.wing||'')===t)[0];if(!r)return;
+  const v=e.target.closest('[data-hofpreview]');if(v&&HOF_W){const t=v.dataset.hofpreview,g=t==='gyms',r=v.dataset.hofme?hofMine(t):g?HOF_W.gyms[0]:(HOF_W.fighters||[]).filter(x=>(x.wing||'')===t)[0];if(!r)return;
     const m=new Date();m.setMonth(m.getMonth()+1,1);hofCeremony(Object.assign({},r,{kind:g?'gym':'fighter',preview:true,class_month:m.toISOString().slice(0,10)}))}});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){const o=document.getElementById('hofOv');if(o){o.remove();document.body.classList.remove('hofOpen')}}
   else if(e.key==='Enter'&&e.target.dataset&&e.target.dataset.hof!=null&&window.HOF_SHOW)hofCeremony(HOF_SHOW[+e.target.dataset.hof])});
