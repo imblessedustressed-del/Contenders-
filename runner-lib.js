@@ -68,6 +68,14 @@ var RunnerLib = (() => {
   var NICK = ["Brick House", "The Mechanic", "Quicksilver", "Sandman", "The Mailman", "Big Train", "Thunder", "The Undertaker", "Lockjaw", "Night Train", "The Bull", "Mojo", "Showtime", "Ice Water", "The Tailor", "Gravedigger", "Little Hands", "The Freight", "Rawhide", "Hammerhand", "Easy Money", "The Prospector", "Dynamo", "Sweet Feet", "Ironside", "Copperhead", "The Anvil", "Cyclone", "Tank", "Velvet", "", "", "", "", "", "", ""];
   var GYMS = { "b4": { "temper": 0, "towns": ["New Orleans, Louisiana", "Baton Rouge, Louisiana", "Lafayette, Louisiana", "Houston, Texas", "Mobile, Alabama", "Biloxi, Mississippi", "Kingston, Jamaica", "Havana, Cuba"], "short": "Bayou" }, "b5": { "temper": 1, "towns": ["Pittsburgh, Pennsylvania", "Youngstown, Ohio", "Buffalo, New York", "Erie, Pennsylvania", "Wheeling, West Virginia", "Gary, Indiana", "Glasgow, Scotland", "Cardiff, Wales"], "short": "Steel" }, "b6": { "temper": -1, "towns": ["Phoenix, Arizona", "Tucson, Arizona", "El Paso, Texas", "Albuquerque, New Mexico", "Hermosillo, Mexico", "Mexicali, Mexico", "Reno, Nevada", "Las Cruces, New Mexico"], "short": "Desert" }, "b7": { "temper": 0, "towns": ["Baltimore, Maryland", "Norfolk, Virginia", "Boston, Massachusetts", "Providence, Rhode Island", "Liverpool, England", "Dublin, Ireland", "Lagos, Nigeria", "San Juan, Puerto Rico"], "short": "Harbor" }, "b8": { "temper": 1, "towns": ["Detroit, Michigan", "Flint, Michigan", "Toledo, Ohio", "Akron, Ohio", "Milwaukee, Wisconsin", "Windsor, Ontario", "Sheffield, England", "Leeds, England"], "short": "Rust" }, "b9": { "temper": -1, "towns": ["San Diego, California", "Los Angeles, California", "Oxnard, California", "Tijuana, Mexico", "Ensenada, Mexico", "Honolulu, Hawaii", "Cebu, Philippines", "Auckland, New Zealand"], "short": "Pacific" }, "ba": { "temper": 0, "towns": ["San Antonio, Texas", "Dallas, Texas", "Fort Worth, Texas", "Corpus Christi, Texas", "Laredo, Texas", "Monterrey, Mexico", "Oklahoma City, Oklahoma", "Tulsa, Oklahoma"], "short": "Lone" }, "bb": { "temper": 1, "towns": ["Atlantic City, New Jersey", "Camden, New Jersey", "Trenton, New Jersey", "Philadelphia, Pennsylvania", "Wilmington, Delaware", "Bronx, New York", "Kingston, Jamaica", "Santo Domingo, Dominican Republic"], "short": "Atlantic" }, "r0": { "temper": 0, "towns": ["Tulsa, Oklahoma", "Wichita, Kansas", "Springfield, Missouri", "Fort Smith, Arkansas"], "short": "First Bell" }, "r1": { "temper": 1, "towns": ["Toledo, Ohio", "Flint, Michigan", "Gary, Indiana", "Erie, Pennsylvania"], "short": "Riverbend" }, "r2": { "temper": 0, "towns": ["Fresno, California", "Bakersfield, California", "Stockton, California", "Reno, Nevada"], "short": "Valley Starters" }, "r3": { "temper": -1, "towns": ["Savannah, Georgia", "Augusta, Georgia", "Macon, Georgia", "Columbia, South Carolina"], "short": "Sunrise" }, "r4": { "temper": 1, "towns": ["Worcester, Massachusetts", "Providence, Rhode Island", "Hartford, Connecticut", "Lowell, Massachusetts"], "short": "Mill Town" }, "r5": { "temper": 0, "towns": ["El Paso, Texas", "Las Cruces, New Mexico", "Albuquerque, New Mexico", "Tucson, Arizona"], "short": "Border Line" }, "r6": { "temper": -1, "towns": ["Boise, Idaho", "Spokane, Washington", "Billings, Montana", "Salt Lake City, Utah"], "short": "High Country" }, "r7": { "temper": 0, "towns": ["Memphis, Tennessee", "Jackson, Mississippi", "Little Rock, Arkansas", "Shreveport, Louisiana"], "short": "Delta" }, "bc": { "temper": -1, "towns": ["Denver, Colorado", "Colorado Springs, Colorado", "Pueblo, Colorado", "Salt Lake City, Utah", "Albuquerque, New Mexico", "Cheyenne, Wyoming", "Boise, Idaho", "Mexico City, Mexico"], "short": "Mile High", "regions": [""] }, "bd": { "temper": 1, "towns": ["Minneapolis, Minnesota", "St. Paul, Minnesota", "Duluth, Minnesota", "Milwaukee, Wisconsin", "Madison, Wisconsin", "Fargo, North Dakota", "Des Moines, Iowa", "Winnipeg, Canada"], "short": "Twin Cities", "regions": [""] } };
   var TW = { "Slugger": { "w": [0.21, 0.03, 0.19, 0.15, 0.2, 0.22], "dh": 0, "train": ["str", "cnd"] }, "KO Puncher": { "w": [0.21, 0.05, 0.18, 0.17, 0.19, 0.2], "dh": 0, "train": ["str", "kp"] }, "Dancer": { "w": [0.15, 0.02, 0.23, 0.24, 0.16, 0.2], "dh": 1, "train": ["agl", "spd"] }, "Counterpuncher": { "w": [0.19, 0.03, 0.2, 0.17, 0.19, 0.22], "dh": -1, "train": ["spd", "agl"] }, "Clincher": { "w": [0.18, 0.02, 0.19, 0.16, 0.2, 0.25], "dh": 0, "train": ["cnd", "chn"] } };
+  Object.assign(TW, {
+    "Pro Slugger": { "w": [0.3, 0, 0.19, 0.19, 0.14, 0.18], "dh": 0, "train": ["str", "spd"] },
+    "Pro KO Puncher": { "w": [0.31, 0.03, 0.18, 0.18, 0.13, 0.17], "dh": 0, "train": ["str", "agl"] },
+    "Pro Dancer": { "w": [0.27, 0, 0.2, 0.21, 0.14, 0.18], "dh": 1, "train": ["agl", "str"] },
+    "Pro Counterpuncher": { "w": [0.28, 0, 0.21, 0.19, 0.14, 0.18], "dh": -1, "train": ["spd", "str"] },
+    "Pro Clincher": { "w": [0.23, 0, 0.19, 0.19, 0.15, 0.24], "dh": 0, "train": ["str", "cnd"] }
+  });
+  var PRO_TYPES = ["Pro Slugger", "Pro KO Puncher", "Pro Dancer", "Pro Counterpuncher", "Pro Clincher"];
   var REG_TYPES = ["Slugger", "KO Puncher", "Dancer", "Counterpuncher", "Clincher"];
   var BK_TYPES = ["BK Grinder", "BK Clincher", "BK Flasher"];
   var PER_DIV = 5;
@@ -82,6 +90,11 @@ var RunnerLib = (() => {
     "Dancer": { head: "# Dancer: stick, move and never stand still", lines: [[null, 5, "H", 4, 11, "ring"], ["round <= 3", 4, "H", 3, 13, "ring"], ["opponent = exhausted", 7, "H", 7, 6, ""], ["score < 0 and round >= 7", 6, "H", 5, 9, "ring"], [AHEAD, 2, "", 2, 16, "ring", true], ["endurance_percent < 45", 4, "", 3, 13, "ring", true]] },
     "Counterpuncher": { head: "# Counterpuncher: make him miss, make him pay", lines: [[null, 6, "", 6, 8, "counter"], ["score < 1", 7, "", 6, 7, "counter"], ["opponent <= tired", 6, "H", 6, 8, "counter"], [LATE, 7, "", 7, 6, ""], [AHEAD, 2, "", 2, 16, "", true], ["endurance_percent < 45", 4, "", 4, 12, "counter", true]] },
     "Clincher": { head: "# Clincher: tie him up and drown him late", lines: [[null, 5, "B", 5, 10, "clinch"], ["opponent <= tired", 7, "B", 6, 7, "inside"], ["opponent = exhausted", 7, "H", 8, 5, "inside"], [LATE, 8, "", 7, 5, "inside"], [AHEAD, 2, "", 2, 16, "clinch", true], ["endurance_percent < 40", 3, "", 3, 14, "clinch", true]] },
+    "Pro Slugger": { head: "# Slugger: walk him down, break the body, finish what you start", lines: [[null, 6, "B", 6, 8, "inside"], ["opponent <= tired", 7, "", 7, 6, "inside"], ["hisstuns > 0 or opponent = exhausted", 7, "", 8, 5, ""], ["endurance_percent < 40", 4, "", 4, 12, "clinch", true], ["mystuns > hisstuns", 3, "", 4, 13, "clinch", true]] },
+    "Pro KO Puncher": { head: "# KO Puncher: pressure first, the big shot comes", lines: [[null, 6, "B", 6, 8, "inside"], ["opponent <= tired", 7, "", 7, 6, "inside"], ["hisstuns > 0 or opponent = exhausted", 7, "H", 8, 5, ""], ["endurance_percent < 40", 4, "", 4, 12, "clinch", true], ["mystuns > hisstuns", 3, "", 4, 13, "clinch", true]] },
+    "Pro Dancer": { head: "# Dancer: move, pick him apart, then step on the gas", lines: [[null, 6, "", 5, 9, "ring"], ["round >= 4", 7, "", 6, 7, "ring"], ["hisstuns > 0 or opponent = exhausted", 7, "", 8, 5, ""], ["endurance_percent < 40", 4, "", 4, 12, "clinch", true], ["mystuns > hisstuns", 3, "", 4, 13, "clinch", true]] },
+    "Pro Counterpuncher": { head: "# Counterpuncher: crowd him, then make him pay", lines: [[null, 6, "", 6, 8, "inside"], ["opponent <= tired", 7, "", 7, 6, "counter"], ["hisstuns > 0 or opponent = exhausted", 7, "", 8, 5, ""], ["endurance_percent < 40", 4, "", 4, 12, "clinch", true], ["mystuns > hisstuns", 3, "", 4, 13, "clinch", true]] },
+    "Pro Clincher": { head: "# Clincher: lean, tie him up, drown him late", lines: [[null, 5, "B", 5, 10, "clinch"], ["opponent <= tired", 7, "", 6, 7, "inside"], ["hisstuns > 0 or opponent = exhausted", 7, "", 8, 5, ""], ["endurance_percent < 40", 4, "", 4, 12, "clinch", true], ["mystuns > hisstuns", 3, "", 4, 13, "clinch", true]] },
     "BK Grinder": { head: "# BK Grinder: win the endurance war, then open up", lines: [[null, 3, "B", 9, 8, "ropes"], ["round >= 6 and opponent <= tired", 3, "B", 10, 7, "ropes"], ["round >= 12 and opponent <= tired", 4, "B", 10, 6, "ropes"], ["round >= 18 and opponent = exhausted", 4, "", 11, 5, "ropes"], ["round = 25", 4, "H", 11, 5, "ropes"], ["endurance_percent < 35", 2, "", 4, 14, "clinch", true]] },
     "BK Clincher": { head: "# BK Clincher: lean on him for 25 rounds", lines: [[null, 4, "B", 8, 8, "clinch"], ["opponent <= tired", 4, "B", 9, 7, "clinch"], ["opponent = exhausted", 4, "B", 10, 6, "clinch"], ["round >= 20 and opponent = exhausted", 5, "B", 10, 5, "clinch"], ["round = 25", 5, "H", 10, 5, "clinch"], ["endurance_percent < 30", 2, "", 3, 15, "clinch", true]] },
     "BK Flasher": { head: "# BK Flasher: one big shot can end a long night", lines: [[null, 3, "", 8, 9, ""], ["round <= 2", 4, "H", 9, 7, ""], ["hisstuns > 0", 6, "H", 10, 4, ""], ["round >= 20 and opponent <= tired", 4, "H", 10, 6, ""], ["endurance_percent < 40", 2, "", 4, 14, "clinch", true]] }
@@ -94,11 +107,24 @@ var RunnerLib = (() => {
     const t = F.region === "bk" ? n.startsWith("BK ") ? n : "BK " + n : n;
     return T[t] ? t : null;
   }
-  function planFor(t, g, scout = 0) {
+  var PRO_RATING = 3;
+  function proLines(t, S) {
+    const m = S.lines[0], st = t === "Dancer" ? "" : m[5] === "ring" || m[5] === "counter" ? "" : m[5];
+    return [
+      ["hisstuns > 0 or opponent = exhausted", Math.min(m[1] + 1, 9), "", Math.min(m[3] + 3, 10), Math.max(m[4] - 3, 4), st],
+      ["mystuns > hisstuns", 3, "", 4, 13, "clinch", true]
+    ];
+  }
+  function planFor(t, g, scout = 0, pro = false) {
     const S = T[t];
     if (!S) return "6/6/8";
     const pc = g.p || 0;
-    const lines = pc ? [S.lines[0], [`round <= ${t.startsWith("BK ") ? 10 : 5}`, S.lines[0][1] - pc, S.lines[0][2], S.lines[0][3], S.lines[0][4] + pc, S.lines[0][5]], ...S.lines.slice(1)] : S.lines;
+    let lines = pc ? [S.lines[0], [`round <= ${t.startsWith("BK ") ? 10 : 5}`, S.lines[0][1] - pc, S.lines[0][2], S.lines[0][3], S.lines[0][4] + pc, S.lines[0][5]], ...S.lines.slice(1)] : S.lines;
+    if (pro && !t.startsWith("BK ") && !t.startsWith("Pro ")) {
+      const fx = lines.filter((l) => l[6]), nf = lines.filter((l) => !l[6]);
+      const pl = proLines(t, S);
+      lines = [...nf, pl[0], ...fx, pl[1]];
+    }
     const tune = g.a || g.d || pc ? ` (tuned ${g.a >= 0 ? "+" : ""}${g.a}/${g.d >= 0 ? "+" : ""}${g.d}${pc ? `, pace ${pc > 0 ? "+" : ""}${pc}` : ""})` : "";
     return [S.head + tune, ...lines.map(([c, A, tg, P, D, st, fixed]) => {
       let a = A, p = P, d = D;
@@ -157,7 +183,8 @@ var RunnerLib = (() => {
     const r = opp.rec || [0, 0, 0, 0], fights = r[0] + r[1] + r[2];
     const koRate = fights ? r[3] / fights : 0;
     const scout = fights >= 2 && koRate >= 0.5 ? 2 : fights >= 2 && koRate >= 0.3 ? 1 : 0;
-    return planFor(t, defaultGene(F, gymKey), scout);
+    const pro = !isRkKey(gymKey) && F.region !== "rk" && (opp.rating || 0) >= PRO_RATING;
+    return planFor(t, defaultGene(F, gymKey), scout, pro);
   }
   function shouldRetire(F) {
     const r = F.rec || [0, 0, 0, 0], n = r[0] + r[1] + r[2];
@@ -219,7 +246,7 @@ var RunnerLib = (() => {
     let best = null;
     const heavy = div === "Heavy", target = bk ? 204 : 210 + Math.floor(Math.random() * 66);
     for (let h = 60; h <= 81; h++) {
-      const cut = bk ? 1 : rnd([1, 2, 2, 3]);
+      const cut = bk || t.startsWith("Pro ") ? 1 : rnd([1, 2, 2, 3]);
       const st = bk ? bkStats(t, 70 - (h - 60) - cut) : regStats(t, h - 60, cut, total);
       if (st.spd < 1 || K.reduce((a, k) => a + st[k], 0) + (h - 60) + cut !== (bk ? 70 : total)) continue;
       for (const b of builds) {
@@ -247,6 +274,7 @@ var RunnerLib = (() => {
       home,
       div,
       ...bk ? { region: "bk" } : rk ? { region: "rk" } : {},
+      ...t.startsWith("Pro ") ? { pro: true } : {},
       bt: t,
       gene,
       plan: planFor(t, gene),
@@ -683,8 +711,9 @@ var RunnerLib = (() => {
           }
           for (const reg of isRkKey(key2) ? ["rk"] : GYMS[key2].regions || ["", "bk"]) for (let di = 0; di < C.DIVS.length; di++) {
             const [div, lim] = C.DIVS[di], prev = di ? C.DIVS[di - 1][1] : 0;
-            const mine = () => (d.roster || []).filter((k) => d[k] && d[k].div === div && regOf(d[k]) === reg);
-            for (const k of mine()) {
+            const every = () => (d.roster || []).filter((k) => d[k] && d[k].div === div && regOf(d[k]) === reg);
+            const mine = () => every().filter((k) => !d[k].pro);
+            for (const k of every()) {
               const F = d[k], why = busy.has(pk(u, k)) ? null : shouldRetire(F);
               if (!why) continue;
               d.roster = d.roster.filter((x) => x !== k);
@@ -826,6 +855,55 @@ var RunnerLib = (() => {
           log.push(`${P[u].gym} signed ${NF.name} (${total} pts) to face ${nm(h.F)}`);
           return x;
         };
+        const proGyms = Object.keys(S).filter((u) => P[u]?.is_bot && PUB[u] && /^b[4-9a-d]$/.test(gk(u)));
+        let proTurn = Math.floor(Math.random() * 100);
+        const signProFor = async (h, total) => {
+          if (!proGyms.length) return null;
+          const u = proGyms[proTurn++ % proGyms.length], key2 = gk(u), d = S[u], card = PUB[u];
+          const di = C.DIVS.findIndex((x2) => x2[0] === h.F.div);
+          if (di < 0) return null;
+          const t = rnd(PRO_TYPES), home = rnd(GYMS[key2].towns);
+          const NF = makeFighter(C, t, h.F.div, C.DIVS[di][1], di ? C.DIVS[di - 1][1] : 0, key2, taken, home, { a: 0, d: 0 }, false, total);
+          if (!NF) {
+            log.push(`could not build a ${total}-point pro for ${nm(h.F)}`);
+            return null;
+          }
+          const nk = "p" + Date.now().toString(36) + Math.floor(Math.random() * 1e4).toString(36);
+          d[nk] = NF;
+          d.roster = [...d.roster || [], nk];
+          card.fighters = [...card.fighters || [], {
+            id: nk,
+            region: null,
+            name: NF.name,
+            nick: NF.nick,
+            home,
+            div: NF.div,
+            hgt: NF.hgt,
+            w: C.natWeight ? C.natWeight(NF) : 0,
+            mw: C.minWeight(NF),
+            rec: [0, 0, 0, 0],
+            hist: [],
+            train: NF.train,
+            active: true,
+            rating: 0,
+            status: 0,
+            streak: 0,
+            titles: [],
+            earn: 0,
+            fans: 0,
+            ppv: 0
+          }];
+          const a1 = await sb.from("gym_state").update({ data: d }).eq("user_id", u), b1 = await sb.from("gym_public").update({ data: card }).eq("user_id", u);
+          if (a1.error || b1.error) {
+            log.push(`pro signing ${P[u].gym}: ${(a1.error || b1.error).message}`);
+            return null;
+          }
+          const x = { u, k: nk, F: NF, gym: P[u].gym, reg: "" };
+          allBotList.push(x);
+          signed++;
+          log.push(`${P[u].gym} signed ${NF.name} (${t}, ${total} pts) to face ${nm(h.F)}`);
+          return x;
+        };
         const AP = (F) => ["str", "kp", "spd", "agl", "chn", "cnd", "hgt", "cut"].reduce((t, k) => t + (+F[k] || 0), 0);
         const fair = (a, b) => Math.abs(AP(a.F) - AP(b.F)) <= 1;
         const gap = (a, b) => Math.abs((a.F.status || 0) - (b.F.status || 0)) * 100 + Math.abs((a.F.rating || 0) - (b.F.rating || 0));
@@ -843,7 +921,15 @@ var RunnerLib = (() => {
             return !!x && x.date >= date && !before(b);
           };
           const open2 = (b) => !busy.has(pk(b.u, b.k)) || before(b) || bumpable(b);
-          const cands = allBotList.filter((b) => b.F.div === h.F.div && b.reg === h.reg && open2(b) && fair(h, b));
+          let cands = allBotList.filter((b) => b.F.div === h.F.div && b.reg === h.reg && open2(b) && fair(h, b));
+          if (h.reg === "" && (h.F.rating || 0) >= PRO_RATING) {
+            const pros = cands.filter((b) => b.F.pro);
+            if (pros.length) cands = pros;
+            else {
+              const nb = await signProFor(h, AP(h.F));
+              if (nb) cands = [nb];
+            }
+          }
           if (!cands.length && h.reg === "rk") {
             const nb = await signRookieFor(h, AP(h.F));
             if (nb) cands.push(nb);

@@ -11,7 +11,7 @@
 // This file is bundled by build.sh into /runner-lib.js on the site; the deployed edge function (index.ts) downloads it
 // and the engine (/engine-core.js) on every run, so pushing the site updates the runner. No redeploy needed.
 import { fightOne } from "./fight.ts";
-import { BK_TYPES, GYMS, makeFighter, PER_DIV, REG_TYPES, rnd, scoutedPlan, shouldRetire, learn, typeOf, defaultGene, isRkKey } from "./botgen.ts";
+import { BK_TYPES, GYMS, makeFighter, PER_DIV, REG_TYPES, PRO_TYPES, PRO_RATING, rnd, scoutedPlan, shouldRetire, learn, typeOf, defaultGene, isRkKey } from "./botgen.ts";
 import { COACH_ID, coachNote } from "./coach.ts";
 import { challengeRelease, Release, resultRelease } from "./press.ts";
 
@@ -245,8 +245,10 @@ export async function handle(req: Request, client: any, C: any): Promise<Respons
         }
         for (const reg of (isRkKey(key) ? ["rk"] : (GYMS[key].regions || ["", "bk"]))) /* bc/bd (owner, Nov 17, 2026) are Contenders-only */ for (let di = 0; di < C.DIVS.length; di++) {
           const [div, lim] = C.DIVS[di], prev = di ? C.DIVS[di - 1][1] : 0;
-          const mine = () => (d.roster || []).filter((k: string) => d[k] && d[k].div === div && regOf(d[k]) === reg);
-          for (const k of mine()) {
+          // pro fighters (signed on demand for climbing managers) retire like everyone else but don't count toward the five
+          const every = () => (d.roster || []).filter((k: string) => d[k] && d[k].div === div && regOf(d[k]) === reg);
+          const mine = () => every().filter((k: string) => !d[k].pro);
+          for (const k of every()) {
             const F = d[k], why = busy.has(pk(u, k)) ? null : shouldRetire(F); if (!why) continue;
             d.roster = d.roster.filter((x: string) => x !== k); delete d[k];
             d.retired = [{ ...F, fid: k, div, retiredOn: realToday, why }, ...(d.retired || [])];
@@ -321,6 +323,28 @@ export async function handle(req: Request, client: any, C: any): Promise<Respons
         log.push(`${P[u].gym} signed ${NF.name} (${total} pts) to face ${nm(h.F)}`);
         return x;
       };
+      // Pro fighters (owner, Nov 23, 2026: "make the opponents a little bit harder", "harder as they climb"): a manager's
+      // Contenders fighter rated PRO_RATING or more meets the big gyms' pro fighters (efficient builds, smarter plans); if
+      // none is free and fair, a big gym signs one built to his size (same total ability points). Newcomers are unchanged.
+      const proGyms = Object.keys(S).filter((u) => P[u]?.is_bot && PUB[u] && /^b[4-9a-d]$/.test(gk(u)));
+      let proTurn = Math.floor(Math.random() * 100);
+      const signProFor = async (h: any, total: number) => {
+        if (!proGyms.length) return null;
+        const u = proGyms[proTurn++ % proGyms.length], key = gk(u), d = S[u], card = PUB[u];
+        const di = C.DIVS.findIndex((x: any) => x[0] === h.F.div); if (di < 0) return null;
+        const t = rnd(PRO_TYPES), home = rnd(GYMS[key].towns);
+        const NF = makeFighter(C, t, h.F.div, C.DIVS[di][1], di ? C.DIVS[di - 1][1] : 0, key, taken, home, { a: 0, d: 0 }, false, total);
+        if (!NF) { log.push(`could not build a ${total}-point pro for ${nm(h.F)}`); return null; }
+        const nk = "p" + Date.now().toString(36) + Math.floor(Math.random() * 1e4).toString(36);
+        d[nk] = NF; d.roster = [...(d.roster || []), nk];
+        card.fighters = [...(card.fighters || []), { id: nk, region: null, name: NF.name, nick: NF.nick, home, div: NF.div, hgt: NF.hgt, w: C.natWeight ? C.natWeight(NF) : 0, mw: C.minWeight(NF),
+          rec: [0, 0, 0, 0], hist: [], train: NF.train, active: true, rating: 0, status: 0, streak: 0, titles: [], earn: 0, fans: 0, ppv: 0 }];
+        const a1 = await sb.from("gym_state").update({ data: d }).eq("user_id", u), b1 = await sb.from("gym_public").update({ data: card }).eq("user_id", u);
+        if (a1.error || b1.error) { log.push(`pro signing ${P[u].gym}: ${(a1.error || b1.error)!.message}`); return null; }
+        const x = { u, k: nk, F: NF, gym: P[u].gym, reg: "" }; allBotList.push(x); signed++;
+        log.push(`${P[u].gym} signed ${NF.name} (${t}, ${total} pts) to face ${nm(h.F)}`);
+        return x;
+      };
       // Fair matchmaking (owner, Nov 12, 2026): never more than 1 ability point apart in total (STR+KP+SPD+AGL+CHN+CND+HGT+CUT);
       // then the same status, closest rating (18/18 meets 18/18, then 17/18, 16/18...), then status 1 apart, and so on.
       // Nobody fit? He waits for the next night's booking instead of getting an unfair fight.
@@ -341,7 +365,11 @@ export async function handle(req: Request, client: any, C: any): Promise<Respons
         const before = (b: any) => busy.has(pk(b.u, b.k)) && (lastDate.get(pk(b.u, b.k)) || "9999") <= addDays(date, -3);
         const bumpable = (b: any) => { const x = bump.get(pk(b.u, b.k)); return !!x && x.date >= date && !before(b); };
         const open2 = (b: any) => !busy.has(pk(b.u, b.k)) || before(b) || bumpable(b);
-        const cands = allBotList.filter((b) => b.F.div === h.F.div && b.reg === h.reg && open2(b) && fair(h, b));
+        let cands = allBotList.filter((b) => b.F.div === h.F.div && b.reg === h.reg && open2(b) && fair(h, b));
+        if (h.reg === "" && (h.F.rating || 0) >= PRO_RATING) {
+          const pros = cands.filter((b) => b.F.pro);
+          if (pros.length) cands = pros; else { const nb = await signProFor(h, AP(h.F)); if (nb) cands = [nb]; }
+        }
         // Rookies: rookie gyms don't fight each other, so their fighters don't grow. When a manager's rookie has outgrown them,
         // a rookie gym signs a new fighter built to his size (same total ability points) so he always has a fair opponent.
         if (!cands.length && h.reg === "rk") { const nb = await signRookieFor(h, AP(h.F)); if (nb) cands.push(nb); }
