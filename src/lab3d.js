@@ -85,18 +85,19 @@ function l3triTex(ctx,img,s0,s1,s2,d0,d1,d2){ctx.save();
 function l3body(F,o){const{p,x0,dirX,Lz,at,col}=o,ref=!!o.ref,z0=o.z0||0,fx=o.fx!=null?o.fx:dirX,fz=o.fz||0,sx=o.sx||0,sz=o.sz!=null?o.sz:1,fwd=[fx,0,fz];
   const bob=Math.sin(at*6.3+p.seed)*3*(1-p.fall)*(p.cel?0:1),lean=p.lean*14+p.hug*16+p.lunge*10-p.snap*10+p.tired*7-p.bodyHit*6,crouch=p.bodyHit*14+p.tired*6;
   const hip=[0,-112+bob*.5+crouch*.5],sh=[[14+lean,-186+bob+crouch],[-12+lean*.8,-189+bob+crouch]],head=[10+lean*1.15-p.snap*16,-214+bob+crouch+p.tired*4+p.bodyHit*8];
-  const fk=[26+p.lunge*8,-56],bk=[-26,-54],ff=[34+p.lunge*22,0],bf=[-38,0];
+  const kn=p.kneel||0,drop=kn*LAB_KNEEL_DROP,[fk,bk,ff,bf]=labKneelLegs(kn,[26+p.lunge*8,-56],[-26,-54],[34+p.lunge*22,0],[-38,0]);
   const guardR=[30+lean,-200+bob+crouch+p.guardDrop],guardL=[46+lean,-206+bob+crouch+p.guardDrop],hR=p.rear||guardR,hL=p.lead||guardL;
   const armR=labIK(sh[1],hR,36,34,p.rearUp),armL=labIK(sh[0],hL,36,34,p.leadUp);
   const fall=p.fall||0,th=-fall*1.42,cs=Math.cos(th),sn=Math.sin(th),wob=Math.sin(at*13)*(p.wob||0)*8;
-  const W=(q,z)=>{let x=q[0],y=q[1]+fall*6;const xr=x*cs-y*sn,yr=x*sn+y*cs;x=xr-fall*20;return[x0+wob+fx*x+sx*z,-yr,z0+fz*x+sz*z]};
+  const W=(q,z)=>{let x=q[0],y=q[1]+fall*6+drop;const xr=x*cs-y*sn,yr=x*sn+y*cs;x=xr-fall*20;return[x0+wob+fx*x+sx*z,-yr,z0+fz*x+sz*z]};
   const pe=h=>p.punch&&p.punch.hand===h?p.punch.e:0;
   const sideZ=s=>Lz*s;
   // legs and shoes
   [[bk,bf,-1,col.legD],[fk,ff,1,col.leg]].forEach(([k,ft,s,lc])=>{const z=sideZ(s*11),H=W([hip[0]+s*6,hip[1]],z),K=W(k,z),Fp=W(ft,z);
-    l3prism(F,H,K,13.5,10.5,lc,8);l3prism(F,K,l3add(Fp,[0,40,0]),10.5,9,lc,8);
+    const sd=l3norm(l3sub(K,Fp)),up=v=>l3add(Fp,l3mul(sd,v)); // boots follow the shin (a kneeling fighter's back shin lies on the mat)
+    l3prism(F,H,K,13.5,10.5,lc,8);l3prism(F,K,up(40),10.5,9,lc,8);
     // high boxing boots with a white top band
-    l3prism(F,l3add(Fp,[0,42,0]),l3add(Fp,[0,6,0]),9.5,9,col.boot||col.sock,8);l3prism(F,l3add(Fp,[0,44,0]),l3add(Fp,[0,38,0]),10,10,[240,240,240],8);
+    l3prism(F,up(42),up(6),9.5,9,col.boot||col.sock,8);l3prism(F,up(44),up(38),10,10,[240,240,240],8);
     const toe=W([ft[0]+13,ft[1]-3],z),heel=W([ft[0]-8,ft[1]-3],z);l3prism(F,heel,toe,9,8,col.boot||col.shoe,8)});
   // trunks / pants and torso
   const hp=W(hip,0),wb=W([hip[0]+lean*.3,hip[1]-14],0),tr=W([hip[0]+2,hip[1]+26],0),ch=W([lean*.9,-176+bob+crouch],0),nk=W([head[0]-3,head[1]+18],0);
@@ -318,20 +319,21 @@ function glBox(M,c,s,col,uvFn){const[x,y,z]=c,[w,h,d]=[s[0]/2,s[1]/2,s[2]/2],V=(
 function glBody(M,o){const{p,x0,dirX,Lz,at,K}=o,ref=!!o.ref,z0=o.z0||0,y0=o.y0||0,fx=o.fx!=null?o.fx:dirX,fz=o.fz||0,sx=o.sx||0,sz=o.sz!=null?o.sz:1;
   const bob=Math.sin(at*6.3+p.seed)*3*(1-p.fall)*(p.cel?0:1),lean=p.lean*14+p.hug*16+p.lunge*10-p.snap*10+p.tired*7-p.bodyHit*6,crouch=p.bodyHit*14+p.tired*6;
   const hip=[0,-112+bob*.5+crouch*.5],sh=[[14+lean,-186+bob+crouch],[-12+lean*.8,-189+bob+crouch]],head=[10+lean*1.15-p.snap*16,-214+bob+crouch+p.tired*4+p.bodyHit*8];
-  const fk=[26+p.lunge*8,-56],bk=[-26,-54],ff=[34+p.lunge*22,0],bf=[-38,0];
+  const kn=p.kneel||0,drop=kn*LAB_KNEEL_DROP,[fk,bk,ff,bf]=labKneelLegs(kn,[26+p.lunge*8,-56],[-26,-54],[34+p.lunge*22,0],[-38,0]);
   const guardR=[30+lean,-200+bob+crouch+p.guardDrop],guardL=[46+lean,-206+bob+crouch+p.guardDrop],hR=p.rear||guardR,hL=p.lead||guardL;
   const armR=labIK(sh[1],hR,36,34,p.rearUp),armL=labIK(sh[0],hL,36,34,p.leadUp);
   const fall=p.fall||0,th=-fall*1.42,cs=Math.cos(th),sn=Math.sin(th),wob=Math.sin(at*13)*(p.wob||0)*8;
-  const W=(q,z)=>{let x=q[0],y=q[1]+fall*6;const xr=x*cs-y*sn,yr=x*sn+y*cs;x=xr-fall*20;return[x0+wob+fx*x+sx*z,y0-yr,z0+fz*x+sz*z]};
+  const W=(q,z)=>{let x=q[0],y=q[1]+fall*6+drop;const xr=x*cs-y*sn,yr=x*sn+y*cs;x=xr-fall*20;return[x0+wob+fx*x+sx*z,y0-yr,z0+fz*x+sz*z]};
   const O=W([0,0],0),FW=l3norm(l3sub(W([1,0],0),O)),UP=l3norm(l3sub(W([0,-1],0),O)),SD=l3norm(l3sub(W([0,0],1),O));
   const pe=h=>p.punch&&p.punch.hand===h?p.punch.e:0,side=s=>Lz*s;
   const sec=(c,ru,rv,front,col)=>({c,u:SD,v:FW,ru,rv,front,col});
   // legs: thighs (inside the shorts), knees, calves, laced boots
   [[bk,bf,-1],[fk,ff,1]].forEach(([k,ft,s])=>{const z=side(s*11),H=W([hip[0]+s*5,hip[1]+6],z),Kn=W(k,z),Fp=W(ft,z),An=l3add(Fp,l3mul(UP,10));
     glTube(M,H,Kn,t=>14.5-3.5*t+2.5*Math.sin(Math.PI*Math.min(1,t*1.4)),K.skin,6,12);glEll(M,Kn,l3mul(SD,10),l3mul(UP,10),l3mul(FW,10.5),K.skin,10,6);
-    glTube(M,Kn,An,t=>10-3*t+2.2*Math.sin(Math.PI*Math.min(1,t*1.8)),K.skin,6,12);
-    const bt=l3add(Fp,l3mul(UP,48));glTube(M,bt,l3add(Fp,l3mul(UP,5)),t=>10.2-1.2*t,K.boot,4,12);glTube(M,l3add(bt,l3mul(UP,2)),l3add(bt,l3mul(UP,-6)),()=>10.8,K.bootBand,1,12);
-    for(let l=0;l<5;l++){const lc=l3add(l3add(Fp,l3mul(UP,12+l*7.5)),l3mul(FW,9.6));glBox(M,lc,[3,1.4,3].map((v,i)=>v),K.lace)}
+    const SU=kn?l3norm(l3sub(Kn,Fp)):UP; // boots follow the shin (a kneeling fighter's back shin lies on the mat)
+    glTube(M,Kn,kn?l3add(Fp,l3mul(SU,10)):An,t=>10-3*t+2.2*Math.sin(Math.PI*Math.min(1,t*1.8)),K.skin,6,12);
+    const bt=l3add(Fp,l3mul(SU,48));glTube(M,bt,l3add(Fp,l3mul(SU,5)),t=>10.2-1.2*t,K.boot,4,12);glTube(M,l3add(bt,l3mul(SU,2)),l3add(bt,l3mul(SU,-6)),()=>10.8,K.bootBand,1,12);
+    for(let l=0;l<5;l++){const lc=l3add(l3add(Fp,l3mul(SU,12+l*7.5)),l3mul(FW,9.6));glBox(M,lc,[3,1.4,3].map((v,i)=>v),K.lace)}
     glEll(M,l3add(l3add(Fp,l3mul(FW,6)),l3mul(UP,4)),l3mul(FW,16),l3mul(UP,6.5),l3mul(SD,8),K.boot,12,6,(y)=>y<-.55?K.sole:K.boot)});
   // shorts: a loft around the pelvis plus two short legs, waistband on top
   const HP=W(hip,0);{const S=[];[[-30,27,19],[-14,28.5,20],[2,27.5,19.5],[12,25.5,17.5],[19,25.8,17.8]].forEach(([dy,w,d],i)=>S.push(sec(l3add(HP,l3mul(UP,dy)),w,d,0,i>=3?K.band:K.trunk)));glLoft(M,S,K.trunk,16,true,false);
