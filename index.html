@@ -983,7 +983,7 @@ function condText(x,after){
 /* ================= SHARED DATA (Supabase: accounts, forums, messages) ================= */
 cleanSlate();
 const SB_URL='https://ojsphhzgzbxmnfcbitqb.supabase.co',SB_KEY='sb_publishable_SWO9WhiSkoVhflY5CmY08A_hlqCEJSi';
-const BUILD='1795529047';
+const BUILD='1795615254';
 /* A tab left open on an older build must not save over newer data: if the site has been updated, reload before anything else is saved. */
 let staleBuild=false;
 async function checkBuild(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
@@ -1229,6 +1229,11 @@ function labErr(){const L=labState();
     if(F.kp>Math.floor(F.str/3))return`${n} has too much KO Punch for his Strength (3 Strength per point).`;
     const e=parsePlan(F.plan).errors;if(e.length)return`${n}'s fight plan, line ${e[0].line}: ${e[0].msg}`}
   return''}
+/* unique fighter names (owner, Nov 25, 2026): no new fighter may take the name of any fighter in the league, active or retired
+   (the database trigger gym_state_protect drops one that gets through) */
+function fighterNameTaken(n){const k=String(n||'').trim().toLowerCase();if(!k)return false;const eq=x=>x&&String(x.name||'').trim().toLowerCase()===k;
+  if(ROSTER().some(s=>eq(state[s]))||(state.retired||[]).some(eq))return true;
+  for(const u in cards){const c=cards[u]||{};if((c.fighters||[]).some(eq)||(c.retired||[]).some(eq))return true}return false}
 function labFighters(){const L=labState(),bk=L.rounds==='bk';
   const rt=labLv().rating;return['A','B'].map(c=>({...L[c],name:L[c].name.trim()||(c==='A'?'Red Rocket':'Blue Thunder'),region:bk?'bk':undefined,rating:rt,status:rt}))}
 function labCornerHTML(c){const L=labState(),F=L[c],u=used(F),POOL=labPool();
@@ -4520,7 +4525,7 @@ document.addEventListener('click',async e=>{
   else if(t.dataset.copy){const F=state[side],i=+t.dataset.copy;for(let j=i+1;j<F.plan.length;j++)F.plan[j]={...F.plan[i]};save();render()}
   else if(t.dataset.rand){const F=FS(side);const ks=['str','spd','agl','chn','cnd'];ks.forEach(k=>F[k]=5);F.kp=0;F.cut=1+Math.floor(rand()*3);F.hgt=3+Math.floor(rand()*10);let left=POOL-used(F);
     while(left>0){const k=rand()<.08?'kp':pick(ks);if(k==='kp'&&F.kp>=Math.floor(F.str/3))continue;if(F[k]<22){F[k]++;left--}}save();render()}
-  else if(t.id==='createF'){const D=state.draft;if(!D.name.trim())return $('#cerr').textContent='Give him a name.';if(used(D)!==POOL)return $('#cerr').textContent=`He must total exactly ${POOL} points.`;if(D.kp>Math.floor(D.str/3))return $('#cerr').textContent='KO Punch Bonus needs 3 Strength per point.';
+  else if(t.id==='createF'){const D=state.draft;if(!D.name.trim())return $('#cerr').textContent='Give him a name.';if(fighterNameTaken(D.name))return $('#cerr').textContent=`There is already a fighter named ${D.name.trim()} in the league (active or retired). Pick another name.`;if(used(D)!==POOL)return $('#cerr').textContent=`He must total exactly ${POOL} points.`;if(D.kp>Math.floor(D.str/3))return $('#cerr').textContent='KO Punch Bonus needs 3 Strength per point.';
     const slot='f'+Date.now().toString(36);ROSTER();
     ensurePlans();{const pk=firstPick(D);if(pk!=='pre'){const fn=D.name.trim().split(/\s+/)[0].slice(0,20);let nm=`${pk} - ${fn}`,i=2;while(state.plans[nm]!=null)nm=`${pk} - ${fn} ${i++}`;D.plan=FIRST_PLANS[pk].plan;D.planName=nm}delete D.fp}
     if(state.plans[D.planName]==null)state.plans[D.planName]=D.plan;
