@@ -2650,7 +2650,8 @@ function hofHTML(arg){
   <li><b>First ballot:</b> a fighter inducted within 45 days of retiring.</li>
   <li>Click a plaque to watch his induction.</li></ul>`}
 function hofMine(tab){if(!ME||!cards[ME]||!managers[ME])return null;const gym=managers[ME].gym||'';
-  if(tab==='gyms'){const F=(cards[ME].fighters||[]).filter(f=>regOf(f)!=='rk');if(!F.length)return null;const t=[0,0,0,0];F.forEach(f=>(f.rec||[]).forEach((v,i)=>t[i]+=+v||0));
+  if(tab==='gyms'){const t=[0,0,0,0];(bouts||[]).forEach(b=>{if(b.status!=='done'||b.region||!b.summary)return;const sd=b.red_user===ME?0:b.blue_user===ME?1:-1;if(sd<0)return;const w=b.summary.w;
+      if(w==null)t[2]++;else if(+w===sd){t[0]++;if(!b.summary.decision)t[3]++}else t[1]++});if(!(t[0]+t[1]+t[2]))return null;
     return{kind:'gym',user_id:ME,gym,w:t[0],l:t[1],d:t[2],ko:t[3],title_wins:0,champions:0}}
   const F=(cards[ME].fighters||[]).filter(f=>f.active!==false&&(regOf(f)==='bk'?'bk':regOf(f)==='rk'?'rk':'')===tab).sort((a,b)=>((b.rec||[])[0]||0)-((a.rec||[])[0]||0)||(b.status||0)-(a.status||0))[0];
   if(!F)return null;const r=F.rec||[0,0,0,0];
