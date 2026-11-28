@@ -983,7 +983,7 @@ function condText(x,after){
 /* ================= SHARED DATA (Supabase: accounts, forums, messages) ================= */
 cleanSlate();
 const SB_URL='https://ojsphhzgzbxmnfcbitqb.supabase.co',SB_KEY='sb_publishable_SWO9WhiSkoVhflY5CmY08A_hlqCEJSi';
-const BUILD='1795698979';
+const BUILD='1795873447';
 /* A tab left open on an older build must not save over newer data: if the site has been updated, reload before anything else is saved. */
 let staleBuild=false;
 async function checkBuild(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
@@ -3963,9 +3963,10 @@ document.addEventListener('click',e=>{const p=e.target.closest('[data-hof]');if(
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){const o=document.getElementById('hofOv');if(o){o.remove();document.body.classList.remove('hofOpen')}}
   else if(e.key==='Enter'&&e.target.dataset&&e.target.dataset.hof!=null&&window.HOF_SHOW)hofCeremony(HOF_SHOW[+e.target.dataset.hof])});
 let P4P=null,P4P_LOADING=false;
-async function loadP4P(){if(P4P_LOADING)return;P4P_LOADING=true;try{const[A,B]=await Promise.all([SB.from('p4p').select('*').order('week',{ascending:false}).order('rank').limit(260),SB.from('p4p_bk').select('*').order('week',{ascending:false}).order('rank').limit(260)]);
-  P4P={'':{},bk:{}};[['',A],['bk',B]].forEach(([k,R])=>((R&&R.data)||[]).forEach(r=>{const g=P4P[k];(g[r.week]=g[r.week]||[]).push(r)}));if(view.split(':')[0]==='p4p')render()}catch(e){P4P={'':{},bk:{}}}P4P_LOADING=false}
+let P4P_AT=0;async function loadP4P(){if(P4P_LOADING||!SB)return;P4P_LOADING=true;try{const[A,B]=await Promise.all([SB.from('p4p').select('*').order('week',{ascending:false}).order('rank').limit(260),SB.from('p4p_bk').select('*').order('week',{ascending:false}).order('rank').limit(260)]);
+  P4P={'':{},bk:{}};[['',A],['bk',B]].forEach(([k,R])=>((R&&R.data)||[]).forEach(r=>{const g=P4P[k];(g[r.week]=g[r.week]||[]).push(r)}));if(A&&A.error)throw A.error;P4P_AT=Date.now();if(view.split(':')[0]==='p4p')render()}catch(e){if(!P4P)P4P={'':{},bk:{}};P4P_AT=Date.now()-240000}P4P_LOADING=false}
 function p4pHTML(arg){
+  if(P4P&&Date.now()-P4P_AT>300000)setTimeout(loadP4P,0);
   if(!P4P){loadP4P();return`<h1>Pound for Pound</h1><p class="mute">Loading the rankings...</p>`}
   const pa=String(arg||'').split(':'),reg=pa[0]==='bk'?'bk':'',warg=reg?pa[1]:pa[0],PR=P4P[reg]||{},RP=reg?'bk:':'';
   const weeks=Object.keys(PR).sort().reverse(),wk=weeks.includes(warg)?warg:weeks[0];
